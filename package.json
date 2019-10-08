@@ -1,0 +1,39 @@
+{
+  "name": "rsc-client",
+  "version": "1.0.0",
+  "description": "runescape classic web client",
+  "main": "./src/mudclient.js",
+  "scripts": {
+    "build-dev": "browserify index.js > dist/index.bundle.js",
+    "build": "browserify -p tinyify index.js > dist/index.bundle.min.js",
+    "start": "st -p 1337 -d dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2003scape/rsc-client.git"
+  },
+  "keywords": [
+    "runescape",
+    "classic",
+    "rsc",
+    "client",
+    "mmorpg",
+    "game"
+  ],
+  "author": "2003Scape Team",
+  "license": "AGPL-3.0+",
+  "bugs": {
+    "url": "https://github.com/2003scape/rsc-client/issues"
+  },
+  "homepage": "https://github.com/2003scape/rsc-client#readme",
+  "devDependencies": {
+    "alawmulaw": "^5.0.2",
+    "browserify": "^16.5.0",
+    "eslint": "^6.4.0",
+    "long": "^4.0.0",
+    "ndarray": "^1.0.18",
+    "sleep-promise": "^8.0.1",
+    "st": "^1.2.2",
+    "tinyify": "^2.5.1"
+  }
+}

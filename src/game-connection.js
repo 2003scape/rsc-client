@@ -351,7 +351,7 @@ class GameConnection extends GameShell {
         console.log('opcode:' + opcode + ' psize:' + psize);
 
         if (opcode === S_OPCODES.MESSAGE) {
-            let s = fromCharArray(this.incomingPacket.slice(1, psize - 1));
+            let s = fromCharArray(this.incomingPacket.slice(1, psize));
             this.showServerMessage(s);
         }
 

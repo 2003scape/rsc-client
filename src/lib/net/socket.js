@@ -82,7 +82,7 @@ class Socket {
             this.bytesLeft--;
             this.bytesAvailable--;
 
-            return this.currentBuffer[this.offset++];
+            return this.currentBuffer[this.offset++] & 0xff;
         }
 
         return new Promise((resolve, reject) => {
@@ -128,7 +128,7 @@ class Socket {
 
         if (this.bytesAvailable >= len) {
             while (len > 0) {
-                dest[off++] = this.currentBuffer[this.offset++];
+                dest[off++] = this.currentBuffer[this.offset++] & 0xff;
                 this.bytesLeft -= 1;
                 this.bytesAvailable -= 1;
                 len -= 1;

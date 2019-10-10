@@ -1092,7 +1092,7 @@ class GameModel {
     copy(...args) {
         if (!args || !args.length) {
             let pieces = [this]; 
-            gameModel = GameModel._from2A(pieces, 1);
+            let gameModel = GameModel._from2A(pieces, 1);
             gameModel.depth = this.depth;
             gameModel.transparent = this.transparent;
 

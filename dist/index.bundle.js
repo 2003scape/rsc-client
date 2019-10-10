@@ -3087,7 +3087,7 @@ class GameConnection extends GameShell {
         console.log('opcode:' + opcode + ' psize:' + psize);
 
         if (opcode === S_OPCODES.MESSAGE) {
-            let s = fromCharArray(this.incomingPacket.slice(1, psize - 1));
+            let s = fromCharArray(this.incomingPacket.slice(1, psize));
             this.showServerMessage(s);
         }
 
@@ -4987,7 +4987,7 @@ class GameModel {
     copy(...args) {
         if (!args || !args.length) {
             let pieces = [this]; 
-            gameModel = GameModel._from2A(pieces, 1);
+            let gameModel = GameModel._from2A(pieces, 1);
             gameModel.depth = this.depth;
             gameModel.transparent = this.transparent;
 
@@ -5929,7 +5929,7 @@ class Socket {
             this.bytesLeft--;
             this.bytesAvailable--;
 
-            return this.currentBuffer[this.offset++];
+            return this.currentBuffer[this.offset++] & 0xff;
         }
 
         return new Promise((resolve, reject) => {
@@ -5975,7 +5975,7 @@ class Socket {
 
         if (this.bytesAvailable >= len) {
             while (len > 0) {
-                dest[off++] = this.currentBuffer[this.offset++];
+                dest[off++] = this.currentBuffer[this.offset++] & 0xff;
                 this.bytesLeft -= 1;
                 this.bytesAvailable -= 1;
                 len -= 1;
@@ -11448,7 +11448,6 @@ class mudclient extends GameConnection {
         this.scene = new Scene(this.surface, 15000, 15000, 1000);
         // this used to be in scene's constructor
         this.scene.view = GameModel._from2(1000 * 1000, 1000); 
-        // TODO: see if this gives a different result with parseInt
         this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, this.const_9);
         this.scene.clipFar3d = 2400;
         this.scene.clipFar2d = 2400;
@@ -13390,7 +13389,7 @@ class mudclient extends GameConnection {
                     }
                 }
 
-                this.menuX = this.mouseX - this.menuWidth / 2;
+                this.menuX = this.mouseX - ((this.menuWidth / 2) | 0);
                 this.menuY = this.mouseY - 7;
                 this.showRightClickMenu = true;
 
@@ -14057,6 +14056,7 @@ class mudclient extends GameConnection {
                             this.groundItemY[this.groundItemCount] = j19;
                             this.groundItemId[this.groundItemCount] = i8;
                             this.groundItemZ[this.groundItemCount] = 0;
+
                             for (let k23 = 0; k23 < this.objectCount; k23++) {
                                 if (this.objectX[k23] !== k14 || this.objectY[k23] !== j19) {
                                     continue;
@@ -15850,7 +15850,7 @@ class mudclient extends GameConnection {
                             }
                         } else if (this.selectedItemInventoryIndex >= 0) {
                             this.menuItemText1[this.menuItemsCount] = 'Use ' + this.selectedItemName + ' with';
-                            this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.this.objectName[id];
+                            this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.objectName[id];
                             this.menuItemID[this.menuItemsCount] = 410;
                             this.menuItemX[this.menuItemsCount] = this.objectX[idx];
                             this.menuItemY[this.menuItemsCount] = this.objectY[idx];
@@ -15859,9 +15859,9 @@ class mudclient extends GameConnection {
                             this.menuTargetIndex[this.menuItemsCount] = this.selectedItemInventoryIndex;
                             this.menuItemsCount++;
                         } else {
-                            if (!/^WalkTo$/i.test(GameData.this.objectCommand1[id])) {
-                                this.menuItemText1[this.menuItemsCount] = GameData.this.objectCommand1[id];
-                                this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.this.objectName[id];
+                            if (!/^WalkTo$/i.test(GameData.objectCommand1[id])) {
+                                this.menuItemText1[this.menuItemsCount] = GameData.objectCommand1[id];
+                                this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.objectName[id];
                                 this.menuItemID[this.menuItemsCount] = 420;
                                 this.menuItemX[this.menuItemsCount] = this.objectX[idx];
                                 this.menuItemY[this.menuItemsCount] = this.objectY[idx];
@@ -15870,9 +15870,9 @@ class mudclient extends GameConnection {
                                 this.menuItemsCount++;
                             }
 
-                            if (!/^Examine/.i(GameData.this.objectCommand2[id])) {
-                                this.menuItemText1[this.menuItemsCount] = GameData.this.objectCommand2[id];
-                                this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.this.objectName[id];
+                            if (!/^Examine$/i.test(GameData.objectCommand2[id])) {
+                                this.menuItemText1[this.menuItemsCount] = GameData.objectCommand2[id];
+                                this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.objectName[id];
                                 this.menuItemID[this.menuItemsCount] = 2400;
                                 this.menuItemX[this.menuItemsCount] = this.objectX[idx];
                                 this.menuItemY[this.menuItemsCount] = this.objectY[idx];
@@ -16301,9 +16301,6 @@ class Packet {
         // TODO toggle ISAAC
         //this.isaacIncoming = new ISAAC(seed);
         //this.isaacOutgoing = new ISAAC(seed);
-    }
-
-    closeStream() {
     }
 
     async readBytes(len, buff) {

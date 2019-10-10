@@ -3123,7 +3123,7 @@ class GameConnection extends GameShell {
                     }
 
                     if (this.friendListOnline[i2] !== 0 && online === 0) {
-                        this.showServerMessage('@pri@' + Utility.hashTousername(hash) + ' has logged out');
+                        this.showServerMessage('@pri@' + Utility.hashToUsername(hash) + ' has logged out');
                     }
 
                     this.friendListOnline[i2] = online;

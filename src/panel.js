@@ -570,6 +570,20 @@ class Panel {
         }
     }
 
+    // TODO rename this to addText
+    addString(x, y, text, size, flag) {
+        this.controlType[this.controlCount] = CONTROL_TYPES.TEXT;
+        this.controlShown[this.controlCount] = true;
+        this.controlClicked[this.controlCount] = false;
+        this.controlTextSize[this.controlCount] = size;
+        this.controlUseAlternativeColour[this.controlCount] = flag;
+        this.controlX[this.controlCount] = x;
+        this.controlY[this.controlCount] = y;
+        this.controlText[this.controlCount] = text;
+
+        return this.controlCount++;
+    }
+
     addText(x, y, text, size, flag) {
         this.controlType[this.controlCount] = 1;
         this.controlShown[this.controlCount] = true;
@@ -763,6 +777,14 @@ class Panel {
         this.controlListEntryMouseButtonDown[this.controlCount] = 0;
 
         return this.controlCount++;
+    }
+
+    toggleCheckbox(control, activated) {
+        this.controlListEntryMouseButtonDown[control] = (activated ? 1 : 0);
+    }
+
+    isActivated(control) {
+        return this.controlListEntryMouseButtonDown[control] !== 0;
     }
 
     clearList(control) {

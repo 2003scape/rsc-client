@@ -2791,6 +2791,99 @@ class GameConnection extends GameShell {
         this.anIntArray629 = new Int32Array(GameConnection.maxSocialListSize);
     }
 
+    async registerAccount(user, pass) {
+        if (this.worldFullTimeout > 0) {
+            this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+            await sleep(2000);
+            this.showLoginScreenStatus('Sorry! The server is currently full.', 'Please try again later');
+            return;
+        }
+
+        try {
+            this.username = user;
+            user = Utility.formatAuthString(user, 20);
+
+            this.password = pass;
+            pass = Utility.formatAuthString(pass, 20);
+
+            this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+
+            this.clientStream = new ClientStream(await this.createSocket(this.server, this.port), this);
+            this.clientStream.newPacket(C_OPCODES.SESSION);
+
+            let userHash = Utility.usernameToHash(user);
+            this.clientStream.putByte(userHash.shiftRight(16).and(31).toInt());
+
+            this.clientStream.flushPacket();
+
+            let sessId = await this.clientStream.getLong();
+            this.sessionID = sessId;
+
+            if (sessId.equals(0)) {
+                this.showLoginScreenStatus('Login server offline.', 'Please try again in a few mins');
+                return;
+            }
+
+            console.log('Verb: Session id: ' + sessId);
+
+            this.clientStream.newPacket(C_OPCODES.REGISTER);
+            this.clientStream.putShort(GameConnection.clientVersion);
+            this.clientStream.putString(user);
+            this.clientStream.putString(pass);
+            this.clientStream.flushPacket();
+
+            let response = await this.clientStream.readStream();
+
+            this.clientStream.closeStream();
+
+            console.log('Newplayer response: ' + response);
+
+            switch(response) {
+            case 2: // success
+                this.resetLoginVars();
+                return;
+            case 13: // username taken
+            case 3:
+                this.showLoginScreenStatus('Username already taken.', 'Please choose another username');
+                return;
+            case 4: // username in use. distinction??
+                this.showLoginScreenStatus('That username is already in use.', 'Wait 60 seconds then retry');
+                return;
+            case 5: // client has been updated
+                this.showLoginScreenStatus('The client has been updated.', 'Please reload this page');
+                return;
+            case 6: // IP in use
+                this.showLoginScreenStatus('You may only use 1 character at once.', 'Your ip-address is already in use');
+                return;
+            case 7: // spam throttle was hit
+                this.showLoginScreenStatus('Login attempts exceeded!', 'Please try again in 5 minutes');
+                return;
+            case 11: // temporary ban
+                this.showLoginScreenStatus('Account has been temporarily disabled', 'for cheating or abuse');
+                return;
+            case 12: // permanent ban
+                this.showLoginScreenStatus('Account has been permanently disabled', 'for cheating or abuse');
+                return;
+            case 14: // server full
+                this.showLoginScreenStatus('Sorry! The server is currently full.', 'Please try again later');
+                this.worldFullTimeout = 1500;
+                return;
+            case 15: // members account needed
+                this.showLoginScreenStatus('You need a members account', 'to login to this server');
+                return;
+            case 16: // switch to members server
+                this.showLoginScreenStatus('Please login to a members server', 'to access member-only features');
+                return;
+            default:
+                this.showLoginScreenStatus('Error unable to create user.', 'Unrecognised response code');
+                return;
+            }
+        } catch(e) {
+            console.error(e);
+            this.showLoginScreenStatus('Error unable to create user.', 'Unrecognised response code');
+        }
+    }
+
     async login(u, p, reconnecting) {
         if (this.worldFullTimeout > 0) {
             this.showLoginScreenStatus('Please wait...', 'Connecting to server');
@@ -2821,10 +2914,11 @@ class GameConnection extends GameShell {
             this.clientStream = new ClientStream(await this.createSocket(this.server, this.port), this);
             this.clientStream.maxReadTries = GameConnection.maxReadTries;
 
-            let l = Utility.usernameToHash(u);
-
             this.clientStream.newPacket(C_OPCODES.SESSION);
-            this.clientStream.putByte(l.shiftRight(16).and(31).toInt());
+
+            let userHash = Utility.usernameToHash(u);
+            this.clientStream.putByte(userHash.shiftRight(16).and(31).toInt());
+
             this.clientStream.flushPacket();
 
             let sessId = await this.clientStream.getLong();
@@ -7145,8 +7239,13 @@ class mudclient extends GameConnection {
         this.controlWelcomeExistinguser = 0;
         this.npcWalkModel = new Int32Array([0, 1, 2, 1]);
         this.referid = 0;
-        this.anInt827 = 0;
-        this.controlLoginNewOk = 0;
+        this.controlRegisterUser = 0;
+        this.controlRegisterPassword = 0;
+        this.controlRegisterConfirmPassword = 0;
+        this.controlRegisterSubmit = 0;
+        this.controlRegisterCancel = 0;
+        this.controlRegisterCheckbox = 0;
+        this.controlRegisterStatus = 0;
         this.combatTimeout = 0;
         this.optionMenuCount = 0;
         this.errorLoadingCodebase = false;
@@ -7252,6 +7351,8 @@ class mudclient extends GameConnection {
         this.appearanceHeadGender = 1;
         this.loginUser = '';
         this.loginPass = '';
+        this.registerUser = '';
+        this.registerPassword = '';
         this.cameraAngle = 1;
         this.members = false;
         this.optionSoundDisabled = false;
@@ -9513,28 +9614,37 @@ class mudclient extends GameConnection {
         }
 
         this.panelLoginNewuser = new Panel(this.surface, 50);
-        y = 230;
+        y = 70;
 
-        if (this.referid === 0) {
-            this.panelLoginNewuser.addText(x, y + 8, 'To create an account please go back to the', 4, true);
-            y += 20;
-            this.panelLoginNewuser.addText(x, y + 8, 'www.runescape.com front page, and choose \'create account\'', 4, true);
-        } else if (this.referid === 1) {
-            this.panelLoginNewuser.addText(x, y + 8, 'To create an account please click on the', 4, true);
-            y += 20;
-            this.panelLoginNewuser.addText(x, y + 8, '\'create account\' link below the game window', 4, true);
-        } else {
-            this.panelLoginNewuser.addText(x, y + 8, 'To create an account please go back to the', 4, true);
-            y += 20;
-            this.panelLoginNewuser.addText(x, y + 8, 'runescape front webpage and choose \'create account\'', 4, true);
-        }
+        this.controlRegisterStatus = this.panelLoginNewuser.addText(x, y + 8, 'To create an account please enter all the requested details', 4, true);
+        let relY = y + 25;
+        this.panelLoginNewuser.addButtonBackground(x, relY + 17, 250, 34);
+        this.panelLoginNewuser.addText(x, relY + 8, 'Choose a Username', 4, false);
+        this.controlRegisterUser = this.panelLoginNewuser.addTextInput(x, relY + 25, 200, 40, 4, 12, false, false);
+        this.panelLoginNewuser.setFocus(this.controlRegisterUser);
+        relY += 40;
+        this.panelLoginNewuser.addButtonBackground(x - 115, relY + 17, 220, 34);
+        this.panelLoginNewuser.addText(x - 115, relY + 8, 'Choose a Password', 4, false);
+        this.controlRegisterPassword = this.panelLoginNewuser.addTextInput(x - 115, relY + 25, 220, 40, 4, 20, true, false);
+        this.panelLoginNewuser.addButtonBackground(x + 115, relY + 17, 220, 34);
+        this.panelLoginNewuser.addText(x + 115, relY + 8, 'Confirm Password', 4, false);
+        this.controlRegisterConfirmPassword = this.panelLoginNewuser.addTextInput(x + 115, relY + 25, 220, 40, 4, 20, true, false);
+        relY += 60;
+        this.controlRegisterCheckbox = this.panelLoginNewuser.addCheckbox(x - 196 - 7, relY - 7, 14, 14);
+        this.panelLoginNewuser.addString(x - 181, relY, 'I have read and agree to the terms and conditions', 4, true);
+        relY += 15;
+        this.panelLoginNewuser.addText(x, relY, '(to view these click the relevant link below this game window)', 4, true);
+        relY += 20;
+        this.panelLoginNewuser.addButtonBackground(x - 100, relY + 17, 150, 34);
+        this.panelLoginNewuser.addText(x - 100, relY + 17, 'Submit', 5, false);
+        this.controlRegisterSubmit = this.panelLoginNewuser.addButton(x - 100, relY + 17, 150, 34);
+        this.panelLoginNewuser.addButtonBackground(x + 100, relY + 17, 150, 34);
+        this.panelLoginNewuser.addText(x + 100, relY + 17, 'Cancel', 5, false);
+        this.controlRegisterCancel = this.panelLoginNewuser.addButton(x + 100, relY + 17, 150, 34);
 
-        y += 30;
-        this.panelLoginNewuser.addButtonBackground(x, y + 17, 150, 34);
-        this.panelLoginNewuser.addText(x, y + 17, 'Ok', 5, false);
-        this.controlLoginNewOk = this.panelLoginNewuser.addButton(x, y + 17, 150, 34);
         this.panelLoginExistinguser = new Panel(this.surface, 50);
         y = 230;
+
         this.controlLoginStatus = this.panelLoginExistinguser.addText(x, y - 10, 'Please enter your username and password', 4, true);
         y += 28;
         this.panelLoginExistinguser.addButtonBackground(x - 116, y, 200, 40);
@@ -9553,6 +9663,7 @@ class mudclient extends GameConnection {
         this.panelLoginExistinguser.addText(x + 154, y, 'Cancel', 4, false);
         this.controlLoginCancel = this.panelLoginExistinguser.addButton(x + 154, y, 120, 25);
         y += 30;
+
         this.panelLoginExistinguser.setFocus(this.controlLoginUser);
     }
 
@@ -12926,7 +13037,7 @@ class mudclient extends GameConnection {
 
         this.surface.blackScreen();
 
-        if (this.loginScreen === 0 || this.loginScreen === 1 || this.loginScreen === 2 || this.loginScreen === 3) {
+        if (this.loginScreen === 0 || this.loginScreen === 2) {
             let i = (this.loginTimer * 2) % 3072;
 
             if (i < 1024) {
@@ -13783,7 +13894,7 @@ class mudclient extends GameConnection {
 
     showLoginScreenStatus(s, s1) {
         if (this.loginScreen === 1) {
-            this.panelLoginNewuser.updateText(this.anInt827, s + ' ' + s1);
+            this.panelLoginNewuser.updateText(this.controlRegisterStatus, s + ' ' + s1);
         }
 
         if (this.loginScreen === 2) {
@@ -16027,6 +16138,12 @@ class mudclient extends GameConnection {
 
             if (this.panelLoginWelcome.isClicked(this.controlWelcomeNewuser)) {
                 this.loginScreen = 1;
+                this.panelLoginNewuser.updateText(this.controlRegisterUser, '');
+                this.panelLoginNewuser.updateText(this.controlRegisterPassword, '');
+                this.panelLoginNewuser.updateText(this.controlRegisterConfirmPassword, '');
+                this.panelLoginNewuser.setFocus(this.controlRegisterUser);
+                this.panelLoginNewuser.toggleCheckbox(this.controlRegisterCheckbox, false);
+                this.panelLoginNewuser.updateText(this.controlRegisterStatus, 'To create an account please enter all the requested details');
             }
 
             if (this.panelLoginWelcome.isClicked(this.controlWelcomeExistinguser)) {
@@ -16040,8 +16157,49 @@ class mudclient extends GameConnection {
         } else if (this.loginScreen === 1) {
             this.panelLoginNewuser.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
 
-            if (this.panelLoginNewuser.isClicked(this.controlLoginNewOk)) {
+            if (this.panelLoginNewuser.isClicked(this.controlRegisterCancel)) {
                 this.loginScreen = 0;
+                return;
+            }
+
+            if (this.panelLoginNewuser.isClicked(this.controlRegisterUser)) {
+                this.panelLoginNewuser.setFocus(this.controlRegisterPassword);
+            }
+
+            if (this.panelLoginNewuser.isClicked(this.controlRegisterPassword)) {
+                this.panelLoginNewuser.setFocus(this.controlRegisterConfirmPassword);
+            }
+
+            if (this.panelLoginNewuser.isClicked(this.controlRegisterConfirmPassword) || this.panelLoginNewuser.isClicked(this.controlRegisterSubmit)) {
+                let username = this.panelLoginNewuser.getText(this.controlRegisterUser);
+                let pass = this.panelLoginNewuser.getText(this.controlRegisterPassword);
+                let confPass = this.panelLoginNewuser.getText(this.controlRegisterConfirmPassword);
+
+                if (username === null || username.length <= 0 || pass === null || pass.length <= 0 || confPass === null || confPass.length <= 0) {
+                    return;
+                }
+
+                if (pass !== confPass) {
+                    this.panelLoginNewuser.updateText(this.controlRegisterStatus, '@yel@The two passwords entered are not the same as each other!');
+                    return;
+                }
+
+                if (pass.length < 5 || pass.length > 20) {
+                    this.panelLoginNewuser.updateText(this.controlRegisterStatus, '@yel@Your password must be between 5 and 20 characters long.');
+                    return;
+                }
+
+                if (!this.panelLoginNewuser.isActivated(this.controlRegisterCheckbox)) {
+                    this.panelLoginNewuser.updateText(this.controlRegisterStatus, '@yel@You must agree to the terms+conditions to continue');
+                    return;
+                }
+
+                this.panelLoginNewuser.updateText(this.controlRegisterStatus, 'Please wait... Creating new account');
+                this.drawLoginScreens();
+                this.resetTimings();
+                this.registerUser = this.panelLoginNewuser.getText(this.controlRegisterUser);
+                this.registerPassword = this.panelLoginNewuser.getText(this.controlRegisterPassword);
+                this.registerAccount(this.registerUser, this.registerPassword);
                 return;
             }
         } else if (this.loginScreen === 2) {
@@ -16180,6 +16338,7 @@ module.exports={
     "PM": 218,
     "PRAYER_OFF": 254,
     "PRAYER_ON": 60,
+    "REGISTER": 2,
     "REPORT_ABUSE": 206,
     "SESSION": 32,
     "SETTINGS_GAME": 111,
@@ -17074,6 +17233,20 @@ class Panel {
         }
     }
 
+    // TODO rename this to addText
+    addString(x, y, text, size, flag) {
+        this.controlType[this.controlCount] = CONTROL_TYPES.TEXT;
+        this.controlShown[this.controlCount] = true;
+        this.controlClicked[this.controlCount] = false;
+        this.controlTextSize[this.controlCount] = size;
+        this.controlUseAlternativeColour[this.controlCount] = flag;
+        this.controlX[this.controlCount] = x;
+        this.controlY[this.controlCount] = y;
+        this.controlText[this.controlCount] = text;
+
+        return this.controlCount++;
+    }
+
     addText(x, y, text, size, flag) {
         this.controlType[this.controlCount] = 1;
         this.controlShown[this.controlCount] = true;
@@ -17267,6 +17440,14 @@ class Panel {
         this.controlListEntryMouseButtonDown[this.controlCount] = 0;
 
         return this.controlCount++;
+    }
+
+    toggleCheckbox(control, activated) {
+        this.controlListEntryMouseButtonDown[control] = (activated ? 1 : 0);
+    }
+
+    isActivated(control) {
+        return this.controlListEntryMouseButtonDown[control] !== 0;
     }
 
     clearList(control) {

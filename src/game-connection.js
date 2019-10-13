@@ -55,6 +55,99 @@ class GameConnection extends GameShell {
         this.anIntArray629 = new Int32Array(GameConnection.maxSocialListSize);
     }
 
+    async registerAccount(user, pass) {
+        if (this.worldFullTimeout > 0) {
+            this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+            await sleep(2000);
+            this.showLoginScreenStatus('Sorry! The server is currently full.', 'Please try again later');
+            return;
+        }
+
+        try {
+            this.username = user;
+            user = Utility.formatAuthString(user, 20);
+
+            this.password = pass;
+            pass = Utility.formatAuthString(pass, 20);
+
+            this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+
+            this.clientStream = new ClientStream(await this.createSocket(this.server, this.port), this);
+            this.clientStream.newPacket(C_OPCODES.SESSION);
+
+            let userHash = Utility.usernameToHash(user);
+            this.clientStream.putByte(userHash.shiftRight(16).and(31).toInt());
+
+            this.clientStream.flushPacket();
+
+            let sessId = await this.clientStream.getLong();
+            this.sessionID = sessId;
+
+            if (sessId.equals(0)) {
+                this.showLoginScreenStatus('Login server offline.', 'Please try again in a few mins');
+                return;
+            }
+
+            console.log('Verb: Session id: ' + sessId);
+
+            this.clientStream.newPacket(C_OPCODES.REGISTER);
+            this.clientStream.putShort(GameConnection.clientVersion);
+            this.clientStream.putString(user);
+            this.clientStream.putString(pass);
+            this.clientStream.flushPacket();
+
+            let response = await this.clientStream.readStream();
+
+            this.clientStream.closeStream();
+
+            console.log('Newplayer response: ' + response);
+
+            switch(response) {
+            case 2: // success
+                this.resetLoginVars();
+                return;
+            case 13: // username taken
+            case 3:
+                this.showLoginScreenStatus('Username already taken.', 'Please choose another username');
+                return;
+            case 4: // username in use. distinction??
+                this.showLoginScreenStatus('That username is already in use.', 'Wait 60 seconds then retry');
+                return;
+            case 5: // client has been updated
+                this.showLoginScreenStatus('The client has been updated.', 'Please reload this page');
+                return;
+            case 6: // IP in use
+                this.showLoginScreenStatus('You may only use 1 character at once.', 'Your ip-address is already in use');
+                return;
+            case 7: // spam throttle was hit
+                this.showLoginScreenStatus('Login attempts exceeded!', 'Please try again in 5 minutes');
+                return;
+            case 11: // temporary ban
+                this.showLoginScreenStatus('Account has been temporarily disabled', 'for cheating or abuse');
+                return;
+            case 12: // permanent ban
+                this.showLoginScreenStatus('Account has been permanently disabled', 'for cheating or abuse');
+                return;
+            case 14: // server full
+                this.showLoginScreenStatus('Sorry! The server is currently full.', 'Please try again later');
+                this.worldFullTimeout = 1500;
+                return;
+            case 15: // members account needed
+                this.showLoginScreenStatus('You need a members account', 'to login to this server');
+                return;
+            case 16: // switch to members server
+                this.showLoginScreenStatus('Please login to a members server', 'to access member-only features');
+                return;
+            default:
+                this.showLoginScreenStatus('Error unable to create user.', 'Unrecognised response code');
+                return;
+            }
+        } catch(e) {
+            console.error(e);
+            this.showLoginScreenStatus('Error unable to create user.', 'Unrecognised response code');
+        }
+    }
+
     async login(u, p, reconnecting) {
         if (this.worldFullTimeout > 0) {
             this.showLoginScreenStatus('Please wait...', 'Connecting to server');
@@ -85,10 +178,11 @@ class GameConnection extends GameShell {
             this.clientStream = new ClientStream(await this.createSocket(this.server, this.port), this);
             this.clientStream.maxReadTries = GameConnection.maxReadTries;
 
-            let l = Utility.usernameToHash(u);
-
             this.clientStream.newPacket(C_OPCODES.SESSION);
-            this.clientStream.putByte(l.shiftRight(16).and(31).toInt());
+
+            let userHash = Utility.usernameToHash(u);
+            this.clientStream.putByte(userHash.shiftRight(16).and(31).toInt());
+
             this.clientStream.flushPacket();
 
             let sessId = await this.clientStream.getLong();

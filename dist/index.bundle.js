@@ -10191,7 +10191,7 @@ class mudclient extends GameConnection {
 
         for (let k2 = 0; k2 < 12; k2++) {
             let l2 = this.npcAnimationArray[l1][k2];
-            let k3 = GameData.npcSprite[character.npcId][l2];
+            let k3 = GameData.npcSprite.get(character.npcId, l2);
 
             if (k3 >= 0) {
                 let i4 = 0;
@@ -11386,7 +11386,7 @@ class mudclient extends GameConnection {
             let j4 = ((16 * ty) / 100) | 0;
             let l4 = ((16 * ty) / 100) | 0;
 
-            this.surface._spriteClipping_from9(k3 - ((j4 / 2) | 0), y - ((l4 / 2) | 0) - (((10 * ty) / 100) | 0), j4, l4, this.spriteMedia + 13);
+            this.surface._spriteClipping_from5(k3 - ((j4 / 2) | 0), y - ((l4 / 2) | 0) - (((10 * ty) / 100) | 0), j4, l4, this.spriteMedia + 13);
         }
     }
 

@@ -8261,7 +8261,7 @@ class mudclient extends GameConnection {
             this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.inventoryItemId[itemIndex]], GameData.itemMask[this.inventoryItemId[itemIndex]], 0, 0, false);
 
             if (GameData.itemStackable[this.inventoryItemId[itemIndex]] === 0) {
-                this.surface.drawString(String.valueOf(this.inventoryItemStackCount[itemIndex]), slotX + 1, slotY + 10, 1, 0xffff00);
+                this.surface.drawString(this.inventoryItemStackCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
             }
         }
 
@@ -8272,7 +8272,7 @@ class mudclient extends GameConnection {
             this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.tradeItems[itemIndex]], GameData.itemMask[this.tradeItems[itemIndex]], 0, 0, false);
 
             if (GameData.itemStackable[this.tradeItems[itemIndex]] === 0) {
-                this.surface.drawString(String.valueOf(this.tradeItemCount[itemIndex]), slotX + 1, slotY + 10, 1, 0xffff00);
+                this.surface.drawString(this.tradeItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
             }
 
             if (this.mouseX > slotX && this.mouseX < slotX + 48 && this.mouseY > slotY && this.mouseY < slotY + 32) {
@@ -8287,7 +8287,7 @@ class mudclient extends GameConnection {
             this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.tradeRecipientItems[itemIndex]], GameData.itemMask[this.tradeRecipientItems[itemIndex]], 0, 0, false);
 
             if (GameData.itemStackable[this.tradeRecipientItems[itemIndex]] === 0) {
-                this.surface.drawString(String.valueOf(this.tradeRecipientItemCount[itemIndex]), slotX + 1, slotY + 10, 1, 0xffff00);
+                this.surface.drawString(this.tradeRecipientItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
             }
 
             if (this.mouseX > slotX && this.mouseX < slotX + 48 && this.mouseY > slotY && this.mouseY < slotY + 32) {
@@ -11060,7 +11060,7 @@ class mudclient extends GameConnection {
             this.surface._spriteClipping_from9(x, y, 48, 32, this.spriteItem + GameData.itemPicture[this.duelOfferItemId[i]], GameData.itemMask[this.duelOfferItemId[i]], 0, 0, false);
 
             if (GameData.itemStackable[this.duelOfferItemId[i]] === 0) {
-                this.surface.drawString(String.valueOf(this.duelOfferItemStack[i]), x + 1, y + 10, 1, 0xffff00);
+                this.surface.drawString(this.duelOfferItemStack[i].toString(), x + 1, y + 10, 1, 0xffff00);
             }
 
             if (this.mouseX > x && this.mouseX < x + 48 && this.mouseY > y && this.mouseY < y + 32) {

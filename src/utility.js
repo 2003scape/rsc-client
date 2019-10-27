@@ -27,7 +27,7 @@ class Utility {
     }
 
     static getUnsignedLong(buff, off) {
-        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff);
+        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(new Long(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff));
     }
 
     static getSignedShort(abyte0, i) {

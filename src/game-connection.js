@@ -149,7 +149,6 @@ class GameConnection extends GameShell {
 
             if (resp === 1) {
                 this.autoLoginTimeout = 0;
-                this.method37();
                 return;
             }
 

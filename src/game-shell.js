@@ -65,7 +65,7 @@ class GameShell {
 
         GameShell.gameFrame = this._canvas.getContext('2d');
 
-        this._canvas.addEventListener('drag', this.mouseDragged.bind(this));
+        //this._canvas.addEventListener('drag', this.mouseDragged.bind(this));
         this._canvas.addEventListener('mousedown', this.mousePressed.bind(this));
         this._canvas.addEventListener('contextmenu', this.mousePressed.bind(this));
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
@@ -165,8 +165,7 @@ class GameShell {
     mouseMoved(e) {
         this.mouseX = e.offsetX;
         this.mouseY = e.offsetY;
-        this.mouseButtonDown = 0;
-        this.mouseButtonTimeout = 0;
+        this.mouseActionTimeout = 0;
     }
 
     mouseReleased(e) {

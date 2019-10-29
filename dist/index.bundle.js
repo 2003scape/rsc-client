@@ -8574,6 +8574,10 @@ class mudclient extends GameConnection {
             if (this.loginScreen === 2 && this.panelLoginExistinguser !== null) {
                 this.panelLoginExistinguser.keyPress(i);
             }
+
+            if (this.loginScreen === 3 && this.panelRecoverUser !== null) {
+                this.panelRecoverUser.keyPress(i);
+            }
         }
 
         if (this.loggedIn === 1) {
@@ -13495,6 +13499,10 @@ class mudclient extends GameConnection {
             this.panelLoginExistinguser.drawPanel();
         }
 
+        if (this.loginScreen === 3) {
+            this.panelRecoverUser.drawPanel();
+        }
+
         // blue bar
         this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 22); 
         this.surface.draw(this.graphics, 0, 0);
@@ -14339,6 +14347,11 @@ class mudclient extends GameConnection {
 
         if (this.loginScreen === 2) {
             this.panelLoginExistinguser.updateText(this.controlLoginStatus, s + ' ' + s1);
+        }
+
+        if (this.loginScreen === 3) {
+            this.panelRecoverUser.updateText(this.controlRecoverInfo1, s);
+            this.panelRecoverUser.updateText(this.controlRecoverInfo2, s1);
         }
 
         this.loginUserDisp = s1;
@@ -16700,12 +16713,15 @@ class mudclient extends GameConnection {
                     }
             
                     for (let i = 0; i < 5; i++) {
-                        let length = this.clientStream.readStream(); 
+                        let length = await this.clientStream.readStream(); 
+
+                        if (length < 0) {
+                            throw new Error('invalid recovery question length');
+                        }
 
                         // TODO maybe the buffer can just be length?
                         let buffer = new Int8Array(5000); 
-                        this.clientStream.readBytes(length, buffer);
-
+                        await this.clientStream.readBytes(length, buffer);
                         let question = fromCharArray(buffer.slice(0, length));
                         this.panelRecoverUser.updateText(this.controlRecoverQuestions[i], question);
                     }
@@ -16717,7 +16733,7 @@ class mudclient extends GameConnection {
             
                     this.loginScreen = 3;
                     this.panelRecoverUser.updateText(this.controlRecoverInfo1, '@yel@To prove this is your account please provide the answers to');
-                    this.panelRecoverUser.updateText(this.controlRecoverInfo2, '@yel@your security questions. YOu will then be able to reset your password');
+                    this.panelRecoverUser.updateText(this.controlRecoverInfo2, '@yel@your security questions. You will then be able to reset your password');
             
                     for (let i = 0; i < 5; i++) {
                         this.panelRecoverUser.updateText(this.controlRecoverAnswers[i], '');
@@ -16727,6 +16743,7 @@ class mudclient extends GameConnection {
                     this.panelRecoverUser.updateText(this.controlRecoverNewPassword, '');
                     this.panelRecoverUser.updateText(this.controlRecoverConfirmPassword, '');
                 } catch (e) {
+                    console.error(e);
                     this.showLoginScreenStatus('Sorry! Unable to connect.', 'Check leternet settings or try another world');
                     return;
                 }

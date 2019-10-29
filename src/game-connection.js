@@ -28,7 +28,7 @@ class GameConnection extends GameShell {
         this.sessionID = new Long(0);
         this.worldFullTimeout = 0;
         this.moderatorLevel = 0;
-        this.autoLoginTImeout = 0;
+        this.autoLoginTimeout = 0;
         this.packetLastRead = 0;
         this.anInt630 = 0;
 
@@ -64,10 +64,7 @@ class GameConnection extends GameShell {
         }
 
         try {
-            this.username = user;
             user = Utility.formatAuthString(user, 20);
-
-            this.password = pass;
             pass = Utility.formatAuthString(pass, 20);
 
             this.showLoginScreenStatus('Please wait...', 'Connecting to server');
@@ -243,7 +240,6 @@ class GameConnection extends GameShell {
 
             if (resp === 1) {
                 this.autoLoginTimeout = 0;
-                this.method37();
                 return;
             }
 
@@ -369,6 +365,16 @@ class GameConnection extends GameShell {
         } else {
             this.showLoginScreenStatus('Sorry! Unable to connect.', 'Check internet settings or try another world');
         }
+    }
+
+    changePassword(oldPass, newPass) {
+        oldPass = Utility.formatAuthString(oldPass, 20);
+        newPass = Utility.formatAuthString(newPass, 20);
+
+        this.clientStream.newPacket(C_OPCODES.CHANGE_PASSWORD);
+        this.clientStream.putString(oldPass);
+        this.clientStream.putString(newPass);
+        this.clientStream.sendPacket();
     }
 
     closeConnection() {

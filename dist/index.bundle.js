@@ -2764,7 +2764,7 @@ class GameConnection extends GameShell {
         this.sessionID = new Long(0);
         this.worldFullTimeout = 0;
         this.moderatorLevel = 0;
-        this.autoLoginTImeout = 0;
+        this.autoLoginTimeout = 0;
         this.packetLastRead = 0;
         this.anInt630 = 0;
 
@@ -2800,10 +2800,7 @@ class GameConnection extends GameShell {
         }
 
         try {
-            this.username = user;
             user = Utility.formatAuthString(user, 20);
-
-            this.password = pass;
             pass = Utility.formatAuthString(pass, 20);
 
             this.showLoginScreenStatus('Please wait...', 'Connecting to server');
@@ -2979,7 +2976,6 @@ class GameConnection extends GameShell {
 
             if (resp === 1) {
                 this.autoLoginTimeout = 0;
-                this.method37();
                 return;
             }
 
@@ -3105,6 +3101,16 @@ class GameConnection extends GameShell {
         } else {
             this.showLoginScreenStatus('Sorry! Unable to connect.', 'Check internet settings or try another world');
         }
+    }
+
+    changePassword(oldPass, newPass) {
+        oldPass = Utility.formatAuthString(oldPass, 20);
+        newPass = Utility.formatAuthString(newPass, 20);
+
+        this.clientStream.newPacket(C_OPCODES.CHANGE_PASSWORD);
+        this.clientStream.putString(oldPass);
+        this.clientStream.putString(newPass);
+        this.clientStream.sendPacket();
     }
 
     closeConnection() {
@@ -5323,8 +5329,7 @@ class GameShell {
     mouseMoved(e) {
         this.mouseX = e.offsetX;
         this.mouseY = e.offsetY;
-        this.mouseButtonDown = 0;
-        this.mouseButtonTimeout = 0;
+        this.mouseActionTimeout = 0;
     }
 
     mouseReleased(e) {
@@ -7083,6 +7088,7 @@ module.exports = PCMPlayer;
 },{}],25:[function(require,module,exports){
 const C_OPCODES = require('./opcodes/client');
 const ChatMessage = require('./chat-message');
+const ClientStream = require('./client-stream');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameBuffer = require('./game-buffer');
@@ -7201,6 +7207,7 @@ class mudclient extends GameConnection {
         this.controlLoginPass = 0;
         this.controlLoginOk = 0;
         this.controlLoginCancel = 0;
+        this.controlLoginRecover = 0;
         this.teleportBubbleCount = 0;
         this.mouseClickCount = 0;
         this.shopSellPriceMod = 0;
@@ -7510,6 +7517,39 @@ class mudclient extends GameConnection {
         this.objectModel = [];
         this.objectModel.length = this.objectsMax;
         this.objectModel.fill(null);
+
+        this.recoveryQuestions = [
+            'Where were you born?', 'What was your first teachers name?', 'What is your fathers middle name?', 'Who was your first best friend?', 'What is your favourite vacation spot?', 'What is your mothers middle name?', 'What was your first pets name?', 'What was the name of your first school?', 'What is your mothers maiden name?', 'Who was your first boyfriend/girlfriend?',
+            'What was the first computer game you purchased?', 'Who is your favourite actor/actress?', 'Who is your favourite author?', 'Who is your favourite musician?', 'Who is your favourite cartoon character?', 'What is your favourite book?', 'What is your favourite food?', 'What is your favourite movie?'
+        ];
+        this.recentRecoverFail = false;
+        this.panelRecoverUser = null;
+        this.controlRecoverQuestions = new Int32Array(5);
+        this.controlRecoverInfo1 = 0;
+        this.controlRecoverInfo2 = 0;
+        this.controlRecoverAnswers = new Int32Array(5);
+        this.controlRecoverOldPassword = 0;
+        this.controlRecoverNewPassword = 0;
+        this.controlRecoverConfirmPassword = 0;
+        this.controlRecoverSubmit = 0;
+        this.controlRecoverCancel = 0;
+        this.panelRecoverCreate = null;
+        this.controlRecoverCreateInfo = 0;
+        this.selectedRecoverIds = new Int32Array([0, 1, 2, 3, 4]);
+        this.selectedRecoverQuestions = [];
+        this.selectedRecoverQuestions.length = 5;
+        this.selectedRecoverQuestions.fill(null);
+        this.controlRecoverNewQuestions = new Int32Array(5);
+        this.controlRecoverNewAnswers = new Int32Array(5);
+        this.controlRecoverNewQuestionButtons = new Int32Array(5);
+        this.controlRecoverCustomQuestionButtons = new Int32Array(5);
+        this.controlRecoverCreateButton = 0;
+        this.showRecoverChange = false;
+        this.recoverCustomQuestionIndex = -1;
+        this.showChangePasswordStep = 0;
+        this.changePasswordOld = '';
+        this.changePasswordNew = '';
+        this.welcomeTipDay = 0;
     }
 
     static formatNumber(i) {
@@ -8006,6 +8046,8 @@ class mudclient extends GameConnection {
             this.drawDialogReportAbuse();
         } else if (this.showDialogReportAbuseStep === 2) {
             this.drawDialogReportAbuseInput();
+        } else if (this.showChangePasswordStep !== 0) {
+            this.drawDialogChangePassword();
         } else if (this.showDialogSocialInput !== 0) {
             this.drawDialogSocialInput();
         } else {
@@ -8540,8 +8582,20 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (this.showDialogSocialInput === 0 && this.showDialogReportAbuseStep === 0 && !this.isSleeping && this.panelMessageTabs !== null) {
+            if (this.showRecoverChange && this.panelRecoverCreate !== null) {
+                if (this.recoverCustomQuestionIndex === -1) {
+                    this.panelRecoverCreate.keyPress(i);
+                }
+
+                return;
+            }
+
+            if (this.showChangePasswordStep === 0 && this.showDialogSocialInput === 0 && this.showDialogReportAbuseStep === 0 && !this.isSleeping && this.panelMessageTabs !== null) {
                 this.panelMessageTabs.keyPress(i);
+            }
+
+            if (this.showChangePasswordStep === 3 || this.showChangePasswordStep === 4 || this.showChangePasswordStep == 5) {
+                this.showChangePasswordStep = 0;
             }
         }
     }
@@ -8608,6 +8662,113 @@ class mudclient extends GameConnection {
         this.players[this.playerCount++] = character;
 
         return character;
+    }
+
+    drawDialogChangePassword() {
+        if (this.mouseButtonClick !== 0) {
+            this.mouseButtonClick = 0;
+
+            if (this.mouseX < 106 || this.mouseY < 150 || this.mouseX > 406 || this.mouseY > 210) {
+                this.showChangePasswordStep = 0;
+                return;
+            }
+        }
+
+        let uiY = 150;
+
+        this.surface.drawBox(106, uiY, 300, 60, 0);
+        this.surface.drawBoxEdge(106, uiY, 300, 60, 0xffffff);
+
+        let y = uiY + 22;
+        let passwordInput = null;
+
+        if (this.showChangePasswordStep === 6) {
+            this.surface.drawStringCenter('Please enter your current password', 256, y, 4, 0xffffff);
+            y += 25;
+
+            passwordInput = '*';
+
+            for (let i = 0; i < this.inputTextCurrent.length; i++) {
+                passwordInput = 'X' + passwordInput;
+            }
+
+            this.surface.drawStringCenter(passwordInput, 256, y, 4, 0xffffff);
+
+            if (this.inputTextFinal.length > 0) {
+                this.changePasswordOld = this.inputTextFinal;
+                this.inputTextCurrent = '';
+                this.inputTextFinal = '';
+                this.showChangePasswordStep = 1;
+                return;
+            }
+        } else if (this.showChangePasswordStep === 1) {
+            this.surface.drawStringCenter('Please enter your new password', 256, y, 4, 0xffffff);
+            y += 25;
+
+            passwordInput = '*';
+
+            for (let i = 0; i < this.inputTextCurrent.length; i++) {
+                passwordInput = 'X' + passwordInput;
+            }
+
+            this.surface.drawStringCenter(passwordInput, 256, y, 4, 0xffffff);
+
+            if (this.inputTextFinal.length > 0) {
+                this.changePasswordNew = this.inputTextFinal;
+                this.inputTextCurrent = '';
+                this.inputTextFinal = '';
+
+                if (this.changePasswordNew.length >= 5) {
+                    this.showChangePasswordStep = 2;
+                    return;
+                }
+
+                this.showChangePasswordStep = 5;
+                return;
+            }
+        } else if (this.showChangePasswordStep == 2) {
+            this.surface.drawStringCenter('Enter password again to confirm', 256, y, 4, 0xffffff);
+            y += 25;
+
+            passwordInput = '*';
+
+            for (let i = 0; i < this.inputTextCurrent.length; ++i) {
+                passwordInput = 'X' + passwordInput;
+            }
+
+            this.surface.drawStringCenter(passwordInput, 256, y, 4, 0xffffff);
+
+            if (this.inputTextFinal.length > 0) {
+                if (this.inputTextFinal.toLowerCase() === this.changePasswordNew.toLowerCase()) {
+                    this.showChangePasswordStep = 4;
+                    this.changePassword(this.changePasswordOld, this.changePasswordNew);
+                    return;
+                }
+
+                this.showChangePasswordStep = 3;
+                return;
+            }
+        } else {
+            if (this.showChangePasswordStep === 3) {
+                this.surface.drawStringCenter('Passwords do not match!', 256, y, 4, 0xffffff);
+                y += 25;
+                this.surface.drawStringCenter('Press any key to close', 256, y, 4, 0xffffff);
+                return;
+            }
+
+            if (this.showChangePasswordStep === 4) {
+                this.surface.drawStringCenter('Ok, your request has been sent', 256, y, 4, 0xffffff);
+                y += 25;
+                this.surface.drawStringCenter('Press any key to close', 256, y, 4, 0xffffff);
+                return;
+            }
+
+            if (this.showChangePasswordStep === 5) {
+                this.surface.drawStringCenter('Password must be at', 256, y, 4, 0xffffff);
+                y += 25;
+                this.surface.drawStringCenter('least 5 letters long', 256, y, 4, 0xffffff);
+            }
+        }
     }
 
     drawDialogSocialInput() {
@@ -8710,6 +8871,203 @@ class mudclient extends GameConnection {
         this.surface.drawStringCenter('Cancel', 256, 208, 1, j);
     }
 
+    createRecoverCreatePanel() {
+        this.panelRecoverCreate = new Panel(this.surface, 100);
+        let uiY = 8;
+        this.controlRecoverCreateInfo = this.panelRecoverCreate.addText(256, uiY, '@yel@Please provide 5 security questions in case you lose your password', 1, true);
+        let y = uiY + 22;
+        this.panelRecoverCreate.addText(256, y, 'If you ever lose your password, you will need these to prove you own your account.', 1, true);
+        y += 13;
+        this.panelRecoverCreate.addText(256, y, 'Your answers are encrypted and are ONLY used for password recovery purposes.', 1, true);
+        y += 22;
+        this.panelRecoverCreate.addText(256, y, '@ora@IMPORTANT:@whi@ To recover your password you must give the EXACT same answers you', 1, true);
+        y += 13;
+        this.panelRecoverCreate.addText(256, y, 'give here. If you think you might forget an answer, or someone else could guess the', 1, true);
+        y += 13;
+        this.panelRecoverCreate.addText(256, y, 'answer, then press the \'different question\' button to get a better question.', 1, true);
+        y += 35;
+    
+        for (let i = 0; i < 5; i++) {
+            this.panelRecoverCreate.addButtonBackground(170, y, 310, 30);
+            this.selectedRecoverQuestions[i] = this.recoveryQuestions[this.selectedRecoverIds[i]];
+            this.controlRecoverNewQuestions[i] = this.panelRecoverCreate.addText(170, y - 7, i + 1 + ': ' + this.recoveryQuestions[this.selectedRecoverIds[i]], 1, true);
+            this.controlRecoverNewAnswers[i] = this.panelRecoverCreate.addTextInput(170, y + 7, 310, 30, 1, 80, false, true);
+            this.panelRecoverCreate.addButtonBackground(370, y, 80, 30);
+            this.panelRecoverCreate.addText(370, y - 7, 'Different', 1, true);
+            this.panelRecoverCreate.addText(370, y + 7, 'Question', 1, true);
+            this.controlRecoverNewQuestionButtons[i] = this.panelRecoverCreate.addButton(370, y, 80, 30);
+            this.panelRecoverCreate.addButtonBackground(455, y, 80, 30);
+            this.panelRecoverCreate.addText(455, y - 7, 'Enter own', 1, true);
+            this.panelRecoverCreate.addText(455, y + 7, 'Question', 1, true);
+            this.controlRecoverCustomQuestionButtons[i] = this.panelRecoverCreate.addButton(455, y, 80, 30);
+            y += 35;
+        }
+    
+        this.panelRecoverCreate.setFocus(this.controlRecoverNewAnswers[0]);
+        y += 10;
+        this.panelRecoverCreate.addButtonBackground(256, y, 250, 30);
+        this.panelRecoverCreate.addText(256, y, 'Click here when finished', 4, true);
+        this.controlRecoverCreateButton = this.panelRecoverCreate.addButton(256, y, 250, 30);
+    }
+    
+    handlePanelRecoverCreateControls() {
+        if (this.recoverCustomQuestionIndex !== -1) {
+            if (this.inputPmFinal.length > 0) {
+                this.selectedRecoverQuestions[this.recoverCustomQuestionIndex] = this.inputPmFinal;
+                this.panelRecoverCreate.updateText(this.controlRecoverNewQuestions[this.recoverCustomQuestionIndex], this.recoverCustomQuestionIndex + 1 + ': ' + this.selectedRecoverQuestions[this.recoverCustomQuestionIndex]);
+                this.panelRecoverCreate.updateText(this.controlRecoverNewAnswers[this.recoverCustomQuestionIndex], '');
+                this.recoverCustomQuestionIndex = -1;
+            }
+        } else {
+            this.panelRecoverCreate.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
+    
+            for (let i = 0; i < 5; i++) {
+                if (this.panelRecoverCreate.isClicked(this.controlRecoverNewQuestionButtons[i])) {
+                    let questionNotInUse = false;
+
+                    while (!questionNotInUse) {
+                        this.selectedRecoverIds[i] = (this.selectedRecoverIds[i] + 1) % this.recoveryQuestions.length;
+                        questionNotInUse = true;
+    
+                        for (let j = 0; j < 5; j++) {
+                            if (j !== i && this.selectedRecoverIds[j] === this.selectedRecoverIds[i]) {
+                                questionNotInUse = false;
+                            }
+                        }
+                    }
+    
+                    this.selectedRecoverQuestions[i] = this.recoveryQuestions[this.selectedRecoverIds[i]];
+                    this.panelRecoverCreate.updateText(this.controlRecoverNewQuestions[i], i + 1 + ': ' + this.recoveryQuestions[this.selectedRecoverIds[i]]);
+                    this.panelRecoverCreate.updateText(this.controlRecoverNewAnswers[i], '');
+                }
+            }
+    
+            for (let i = 0; i < 5; i++) {
+                if (this.panelRecoverCreate.isClicked(this.controlRecoverCustomQuestionButtons[i])) {
+                    this.recoverCustomQuestionIndex = i;
+                    this.inputPmCurrent = '';
+                    this.inputPmFinal = '';
+                }
+            }
+    
+            if (this.panelRecoverCreate.isClicked(this.controlRecoverCreateButton)) {
+                let questionIndex = 0;
+    
+                while (true) {
+                    if (questionIndex >= 5) {
+                        for (let i = 0; i < 5; i++) {
+                            let answer1 = this.panelRecoverCreate.getText(this.controlRecoverNewAnswers[i]);
+    
+                            for (let j = 0; j < i; ++j) {
+                                let answer2 = this.panelRecoverCreate.getText(this.controlRecoverNewAnswers[j]);
+
+                                if (answer1.toLowerCase() === answer2.toLowerCase()) {
+                                    this.panelRecoverCreate.updateText(this.controlRecoverCreateInfo, '@yel@Each question must have a different answer');
+                                    return;
+                                }
+                            }
+                        }
+    
+                        this.clientStream.newPacket(C_OPCODES.RECOVER_SET);
+    
+                        for (let i = 0; i < 5; i++) {
+                            let question = this.selectedRecoverQuestions[i];
+
+                            if (question === null || question.length === 0) {
+                                question = (i + 1).toString();
+                            }
+    
+                            if (question.length > 50) {
+                                question = question.substring(0, 50);
+                            }
+    
+                            this.clientStream.putByte(question.length);
+                            this.clientStream.putString(question);
+                            let answer = this.panelRecoverCreate.getText(this.controlRecoverNewAnswers[i]);
+                            this.clientStream.putLong(Utility.recoveryToHash(answer));
+                        }
+ 
+                        this.clientStream.sendPacket();
+ 
+                        for (let i = 0; i < 5; i++) {
+                            this.selectedRecoverIds[i] = i;
+                            this.selectedRecoverQuestions[i] = this.recoveryQuestions[this.selectedRecoverIds[i]];
+                            this.panelRecoverCreate.updateText(this.controlRecoverNewAnswers[i], '');
+                            this.panelRecoverCreate.updateText(this.controlRecoverNewQuestions[i], i + 1 + ': ' + this.recoveryQuestions[this.selectedRecoverIds[i]]);
+                        }
+ 
+                        this.surface.blackScreen();
+                        this.showRecoverChange = false;
+                        break;
+                    }
+ 
+                    let answer = this.panelRecoverCreate.getText(this.controlRecoverNewAnswers[questionIndex]);
+
+                    if (answer === null || answer.length < 3) {
+                        this.panelRecoverCreate.updateText(this.controlRecoverCreateInfo, '@yel@Please provide a longer answer to question: ' + (questionIndex + 1));
+                        return;
+                    }
+ 
+                    questionIndex++;
+                }
+            }
+        }
+    }
+
+    drawRecoverCreatePanel() {
+        this.surface.interlace = false;
+        this.surface.blackScreen();
+        this.panelRecoverCreate.drawPanel();
+        
+        if (this.recoverCustomQuestionIndex !== -1) {
+            let uiY = 150;
+            this.surface.drawBox(26, uiY, 460, 60, 0);
+            this.surface.drawBoxEdge(26, uiY, 460, 60, 0xffffff);
+            let y = uiY + 22;
+            this.surface.drawStringCenter('Please enter your question', 256, y, 4, 0xffffff);
+            y += 25;
+            this.surface.drawStringCenter(this.inputPmCurrent + '*', 256, y, 4, 0xffffff);
+        }
+   
+        this.surface._drawSprite_from3(0, this.gameHeight, this.spriteMedia + 22);
+        this.surface.draw(this.graphics, 0, 0);
+    }
+
+    createRecoverUserPanel() {
+        this.panelRecoverUser = new Panel(this.surface, 100);
+        let uiY = 10;
+        this.controlRecoverInfo1 = this.panelRecoverUser.addText(256, uiY, '@yel@To prove this is your account please provide the answers to', 1, true);
+        let y = uiY + 15;
+        this.controlRecoverInfo2 = this.panelRecoverUser.addText(256, y, '@yel@your security questions. You will then be able to reset your password', 1, true);
+        y += 35;
+    
+        for (let i = 0; i < 5; i++) {
+            this.panelRecoverUser.addButtonBackground(256, y, 410, 30);
+            this.controlRecoverQuestions[i] = this.panelRecoverUser.addText(256, y - 7, (i + 1) + ': question?', 1, true);
+            this.controlRecoverAnswers[i] = this.panelRecoverUser.addTextInput(256, y + 7, 310, 30, 1, 80, true, true);
+            y += 35;
+        }
+    
+        this.panelRecoverUser.setFocus(this.controlRecoverAnswers[0]);
+        this.panelRecoverUser.addButtonBackground(256, y, 410, 30);
+        this.panelRecoverUser.addText(256, y - 7, 'If you know it, enter a previous password used on this account', 1, true);
+        this.controlRecoverOldPassword = this.panelRecoverUser.addTextInput(256, y + 7, 310, 30, 1, 80, true, true);
+        y += 35;
+        this.panelRecoverUser.addButtonBackground(151, y, 200, 30);
+        this.panelRecoverUser.addText(151, y - 7, 'Choose a NEW password', 1, true);
+        this.controlRecoverNewPassword = this.panelRecoverUser.addTextInput(146, y + 7, 200, 30, 1, 80, true, true);
+        this.panelRecoverUser.addButtonBackground(361, y, 200, 30);
+        this.panelRecoverUser.addText(361, y - 7, 'Confirm new password', 1, true);
+        this.controlRecoverConfirmPassword = this.panelRecoverUser.addTextInput(366, y + 7, 200, 30, 1, 80, true, true);
+        y += 35;
+        this.panelRecoverUser.addButtonBackground(201, y, 100, 30);
+        this.panelRecoverUser.addText(201, y, 'Submit', 4, true);
+        this.controlRecoverSubmit = this.panelRecoverUser.addButton(201, y, 100, 30);
+        this.panelRecoverUser.addButtonBackground(311, y, 100, 30);
+        this.panelRecoverUser.addText(311, y, 'Cancel', 4, true);
+        this.controlRecoverCancel = this.panelRecoverUser.addButton(311, y, 100, 30);
+    }
+
     createAppearancePanel() {
         this.panelAppearance = new Panel(this.surface, 100);
         this.panelAppearance.addText(256, 10, 'Please design Your Character', 4, true);
@@ -8784,11 +9142,7 @@ class mudclient extends GameConnection {
     }
 
     drawDialogWelcome() {
-        let i = 65;
-
-        if (this.welcomeRecoverySetDays !== 201) {
-            i += 60;
-        }
+        let i = 142;
 
         if (this.welcomeUnreadMessages > 0) {
             i += 60;
@@ -8847,52 +9201,105 @@ class mudclient extends GameConnection {
             y += 15;
         }
 
-        // this is an odd way of storing recovery day settings
-        if (this.welcomeRecoverySetDays !== 201) {
-            // and this
-            if (this.welcomeRecoverySetDays === 200) {
-                this.surface.drawStringCenter('You have not yet set any password recovery questions.', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('We strongly recommend you do so now to secure your account.', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('Do this from the \'account management\' area on our front webpage', 256, y, 1, 0xff8000);
-                y += 15;
-            } else {
-                let s1 = null;
+        if (this.welcomeRecoverySetDays === 0) {
+            y += 7;
+            this.surface.drawStringCenter('Security tip of the day', 256, y, 1, 0xff0000);
+            y += 15;
 
-                if (this.welcomeRecoverySetDays === 0) {
-                    s1 = 'Earlier today';
-                } else if (this.welcomeRecoverySetDays === 1) {
-                    s1 = 'Yesterday';
-                } else {
-                    s1 = this.welcomeRecoverySetDays + ' days ago';
-                }
-
-                this.surface.drawStringCenter(s1 + ' you changed your recovery questions', 256, y, 1, 0xff8000);
+            if (this.welcomeTipDay == 0) {
+                this.surface.drawStringCenter('Don\'t tell ANYONE your password or recovery questions!', 256, y, 1, 0xffffff);
                 y += 15;
-                this.surface.drawStringCenter('If you do not remember making this change then cancel it immediately', 256, y, 1, 0xff8000);
+                this.surface.drawStringCenter('Not even people claiming to be Jagex staff.', 256, y, 1, 0xffffff);
                 y += 15;
-                this.surface.drawStringCenter('Do this from the \'account management\' area on our front webpage', 256, y, 1, 0xff8000);
+            } else if (this.welcomeTipDay == 1) {
+                this.surface.drawStringCenter('Never enter your password or recovery questions into ANY', 256, y, 1, 0xffffff);
+                y += 15;
+                this.surface.drawStringCenter('website other than this one - Not even if it looks similar.', 256, y, 1, 0xffffff);
+                y += 15;
+            } else if (this.welcomeTipDay == 2) {
+                this.surface.drawStringCenter('Don\'t use RuneScape cheats, helpers, or automaters.', 256, y, 1, 0xffffff);
+                y += 15;
+                this.surface.drawStringCenter('These programs WILL steal your password.', 256, y, 1, 0xffffff);
+                y += 15;
+            } else if (this.welcomeTipDay == 3) {
+                this.surface.drawStringCenter('Watch out for fake emails, and fake staff. Real staff', 256, y, 1, 0xffffff);
+                y += 15;
+                this.surface.drawStringCenter('will NEVER ask you for your password or recovery questions!', 256, y, 1, 0xffffff);
+                y += 15;
+            } else if (this.welcomeTipDay == 4) {
+                this.surface.drawStringCenter('Use a password your friends won\'t guess. Do NOT use your name!', 256, y, 1, 0xffffff);
+                y += 15;
+                this.surface.drawStringCenter('Choose a unique password which you haven\'t used anywhere else', 256, y, 1, 0xffffff);
+                y += 15;
+            } else if (this.welcomeTipDay == 5) {
+                this.surface.drawStringCenter('If possible only play runescape from your own computer', 256, y, 1, 0xffffff);
+                y += 15;
+                this.surface.drawStringCenter('Other machines could have been tampered with to steal your pass', 256, y, 1, 0xffffff);
                 y += 15;
             }
 
+            y += 22;
+
+            let textColour = 0xffffff;
+
+            if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 106 && this.mouseX < 406) {
+                textColour = 0xff0000;
+            }
+
+            this.surface.drawStringCenter('Click here to close window', 256, y, 1, textColour);
+
+            if (this.mouseButtonClick === 1) {
+                if (textColour === 0xff0000) {
+                    this.showDialogWelcome = false;
+                }
+
+                if ((this.mouseX < 86 || this.mouseX > 426) && (this.mouseY < 167 - ((i / 2) | 0) || this.mouseY > 167 + ((i / 2) | 0))) {
+                    this.showDialogWelcome = false;
+                }
+            }
+        } else {
+            let s1 = null;
+
+            if (this.welcomeRecoverySetDays === 0) {
+                s1 = 'Earlier today';
+            } else if (this.welcomeRecoverySetDays === 1) {
+                s1 = 'Yesterday';
+            } else {
+                s1 = this.welcomeRecoverySetDays + ' days ago';
+            }
+
+            this.surface.drawStringCenter(s1 + ' you changed your recovery questions', 256, y, 1, 0xff8000);
             y += 15;
-        }
+            this.surface.drawStringCenter('If you do not remember making this change then', 256, y, 1, 0xff8000);
+            y += 15;
+            this.surface.drawStringCenter('cancel it and change your password immediately!', 256, y, 1, 0xff8000);
+            y += 15;
+            y += 15;
 
-        let l = 0xffffff;
+            let textColour = 0xffffff;
 
-        if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 106 && this.mouseX < 406) {
-            l = 0xff0000;
-        }
+            if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 106 && this.mouseX < 406) {
+                textColour = 0xff0000;
+            }
 
-        this.surface.drawStringCenter('Click here to close window', 256, y, 1, l);
+            this.surface.drawStringCenter('No that wasn\'t me - Cancel the request!', 256, y, 1, textColour);
 
-        if (this.mouseButtonClick === 1) {
-            if (l === 0xff0000) {
+            if (textColour === 0xff0000 && this.mouseButtonClick === 1) {
+                this.clientStream.newPacket(C_OPCODES.RECOVER_CANCEL);
+                this.clientStream.sendPacket();
                 this.showDialogWelcome = false;
             }
 
-            if ((this.mouseX < 86 || this.mouseX > 426) && (this.mouseY < 167 - ((i / 2) | 0) || this.mouseY > 167 + ((i / 2) | 0))) {
+            y += 15;
+            textColour = 0xffffff;
+
+            if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 106 && this.mouseX < 406) {
+                textColour = 0xff0000;
+            }
+
+            this.surface.drawStringCenter('That\'s ok, activate the new questions in ' + (14 - this.welcomeRecoverySetDays) + ' days time', 256, y, 1, textColour);
+
+            if (textColour === 0xff0000 && this.mouseButtonClick === 1) {
                 this.showDialogWelcome = false;
             }
         }
@@ -8954,6 +9361,11 @@ class mudclient extends GameConnection {
 
         if (this.showAppearanceChange) {
             this.handleAppearancePanelControls();
+            return;
+        }
+
+        if (this.showRecoverChange) {
+            this.handlePanelRecoverCreateControls();
             return;
         }
 
@@ -9663,6 +10075,9 @@ class mudclient extends GameConnection {
         this.panelLoginExistinguser.addText(x + 154, y, 'Cancel', 4, false);
         this.controlLoginCancel = this.panelLoginExistinguser.addButton(x + 154, y, 120, 25);
         y += 30;
+        this.panelLoginExistinguser.addButtonBackground(x + 154, y, 160, 25);
+        this.panelLoginExistinguser.addText(x + 154, y, 'I\'ve lost my password', 4, false);
+        this.controlLoginRecover = this.panelLoginExistinguser.addButton(x + 154, y, 160, 25);
 
         this.panelLoginExistinguser.setFocus(this.controlLoginUser);
     }
@@ -11595,6 +12010,8 @@ class mudclient extends GameConnection {
             this.createMessageTabPanel();
             this.createLoginPanels();
             this.createAppearancePanel();
+            this.createRecoverCreatePanel();
+            this.createRecoverUserPanel();
             this.resetLoginScreenVariables();
             this.renderLoginScreenViewports();
         }
@@ -12001,6 +12418,11 @@ class mudclient extends GameConnection {
 
         if (this.showAppearanceChange) {
             this.drawAppearancePanelCharacterSprites();
+            return;
+        }
+
+        if (this.showRecoverChange) {
+            this.drawRecoverCreatePanel();
             return;
         }
 
@@ -13122,23 +13544,29 @@ class mudclient extends GameConnection {
         }
 
         y += 15;
-        this.surface.drawString('To change your contact details,', x, y, 0, 0xffffff);
-        y += 15;
-        this.surface.drawString('password, recovery questions, etc..', x, y, 0, 0xffffff);
-        y += 15;
-        this.surface.drawString('please select \'account management\'', x, y, 0, 0xffffff);
+        y += 5;
+        this.surface.drawString('Security settings', x, y, 1, 0);
         y += 15;
 
-        if (this.referid === 0) {
-            this.surface.drawString('from the runescape.com front page', x, y, 0, 0xffffff);
-        } else if (this.referid === 1) {
-            this.surface.drawString('from the link below the gamewindow', x, y, 0, 0xffffff);
-        } else {
-            this.surface.drawString('from the runescape front webpage', x, y, 0, 0xffffff);
+        let textColour = 0xffffff;
+
+        if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4) {
+            textColour = 0xffff00;
         }
 
+        this.surface.drawString('Change password', x, y, 1, textColour);
+
         y += 15;
-        y += 5;
+        textColour = 0xffffff;
+
+        if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4) {
+            textColour = 0xffff00;
+        }
+
+        this.surface.drawString('Change recovery questions', x, y, 1, textColour);
+        y += 15;
+
+        y += 15;
         this.surface.drawString('Privacy settings. Will be applied to', uiX + 3, y, 1, 0);
         y += 15;
         this.surface.drawString('all people not on your friends list', uiX + 3, y, 1, 0);
@@ -13180,13 +13608,13 @@ class mudclient extends GameConnection {
         y += 5;
         this.surface.drawString('Always logout when you finish', x, y, 1, 0);
         y += 15;
-        let k1 = 0xffffff;
+        textColour = 0xffffff;
 
         if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4) {
-            k1 = 0xffff00;
+            textColour = 0xffff00;
         }
 
-        this.surface.drawString('Click here to logout', uiX + 3, y, 1, k1);
+        this.surface.drawString('Click here to logout', uiX + 3, y, 1, textColour);
 
         if (!flag) {
             return;
@@ -13196,13 +13624,13 @@ class mudclient extends GameConnection {
         let mouseY = this.mouseY - 36;
 
         if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 265) {
-            let l1 = this.surface.width2 - 199;
-            let byte0 = 36;
-            let c1 = 196;// '\304';
-            let l = l1 + 3;
-            let j1 = byte0 + 30;
+            uiX = this.surface.width2 - 199;
+            uiY = 36;
+            uiWidth = 196;
+            x = uiX + 3;
+            y = uiY + 30;
 
-            if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.optionCameraModeAuto = !this.optionCameraModeAuto;
                 this.clientStream.newPacket(C_OPCODES.SETTINGS_GAME);
                 this.clientStream.putByte(0);
@@ -13210,9 +13638,9 @@ class mudclient extends GameConnection {
                 this.clientStream.sendPacket();
             }
 
-            j1 += 15;
+            y += 15;
 
-            if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.optionMouseButtonOne = !this.optionMouseButtonOne;
                 this.clientStream.newPacket(C_OPCODES.SETTINGS_GAME);
                 this.clientStream.putByte(2);
@@ -13220,9 +13648,9 @@ class mudclient extends GameConnection {
                 this.clientStream.sendPacket();
             }
 
-            j1 += 15;
+            y += 15;
 
-            if (this.members && this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.members && this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.optionSoundDisabled = !this.optionSoundDisabled;
                 this.clientStream.newPacket(C_OPCODES.SETTINGS_GAME);
                 this.clientStream.putByte(3);
@@ -13230,56 +13658,68 @@ class mudclient extends GameConnection {
                 this.clientStream.sendPacket();
             }
 
-            j1 += 15;
-            j1 += 15;
-            j1 += 15;
-            j1 += 15;
-            j1 += 15;
+            y += 15;
+            y += 20;
 
-            let flag1 = false;
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
+                this.showChangePasswordStep = 6;
+                this.inputTextCurrent = '';
+                this.inputTextFinal = '';
+            }
 
-            j1 += 35;
+            y += 15;
 
-            if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
+                this.clientStream.newPacket(C_OPCODES.RECOVER_SET_REQUEST);
+                this.clientStream.sendPacket();
+            }
+
+            y += 15;
+            y += 15;
+
+            let changedPrivacySetting = false;
+            y += 35;
+
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.settingsBlockChat = 1 - this.settingsBlockChat;
-                flag1 = true;
+                changedPrivacySetting = true;
             }
 
-            j1 += 15;
+            y += 15;
 
-            if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.settingsBlockPrivate = 1 - this.settingsBlockPrivate;
-                flag1 = true;
+                changedPrivacySetting = true;
             }
 
-            j1 += 15;
+            y += 15;
 
-            if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.settingsBlockTrade = 1 - this.settingsBlockTrade;
-                flag1 = true;
+                changedPrivacySetting = true;
             }
 
-            j1 += 15;
+            y += 15;
 
-            if (this.members && this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.members && this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.settingsBlockDuel = 1 - this.settingsBlockDuel;
-                flag1 = true;
+                changedPrivacySetting = true;
             }
 
-            j1 += 15;
+            y += 15;
 
-            if (flag1) {
+            if (changedPrivacySetting) {
                 this.sendPrivacySettings(this.settingsBlockChat, this.settingsBlockPrivate, this.settingsBlockTrade, this.settingsBlockDuel);
             }
 
-            j1 += 20;
+            y += 15;
 
-            if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
+            if (this.mouseX > x && this.mouseX < x + uiWidth && this.mouseY > y - 12 && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
                 this.sendLogout();
             }
-
-            this.mouseButtonClick = 0;
         }
+
+        this.mouseButtonClick = 0;
     }
 
     async loadTextures() {
@@ -15061,6 +15501,19 @@ class mudclient extends GameConnection {
                 return;
             }
 
+            if (opcode === S_OPCODES.RECOVER_OPEN) {
+                this.showRecoverChange = true;
+
+                for (let i = 0; i < 5; i++) {
+                    this.selectedRecoverIds[i] = i;
+                    this.selectedRecoverQuestions[i] = this.recoveryQuestions[i];
+                    this.panelRecoverCreate.updateText(this.controlRecoverNewAnswers[i], '');
+                    this.panelRecoverCreate.updateText(this.controlRecoverNewQuestions[i], i + 1 + ': ' + this.selectedRecoverQuestions[i]);
+                }
+                
+                return;
+            }
+
             if (opcode === S_OPCODES.BANK_OPEN) {
                 this.showDialogBank = true;
 
@@ -15377,6 +15830,7 @@ class mudclient extends GameConnection {
                     this.welcomeLastLoggedInDays = Utility.getUnsignedShort(pdata, 5);
                     this.welcomeRecoverySetDays = pdata[7] & 0xff;
                     this.welcomeUnreadMessages = Utility.getUnsignedShort(pdata, 8);
+                    this.welcomeTipDay = (Math.random() * 6) | 0;
                     this.showDialogWelcome = true;
                     this.welcomScreenAlreadyShown = true;
                     this.welcomeLastLoggedInHost = null;
@@ -16175,7 +16629,8 @@ class mudclient extends GameConnection {
                 let pass = this.panelLoginNewuser.getText(this.controlRegisterPassword);
                 let confPass = this.panelLoginNewuser.getText(this.controlRegisterConfirmPassword);
 
-                if (username === null || username.length <= 0 || pass === null || pass.length <= 0 || confPass === null || confPass.length <= 0) {
+                if (username == null || username.length === 0 || pass == null || pass.length === 0 || confPass == null || confPass.length === 0) {
+                    this.panelLoginNewuser.updateText(this.controlRegisterStatus, '@yel@Please fill in ALL requested information to continue!');
                     return;
                 }
 
@@ -16184,8 +16639,8 @@ class mudclient extends GameConnection {
                     return;
                 }
 
-                if (pass.length < 5 || pass.length > 20) {
-                    this.panelLoginNewuser.updateText(this.controlRegisterStatus, '@yel@Your password must be between 5 and 20 characters long.');
+                if (pass.length < 5) {
+                    this.panelLoginNewuser.updateText(this.controlRegisterStatus, '@yel@Your password must be at least 5 letters long');
                     return;
                 }
 
@@ -16217,6 +16672,125 @@ class mudclient extends GameConnection {
                 this.loginUser = this.panelLoginExistinguser.getText(this.controlLoginUser);
                 this.loginPass = this.panelLoginExistinguser.getText(this.controlLoginPass);
                 await this.login(this.loginUser, this.loginPass, false);
+            }
+
+            if (this.panelLoginExistinguser.isClicked(this.controlLoginRecover)) {
+                this.loginUser = this.panelLoginExistinguser.getText(this.controlLoginUser);
+
+                if (this.loginUser.trim().length === 0) {
+                    this.showLoginScreenStatus('You must enter your username to recover your password', '');
+                    return;
+                }
+            
+                this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+            
+                try {
+                    this.clientStream = new ClientStream(await this.createSocket(this.server, this.port), this);
+                    this.clientStream.maxReadTries = this.maxReadTries;
+                    this.clientStream.newPacket();
+                    this.clientStream.putLong(Utility.usernameToHash(this.loginUser));
+                    this.clientStream.flushPacket();
+
+                    let response = await this.clientStream.readStream();
+                    console.log('Getpq response: ' + response);
+
+                    if (response === 0) {
+                        this.showLoginScreenStatus('Sorry, the recovery questions for this user have not been set', '');
+                        return;
+                    }
+            
+                    for (let i = 0; i < 5; i++) {
+                        let length = this.clientStream.readStream(); 
+
+                        // TODO maybe the buffer can just be length?
+                        let buffer = new Int8Array(5000); 
+                        this.clientStream.readBytes(length, buffer);
+
+                        let question = fromCharArray(buffer.slice(0, length));
+                        this.panelRecoverUser.updateText(this.controlRecoverQuestions[i], question);
+                    }
+            
+                    if (this.recentRecoverFail) {
+                        this.showLoginScreenStatus('Sorry, you have already attempted 1 recovery, try again later', '');
+                        return;
+                    }
+            
+                    this.loginScreen = 3;
+                    this.panelRecoverUser.updateText(this.controlRecoverInfo1, '@yel@To prove this is your account please provide the answers to');
+                    this.panelRecoverUser.updateText(this.controlRecoverInfo2, '@yel@your security questions. YOu will then be able to reset your password');
+            
+                    for (let i = 0; i < 5; i++) {
+                        this.panelRecoverUser.updateText(this.controlRecoverAnswers[i], '');
+                    }
+            
+                    this.panelRecoverUser.updateText(this.controlRecoverOldPassword, '');
+                    this.panelRecoverUser.updateText(this.controlRecoverNewPassword, '');
+                    this.panelRecoverUser.updateText(this.controlRecoverConfirmPassword, '');
+                } catch (e) {
+                    this.showLoginScreenStatus('Sorry! Unable to connect.', 'Check leternet settings or try another world');
+                    return;
+                }
+            }
+        } else if (this.loginScreen === 3) {
+            this.panelRecoverUser.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
+
+            if (this.panelRecoverUser.isClicked(this.controlRecoverSubmit)) {
+                let pass = this.panelRecoverUser.getText(this.controlRecoverNewPassword);
+                let confirmPass = this.panelRecoverUser.getText(this.controlRecoverConfirmPassword);
+ 
+                if (pass.toLowerCase() !== confirmPass.toLowerCase()) {
+                    this.showLoginScreenStatus('@yel@The two new passwords entered are not the same as each other!', '');
+                    return;
+                }
+ 
+                if (pass.length < 5) {
+                    this.showLoginScreenStatus('@yel@Your new password must be at least 5 letters long', '');
+                    return;
+                }
+ 
+                this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+ 
+                try {
+                    this.clientStream = new ClientStream(await this.createSocket(this.server, this.port), this);
+                    this.clientStream.maxReadTries = this.maxReadTries;
+                    this.clientStream.newPacket(C_OPCODES.RECOVER_GET_QUESTIONS);
+                    this.clientStream.putLong(Utility.usernameToHash(this.loginUser));
+
+                    let oldPassword = Utility.formatAuthString(this.panelRecoverUser.getText(this.controlRecoverOldPassword), 20);
+                    this.clientStream.putString(oldPassword + Utility.formatAuthString(pass, 20));
+ 
+                    for (let i = 0; i < 5; i++) {
+                        this.clientStream.putLong(Utility.recoveryToHash(this.panelRecoverUser.getText(this.controlRecoverAnswers[i])));
+                    }
+ 
+                    this.clientStream.flushPacket();
+ 
+                    let response = await this.clientStream.readStream();
+                    console.log('Recover response: ' + response);
+
+                    if (response === 0) {
+                        this.loginScreen = 2;
+                        this.showLoginScreenStatus('Sorry, recovery failed. You may try again in 1 hour', '');
+                        this.recentRecoverFail = true;
+                        return;
+                    }
+ 
+                    if (response === 1) {
+                        this.loginScreen = 2;
+                        this.showLoginScreenStatus('Your pass has been reset. You may now use the new pass to login', '');
+                        return;
+                    }
+ 
+                    this.loginScreen = 2;
+                    this.showLoginScreenStatus('Recovery failed! Attempts exceeded?', '');
+                } catch (e) {
+                    this.showLoginScreenStatus('Sorry! Unable to connect.', 'Check internet settings or try another world');
+                    return;
+                }
+            }
+ 
+            if (this.panelRecoverUser.isClicked(this.controlRecoverCancel)) {
+                this.loginScreen = 0;
             }
         }
     }
@@ -16288,7 +16862,7 @@ class mudclient extends GameConnection {
 }
 
 module.exports = mudclient;
-},{"./chat-message":9,"./game-buffer":11,"./game-character":12,"./game-connection":13,"./game-data":14,"./game-model":15,"./lib/graphics/color":17,"./lib/graphics/font":18,"./opcodes/client":26,"./opcodes/server":27,"./panel":29,"./scene":32,"./stream-audio-player":33,"./surface":35,"./surface-sprite":34,"./utility":36,"./version":37,"./word-filter":38,"./world":39,"long":5}],26:[function(require,module,exports){
+},{"./chat-message":9,"./client-stream":10,"./game-buffer":11,"./game-character":12,"./game-connection":13,"./game-data":14,"./game-model":15,"./lib/graphics/color":17,"./lib/graphics/font":18,"./opcodes/client":26,"./opcodes/server":27,"./panel":29,"./scene":32,"./stream-audio-player":33,"./surface":35,"./surface-sprite":34,"./utility":36,"./version":37,"./word-filter":38,"./world":39,"long":5}],26:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -16302,6 +16876,7 @@ module.exports={
     "CAST_PLAYER": 229,
     "CAST_SELF": 137,
     "CAST_WALLOBJECT": 180,
+    "CHANGE_PASSWORD": 25,
     "CHAT": 216,
     "CHOOSE_OPTION": 116,
     "CLOSE_CONNECTION": 31,
@@ -16338,6 +16913,11 @@ module.exports={
     "PM": 218,
     "PRAYER_OFF": 254,
     "PRAYER_ON": 60,
+    "RECOVER_CANCEL": 196,
+    "RECOVER_GET_QUESTIONS": 233,
+    "RECOVER_REQUEST": 220,
+    "RECOVER_SET": 208,
+    "RECOVER_SET_REQUEST": 203,
     "REGISTER": 2,
     "REPORT_ABUSE": 206,
     "SESSION": 32,
@@ -16398,6 +16978,7 @@ module.exports={
     "PLAYER_STAT_UPDATE": 159,
     "PRAYER_STATUS": 206,
     "PRIVACY_SETTINGS": 51,
+    "RECOVER_OPEN": 224,
     "REGION_ENTITY_UPDATE": 211,
     "REGION_GROUND_ITEMS": 99,
     "REGION_NPCS": 79,
@@ -23843,7 +24424,7 @@ class Utility {
     }
 
     static getUnsignedLong(buff, off) {
-        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff);
+        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(new Long(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff));
     }
 
     static getSignedShort(abyte0, i) {
@@ -23909,6 +24490,25 @@ class Utility {
 
     static ipToString(i) {
         return (i >> 24 & 0xff) + '.' + (i >> 16 & 0xff) + '.' + (i >> 8 & 0xff) + '.' + (i & 0xff);
+    }
+
+    static recoveryToHash(answer) {
+        answer = answer.trim();
+        answer = answer.toLowerCase();
+        let hash = new Long(0);
+        let var3 = 0;
+
+        for (let i = 0; i < answer.length; i++) {
+            let c = answer.charCodeAt(i);
+
+            if (c >= C_A && c <= C_Z || c >= C_0 && c <= C_9) {
+                hash = hash.multiply(47).multiply(hash.subtract(c * 6).subtract(var3 * 7));
+                hash = hash.add(c - 32 + var3 * c);
+                var3++;
+            }
+        }
+
+        return hash;
     }
 
     static usernameToHash(s) {

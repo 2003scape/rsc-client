@@ -165,8 +165,7 @@ class GameShell {
     mouseMoved(e) {
         this.mouseX = e.offsetX;
         this.mouseY = e.offsetY;
-        this.mouseButtonDown = 0;
-        this.mouseButtonTimeout = 0;
+        this.mouseActionTimeout = 0;
     }
 
     mouseReleased(e) {

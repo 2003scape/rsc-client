@@ -27,7 +27,7 @@ class Utility {
     }
 
     static getUnsignedLong(buff, off) {
-        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff);
+        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(new Long(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff));
     }
 
     static getSignedShort(abyte0, i) {
@@ -93,6 +93,25 @@ class Utility {
 
     static ipToString(i) {
         return (i >> 24 & 0xff) + '.' + (i >> 16 & 0xff) + '.' + (i >> 8 & 0xff) + '.' + (i & 0xff);
+    }
+
+    static recoveryToHash(answer) {
+        answer = answer.trim();
+        answer = answer.toLowerCase();
+        let hash = new Long(0);
+        let var3 = 0;
+
+        for (let i = 0; i < answer.length; i++) {
+            let c = answer.charCodeAt(i);
+
+            if (c >= C_A && c <= C_Z || c >= C_0 && c <= C_9) {
+                hash = hash.multiply(47).multiply(hash.subtract(c * 6).subtract(var3 * 7));
+                hash = hash.add(c - 32 + var3 * c);
+                var3++;
+            }
+        }
+
+        return hash;
     }
 
     static usernameToHash(s) {

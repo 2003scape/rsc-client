@@ -5202,6 +5202,16 @@ class GameShell {
             this.inputPmFinal = this.inputPmCurrent;
         }
 
+        if (code === KEYCODES.BACKSPACE) {
+            if (this.inputTextCurrent.length > 0) {
+                this.inputTextCurrent = this.inputTextCurrent.substring(0, this.inputTextCurrent.length - 1);
+            }
+
+            if (this.inputPmCurrent.length > 0) {
+                this.inputPmCurrent = this.inputPmCurrent.substring(0, this.inputPmCurrent.length - 1);
+            }
+        }
+
         return false;
     }
 

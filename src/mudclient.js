@@ -2299,7 +2299,6 @@ class mudclient extends GameConnection {
 
         if (this.optionCameraModeAuto) {
             if (this.anInt707 === 0 || this.cameraAutoAngleDebug) {
-
                 if (this.keyLeft) {
                     this.cameraAngle = this.cameraAngle + 1 & 7;
                     this.keyLeft = false;
@@ -2342,6 +2341,10 @@ class mudclient extends GameConnection {
             this.cameraRotation = this.cameraRotation + 2 & 0xff;
         } else if (this.keyRight) {
             this.cameraRotation = this.cameraRotation - 2 & 0xff;
+        }
+
+        if (this.options.middleClickCamera && this.middleButtonDown) {
+            this.cameraRotation = (this.originRotation + ((this.mouseX - this.originMouseX) / 2)) & 0xff;
         }
 
         if (this.fogOfWar && this.cameraZoom > 550) {
@@ -4404,7 +4407,7 @@ class mudclient extends GameConnection {
             this.experienceArray[level] = totalExp & 0xffffffc;
         }
 
-        this.port = 43595;
+        this.port = this.port || 43595;
         this.maxReadTries = 1000;
         GameConnection.clientVersion = VERSION.CLIENT;
 

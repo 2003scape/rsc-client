@@ -10,6 +10,8 @@ if (typeof window === 'undefined') {
     const args = window.location.hash.slice(1).split(',');
     const mc = new mudclient(mcCanvas);
 
+    mc.options.middleClickCamera = true;
+
     mc.members = args[0] === 'members';
     mc.server = args[1] ? args[1] : '127.0.0.1';
     mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
@@ -5078,6 +5080,12 @@ class GameShell {
         this._canvas = canvas;
         this._graphics = new Graphics(this._canvas);
 
+        this.options = {
+            middleClickCamera: false
+        };
+
+        this.middleButtonDown = false;
+
         this.mouseActionTimeout = 0;
         this.loadingStep = 0;
         this.logoHeaderText = null;
@@ -5128,7 +5136,6 @@ class GameShell {
 
         GameShell.gameFrame = this._canvas.getContext('2d');
 
-        //this._canvas.addEventListener('drag', this.mouseDragged.bind(this));
         this._canvas.addEventListener('mousedown', this.mousePressed.bind(this));
         this._canvas.addEventListener('contextmenu', this.mousePressed.bind(this));
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
@@ -5245,6 +5252,10 @@ class GameShell {
         this.mouseX = e.offsetX;
         this.mouseY = e.offsetY;
         this.mouseButtonDown = 0;
+
+        if (e.button === 1) {
+            this.middleButtonDown = false;
+        }
     }
 
     mousePressed(e) {
@@ -5255,6 +5266,13 @@ class GameShell {
 
         this.mouseX = x;
         this.mouseY = y;
+
+        if (this.options.middleClickCamera && e.button === 1) {
+            this.middleButtonDown = true;
+            this.originRotation = this.cameraRotation;
+            this.originMouseX = this.mouseX;
+            return false;
+        }
 
         if (e.metaKey || e.button === 2) {
             this.mouseButtonDown = 2;
@@ -5267,17 +5285,6 @@ class GameShell {
         this.handleMouseDown(this.mouseButtonDown, x, y);
 
         return false;
-    }
-
-    mouseDragged(e) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
-
-        if (e.metaKey || e.button === 2) {
-            this.mouseButtonDown = 2;
-        } else {
-            this.mouseButtonDown = 1;
-        }
     }
 
     start() {
@@ -9296,7 +9303,6 @@ class mudclient extends GameConnection {
 
         if (this.optionCameraModeAuto) {
             if (this.anInt707 === 0 || this.cameraAutoAngleDebug) {
-
                 if (this.keyLeft) {
                     this.cameraAngle = this.cameraAngle + 1 & 7;
                     this.keyLeft = false;
@@ -9339,6 +9345,10 @@ class mudclient extends GameConnection {
             this.cameraRotation = this.cameraRotation + 2 & 0xff;
         } else if (this.keyRight) {
             this.cameraRotation = this.cameraRotation - 2 & 0xff;
+        }
+
+        if (this.options.middleClickCamera && this.middleButtonDown) {
+            this.cameraRotation = (this.originRotation + ((this.mouseX - this.originMouseX) / 2)) & 0xff;
         }
 
         if (this.fogOfWar && this.cameraZoom > 550) {
@@ -11401,7 +11411,7 @@ class mudclient extends GameConnection {
             this.experienceArray[level] = totalExp & 0xffffffc;
         }
 
-        this.port = 43595;
+        this.port = this.port || 43595;
         this.maxReadTries = 1000;
         GameConnection.clientVersion = VERSION.CLIENT;
 

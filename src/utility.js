@@ -58,7 +58,7 @@ class Utility {
             len -= l;
         }
 
-        if (len == l) {
+        if (len === l) {
             i1 += buff[k] & Utility.bitmask[l];
         } else {
             i1 += buff[k] >> l - len & Utility.bitmask[len];

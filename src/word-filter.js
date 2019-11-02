@@ -950,7 +950,7 @@ class WordFilter {
         let first = 0;
         let last = WordFilter.hashFragments.length - 1;
 
-        if (inputHash === WordFilter.hashFragments[first] || inputHash == WordFilter.hashFragments[last]) {
+        if (inputHash === WordFilter.hashFragments[first] || inputHash === WordFilter.hashFragments[last]) {
             return true;
         }
 
@@ -983,7 +983,7 @@ class WordFilter {
 
             if (c >= C_A && c <= C_Z) {
                 hash = (hash * 38 + c - 97 + 1) | 0;
-            } else if (c == C_SINGLE_QUOTE) {
+            } else if (c === C_SINGLE_QUOTE) {
                 hash = (hash * 38 + 27) | 0;
             } else if (c >= C_0 && c <= C_9) {
                 hash = (hash * 38 + c - 48 + 28) | 0;

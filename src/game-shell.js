@@ -108,15 +108,15 @@ class GameShell {
 
         if (code === KEYCODES.LEFT_ARROW) {
             this.keyLeft = true;
-        } else if (code == KEYCODES.RIGHT_ARROW) {
+        } else if (code === KEYCODES.RIGHT_ARROW) {
             this.keyRight = true;
-        } else if (code == KEYCODES.UP_ARROW) {
+        } else if (code === KEYCODES.UP_ARROW) {
             this.keyUp = true;
-        } else if (code == KEYCODES.DOWN_ARROW) {
+        } else if (code === KEYCODES.DOWN_ARROW) {
             this.keyDown = true;
-        } else if (code == KEYCODES.SPACE) {
+        } else if (code === KEYCODES.SPACE) {
             this.keySpace = true;
-        } else if (code == KEYCODES.F1) {
+        } else if (code === KEYCODES.F1) {
             this.interlace = !this.interlace;
         }
     
@@ -164,13 +164,13 @@ class GameShell {
 
         if (code === KEYCODES.LEFT_ARROW) {
             this.keyLeft = false;
-        } else if (code == KEYCODES.RIGHT_ARROW) {
+        } else if (code === KEYCODES.RIGHT_ARROW) {
             this.keyRight = false;
-        } else if (code == KEYCODES.UP_ARROW) {
+        } else if (code === KEYCODES.UP_ARROW) {
             this.keyUp = false;
-        } else if (code == KEYCODES.DOWN_ARROW) {
+        } else if (code === KEYCODES.DOWN_ARROW) {
             this.keyDown = false;
-        } else if (code == KEYCODES.SPACE) {
+        } else if (code === KEYCODES.SPACE) {
             this.keySpace = false;
         }
 

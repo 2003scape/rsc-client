@@ -232,7 +232,7 @@ class Panel {
             }
         }
 
-        if (this.controlType[control] == CONTROL_TYPES.LIST_INPUT) {
+        if (this.controlType[control] === CONTROL_TYPES.LIST_INPUT) {
             if (this.mouseLastButtonDown === 1 && this.mouseX >= x && this.mouseY >= y - ((height / 2) | 0) && this.mouseX <= x + width && this.mouseY <= y + ((height / 2) | 0)) {
                 this.focusControlIndex = control;
             }
@@ -337,6 +337,7 @@ class Panel {
             if (this.mouseButtonDown === 1 && (this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12 || this.mouseX >= cornerTopRight - 12 && this.mouseX <= cornerTopRight + 24 && this.controlListScrollbarHandleDragged[control])) {
                 if (this.mouseY > y + 12 && this.mouseY < (y + height) - 12) {
                     this.controlListScrollbarHandleDragged[control] = true;
+
                     let l3 = this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
                     l1 = ((l3 * listEntryCount) / (height - 24)) | 0;
 
@@ -500,7 +501,7 @@ class Panel {
                 this.controlFlashText[control] = l1;
             }
 
-            if (this.mouseButtonDown == 1 && (this.mouseX >= right && this.mouseX <= right + 12 || this.mouseX >= right - 12 && this.mouseX <= right + 24 && this.controlListScrollbarHandleDragged[control])) {
+            if (this.mouseButtonDown === 1 && (this.mouseX >= right && this.mouseX <= right + 12 || this.mouseX >= right - 12 && this.mouseX <= right + 24 && this.controlListScrollbarHandleDragged[control])) {
                 if (this.mouseY > y + 12 && this.mouseY < (y + height) - 12) {
                     this.controlListScrollbarHandleDragged[control] = true;
 

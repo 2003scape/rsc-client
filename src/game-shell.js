@@ -17,7 +17,8 @@ class GameShell {
 
         this.options = {
             middleClickCamera: false,
-            scrollWheel: false
+            mouseWheel: false,
+            resetCompass: false
         };
 
         this.middleButtonDown = false;

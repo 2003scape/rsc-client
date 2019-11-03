@@ -2353,6 +2353,8 @@ class mudclient extends GameConnection {
             this.cameraZoom += 4;
         }
 
+        //console.log(this.cameraZoom);
+
         if (this.mouseClickXStep > 0) {
             this.mouseClickXStep--;
         } else if (this.mouseClickXStep < 0) {
@@ -2858,6 +2860,12 @@ class mudclient extends GameConnection {
 
         let mouseX = this.mouseX - (this.surface.width2 - 199);
         let mouseY = this.mouseY - 36;
+
+        if (this.options.resetCompass && this.mouseButtonClick === 1 && mouseX > 42 && mouseX < 75 && mouseY > 3 && mouseY < 36) {
+            this.cameraRotation = 128;
+            this.mouseButtonClick = 0;
+            return;
+        }
 
         if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
             let c1 = 156;
@@ -4460,8 +4468,10 @@ class mudclient extends GameConnection {
         }
 
         this.scene = new Scene(this.surface, 15000, 15000, 1000);
+
         // this used to be in scene's constructor
         this.scene.view = GameModel._from2(1000 * 1000, 1000); 
+
         this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, this.const_9);
         this.scene.clipFar3d = 2400;
         this.scene.clipFar2d = 2400;

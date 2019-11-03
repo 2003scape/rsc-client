@@ -16,10 +16,12 @@ class GameShell {
         this._graphics = new Graphics(this._canvas);
 
         this.options = {
-            middleClickCamera: false
+            middleClickCamera: false,
+            scrollWheel: false
         };
 
         this.middleButtonDown = false;
+        this.mouseScrollDelta = 0;
 
         this.mouseActionTimeout = 0;
         this.loadingStep = 0;
@@ -75,6 +77,8 @@ class GameShell {
         this._canvas.addEventListener('contextmenu', this.mousePressed.bind(this));
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
         this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
+        this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
+        this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
         window.addEventListener('keydown', this.keyPressed.bind(this));
         window.addEventListener('keyup', this.keyReleased.bind(this));
@@ -193,6 +197,13 @@ class GameShell {
         }
     }
 
+    mouseOut(e) {
+        this.mouseX = e.offsetX;
+        this.mouseY = e.offsetY;
+        this.mouseButtonDown = 0;
+        this.middleButtonDown = false;
+    }
+
     mousePressed(e) {
         e.preventDefault();
 
@@ -218,6 +229,24 @@ class GameShell {
         this.lastMouseButtonDown = this.mouseButtonDown;
         this.mouseActionTimeout = 0;
         this.handleMouseDown(this.mouseButtonDown, x, y);
+
+        return false;
+    }
+
+    mouseWheel(e) {
+        if (!this.options.mouseWheel) {
+            return;
+        }
+
+        e.preventDefault();
+
+        if (e.deltaMode === 0) {
+            // deltaMode === 0 means deltaY/deltaY is given in pixels (chrome)
+            this.mouseScrollDelta = Math.floor(e.deltaY / 14);
+        } else if (e.deltaMode === 1) {
+            // deltaMode === 1 means deltaY/deltaY is given in lines (firefox)
+            this.mouseScrollDelta = Math.floor(e.deltaY);
+        }
 
         return false;
     }
@@ -326,6 +355,8 @@ class GameShell {
             this.interlaceTimer--;
             i1 &= 0xff;
             this.draw();
+
+            this.mouseScrollDelta = 0;
         }
     }
 

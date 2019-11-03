@@ -1378,7 +1378,7 @@ class mudclient extends GameConnection {
         uiY = this.mouseY - 36;
 
         if (uiX >= 0 && uiY >= 0 && uiX < 196 && uiY < 182) {
-            this.panelSocialList.handleMouse(uiX + (this.surface.width2 - 199), uiY + 36, this.lastMouseButtonDown, this.mouseButtonDown);
+            this.panelSocialList.handleMouse(uiX + (this.surface.width2 - 199), uiY + 36, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
 
             if (uiY <= 24 && this.mouseButtonClick === 1) {
                 if (uiX < 98 && this.uiTabSocialSubTab === 1) {
@@ -2220,7 +2220,7 @@ class mudclient extends GameConnection {
             this.mouseButtonDown = 0;
         }
 
-        this.panelMessageTabs.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
+        this.panelMessageTabs.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
 
         if (this.messageTabSelected > 0 && this.mouseX >= 494 && this.mouseY >= this.gameHeight - 66) {
             this.lastMouseButtonDown = 0;
@@ -2343,7 +2343,7 @@ class mudclient extends GameConnection {
             this.cameraRotation = this.cameraRotation - 2 & 0xff;
         }
 
-        if (this.options.middleClickCamera && this.middleButtonDown) {
+        if (!this.optionCameraModeAuto && this.options.middleClickCamera && this.middleButtonDown) {
             this.cameraRotation = (this.originRotation + ((this.mouseX - this.originMouseX) / 2)) & 0xff;
         }
 
@@ -4622,7 +4622,7 @@ class mudclient extends GameConnection {
         let mouseY = this.mouseY - 36;
 
         if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 182) {
-            this.panelMagic.handleMouse(mouseX + (this.surface.width2 - 199), mouseY + 36, this.lastMouseButtonDown, this.mouseButtonDown);
+            this.panelMagic.handleMouse(mouseX + (this.surface.width2 - 199), mouseY + 36, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
 
             if (mouseY <= 24 && this.mouseButtonClick === 1) {
                 if (mouseX < 98 && this.tabMagicPrayer === 1) {
@@ -8498,7 +8498,7 @@ class mudclient extends GameConnection {
 
         if (mouseX >= 0 && mouseY >= 0 && mouseX < uiWidth && mouseY < uiHeight) {
             if (this.uiTabPlayerInfoSubTab === 1) {
-                this.panelQuestList.handleMouse(mouseX + (this.surface.width2 - 199), mouseY + 36, this.lastMouseButtonDown, this.mouseButtonDown);
+                this.panelQuestList.handleMouse(mouseX + (this.surface.width2 - 199), mouseY + 36, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
             }
 
             if (mouseY <= 24 && this.mouseButtonClick === 1) {

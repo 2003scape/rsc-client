@@ -20,11 +20,13 @@ const CONTROL_TYPES = {
 class Panel {
     constructor(surface, max) {
         this.controlCount = 0;
+
         this.mouseX = 0;
         this.mouseY = 0;
         this.mouseLastButtonDown = 0;
         this.mouseButtonDown = 0;
         this.mouseMetaButtonHeld = 0;
+        this.mouseScrollDelta = 0;
 
         this.focusControlIndex = -1;
         this.aBoolean219 = true;
@@ -74,10 +76,11 @@ class Panel {
         return Surface.rgbToLong(((Panel.redMod * i) / 114) | 0, ((Panel.greenMod * j) / 114) | 0, ((Panel.blueMod * k) / 176) | 0);
     }
 
-    handleMouse(mx, my, lastMb, mbDown) {
+    handleMouse(mx, my, lastMb, mbDown, mScrollDelta = 0) {
         this.mouseX = mx;
         this.mouseY = my;
         this.mouseButtonDown = mbDown;
+        this.mouseScrollDelta = mScrollDelta;
 
         if (lastMb !== 0) {
             this.mouseLastButtonDown = lastMb;
@@ -85,11 +88,11 @@ class Panel {
 
         if (lastMb === 1) {
             for (let i1 = 0; i1 < this.controlCount; i1++) {
-                if (this.controlShown[i1] && this.controlType[i1] === 10 && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
+                if (this.controlShown[i1] && this.controlType[i1] === CONTROL_TYPES.BUTTON && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
                     this.controlClicked[i1] = true;
                 }
 
-                if (this.controlShown[i1] && this.controlType[i1] === 14 && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
+                if (this.controlShown[i1] && this.controlType[i1] === CONTROL_TYPES.CHECKBOX && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
                     this.controlListEntryMouseButtonDown[i1] = 1 - this.controlListEntryMouseButtonDown[i1];
                 }
             }
@@ -299,18 +302,19 @@ class Panel {
         this.surface.drawLineHoriz(x, y, width, 0xffffff);
     }
 
-    drawTextList(control, x, y, width, height, textSize, listEntries, listEntryCount, l1) {
+    drawTextList(control, x, y, width, height, textSize, listEntries, listEntryCount, listEntryPosition) {
         let displayedEntryCount = (height / this.surface.textHeight(textSize)) | 0;
+        let maxEntries = listEntryCount - displayedEntryCount;
 
-        if (l1 > listEntryCount - displayedEntryCount) {
-            l1 = listEntryCount - displayedEntryCount;
+        if (listEntryPosition > maxEntries) {
+            listEntryPosition = maxEntries;
         }
 
-        if (l1 < 0) {
-            l1 = 0;
+        if (listEntryPosition < 0) {
+            listEntryPosition = 0;
         }
 
-        this.controlFlashText[control] = l1;
+        this.controlFlashText[control] = listEntryPosition;
 
         if (displayedEntryCount < listEntryCount) {
             let cornerTopRight = (x + width) - 12;
@@ -320,18 +324,30 @@ class Panel {
                 cornerBottomLeft = 6;
             }
 
-            let j3 = (((height - 27 - cornerBottomLeft) * l1) / (listEntryCount - displayedEntryCount)) | 0;
+            let j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / maxEntries) | 0;
+
+            if (this.mouseScrollDelta !== 0 && this.mouseX > x && this.mouseX < (x + width) && this.mouseY > y && this.mouseY < (y + height)) {
+                listEntryPosition += this.mouseScrollDelta;
+
+                if (listEntryPosition < 0) {
+                    listEntryPosition = 0;
+                } else if (listEntryPosition > maxEntries) {
+                    listEntryPosition = maxEntries;
+                }
+
+                this.controlFlashText[control] = listEntryPosition;
+            }
 
             if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) {
-                if (this.mouseY > y && this.mouseY < y + 12 && l1 > 0) {
-                    l1--;
+                if (this.mouseY > y && this.mouseY < y + 12 && listEntryPosition > 0) {
+                    listEntryPosition--;
                 }
 
-                if (this.mouseY > (y + height) - 12 && this.mouseY < y + height && l1 < listEntryCount - displayedEntryCount) {
-                    l1++;
+                if (this.mouseY > (y + height) - 12 && this.mouseY < y + height && listEntryPosition < listEntryCount - displayedEntryCount) {
+                    listEntryPosition++;
                 }
 
-                this.controlFlashText[control] = l1;
+                this.controlFlashText[control] = listEntryPosition;
             }
 
             if (this.mouseButtonDown === 1 && (this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12 || this.mouseX >= cornerTopRight - 12 && this.mouseX <= cornerTopRight + 24 && this.controlListScrollbarHandleDragged[control])) {
@@ -339,30 +355,30 @@ class Panel {
                     this.controlListScrollbarHandleDragged[control] = true;
 
                     let l3 = this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
-                    l1 = ((l3 * listEntryCount) / (height - 24)) | 0;
+                    listEntryPosition = ((l3 * listEntryCount) / (height - 24)) | 0;
 
-                    if (l1 > listEntryCount - displayedEntryCount) {
-                        l1 = listEntryCount - displayedEntryCount;
+                    if (listEntryPosition > maxEntries) {
+                        listEntryPosition = maxEntries;
                     }
 
-                    if (l1 < 0) {
-                        l1 = 0;
+                    if (listEntryPosition < 0) {
+                        listEntryPosition = 0;
                     }
 
-                    this.controlFlashText[control] = l1;
+                    this.controlFlashText[control] = listEntryPosition;
                 }
             } else {
                 this.controlListScrollbarHandleDragged[control] = false;
             }
 
-            j3 = (((height - 27 - cornerBottomLeft) * l1) / (listEntryCount - displayedEntryCount)) | 0;
+            j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / (listEntryCount - displayedEntryCount)) | 0;
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
         
         let entryListStartY = height - displayedEntryCount * this.surface.textHeight(textSize);
         let y2 = y + ((this.surface.textHeight(textSize) * 5) / 6 + entryListStartY / 2) | 0;
 
-        for (let entry = l1; entry < listEntryCount; entry++) {
+        for (let entry = listEntryPosition; entry < listEntryCount; entry++) {
             this.drawString(control, x + 2, y2, listEntries[entry], textSize);
             y2 += this.surface.textHeight(textSize) - Panel.textListEntryHeightMod;
 
@@ -476,65 +492,79 @@ class Panel {
         }
     }
 
-    drawTextListInteractive(control, x, y, width, height, textSize, listEntries, listEntryCount, l1) {
+    drawTextListInteractive(control, x, y, width, height, textSize, listEntries, listEntryCount, listEntryPosition) {
         let displayedEntryCount = (height / this.surface.textHeight(textSize)) | 0;
+        let maxEntries = listEntryCount - displayedEntryCount;
 
         if (displayedEntryCount < listEntryCount) {
-            let right = (x + width) - 12;
-            let l2 = (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
+            let cornerTopRight = (x + width) - 12;
+            let cornerBottomLeft = (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
 
-            if (l2 < 6) {
-                l2 = 6;
+            if (cornerBottomLeft < 6) {
+                cornerBottomLeft = 6;
             }
 
-            let j3 = (((height - 27 - l2) * l1) / (listEntryCount - displayedEntryCount)) | 0;
+            let j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / maxEntries) | 0;
 
-            if (this.mouseButtonDown === 1 && this.mouseX >= right && this.mouseX <= right + 12) { 
-                if (this.mouseY > y && this.mouseY < y + 12 && l1 > 0) {
-                    l1--;
+            if (this.mouseScrollDelta !== 0 && this.mouseX > x && this.mouseX < (x + width) && this.mouseY > y && this.mouseY < (y + height)) {
+                listEntryPosition += this.mouseScrollDelta;
+
+                if (listEntryPosition < 0) {
+                    listEntryPosition = 0;
+                } else if (listEntryPosition > maxEntries) {
+                    listEntryPosition = maxEntries;
                 }
 
-                if (this.mouseY > (y + height) - 12 && this.mouseY < y + height && l1 < listEntryCount - displayedEntryCount) {
-                    l1++;
-                }
-
-                this.controlFlashText[control] = l1;
+                this.controlFlashText[control] = listEntryPosition;
             }
 
-            if (this.mouseButtonDown === 1 && (this.mouseX >= right && this.mouseX <= right + 12 || this.mouseX >= right - 12 && this.mouseX <= right + 24 && this.controlListScrollbarHandleDragged[control])) {
+            // the up and down arrow buttons on the scrollbar
+            if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) { 
+                if (this.mouseY > y && this.mouseY < y + 12 && listEntryPosition > 0) {
+                    listEntryPosition--;
+                }
+
+                if (this.mouseY > (y + height) - 12 && this.mouseY < y + height && listEntryPosition < maxEntries) {
+                    listEntryPosition++;
+                }
+
+                this.controlFlashText[control] = listEntryPosition;
+            }
+
+            // handle the thumb/middle section dragging of the scrollbar
+            if (this.mouseButtonDown === 1 && (this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12 || this.mouseX >= cornerTopRight - 12 && this.mouseX <= cornerTopRight + 24 && this.controlListScrollbarHandleDragged[control])) {
                 if (this.mouseY > y + 12 && this.mouseY < (y + height) - 12) {
                     this.controlListScrollbarHandleDragged[control] = true;
 
-                    let l3 = this.mouseY - y - 12 - ((l2 / 2) | 0);
-                    l1 = ((l3 * listEntryCount) / (height - 24)) | 0;
+                    let l3 = this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
+                    listEntryPosition = ((l3 * listEntryCount) / (height - 24)) | 0;
 
-                    if (l1 < 0) {
-                        l1 = 0;
+                    if (listEntryPosition < 0) {
+                        listEntryPosition = 0;
                     }
 
-                    if (l1 > listEntryCount - displayedEntryCount) {
-                        l1 = listEntryCount - displayedEntryCount;
+                    if (listEntryPosition > maxEntries) {
+                        listEntryPosition = maxEntries;
                     }
 
-                    this.controlFlashText[control] = l1;
+                    this.controlFlashText[control] = listEntryPosition;
                 }
             } else {
                 this.controlListScrollbarHandleDragged[control] = false;
             }
 
-            j3 = (((height - 27 - l2) * l1) / (listEntryCount - displayedEntryCount)) | 0;
-            this.drawListContainer(x, y, width, height, j3, l2);
+            j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / maxEntries) | 0;
+            this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         } else {
-            l1 = 0;
+            listEntryPosition = 0;
             this.controlFlashText[control] = 0;
         }
 
         this.controlListEntryMouseOver[control] = -1;
         let k2 = height - displayedEntryCount * this.surface.textHeight(textSize);
         let i3 = y + (((((this.surface.textHeight(textSize) * 5) / 6) | 0) + k2 / 2) | 0);
-        
 
-        for (let k3 = l1; k3 < listEntryCount; k3++) {
+        for (let k3 = listEntryPosition; k3 < listEntryCount; k3++) {
             let i4;
 
             if (this.controlUseAlternativeColour[control]) {

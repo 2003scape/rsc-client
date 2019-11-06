@@ -18,7 +18,9 @@ class GameShell {
         this.options = {
             middleClickCamera: false,
             mouseWheel: false,
-            resetCompass: false
+            resetCompass: false,
+            zoomCamera: false,
+            showRoofs: true
         };
 
         this.middleButtonDown = false;
@@ -55,6 +57,9 @@ class GameShell {
         this.keyUp = false;
         this.keyDown = false;
         this.keySpace = false;
+        this.keyHome = false;
+        this.keyPgUp = false;
+        this.keyPgDown = false;
         this.threadSleep = 1;
         this.interlace = false;
         this.inputTextCurrent = '';
@@ -123,6 +128,12 @@ class GameShell {
             this.keySpace = true;
         } else if (code === KEYCODES.F1) {
             this.interlace = !this.interlace;
+        } else if (code === KEYCODES.HOME) {
+            this.keyHome = true;
+        } else if (code === KEYCODES.PAGE_UP) {
+            this.keyPgUp = true;
+        } else if (code === KEYCODES.PAGE_DOWN) {
+            this.keyPgDown = true;
         }
     
         let foundText = false;
@@ -177,6 +188,12 @@ class GameShell {
             this.keyDown = false;
         } else if (code === KEYCODES.SPACE) {
             this.keySpace = false;
+        } else if (code === KEYCODES.HOME) {
+            this.keyHome = false;
+        } else if (code === KEYCODES.PAGE_UP) {
+            this.keyPgUp = false;
+        } else if (code === KEYCODES.PAGE_DOWN) {
+            this.keyPgDown = false;
         }
 
         return false;

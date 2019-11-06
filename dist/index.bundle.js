@@ -10,9 +10,12 @@ if (typeof window === 'undefined') {
     const args = window.location.hash.slice(1).split(',');
     const mc = new mudclient(mcCanvas);
 
+    window.mcOptions = mc.options;
+
     mc.options.middleClickCamera = true;
     mc.options.mouseWheel = true;
     mc.options.resetCompass = true;
+    mc.options.zoomCamera = true;
 
     mc.members = args[0] === 'members';
     mc.server = args[1] ? args[1] : '127.0.0.1';
@@ -5085,7 +5088,9 @@ class GameShell {
         this.options = {
             middleClickCamera: false,
             mouseWheel: false,
-            resetCompass: false
+            resetCompass: false,
+            zoomCamera: false,
+            showRoofs: true
         };
 
         this.middleButtonDown = false;
@@ -5122,6 +5127,9 @@ class GameShell {
         this.keyUp = false;
         this.keyDown = false;
         this.keySpace = false;
+        this.keyHome = false;
+        this.keyPgUp = false;
+        this.keyPgDown = false;
         this.threadSleep = 1;
         this.interlace = false;
         this.inputTextCurrent = '';
@@ -5190,6 +5198,12 @@ class GameShell {
             this.keySpace = true;
         } else if (code === KEYCODES.F1) {
             this.interlace = !this.interlace;
+        } else if (code === KEYCODES.HOME) {
+            this.keyHome = true;
+        } else if (code === KEYCODES.PAGE_UP) {
+            this.keyPgUp = true;
+        } else if (code === KEYCODES.PAGE_DOWN) {
+            this.keyPgDown = true;
         }
     
         let foundText = false;
@@ -5244,6 +5258,12 @@ class GameShell {
             this.keyDown = false;
         } else if (code === KEYCODES.SPACE) {
             this.keySpace = false;
+        } else if (code === KEYCODES.HOME) {
+            this.keyHome = false;
+        } else if (code === KEYCODES.PAGE_UP) {
+            this.keyPgUp = false;
+        } else if (code === KEYCODES.PAGE_DOWN) {
+            this.keyPgDown = false;
         }
 
         return false;
@@ -7057,6 +7077,11 @@ const VERSION = require('./version');
 const WordFilter = require('./word-filter');
 const World = require('./world');
 
+const ZOOM_MIN = 450;
+const ZOOM_MAX = 1250;
+const ZOOM_INDOORS = 550;
+const ZOOM_OUTDOORS = 750;
+
 function fromCharArray(a) {
     return Array.from(a).map(c => String.fromCharCode(c)).join('');
 }
@@ -7343,6 +7368,7 @@ class mudclient extends GameConnection {
         this.wallObjectAlreadyInMenu = new Int8Array(this.wallObjectsMax);
         this.magicLoc = 128;
         this.errorLoadingMemory = false;
+        this.fogOfWar = false;
         this.gameWidth = 512;
         this.gameHeight = 334; 
         this.const_9 = 9;
@@ -7403,7 +7429,7 @@ class mudclient extends GameConnection {
         this.wallObjectModel.fill(null);
         this.actionBubbleX = new Int32Array(50);
         this.actionBubbleY = new Int32Array(50);
-        this.cameraZoom = 550;
+        this.cameraZoom = ZOOM_INDOORS; // 400-1250
         this.tradeItems = new Int32Array(14);
         this.tradeItemCount = new Int32Array(14);
         this.lastHeightOffset = -1;
@@ -9385,13 +9411,15 @@ class mudclient extends GameConnection {
             this.cameraRotation = (this.originRotation + ((this.mouseX - this.originMouseX) / 2)) & 0xff;
         }
 
-        if (this.fogOfWar && this.cameraZoom > 550) {
-            this.cameraZoom -= 4;
-        } else if (!this.fogOfWar && this.cameraZoom < 750) {
-            this.cameraZoom += 4;
+        if (this.options.zoomCamera) {
+            this.handleCameraZoom();
+        } else {
+            if (this.fogOfWar && this.cameraZoom > ZOOM_INDOORS) {
+                this.cameraZoom -= 4;
+            } else if (!this.fogOfWar && this.cameraZoom < ZOOM_OUTDOORS) {
+                this.cameraZoom += 4;
+            }
         }
-
-        //console.log(this.cameraZoom);
 
         if (this.mouseClickXStep > 0) {
             this.mouseClickXStep--;
@@ -9432,6 +9460,34 @@ class mudclient extends GameConnection {
                     this.teleportBubbleType[i5] = this.teleportBubbleType[i5 + 1];
                 }
             }
+        }
+    }
+
+    handleCameraZoom() {
+        if (this.keyUp) {
+            this.cameraZoom -= 16;
+        } else if (this.keyDown) {
+            this.cameraZoom += 16;
+        } else if (this.keyHome) {
+            this.cameraZoom = ZOOM_OUTDOORS;
+        } else if (this.keyPgUp) {
+            this.cameraZoom = ZOOM_MIN;
+        } else if (this.keyPgDown) {
+            this.cameraZoom = ZOOM_MAX;
+        }
+
+        if (this.mouseScrollDelta !== 0 && (this.showUiTab === 2 || this.showUiTab === 0)) {
+            if (this.messageTabSelected !== 0 && this.mouseY > (this.gameHeight - 64)) {
+                return;
+            }
+
+            this.cameraZoom += this.mouseScrollDelta * 24;
+        }
+
+        if (this.cameraZoom >= ZOOM_MAX) {
+            this.cameraZoom = ZOOM_MAX;
+        } else if (this.cameraZoom <= ZOOM_MIN) {
+            this.cameraZoom = ZOOM_MIN;
         }
     }
 
@@ -12002,19 +12058,21 @@ class mudclient extends GameConnection {
                 this.scene.removeModel(this.world.roofModels[2][i]);
             }
 
-            this.fogOfWar = true;
+            if (this.options.showRoofs) {
+                this.fogOfWar = true;
 
-            if (this.lastHeightOffset === 0 && (this.world.objectAdjacency.get((this.localPlayer.currentX / 128) | 0, (this.localPlayer.currentY / 128) | 0) & 128) === 0) {
-                this.scene.addModel(this.world.roofModels[this.lastHeightOffset][i]);
+                if (this.lastHeightOffset === 0 && (this.world.objectAdjacency.get((this.localPlayer.currentX / 128) | 0, (this.localPlayer.currentY / 128) | 0) & 128) === 0) {
+                    this.scene.addModel(this.world.roofModels[this.lastHeightOffset][i]);
 
-                if (this.lastHeightOffset === 0) {
-                    this.scene.addModel(this.world.wallModels[1][i]);
-                    this.scene.addModel(this.world.roofModels[1][i]);
-                    this.scene.addModel(this.world.wallModels[2][i]);
-                    this.scene.addModel(this.world.roofModels[2][i]);
+                    if (this.lastHeightOffset === 0) {
+                        this.scene.addModel(this.world.wallModels[1][i]);
+                        this.scene.addModel(this.world.roofModels[1][i]);
+                        this.scene.addModel(this.world.wallModels[2][i]);
+                        this.scene.addModel(this.world.roofModels[2][i]);
+                    }
+
+                    this.fogOfWar = false;
                 }
-
-                this.fogOfWar = false;
             }
         }
 
@@ -12220,6 +12278,12 @@ class mudclient extends GameConnection {
                 this.scene.clipFar2d = 2200;
                 this.scene.fogZFalloff = 1;
                 this.scene.fogZDistance = 2100;
+            }
+
+            if (this.cameraZoom > ZOOM_OUTDOORS) {
+                this.scene.clipFar3d += 1400;
+                this.scene.clipFar2d += 1400;
+                this.scene.fogZDistance += 1400;
             }
 
             let x = this.cameraAutoRotatePlayerX + this.cameraRotationX;

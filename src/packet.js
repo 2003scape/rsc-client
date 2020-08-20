@@ -28,11 +28,11 @@ class Packet {
         this.socketExceptionMessage = '';
     }
 
-    seedIsaac(seed) {
-        // TODO toggle ISAAC
+    // TODO toggle ISAAC
+    /*seedIsaac(seed) {
         //this.isaacIncoming = new ISAAC(seed);
         //this.isaacOutgoing = new ISAAC(seed);
-    }
+    }*/
 
     async readBytes(len, buff) {
         await this.readStreamBytes(len, 0, buff);
@@ -59,7 +59,7 @@ class Packet {
             }
 
             if (this.length > 0 && this.availableStream() >= this.length) {
-                if (this.length >= 160) { 
+                if (this.length >= 160) {
                     await this.readBytes(this.length, buff);
                 } else {
                     buff[this.length - 1] = await this.readStream() & 0xff;

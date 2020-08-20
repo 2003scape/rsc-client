@@ -91,7 +91,7 @@ class Surface {
         if (y2 > this.height2) {
             y2 = this.height2;
         }
-        
+
         this.boundsTopX = x1;
         this.boundsTopY = y1;
         this.boundsBottomX = x2;
@@ -877,7 +877,7 @@ class Surface {
         }
 
         if (width <= 0 || height <= 0) {
-            return; 
+            return;
         }
 
         let yInc = 1;
@@ -1659,10 +1659,6 @@ class Surface {
         }
     }
 
-    _spriteClipping_from7(x, y, w, h, id, tx, ty) {
-        this._spriteClipping_from5(x, y, w, h, id);
-    }
-
     _spriteClipping_from9(x, y, w, h, sprite, colour1, colour2, l1, flag) {
         try {
             if (colour1 === 0) {
@@ -1925,7 +1921,7 @@ class Surface {
                     let j6 = (k5 + l5) - this.boundsBottomX;
                     l5 -= j6;
                 }
-                
+
                 i3 = 1 - i3;
 
                 if (i3 !== 0) {
@@ -2354,7 +2350,7 @@ for (let i = 0; i < 256; i++) {
     if (j === -1) {
         j = 74;
     }
-        
+
     Surface.characterWidth[i] = j * 9;
 }
 

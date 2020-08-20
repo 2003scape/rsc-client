@@ -160,7 +160,7 @@ class GameModel {
         return gameModel;
     }
 
-    static _from3(data, offset, unused) {
+    static fromBytes(data, offset) {
         let gameModel = new GameModel();
 
         gameModel.transformState = 1;
@@ -191,7 +191,7 @@ class GameModel {
 
         gameModel.faceTransStateThing = [];
         gameModel.faceTransStateThing.length = k;
-        
+
         for (let i = 0; i < k; i += 1) {
             gameModel.faceTransStateThing[i] = [0];
         }
@@ -260,7 +260,7 @@ class GameModel {
 
         gameModel.numFaces = k;
         gameModel.transformState = 1;
-        
+
         return gameModel;
     }
 
@@ -645,7 +645,7 @@ class GameModel {
             this.light();
         }
     }
-    
+
     setLight(...args) {
         switch (args.length) {
         case 6:
@@ -1091,7 +1091,7 @@ class GameModel {
     // TODO see if we have to call .slice() anywhere here
     copy(...args) {
         if (!args || !args.length) {
-            let pieces = [this]; 
+            let pieces = [this];
             let gameModel = GameModel._from2A(pieces, 1);
             gameModel.depth = this.depth;
             gameModel.transparent = this.transparent;

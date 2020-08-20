@@ -45,15 +45,15 @@ class BZState {
         this.nInUse = 0;
         this.saveNblock = 0;
 
-        this.unzftab = new Int32Array(256); 
-        this.cftab = new Int32Array(257); 
+        this.unzftab = new Int32Array(256);
+        this.cftab = new Int32Array(257);
         this.inUse = new Int8Array(256); // this was a bool[]
-        this.inUse_16 = new Int8Array(16); 
-        this.setToUnseq = new Int8Array(256); 
+        this.inUse_16 = new Int8Array(16);
+        this.setToUnseq = new Int8Array(256);
         this.mtfa = new Int8Array(4096);
         this.mtfbase = new Int32Array(16);
-        this.selector = new Int8Array(18002); 
-        this.selectorMtf = new Int8Array(18002); 
+        this.selector = new Int8Array(18002);
+        this.selectorMtf = new Int8Array(18002);
 
         this.len = init2DInt8Array(6, 258);
         this.limit = init2DInt32Array(6, 258);
@@ -376,7 +376,6 @@ class BZLib {
             }
 
             let eob = state.nInUse + 1;
-            let nblockMax = 100000 * state.blocksize100k;
             let groupNo = -1;
             let groupPos = 0;
 
@@ -659,7 +658,7 @@ class BZLib {
         for (let i = minLen + 1; i <= maxLen; i++) {
             base[i] = (limit[i - 1] + 1 << 1) - base[i];
         }
-    }    
+    }
 }
 
 module.exports = BZLib;

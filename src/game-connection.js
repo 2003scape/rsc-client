@@ -128,7 +128,7 @@ class GameConnection extends GameShell {
             this.clientStream.putString(p);
 
             this.clientStream.flushPacket();
-            this.clientStream.seedIsaac(ai);
+            //this.clientStream.seedIsaac(ai);
 
             let resp = await this.clientStream.readStream();
             console.log('login response:' + resp);
@@ -183,7 +183,7 @@ class GameConnection extends GameShell {
                 this.showLoginScreenStatus('You may only use 1 character at once.', 'Your ip-address is already in use');
                 return;
             }
-            
+
             if (resp === 7) {
                 this.showLoginScreenStatus('Login attempts exceeded!', 'Please try again in 5 minutes');
                 return;

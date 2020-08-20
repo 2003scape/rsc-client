@@ -8,12 +8,12 @@ class World {
     constructor(scene, surface) {
         this.regionWidth = 96;
         this.regionHeight = 96;
-        this.anInt585 = 128; 
+        this.anInt585 = 128;
         this.parentModel = null;
 
-        // Int8Arrays 
-        this.landscapePack = null; 
-        this.mapPack = null; 
+        // Int8Arrays
+        this.landscapePack = null;
+        this.mapPack = null;
         this.memberLandscapePack = null;
         this.memberMapPack = null;
 
@@ -478,7 +478,7 @@ class World {
             }
 
             if (plane === 3) {
-                this.tileDecoration.set(chunk, tile, 8); 
+                this.tileDecoration.set(chunk, tile, 8);
             }
 
             this.tileDirection.set(chunk, tile, 0);
@@ -581,7 +581,7 @@ class World {
                     if (x === 47 && this.getTileDecoration(x + 1, y, 0) !== 250 && this.getTileDecoration(x + 1, y, 0) !== 2) {
                         this.setTileDecoration(x, y, 9);
                     } else if (y === 47 && this.getTileDecoration(x, y + 1, 0) !== 250 && this.getTileDecoration(x, y + 1, 0) !== 2) {
-                        this.setTileDecoration(x, y, 9); 
+                        this.setTileDecoration(x, y, 9);
                     } else {
                         this.setTileDecoration(x, y, 2);
                     }
@@ -635,7 +635,7 @@ class World {
     }
 
     _getTileDecoration_from4(x, y, unused, def) {
-        let deco = this._getTileDecoration_from3(x, y, unused);
+        let deco = this._getTileDecoration_from3(x, y);
 
         if (deco === 0) {
             return def;
@@ -644,7 +644,7 @@ class World {
         }
     }
 
-    _getTileDecoration_from3(x, y, unused) {
+    _getTileDecoration_from3(x, y) {
         if (x < 0 || x >= this.regionWidth || y < 0 || y >= this.regionHeight) {
             return 0;
         }
@@ -992,7 +992,7 @@ class World {
                                 l14 = 1;
                             }
                         }
-                        
+
                         if (GameData.tileAdjacent[decorationType - 1] !== 0) {
                             const adjacency = this.objectAdjacency.get(lx, ly);
                             this.objectAdjacency.set(lx, ly, adjacency | 0x40);
@@ -1204,7 +1204,7 @@ class World {
                         this.objectAdjacency.set(i2, k2, adjacency | 2);
 
                         if (i2 > 0) {
-                            this._setObjectAdjacency_from3(i2 - 1, k2, 8); 
+                            this._setObjectAdjacency_from3(i2 - 1, k2, 8);
                         }
                     }
 
@@ -1218,7 +1218,7 @@ class World {
                 if (k3 > 0 && k3 < 12000 && (GameData.wallObjectInvisible[k3 - 1] === 0 || this.aBoolean592)) {
                     this.method422(this.parentModel, k3 - 1, i2, k2, i2 + 1, k2 + 1);
 
-                    if (flag && GameData.wallObjectAdjacent[k3 - 1] !== 0) { 
+                    if (flag && GameData.wallObjectAdjacent[k3 - 1] !== 0) {
                         const adjacency = this.objectAdjacency.get(i2, k2);
                         this.objectAdjacency.set(i2, k2, adjacency | 0x20);
                     }

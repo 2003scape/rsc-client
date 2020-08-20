@@ -404,7 +404,7 @@ class GameData {
         GameData.spellLevel = new Int32Array(GameData.spellCount);
         GameData.spellRunesRequired = new Int32Array(GameData.spellCount);
         GameData.spellType = new Int32Array(GameData.spellCount);
-        GameData.spellRunesId = [];;
+        GameData.spellRunesId = [];
         GameData.spellRunesCount = [];
 
         for (i = 0; i < GameData.spellCount; i++) {

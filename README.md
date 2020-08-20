@@ -1,18 +1,19 @@
 # rsc-client
-
 a port of the
 [runescape classic](https://en.wikipedia.org/wiki/RuneScape#History_and_development)
 client ([*mudclient revision 204*](https://github.com/2003scape/mudclient204))
 from java to javascript.
 
+this client is designed to work with
+[rsc-server](https://github.com/2003scape/rsc-server).
+
 ![](./screenshot.png?raw=true)
 
 ## install
 
-    npm install rsc-client
+    npm install @2003scape/rsc-client
 
 ## usage
-
 the `dist/` directory contains everything you need to use the client.
 run `npm start` to start a simple HTTP server http://localhost:1337.
 you may put optional arguments into the hash of the URL as such:
@@ -33,11 +34,27 @@ mc.threadSleep = 10;
 })();
 ```
 
-just make sure that wherever you host it, it's able to access
+## options
+present are features from earlier mudclients and/or inspired by modern
+third-party clients:
+
+```javascript
+// hold down middle click and move the mouse to rotate the camera
+mc.options.middleClickCamera = true;
+// scroll panel lists and chatbox with the mouse wheel
+mc.options.mouseWheel = true;
+// click the compas to face north
+mc.options.resetCompass = true;
+// use arrow keys (and mouse wheel if enabled) to zoom in and out
+mc.options.zoomCamera = true;
+```
+
+## assets
+make sure that wherever you host it, it's able to access
 `./data204/` via XHR for its cache files.
 
 ## license
-Copyright 2019  2003Scape Team
+Copyright 2020  2003Scape Team
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU Affero General Public License as published by the

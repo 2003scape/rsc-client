@@ -1,5 +1,5 @@
 {
-  "name": "rsc-client",
+  "name": "@2003scape/rsc-client",
   "version": "1.0.0",
   "description": "runescape classic web client",
   "main": "./src/mudclient.js",
@@ -27,13 +27,13 @@
   },
   "homepage": "https://github.com/2003scape/rsc-client#readme",
   "devDependencies": {
-    "alawmulaw": "^5.0.2",
-    "browserify": "^16.5.0",
-    "eslint": "^6.4.0",
+    "alawmulaw": "^6.0.0",
+    "browserify": "^16.5.2",
+    "eslint": "^7.7.0",
     "long": "^4.0.0",
-    "ndarray": "^1.0.18",
+    "ndarray": "^1.0.19",
     "sleep-promise": "^8.0.1",
-    "st": "^1.2.2",
-    "tinyify": "^2.5.1"
+    "st": "^2.0.0",
+    "tinyify": "^3.0.0"
   }
 }

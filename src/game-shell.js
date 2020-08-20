@@ -68,7 +68,7 @@ class GameShell {
         this.inputPmFinal = '';
     }
 
-    async startApplication(width, height, title, resizeable) {
+    async startApplication(width, height, title) {
         window.document.title = title;
         this._canvas.width = width;
         this._canvas.height = height;
@@ -135,7 +135,7 @@ class GameShell {
         } else if (code === KEYCODES.PAGE_DOWN) {
             this.keyPgDown = true;
         }
-    
+
         let foundText = false;
 
         for (let i = 0; i < GameShell.charMap.length; i++) {
@@ -382,7 +382,7 @@ class GameShell {
         this.paint(g);
     }
 
-    paint(g) {
+    paint() {
         if (this.loadingStep === 2 && this.imageLogo !== null) {
             this.drawLoadingScreen(this.loadingProgressPercent, this.loadingProgessText);
         }
@@ -391,7 +391,7 @@ class GameShell {
     async loadJagex() {
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);
-        
+
         let buff = await this.readDataFile('jagex.jag', 'Jagex library', 0);
 
         if (buff !== null) {

@@ -1,4 +1,4 @@
-const C_OPCODES = require('./opcodes/client');
+const clientOpcodes = require('./opcodes/client');
 const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -9,7 +9,7 @@ const GameData = require('./game-data');
 const GameModel = require('./game-model');
 const Long = require('long');
 const Panel = require('./panel');
-const S_OPCODES = require('./opcodes/server');
+const serverOpcodes = require('./opcodes/server');
 const Scene = require('./scene');
 const StreamAudioPlayer = require('./stream-audio-player');
 const Surface = require('./surface');
@@ -24,6 +24,19 @@ const ZOOM_MAX = 1250;
 const ZOOM_INDOORS = 550;
 const ZOOM_OUTDOORS = 750;
 
+const MENU_MAX_SIZE = 250;
+const PATH_STEPS_MAX = 8000;
+const PLAYERS_MAX = 500;
+const NPCS_MAX = 500;
+const WALL_OBJECTS_MAX = 500;
+const PLAYERS_SERVER_MAX = 4000;
+const GROUND_ITEMS_MAX = 5000;
+const NPCS_SERVER_MAX = 5000;
+const OBJECTS_MAX = 1500;
+const PLAYER_STAT_COUNT = 18;
+const QUEST_COUNT = 50;
+const PLAYER_STAT_EQUIPMENT_COUNT = 5;
+
 function fromCharArray(a) {
     return Array.from(a).map(c => String.fromCharCode(c)).join('');
 }
@@ -31,19 +44,6 @@ function fromCharArray(a) {
 class mudclient extends GameConnection {
     constructor(canvas) {
         super(canvas);
-
-        this.menuMaxSize = 250;
-        this.pathStepsMax = 8000;
-        this.playersMax = 500;
-        this.npcsMax = 500;
-        this.wallObjectsMax = 500;
-        this.playersServerMax = 4000;
-        this.groundItemsMax = 5000;
-        this.npcsServerMax = 5000;
-        this.objectsMax = 1500;
-        this.playerStatCount = 18;
-        this.questCount = 50;
-        this.playerStatEquipmentCount = 5;
 
         this.localRegionX = 0;
         this.localRegionY = 0;
@@ -103,7 +103,7 @@ class mudclient extends GameConnection {
         this.regionY = 0;
         this.welcomScreenAlreadyShown = false;
         this.mouseButtonClick = 0;
-        this.questName = [ 
+        this.questName = [
             'Black knight\'s fortress', 'Cook\'s assistant', 'Demon slayer', 'Doric\'s quest', 'The restless ghost', 'Goblin diplomacy', 'Ernest the chicken', 'Imp catcher', 'Pirate\'s treasure', 'Prince Ali rescue',
             'Romeo & Juliet', 'Sheep shearer', 'Shield of Arrav', 'The knight\'s sword', 'Vampire slayer', 'Witch\'s potion', 'Dragon slayer', 'Witch\'s house (members)', 'Lost city (members)', 'Hero\'s quest (members)',
             'Druidic ritual (members)', 'Merlin\'s crystal (members)', 'Scorpion catcher (members)', 'Family crest (members)', 'Tribal totem (members)', 'Fishing contest (members)', 'Monk\'s friend (members)', 'Temple of Ikov (members)', 'Clock tower (members)', 'The Holy Grail (members)',
@@ -149,13 +149,13 @@ class mudclient extends GameConnection {
         this.mouseClickXStep = 0;
         this.newBankItemCount = 0;
         this.npcAnimationArray = [
-            new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3, 4]), 
-            new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3, 4]), 
-            new Int32Array([11, 3, 2, 9, 7, 1, 6, 10, 0, 5, 8, 4]), 
-            new Int32Array([3, 4, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]), 
-            new Int32Array([3, 4, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]), 
-            new Int32Array([4, 3, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]), 
-            new Int32Array([11, 4, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3]), 
+            new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3, 4]),
+            new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3, 4]),
+            new Int32Array([11, 3, 2, 9, 7, 1, 6, 10, 0, 5, 8, 4]),
+            new Int32Array([3, 4, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]),
+            new Int32Array([3, 4, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]),
+            new Int32Array([4, 3, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]),
+            new Int32Array([11, 4, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3]),
             new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 4, 3])];
         this.controlWelcomeNewuser = 0;
         this.controlWelcomeExistinguser = 0;
@@ -184,7 +184,7 @@ class mudclient extends GameConnection {
         this.fatigueSleeping = 0;
         this.tradeRecipientConfirmItemsCount = 0;
         this.tradeRecipientItemsCount = 0;
-        this.showDialogServermessage = false;
+        this.showDialogServerMessage = false;
         this.menuX = 0;
         this.menuY = 0;
         this.menuWidth = 0;
@@ -203,7 +203,7 @@ class mudclient extends GameConnection {
         this.welcomeLastLoggedInDays = 0;
         this.equipmentStatNames = ['Armour', 'WeaponAim', 'WeaponPower', 'Magic', 'Prayer'];
         this.inventoryItemsCount = 0;
-        this.skillNameShort = [ 
+        this.skillNameShort = [
             'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic', 'Cooking', 'Woodcut', 'Fletching',
             'Fishing', 'Firemaking', 'Crafting', 'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
         ];
@@ -211,7 +211,7 @@ class mudclient extends GameConnection {
         this.minimapRandom_1 = 0;
         this.minimapRandom_2 = 0;
         this.objectCount = 0;
-        this.duelOfferItemCount = 0; 
+        this.duelOfferItemCount = 0;
         this.objectCount = 0;
         this.duelOfferItemCount = 0;
         this.cameraAutoRotatePlayerX = 0;
@@ -234,10 +234,10 @@ class mudclient extends GameConnection {
         this.welcomeLastLoggedInIP = 0;
         this.sleepWordDelayTimer = 0;
 
-        this.menuIndices = new Int32Array(this.menuMaxSize);
+        this.menuIndices = new Int32Array(MENU_MAX_SIZE);
         this.cameraAutoAngleDebug = false;
-        this.wallObjectDirection = new Int32Array(this.wallObjectsMax);
-        this.wallObjectId = new Int32Array(this.wallObjectsMax);
+        this.wallObjectDirection = new Int32Array(WALL_OBJECTS_MAX);
+        this.wallObjectId = new Int32Array(WALL_OBJECTS_MAX);
         this.cameraRotationXIncrement = 2;
         this.inventoryMaxItemCount = 30;
         this.bankItemsMax = 48;
@@ -255,8 +255,8 @@ class mudclient extends GameConnection {
         this.receivedMessageHeight = new Int32Array(50);
         this.localPlayer = new GameCharacter();
         this.localPlayerServerIndex = -1;
-        this.menuItemX = new Int32Array(this.menuMaxSize);
-        this.menuItemY = new Int32Array(this.menuMaxSize);
+        this.menuItemX = new Int32Array(MENU_MAX_SIZE);
+        this.menuItemY = new Int32Array(MENU_MAX_SIZE);
         this.showDialogTrade = false;
         this.bankItems = new Int32Array(256);
         this.bankItemsCount = new Int32Array(256);
@@ -273,9 +273,9 @@ class mudclient extends GameConnection {
         this.optionSoundDisabled = false;
         this.showRightClickMenu = false;
         this.cameraRotationYIncrement = 2;
-        this.objectAlreadyInMenu = new Int8Array(this.objectsMax);
+        this.objectAlreadyInMenu = new Int8Array(OBJECTS_MAX);
         this.menuItemText1 = [];
-        this.menuItemText1.length = this.menuMaxSize;
+        this.menuItemText1.length = MENU_MAX_SIZE;
         this.menuItemText1.fill(null);
         this.duelOpponentName = '';
         this.lastObjectAnimationNumberFireLightningSpell = -1;
@@ -287,13 +287,13 @@ class mudclient extends GameConnection {
         this.cameraRotation = 128;
         this.teleportBubbleX = new Int32Array(50);
         this.errorLoadingData = false;
-        this.playerExperience = new Int32Array(this.playerStatCount);
+        this.playerExperience = new Int32Array(PLAYER_STAT_COUNT);
         this.tradeRecipientAccepted = false;
         this.tradeAccepted = false;
         this.mouseClickXHistory = new Int32Array(8192);
         this.mouseClickYHistory = new Int32Array(8192);
         this.showDialogWelcome = false;
-        this.playerServerIndexes = new Int32Array(this.playersMax);
+        this.playerServerIndexes = new Int32Array(PLAYERS_MAX);
         this.teleportBubbleY = new Int32Array(50);
         this.receivedMessages = [];
         this.receivedMessages.length = 50;
@@ -301,25 +301,25 @@ class mudclient extends GameConnection {
         this.showDialogDuelConfirm = false;
         this.duelAccepted = false;
         this.players = [];
-        this.players.length = this.playersMax;
+        this.players.length = PLAYERS_MAX;
         this.players.fill(null);
         this.prayerOn = new Int8Array(50);
-        this.menuSourceType = new Int32Array(this.menuMaxSize);
-        this.menuSourceIndex = new Int32Array(this.menuMaxSize);
-        this.menuTargetIndex = new Int32Array(this.menuMaxSize);
-        this.wallObjectAlreadyInMenu = new Int8Array(this.wallObjectsMax);
+        this.menuSourceType = new Int32Array(MENU_MAX_SIZE);
+        this.menuSourceIndex = new Int32Array(MENU_MAX_SIZE);
+        this.menuTargetIndex = new Int32Array(MENU_MAX_SIZE);
+        this.wallObjectAlreadyInMenu = new Int8Array(WALL_OBJECTS_MAX);
         this.magicLoc = 128;
         this.errorLoadingMemory = false;
         this.fogOfWar = false;
         this.gameWidth = 512;
-        this.gameHeight = 334; 
+        this.gameHeight = 334;
         this.const_9 = 9;
         this.tradeConfirmItems = new Int32Array(14);
         this.tradeConfirmItemCount = new Int32Array(14);
         this.tradeRecipientName = '';
         this.selectedSpell = -1;
         this.showOptionMenu = false;
-        this.playerStatCurrent = new Int32Array(this.playerStatCount);
+        this.playerStatCurrent = new Int32Array(PLAYER_STAT_COUNT);
         this.teleportBubbleType = new Int32Array(50);
         this.errorLoadingCodebase = false;
         this.showDialogShop = false;
@@ -338,24 +338,24 @@ class mudclient extends GameConnection {
         this.duelOpponentItemCount = new Int32Array(8);
         this.duelItems = new Int32Array(8);
         this.duelItemCount = new Int32Array(8);
-        this.playerStatBase = new Int32Array(this.playerStatCount);
+        this.playerStatBase = new Int32Array(PLAYER_STAT_COUNT);
         this.npcsCache = [];
-        this.npcsCache.length = this.npcsMax;
+        this.npcsCache.length = NPCS_MAX;
         this.npcsCache.fill(null);
-        this.groundItemX = new Int32Array(this.groundItemsMax);
-        this.groundItemY = new Int32Array(this.groundItemsMax);
-        this.groundItemId = new Int32Array(this.groundItemsMax);
-        this.groundItemZ = new Int32Array(this.groundItemsMax);
+        this.groundItemX = new Int32Array(GROUND_ITEMS_MAX);
+        this.groundItemY = new Int32Array(GROUND_ITEMS_MAX);
+        this.groundItemId = new Int32Array(GROUND_ITEMS_MAX);
+        this.groundItemZ = new Int32Array(GROUND_ITEMS_MAX);
         this.bankSelectedItemSlot = -1;
         this.bankSelectedItem = -2;
         this.duelOfferOpponentItemId = new Int32Array(8);
         this.duelOfferOpponentItemStack = new Int32Array(8);
         this.messageHistoryTimeout = new Int32Array(5);
         this.optionCameraModeAuto = true;
-        this.objectX = new Int32Array(this.objectsMax);
-        this.objectY = new Int32Array(this.objectsMax);
-        this.objectId = new Int32Array(this.objectsMax);
-        this.objectDirection = new Int32Array(this.objectsMax);
+        this.objectX = new Int32Array(OBJECTS_MAX);
+        this.objectY = new Int32Array(OBJECTS_MAX);
+        this.objectId = new Int32Array(OBJECTS_MAX);
+        this.objectDirection = new Int32Array(OBJECTS_MAX);
         this.selectedItemInventoryIndex = -1;
         this.selectedItemName = '';
         this.loadingArea = false;
@@ -363,11 +363,11 @@ class mudclient extends GameConnection {
         this.tradeRecipientConfirmItemCount = new Int32Array(14);
         this.tradeRecipientItems = new Int32Array(14);
         this.tradeRecipientItemCount = new Int32Array(14);
-        this.showDialogServermessage = false;
-        this.menuItemID = new Int32Array(this.menuMaxSize);
-        this.questComplete = new Int8Array(this.questCount);
+        this.showDialogServerMessage = false;
+        this.menuItemID = new Int32Array(MENU_MAX_SIZE);
+        this.questComplete = new Int8Array(QUEST_COUNT);
         this.wallObjectModel = [];
-        this.wallObjectModel.length = this.wallObjectsMax;
+        this.wallObjectModel.length = WALL_OBJECTS_MAX;
         this.wallObjectModel.fill(null);
         this.actionBubbleX = new Int32Array(50);
         this.actionBubbleY = new Int32Array(50);
@@ -387,7 +387,7 @@ class mudclient extends GameConnection {
         this.inventoryItemStackCount = new Int32Array(35);
         this.inventoryEquipped = new Int32Array(35);
         this.knownPlayers = [];
-        this.knownPlayers.length = this.playersMax;
+        this.knownPlayers.length = PLAYERS_MAX;
         this.knownPlayers.fill(null);
         this.messageHistory = [];
         this.messageHistory.length = 5;
@@ -403,28 +403,28 @@ class mudclient extends GameConnection {
         this.shopSelectedItemType = -2;
         this.projectileMaxRange = 40;
         this.npcs = [];
-        this.npcs.length = this.npcsMax;
+        this.npcs.length = NPCS_MAX;
         this.npcs.fill(null);
         this.experienceArray = new Int32Array(99);
         this.healthBarX = new Int32Array(50);
         this.healthBarY = new Int32Array(50);
         this.healthBarMissing = new Int32Array(50);
         this.playerServer = [];
-        this.playerServer.length = this.playersServerMax;
+        this.playerServer.length = PLAYERS_SERVER_MAX;
         this.playerServer.fill(null);
-        this.walkPathX = new Int32Array(this.pathStepsMax);
-        this.walkPathY = new Int32Array(this.pathStepsMax);
-        this.wallObjectX = new Int32Array(this.wallObjectsMax);
-        this.wallObjectY = new Int32Array(this.wallObjectsMax);
+        this.walkPathX = new Int32Array(PATH_STEPS_MAX);
+        this.walkPathY = new Int32Array(PATH_STEPS_MAX);
+        this.wallObjectX = new Int32Array(WALL_OBJECTS_MAX);
+        this.wallObjectY = new Int32Array(WALL_OBJECTS_MAX);
         this.menuItemText2 = [];
-        this.menuItemText2.length = this.menuMaxSize;
+        this.menuItemText2.length = MENU_MAX_SIZE;
         this.menuItemText2.fill(null);
         this.npcsServer = [];
-        this.npcsServer.length = this.npcsServerMax;
+        this.npcsServer.length = NPCS_SERVER_MAX;
         this.npcsServer.fill(null);
-        this.playerStatEquipment = new Int32Array(this.playerStatEquipmentCount);
+        this.playerStatEquipment = new Int32Array(PLAYER_STAT_EQUIPMENT_COUNT);
         this.objectModel = [];
-        this.objectModel.length = this.objectsMax;
+        this.objectModel.length = OBJECTS_MAX;
         this.objectModel.fill(null);
     }
 
@@ -655,9 +655,9 @@ class mudclient extends GameConnection {
         steps--;
 
         if (walkToAction) {
-            this.clientStream.newPacket(C_OPCODES.WALK_ACTION);
+            this.clientStream.newPacket(clientOpcodes.WALK_ACTION);
         } else {
-            this.clientStream.newPacket(C_OPCODES.WALK);
+            this.clientStream.newPacket(clientOpcodes.WALK);
         }
 
         this.clientStream.putShort(startX + this.regionX);
@@ -694,9 +694,9 @@ class mudclient extends GameConnection {
         steps--;
 
         if (walkToAction) {
-            this.clientStream.newPacket(C_OPCODES.WALK_ACTION);
+            this.clientStream.newPacket(clientOpcodes.WALK_ACTION);
         } else {
-            this.clientStream.newPacket(C_OPCODES.WALK);
+            this.clientStream.newPacket(clientOpcodes.WALK);
         }
 
         this.clientStream.putShort(startX + this.regionX);
@@ -902,7 +902,7 @@ class mudclient extends GameConnection {
             this.drawDialogLogout();
         } else if (this.showDialogWelcome) {
             this.drawDialogWelcome();
-        } else if (this.showDialogServermessage) {
+        } else if (this.showDialogServerMessage) {
             this.drawDialogServermessage();
         } else if (this.showUiWildWarn === 1) {
             this.drawDialogWildWarn();
@@ -1021,7 +1021,7 @@ class mudclient extends GameConnection {
                         }
 
                         // quest items? or just tagged as 'special'
-                        if (GameData.itemSpecial[itemType] === 1) { 
+                        if (GameData.itemSpecial[itemType] === 1) {
                             this.showMessage('This object cannot be traded with other players', 3);
                             sendUpdate = true;
                         }
@@ -1034,7 +1034,7 @@ class mudclient extends GameConnection {
                         }
 
                         if (sendUpdate) {
-                            this.clientStream.newPacket(C_OPCODES.TRADE_ITEM_UPDATE);
+                            this.clientStream.newPacket(clientOpcodes.TRADE_ITEM_UPDATE);
                             this.clientStream.putByte(this.tradeItemsCount);
 
                             for (let j4 = 0; j4 < this.tradeItemsCount; j4++) {
@@ -1071,7 +1071,7 @@ class mudclient extends GameConnection {
                             break;
                         }
 
-                        this.clientStream.newPacket(C_OPCODES.TRADE_ITEM_UPDATE);
+                        this.clientStream.newPacket(clientOpcodes.TRADE_ITEM_UPDATE);
                         this.clientStream.putByte(this.tradeItemsCount);
 
                         for (let i3 = 0; i3 < this.tradeItemsCount; i3++) {
@@ -1087,18 +1087,18 @@ class mudclient extends GameConnection {
 
                 if (mouseX >= 217 && mouseY >= 238 && mouseX <= 286 && mouseY <= 259) {
                     this.tradeAccepted = true;
-                    this.clientStream.newPacket(C_OPCODES.TRADE_ACCEPT);
+                    this.clientStream.newPacket(clientOpcodes.TRADE_ACCEPT);
                     this.clientStream.sendPacket();
                 }
 
                 if (mouseX >= 394 && mouseY >= 238 && mouseX < 463 && mouseY < 259) {
                     this.showDialogTrade = false;
-                    this.clientStream.newPacket(C_OPCODES.TRADE_DECLINE);
+                    this.clientStream.newPacket(clientOpcodes.TRADE_DECLINE);
                     this.clientStream.sendPacket();
                 }
             } else if (this.mouseButtonClick !== 0) {
                 this.showDialogTrade = false;
-                this.clientStream.newPacket(C_OPCODES.TRADE_DECLINE);
+                this.clientStream.newPacket(clientOpcodes.TRADE_DECLINE);
                 this.clientStream.sendPacket();
             }
 
@@ -1228,9 +1228,9 @@ class mudclient extends GameConnection {
             this.world.removeObject(this.objectX[i], this.objectY[i], this.objectId[i]);
         }
 
-        for (let j = 0; j < this.wallObjectCount; j++) {
-            this.scene.removeModel(this.wallObjectModel[j]);
-            this.world.removeWallObject(this.wallObjectX[j], this.wallObjectY[j], this.wallObjectDirection[j], this.wallObjectId[j]);
+        for (let i = 0; i < this.wallObjectCount; i++) {
+            this.scene.removeModel(this.wallObjectModel[i]);
+            this.world.removeWallObject(this.wallObjectX[i], this.wallObjectY[i], this.wallObjectDirection[i], this.wallObjectId[i]);
         }
 
         this.objectCount = 0;
@@ -1238,21 +1238,21 @@ class mudclient extends GameConnection {
         this.groundItemCount = 0;
         this.playerCount = 0;
 
-        for (let k = 0; k < this.playersServerMax; k++) {
-            this.playerServer[k] = null;
+        for (let i = 0; i < PLAYERS_SERVER_MAX; i++) {
+            this.playerServer[i] = null;
         }
 
-        for (let l = 0; l < this.playersMax; l++) {
+        for (let l = 0; l < PLAYERS_MAX; l++) {
             this.players[l] = null;
         }
 
         this.npcCount = 0;
 
-        for (let i1 = 0; i1 < this.npcsServerMax; i1++) {
+        for (let i1 = 0; i1 < NPCS_SERVER_MAX; i1++) {
             this.npcsServer[i1] = null;
         }
 
-        for (let j1 = 0; j1 < this.npcsMax; j1++) {
+        for (let j1 = 0; j1 < NPCS_MAX; j1++) {
             this.npcs[j1] = null;
         }
 
@@ -1476,7 +1476,7 @@ class mudclient extends GameConnection {
             this.showMessage('@cya@You can\'t logout for 10 seconds after combat', 3);
             return;
         } else {
-            this.clientStream.newPacket(C_OPCODES.LOGOUT);
+            this.clientStream.newPacket(clientOpcodes.LOGOUT);
             this.clientStream.sendPacket();
             this.logoutTimeout = 1000;
             return;
@@ -1837,10 +1837,11 @@ class mudclient extends GameConnection {
         this.surface.draw(this.graphics, 0, 0);
     }
 
-    drawItem(x, y, w, h, id, tx, ty) {
+    drawItem(x, y, w, h, id) {
         let picture = GameData.itemPicture[id] + this.spriteItem;
         let mask = GameData.itemMask[id];
-        this.surface._spriteClipping_from9(x, y, w, h, picture, mask, 0, 0, false);
+        this.surface._spriteClipping_from9(x, y, w, h, picture, mask, 0, 0,
+            false);
     }
 
     async handleGameInput() {
@@ -1848,7 +1849,7 @@ class mudclient extends GameConnection {
             this.systemUpdate--;
         }
 
-        await this.checkConnection(); 
+        await this.checkConnection();
 
         if (this.logoutTimeout > 0) {
             this.logoutTimeout--;
@@ -2158,10 +2159,10 @@ class mudclient extends GameConnection {
             if (this.inputTextFinal.length > 0) {
                 if (/^::lostcon$/i.test(this.inputTextFinal)) {
                     this.clientStream.closeStream();
-                } else if (/^::closecon$/.test(this.inputTextFinal)) { 
+                } else if (/^::closecon$/.test(this.inputTextFinal)) {
                     this.closeConnection();
                 } else {
-                    this.clientStream.newPacket(C_OPCODES.SLEEP_WORD);
+                    this.clientStream.newPacket(clientOpcodes.SLEEP_WORD);
                     this.clientStream.putString(this.inputTextFinal);
 
                     if (!this.sleepWordDelay) {
@@ -2177,7 +2178,7 @@ class mudclient extends GameConnection {
             }
 
             if (this.lastMouseButtonDown === 1 && this.mouseY > 275 && this.mouseY < 310 && this.mouseX > 56 && this.mouseX < 456) {
-                this.clientStream.newPacket(C_OPCODES.SLEEP_WORD);
+                this.clientStream.newPacket(clientOpcodes.SLEEP_WORD);
                 this.clientStream.putString('-null-');
 
                 if (!this.sleepWordDelay) {
@@ -2464,11 +2465,11 @@ class mudclient extends GameConnection {
         this.surface.drawBox(0, 194, 512, 20, 0);
 
         for (let k = 6; k >= 1; k--) {
-            this.surface.drawLineAlpha(0, k, 0, 194 - k, this.gameWidth, 8); 
+            this.surface.drawLineAlpha(0, k, 0, 194 - k, this.gameWidth, 8);
         }
 
         // runescape logo
-        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10); 
+        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
         this.surface._drawSprite_from5(this.spriteLogo, 0, 0, this.gameWidth, 200);
         this.surface.drawWorld(this.spriteLogo);
 
@@ -2500,7 +2501,7 @@ class mudclient extends GameConnection {
         }
 
         this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
-        this.surface._drawSprite_from5(this.spriteLogo + 1, 0, 0, this.gameWidth, 200); 
+        this.surface._drawSprite_from5(this.spriteLogo + 1, 0, 0, this.gameWidth, 200);
         this.surface.drawWorld(this.spriteLogo + 1);
 
         for (let j1 = 0; j1 < 64; j1++) {
@@ -2534,7 +2535,7 @@ class mudclient extends GameConnection {
         this.surface.drawBox(0, 194, this.gameWidth, 20, 0);
 
         for (let l1 = 6; l1 >= 1; l1--) {
-            this.surface.drawLineAlpha(0, l1, 0, 194, this.gameWidth, 8); 
+            this.surface.drawLineAlpha(0, l1, 0, 194, this.gameWidth, 8);
         }
 
         this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
@@ -2822,7 +2823,7 @@ class mudclient extends GameConnection {
 
         i3 = i3 * i5 - k1 * k4 >> 18;
         k1 = k5;
-        
+
         // landscape
         this.surface.drawMinimapSprite((uiX + ((uiWidth / 2) | 0)) - k1, 36 + ((uiHeight / 2) | 0) + i3, this.spriteMedia - 1, i1 + 64 & 255, k);
 
@@ -2984,19 +2985,19 @@ class mudclient extends GameConnection {
         if (this.mouseButtonClick === 1) {
             if (this.mouseX < dialogX || this.mouseY < dialogY || this.mouseX > dialogX + 468 || this.mouseY > dialogY + 262) {
                 this.showDialogTradeConfirm = false;
-                this.clientStream.newPacket(C_OPCODES.TRADE_DECLINE);
+                this.clientStream.newPacket(clientOpcodes.TRADE_DECLINE);
                 this.clientStream.sendPacket();
             }
 
             if (this.mouseX >= (dialogX + 118) - 35 && this.mouseX <= dialogX + 118 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
                 this.tradeConfirmAccepted = true;
-                this.clientStream.newPacket(C_OPCODES.TRADE_CONFIRM_ACCEPT);
+                this.clientStream.newPacket(clientOpcodes.TRADE_CONFIRM_ACCEPT);
                 this.clientStream.sendPacket();
             }
 
             if (this.mouseX >= (dialogX + 352) - 35 && this.mouseX <= dialogX + 353 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
                 this.showDialogTradeConfirm = false;
-                this.clientStream.newPacket(C_OPCODES.TRADE_DECLINE);
+                this.clientStream.newPacket(clientOpcodes.TRADE_DECLINE);
                 this.clientStream.sendPacket();
             }
 
@@ -3081,7 +3082,7 @@ class mudclient extends GameConnection {
                     continue;
                 }
 
-                this.clientStream.newPacket(C_OPCODES.CHOOSE_OPTION);
+                this.clientStream.newPacket(clientOpcodes.CHOOSE_OPTION);
                 this.clientStream.putByte(i);
                 this.clientStream.sendPacket();
                 break;
@@ -3383,7 +3384,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (j1 >= 1 && this.mouseX >= mouseX + 220 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 250 && this.mouseY <= mouseY + 249) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_WITHDRAW);
+                        this.clientStream.newPacket(clientOpcodes.BANK_WITHDRAW);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(1);
                         this.clientStream.putInt(0x12345678);
@@ -3391,7 +3392,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (j1 >= 5 && this.mouseX >= mouseX + 250 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 280 && this.mouseY <= mouseY + 249) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_WITHDRAW);
+                        this.clientStream.newPacket(clientOpcodes.BANK_WITHDRAW);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(5);
                         this.clientStream.putInt(0x12345678);
@@ -3399,7 +3400,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (j1 >= 25 && this.mouseX >= mouseX + 280 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 305 && this.mouseY <= mouseY + 249) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_WITHDRAW);
+                        this.clientStream.newPacket(clientOpcodes.BANK_WITHDRAW);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(25);
                         this.clientStream.putInt(0x12345678);
@@ -3407,7 +3408,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (j1 >= 100 && this.mouseX >= mouseX + 305 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 335 && this.mouseY <= mouseY + 249) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_WITHDRAW);
+                        this.clientStream.newPacket(clientOpcodes.BANK_WITHDRAW);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(100);
                         this.clientStream.putInt(0x12345678);
@@ -3415,7 +3416,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (j1 >= 500 && this.mouseX >= mouseX + 335 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 368 && this.mouseY <= mouseY + 249) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_WITHDRAW);
+                        this.clientStream.newPacket(clientOpcodes.BANK_WITHDRAW);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(500);
                         this.clientStream.putInt(0x12345678);
@@ -3423,7 +3424,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (j1 >= 2500 && this.mouseX >= mouseX + 370 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 400 && this.mouseY <= mouseY + 249) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_WITHDRAW);
+                        this.clientStream.newPacket(clientOpcodes.BANK_WITHDRAW);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(2500);
                         this.clientStream.putInt(0x12345678);
@@ -3431,7 +3432,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (this.getInventoryCount(slot) >= 1 && this.mouseX >= mouseX + 220 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 250 && this.mouseY <= mouseY + 274) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_DEPOSIT);
+                        this.clientStream.newPacket(clientOpcodes.BANK_DEPOSIT);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(1);
                         this.clientStream.putInt(0x87654321);
@@ -3439,14 +3440,14 @@ class mudclient extends GameConnection {
                     }
 
                     if (this.getInventoryCount(slot) >= 5 && this.mouseX >= mouseX + 250 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 280 && this.mouseY <= mouseY + 274) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_DEPOSIT);
+                        this.clientStream.newPacket(clientOpcodes.BANK_DEPOSIT);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(5);
                         this.clientStream.putInt(0x87654321);
                         this.clientStream.sendPacket();
                     }
                     if (this.getInventoryCount(slot) >= 25 && this.mouseX >= mouseX + 280 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 305 && this.mouseY <= mouseY + 274) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_DEPOSIT);
+                        this.clientStream.newPacket(clientOpcodes.BANK_DEPOSIT);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(25);
                         this.clientStream.putInt(0x87654321);
@@ -3454,14 +3455,14 @@ class mudclient extends GameConnection {
                     }
 
                     if (this.getInventoryCount(slot) >= 100 && this.mouseX >= mouseX + 305 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 335 && this.mouseY <= mouseY + 274) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_DEPOSIT);
+                        this.clientStream.newPacket(clientOpcodes.BANK_DEPOSIT);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(100);
                         this.clientStream.putInt(0x87654321);
                         this.clientStream.sendPacket();
                     }
                     if (this.getInventoryCount(slot) >= 500 && this.mouseX >= mouseX + 335 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 368 && this.mouseY <= mouseY + 274) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_DEPOSIT);
+                        this.clientStream.newPacket(clientOpcodes.BANK_DEPOSIT);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(500);
                         this.clientStream.putInt(0x87654321);
@@ -3469,7 +3470,7 @@ class mudclient extends GameConnection {
                     }
 
                     if (this.getInventoryCount(slot) >= 2500 && this.mouseX >= mouseX + 370 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 400 && this.mouseY <= mouseY + 274) {
-                        this.clientStream.newPacket(C_OPCODES.BANK_DEPOSIT);
+                        this.clientStream.newPacket(clientOpcodes.BANK_DEPOSIT);
                         this.clientStream.putShort(slot);
                         this.clientStream.putShort(2500);
                         this.clientStream.putInt(0x87654321);
@@ -3485,7 +3486,7 @@ class mudclient extends GameConnection {
             } else if (this.bankItemCount > 144 && mouseX >= 245 && mouseX <= 310 && mouseY <= 12) {
                 this.bankActivePage = 3;
             } else {
-                this.clientStream.newPacket(C_OPCODES.BANK_CLOSE);
+                this.clientStream.newPacket(clientOpcodes.BANK_CLOSE);
                 this.clientStream.sendPacket();
                 this.showDialogBank = false;
                 return;
@@ -3785,7 +3786,7 @@ class mudclient extends GameConnection {
                         }
 
                         if (sendUpdate) {
-                            this.clientStream.newPacket(C_OPCODES.DUEL_ITEM_UPDATE);
+                            this.clientStream.newPacket(clientOpcodes.DUEL_ITEM_UPDATE);
                             this.clientStream.putByte(this.duelOfferItemCount);
 
                             for (let j4 = 0; j4 < this.duelOfferItemCount; j4++) {
@@ -3822,7 +3823,7 @@ class mudclient extends GameConnection {
                             break;
                         }
 
-                        this.clientStream.newPacket(C_OPCODES.DUEL_ITEM_UPDATE);
+                        this.clientStream.newPacket(clientOpcodes.DUEL_ITEM_UPDATE);
                         this.clientStream.putByte(this.duelOfferItemCount);
 
                         for (let i3 = 0; i3 < this.duelOfferItemCount; i3++) {
@@ -3859,7 +3860,7 @@ class mudclient extends GameConnection {
                 }
 
                 if (flag) {
-                    this.clientStream.newPacket(C_OPCODES.DUEL_SETTINGS);
+                    this.clientStream.newPacket(clientOpcodes.DUEL_SETTINGS);
                     this.clientStream.putByte(this.duelSettingsRetreat ? 1 : 0);
                     this.clientStream.putByte(this.duelSettingsMagic ? 1 : 0);
                     this.clientStream.putByte(this.duelSettingsPrayer ? 1 : 0);
@@ -3871,18 +3872,18 @@ class mudclient extends GameConnection {
 
                 if (mouseX >= 217 && mouseY >= 238 && mouseX <= 286 && mouseY <= 259) {
                     this.duelOfferAccepted = true;
-                    this.clientStream.newPacket(C_OPCODES.DUEL_ACCEPT);
+                    this.clientStream.newPacket(clientOpcodes.DUEL_ACCEPT);
                     this.clientStream.sendPacket();
                 }
 
                 if (mouseX >= 394 && mouseY >= 238 && mouseX < 463 && mouseY < 259) {
                     this.showDialogDuel = false;
-                    this.clientStream.newPacket(C_OPCODES.DUEL_DECLINE);
+                    this.clientStream.newPacket(clientOpcodes.DUEL_DECLINE);
                     this.clientStream.sendPacket();
                 }
             } else if (this.mouseButtonClick !== 0) {
                 this.showDialogDuel = false;
-                this.clientStream.newPacket(C_OPCODES.DUEL_DECLINE);
+                this.clientStream.newPacket(clientOpcodes.DUEL_DECLINE);
                 this.clientStream.sendPacket();
             }
 
@@ -4506,7 +4507,7 @@ class mudclient extends GameConnection {
         this.scene = new Scene(this.surface, 15000, 15000, 1000);
 
         // this used to be in scene's constructor
-        this.scene.view = GameModel._from2(1000 * 1000, 1000); 
+        this.scene.view = GameModel._from2(1000 * 1000, 1000);
 
         this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, this.const_9);
         this.scene.clipFar3d = 2400;
@@ -4722,13 +4723,13 @@ class mudclient extends GameConnection {
                     } else if (this.playerStatCurrent[5] === 0) {
                         this.showMessage('You have run out of prayer points. Return to a church to recharge', 3);
                     } else if (this.prayerOn[l1]) {
-                        this.clientStream.newPacket(C_OPCODES.PRAYER_OFF);
+                        this.clientStream.newPacket(clientOpcodes.PRAYER_OFF);
                         this.clientStream.putByte(l1);
                         this.clientStream.sendPacket();
                         this.prayerOn[l1] = false;
                         this.playSoundFile('prayeroff');
                     } else {
-                        this.clientStream.newPacket(C_OPCODES.PRAYER_ON);
+                        this.clientStream.newPacket(clientOpcodes.PRAYER_ON);
                         this.clientStream.putByte(l1);
                         this.clientStream.sendPacket();
                         this.prayerOn[l1] = true;
@@ -4779,7 +4780,7 @@ class mudclient extends GameConnection {
 
                             let itemPrice = ((priceMod * GameData.itemBasePrice[itemType]) / 100) | 0;
 
-                            this.clientStream.newPacket(C_OPCODES.SHOP_BUY);
+                            this.clientStream.newPacket(clientOpcodes.SHOP_BUY);
                             this.clientStream.putShort(this.shopItem[this.shopSelectedItemIndex]);
                             this.clientStream.putInt(itemPrice);
                             this.clientStream.sendPacket();
@@ -4794,7 +4795,7 @@ class mudclient extends GameConnection {
 
                             let itemPrice = ((priceMod * GameData.itemBasePrice[itemType]) / 100) | 0;
 
-                            this.clientStream.newPacket(C_OPCODES.SHOP_SELL);
+                            this.clientStream.newPacket(clientOpcodes.SHOP_SELL);
                             this.clientStream.putShort(this.shopItem[this.shopSelectedItemIndex]);
                             this.clientStream.putInt(itemPrice);
                             this.clientStream.sendPacket();
@@ -4802,7 +4803,7 @@ class mudclient extends GameConnection {
                     }
                 }
             } else {
-                this.clientStream.newPacket(C_OPCODES.SHOP_CLOSE);
+                this.clientStream.newPacket(clientOpcodes.SHOP_CLOSE);
                 this.clientStream.sendPacket();
                 this.showDialogShop = false;
                 return;
@@ -5484,7 +5485,7 @@ class mudclient extends GameConnection {
         }
 
         if (this.panelAppearance.isClicked(this.controlButtonAppearanceAccept)) {
-            this.clientStream.newPacket(C_OPCODES.APPEARANCE);
+            this.clientStream.newPacket(clientOpcodes.APPEARANCE);
             this.clientStream.putByte(this.appearanceHeadGender);
             this.clientStream.putByte(this.appearanceHeadType);
             this.clientStream.putByte(this.appearanceBodyGender);
@@ -5578,7 +5579,7 @@ class mudclient extends GameConnection {
                 return;
             }
         } catch (e) {
-            // OutOfMemory 
+            // OutOfMemory
             console.error(e);
             this.disposeAndCollect();
             this.errorLoadingMemory = true;
@@ -5597,7 +5598,7 @@ class mudclient extends GameConnection {
     drawDialogDuelConfirm() {
         let dialogX = 22;
         let dialogY = 36;
- 
+
         this.surface.drawBox(dialogX, dialogY, 468, 16, 192);
         this.surface.drawBoxAlpha(dialogX, dialogY + 16, 468, 246, 0x989898, 160);
         this.surface.drawStringCenter('Please confirm your duel with @yel@' + Utility.hashToUsername(this.duelOpponentNameHash), dialogX + 234, dialogY + 12, 1, 0xffffff);
@@ -5669,19 +5670,19 @@ class mudclient extends GameConnection {
         if (this.mouseButtonClick === 1) {
             if (this.mouseX < dialogX || this.mouseY < dialogY || this.mouseX > dialogX + 468 || this.mouseY > dialogY + 262) {
                 this.showDialogDuelConfirm = false;
-                this.clientStream.newPacket(C_OPCODES.TRADE_DECLINE);
+                this.clientStream.newPacket(clientOpcodes.TRADE_DECLINE);
                 this.clientStream.sendPacket();
             }
 
             if (this.mouseX >= (dialogX + 118) - 35 && this.mouseX <= dialogX + 118 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
                 this.duelAccepted = true;
-                this.clientStream.newPacket(C_OPCODES.DUEL_CONFIRM_ACCEPT);
+                this.clientStream.newPacket(clientOpcodes.DUEL_CONFIRM_ACCEPT);
                 this.clientStream.sendPacket();
             }
 
             if (this.mouseX >= (dialogX + 352) - 35 && this.mouseX <= dialogX + 353 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
                 this.showDialogDuelConfirm = false;
-                this.clientStream.newPacket(C_OPCODES.DUEL_DECLINE);
+                this.clientStream.newPacket(clientOpcodes.DUEL_DECLINE);
                 this.clientStream.sendPacket();
             }
 
@@ -5731,7 +5732,7 @@ class mudclient extends GameConnection {
             let k = Utility.getDataFileOffset(GameData.modelName[j] + '.ob3', abyte0);
 
             if (k !== 0) {
-                this.gameModels[j] = GameModel._from3(abyte0, k, true);
+                this.gameModels[j] = GameModel.fromBytes(abyte0, k);
             } else {
                 this.gameModels[j] = GameModel._from2(1, 1);
             }
@@ -5766,11 +5767,11 @@ class mudclient extends GameConnection {
 
         if (this.mouseButtonClick === 1) {
             if (j === 0xff0000) {
-                this.showDialogServermessage = false;
+                this.showDialogServerMessage = false;
             }
 
             if ((this.mouseX < 256 - ((width / 2) | 0) || this.mouseX > 256 + ((width / 2) | 0)) && (this.mouseY < 167 - ((height / 2) | 0) || this.mouseY > 167 + ((height / 2) | 0))) {
-                this.showDialogServermessage = false;
+                this.showDialogServerMessage = false;
             }
         }
 
@@ -5787,7 +5788,7 @@ class mudclient extends GameConnection {
             if (s.length > 0) {
                 let l = Utility.usernameToHash(s);
 
-                this.clientStream.newPacket(C_OPCODES.REPORT_ABUSE);
+                this.clientStream.newPacket(clientOpcodes.REPORT_ABUSE);
                 this.clientStream.putLong(l);
                 this.clientStream.putByte(this.reportAbuseOffence);
                 this.clientStream.putByte(this.reportAbuseMute ? 1 : 0);
@@ -6031,7 +6032,7 @@ class mudclient extends GameConnection {
         }
 
         // blue bar
-        this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 22); 
+        this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 22);
         this.surface.draw(this.graphics, 0, 0);
     }
 
@@ -6161,7 +6162,7 @@ class mudclient extends GameConnection {
 
             if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
                 this.optionCameraModeAuto = !this.optionCameraModeAuto;
-                this.clientStream.newPacket(C_OPCODES.SETTINGS_GAME);
+                this.clientStream.newPacket(clientOpcodes.SETTINGS_GAME);
                 this.clientStream.putByte(0);
                 this.clientStream.putByte(this.optionCameraModeAuto ? 1 : 0);
                 this.clientStream.sendPacket();
@@ -6171,7 +6172,7 @@ class mudclient extends GameConnection {
 
             if (this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
                 this.optionMouseButtonOne = !this.optionMouseButtonOne;
-                this.clientStream.newPacket(C_OPCODES.SETTINGS_GAME);
+                this.clientStream.newPacket(clientOpcodes.SETTINGS_GAME);
                 this.clientStream.putByte(2);
                 this.clientStream.putByte(this.optionMouseButtonOne ? 1 : 0);
                 this.clientStream.sendPacket();
@@ -6181,7 +6182,7 @@ class mudclient extends GameConnection {
 
             if (this.members && this.mouseX > l && this.mouseX < l + c1 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseButtonClick === 1) {
                 this.optionSoundDisabled = !this.optionSoundDisabled;
-                this.clientStream.newPacket(C_OPCODES.SETTINGS_GAME);
+                this.clientStream.newPacket(clientOpcodes.SETTINGS_GAME);
                 this.clientStream.putByte(3);
                 this.clientStream.putByte(this.optionSoundDisabled ? 1 : 0);
                 this.clientStream.sendPacket();
@@ -6316,7 +6317,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawTeleportBubble(x, y, w, h, id, tx, ty) {
+    drawTeleportBubble(x, y, w, h, id) {
         let type = this.teleportBubbleType[id];
         let time = this.teleportBubbleTime[id];
 
@@ -6352,7 +6353,7 @@ class mudclient extends GameConnection {
     }
 
     // looks like it just updates objects like torches etc to flip between the different models and appear "animated"
-    updateObjectAnimation(i, s) { 
+    updateObjectAnimation(i, s) {
         let j = this.objectX[i];
         let k = this.objectY[i];
         let l = j - ((this.localPlayer.currentX / 128) | 0);
@@ -6453,7 +6454,7 @@ class mudclient extends GameConnection {
                     let l1 = this.surface.textWidth(this.menuItemText1[k1] + ' ' + this.menuItemText2[k1], 1) + 5;
 
                     if (l1 > this.menuWidth) {
-                        this.menuWidth = l1; 
+                        this.menuWidth = l1;
                     }
                 }
 
@@ -6502,7 +6503,7 @@ class mudclient extends GameConnection {
 
                 this.combatStyle = i - 1;
                 this.mouseButtonClick = 0;
-                this.clientStream.newPacket(C_OPCODES.COMBAT_STYLE);
+                this.clientStream.newPacket(clientOpcodes.COMBAT_STYLE);
                 this.clientStream.putByte(this.combatStyle);
                 this.clientStream.sendPacket();
                 break;
@@ -6537,7 +6538,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 200) {
             this.walkToGroundItem(this.localRegionX, this.localRegionY, mx, my, true);
-            this.clientStream.newPacket(C_OPCODES.CAST_GROUNDITEM);
+            this.clientStream.newPacket(clientOpcodes.CAST_GROUNDITEM);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putShort(mIdx);
@@ -6548,7 +6549,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 210) {
             this.walkToGroundItem(this.localRegionX, this.localRegionY, mx, my, true);
-            this.clientStream.newPacket(C_OPCODES.USEWITH_GROUNDITEM);
+            this.clientStream.newPacket(clientOpcodes.USEWITH_GROUNDITEM);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putShort(mIdx);
@@ -6559,7 +6560,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 220) {
             this.walkToGroundItem(this.localRegionX, this.localRegionY, mx, my, true);
-            this.clientStream.newPacket(C_OPCODES.GROUNDITEM_TAKE);
+            this.clientStream.newPacket(clientOpcodes.GROUNDITEM_TAKE);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putShort(mIdx);
@@ -6573,7 +6574,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 300) {
             this.walkToWallObject(mx, my, mIdx);
-            this.clientStream.newPacket(C_OPCODES.CAST_WALLOBJECT);
+            this.clientStream.newPacket(clientOpcodes.CAST_WALLOBJECT);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putByte(mIdx);
@@ -6584,7 +6585,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 310) {
             this.walkToWallObject(mx, my, mIdx);
-            this.clientStream.newPacket(C_OPCODES.USEWITH_WALLOBJECT);
+            this.clientStream.newPacket(clientOpcodes.USEWITH_WALLOBJECT);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putByte(mIdx);
@@ -6595,7 +6596,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 320) {
             this.walkToWallObject(mx, my, mIdx);
-            this.clientStream.newPacket(C_OPCODES.WALL_OBJECT_COMMAND1);
+            this.clientStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND1);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putByte(mIdx);
@@ -6604,7 +6605,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 2300) {
             this.walkToWallObject(mx, my, mIdx);
-            this.clientStream.newPacket(C_OPCODES.WALL_OBJECT_COMMAND2);
+            this.clientStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND2);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putByte(mIdx);
@@ -6617,7 +6618,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 400) {
             this.walkToObject(mx, my, mIdx, mSrcIdx);
-            this.clientStream.newPacket(C_OPCODES.CAST_OBJECT);
+            this.clientStream.newPacket(clientOpcodes.CAST_OBJECT);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putShort(mTargetIndex);
@@ -6627,7 +6628,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 410) {
             this.walkToObject(mx, my, mIdx, mSrcIdx);
-            this.clientStream.newPacket(C_OPCODES.USEWITH_OBJECT);
+            this.clientStream.newPacket(clientOpcodes.USEWITH_OBJECT);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putShort(mTargetIndex);
@@ -6637,7 +6638,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 420) {
             this.walkToObject(mx, my, mIdx, mSrcIdx);
-            this.clientStream.newPacket(C_OPCODES.OBJECT_CMD1);
+            this.clientStream.newPacket(clientOpcodes.OBJECT_CMD1);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.sendPacket();
@@ -6645,7 +6646,7 @@ class mudclient extends GameConnection {
 
         if (mItemId === 2400) {
             this.walkToObject(mx, my, mIdx, mSrcIdx);
-            this.clientStream.newPacket(C_OPCODES.OBJECT_CMD2);
+            this.clientStream.newPacket(clientOpcodes.OBJECT_CMD2);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.sendPacket();
@@ -6656,7 +6657,7 @@ class mudclient extends GameConnection {
         }
 
         if (mItemId === 600) {
-            this.clientStream.newPacket(C_OPCODES.CAST_INVITEM);
+            this.clientStream.newPacket(clientOpcodes.CAST_INVITEM);
             this.clientStream.putShort(mIdx);
             this.clientStream.putShort(mSrcIdx);
             this.clientStream.sendPacket();
@@ -6664,7 +6665,7 @@ class mudclient extends GameConnection {
         }
 
         if (mItemId === 610) {
-            this.clientStream.newPacket(C_OPCODES.USEWITH_INVITEM);
+            this.clientStream.newPacket(clientOpcodes.USEWITH_INVITEM);
             this.clientStream.putShort(mIdx);
             this.clientStream.putShort(mSrcIdx);
             this.clientStream.sendPacket();
@@ -6672,19 +6673,19 @@ class mudclient extends GameConnection {
         }
 
         if (mItemId === 620) {
-            this.clientStream.newPacket(C_OPCODES.INV_UNEQUIP);
+            this.clientStream.newPacket(clientOpcodes.INV_UNEQUIP);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
 
         if (mItemId === 630) {
-            this.clientStream.newPacket(C_OPCODES.INV_WEAR);
+            this.clientStream.newPacket(clientOpcodes.INV_WEAR);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
 
         if (mItemId === 640) {
-            this.clientStream.newPacket(C_OPCODES.INV_CMD);
+            this.clientStream.newPacket(clientOpcodes.INV_CMD);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
@@ -6696,7 +6697,7 @@ class mudclient extends GameConnection {
         }
 
         if (mItemId === 660) {
-            this.clientStream.newPacket(C_OPCODES.INV_DROP);
+            this.clientStream.newPacket(clientOpcodes.INV_DROP);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
             this.selectedItemInventoryIndex = -1;
@@ -6713,7 +6714,7 @@ class mudclient extends GameConnection {
             let l3 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, l1, l3, true);
-            this.clientStream.newPacket(C_OPCODES.CAST_NPC);
+            this.clientStream.newPacket(clientOpcodes.CAST_NPC);
             this.clientStream.putShort(mIdx);
             this.clientStream.putShort(mSrcIdx);
             this.clientStream.sendPacket();
@@ -6725,7 +6726,7 @@ class mudclient extends GameConnection {
             let i4 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, i2, i4, true);
-            this.clientStream.newPacket(C_OPCODES.USEWITH_NPC);
+            this.clientStream.newPacket(clientOpcodes.USEWITH_NPC);
             this.clientStream.putShort(mIdx);
             this.clientStream.putShort(mSrcIdx);
             this.clientStream.sendPacket();
@@ -6737,7 +6738,7 @@ class mudclient extends GameConnection {
             let j4 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, j2, j4, true);
-            this.clientStream.newPacket(C_OPCODES.NPC_TALK);
+            this.clientStream.newPacket(clientOpcodes.NPC_TALK);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
@@ -6747,7 +6748,7 @@ class mudclient extends GameConnection {
             let k4 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, k2, k4, true);
-            this.clientStream.newPacket(C_OPCODES.NPC_CMD);
+            this.clientStream.newPacket(clientOpcodes.NPC_CMD);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
@@ -6757,7 +6758,7 @@ class mudclient extends GameConnection {
             let l4 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, l2, l4, true);
-            this.clientStream.newPacket(C_OPCODES.NPC_ATTACK);
+            this.clientStream.newPacket(clientOpcodes.NPC_ATTACK);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
@@ -6771,7 +6772,7 @@ class mudclient extends GameConnection {
             let i5 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, i3, i5, true);
-            this.clientStream.newPacket(C_OPCODES.CAST_PLAYER);
+            this.clientStream.newPacket(clientOpcodes.CAST_PLAYER);
             this.clientStream.putShort(mIdx);
             this.clientStream.putShort(mSrcIdx);
             this.clientStream.sendPacket();
@@ -6783,7 +6784,7 @@ class mudclient extends GameConnection {
             let j5 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, j3, j5, true);
-            this.clientStream.newPacket(C_OPCODES.USEWITH_PLAYER);
+            this.clientStream.newPacket(clientOpcodes.USEWITH_PLAYER);
             this.clientStream.putShort(mIdx);
             this.clientStream.putShort(mSrcIdx);
             this.clientStream.sendPacket();
@@ -6795,32 +6796,32 @@ class mudclient extends GameConnection {
             let k5 = ((my - 64) / this.magicLoc) | 0;
 
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, k3, k5, true);
-            this.clientStream.newPacket(C_OPCODES.PLAYER_ATTACK);
+            this.clientStream.newPacket(clientOpcodes.PLAYER_ATTACK);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
 
         if (mItemId === 2806) {
-            this.clientStream.newPacket(C_OPCODES.PLAYER_DUEL);
+            this.clientStream.newPacket(clientOpcodes.PLAYER_DUEL);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
 
         if (mItemId === 2810) {
-            this.clientStream.newPacket(C_OPCODES.PLAYER_TRADE);
+            this.clientStream.newPacket(clientOpcodes.PLAYER_TRADE);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
 
         if (mItemId === 2820) {
-            this.clientStream.newPacket(C_OPCODES.PLAYER_FOLLOW);
+            this.clientStream.newPacket(clientOpcodes.PLAYER_FOLLOW);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
         }
 
         if (mItemId === 900) {
             this._walkToActionSource_from5(this.localRegionX, this.localRegionY, mx, my, true);
-            this.clientStream.newPacket(C_OPCODES.CAST_GROUND);
+            this.clientStream.newPacket(clientOpcodes.CAST_GROUND);
             this.clientStream.putShort(mx + this.regionX);
             this.clientStream.putShort(my + this.regionY);
             this.clientStream.putShort(mIdx);
@@ -6837,7 +6838,7 @@ class mudclient extends GameConnection {
         }
 
         if (mItemId === 1000) {
-            this.clientStream.newPacket(C_OPCODES.CAST_SELF);
+            this.clientStream.newPacket(clientOpcodes.CAST_SELF);
             this.clientStream.putShort(mIdx);
             this.clientStream.sendPacket();
             this.selectedSpell = -1;
@@ -6930,7 +6931,7 @@ class mudclient extends GameConnection {
     // TODO: let's move each of these to its own file
     handleIncomingPacket(opcode, ptype, psize, pdata) {
         try {
-            if (opcode === S_OPCODES.REGION_PLAYERS) {
+            if (opcode === serverOpcodes.REGION_PLAYERS) {
                 this.knownPlayerCount = this.playerCount;
 
                 for (let k = 0; k < this.knownPlayerCount; k++) {
@@ -7068,7 +7069,7 @@ class mudclient extends GameConnection {
                 }
 
                 if (count > 0) {
-                    this.clientStream.newPacket(C_OPCODES.KNOWN_PLAYERS);
+                    this.clientStream.newPacket(clientOpcodes.KNOWN_PLAYERS);
                     this.clientStream.putShort(count);
 
                     for (let i = 0; i < count; i++) {
@@ -7085,7 +7086,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.REGION_GROUND_ITEMS) {
+            if (opcode === serverOpcodes.REGION_GROUND_ITEMS) {
                 for (let l = 1; l < psize; )
                     if (Utility.getUnsignedByte(pdata[l]) === 255) {
                         let l7 = 0;
@@ -7162,7 +7163,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.REGION_OBJECTS) {
+            if (opcode === serverOpcodes.REGION_OBJECTS) {
                 for (let i1 = 1; i1 < psize; ) {
                     if (Utility.getUnsignedByte(pdata[i1]) === 255) {
                         let j8 = 0;
@@ -7265,7 +7266,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.INVENTORY_ITEMS) {
+            if (opcode === serverOpcodes.INVENTORY_ITEMS) {
                 let offset = 1;
 
                 this.inventoryItemsCount = pdata[offset++] & 0xff;
@@ -7293,7 +7294,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.REGION_PLAYER_UPDATE) {
+            if (opcode === serverOpcodes.REGION_PLAYER_UPDATE) {
                 let k1 = Utility.getUnsignedShort(pdata, 1);
                 let offset = 3;
 
@@ -7308,7 +7309,7 @@ class mudclient extends GameConnection {
                     offset++;
 
                     // speech bubble with an item in it
-                    if (updateType === 0) { 
+                    if (updateType === 0) {
                         let id = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
@@ -7363,7 +7364,7 @@ class mudclient extends GameConnection {
                                 this.playerStatCurrent[3] = current;
                                 this.playerStatBase[3] = max;
                                 this.showDialogWelcome = false;
-                                this.showDialogServermessage = false;
+                                this.showDialogServerMessage = false;
                             }
                         }
                     } else if (updateType === 3) { // new incoming projectile from npc?
@@ -7453,7 +7454,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.REGION_WALL_OBJECTS) {
+            if (opcode === serverOpcodes.REGION_WALL_OBJECTS) {
                 for (let offset = 1; offset < psize; )
                     if (Utility.getUnsignedByte(pdata[offset]) === 255) {
                         let count = 0;
@@ -7528,7 +7529,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.REGION_NPCS) {
+            if (opcode === serverOpcodes.REGION_NPCS) {
                 this.npcCacheCount = this.npcCount;
                 this.npcCount = 0;
 
@@ -7638,7 +7639,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.REGION_NPC_UPDATE) {
+            if (opcode === serverOpcodes.REGION_NPC_UPDATE) {
                 let j2 = Utility.getUnsignedShort(pdata, 1);
                 let i10 = 3;
 
@@ -7698,7 +7699,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.OPTION_LIST) {
+            if (opcode === serverOpcodes.OPTION_LIST) {
                 this.showOptionMenu = true;
 
                 let count = Utility.getUnsignedByte(pdata[1]);
@@ -7718,12 +7719,12 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.OPTION_LIST_CLOSE) {
+            if (opcode === serverOpcodes.OPTION_LIST_CLOSE) {
                 this.showOptionMenu = false;
                 return;
             }
 
-            if (opcode === S_OPCODES.WORLD_INFO) {
+            if (opcode === serverOpcodes.WORLD_INFO) {
                 this.loadingArea = true;
                 this.localPlayerServerIndex = Utility.getUnsignedShort(pdata, 1);
                 this.planeWidth = Utility.getUnsignedShort(pdata, 3);
@@ -7735,18 +7736,18 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_STAT_LIST) {
+            if (opcode === serverOpcodes.PLAYER_STAT_LIST) {
                 let offset = 1;
 
-                for (let i = 0; i < this.playerStatCount; i++) {
+                for (let i = 0; i < PLAYER_STAT_COUNT; i++) {
                     this.playerStatCurrent[i] = Utility.getUnsignedByte(pdata[offset++]);
                 }
 
-                for (let i = 0; i < this.playerStatCount; i++) {
+                for (let i = 0; i < PLAYER_STAT_COUNT; i++) {
                     this.playerStatBase[i] = Utility.getUnsignedByte(pdata[offset++]);
                 }
 
-                for (let i = 0; i < this.playerStatCount; i++) {
+                for (let i = 0; i < PLAYER_STAT_COUNT; i++) {
                     this.playerExperience[i] = Utility.getUnsignedInt(pdata, offset);
                     offset += 4;
                 }
@@ -7755,20 +7756,20 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_STAT_EQUIPMENT_BONUS) {
-                for (let i3 = 0; i3 < this.playerStatEquipmentCount; i3++) {
+            if (opcode === serverOpcodes.PLAYER_STAT_EQUIPMENT_BONUS) {
+                for (let i3 = 0; i3 < PLAYER_STAT_EQUIPMENT_COUNT; i3++) {
                     this.playerStatEquipment[i3] = Utility.getUnsignedByte(pdata[1 + i3]);
                 }
 
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_DIED) {
+            if (opcode === serverOpcodes.PLAYER_DIED) {
                 this.deathScreenTimeout = 250;
                 return;
             }
 
-            if (opcode === S_OPCODES.REGION_ENTITY_UPDATE) {
+            if (opcode === serverOpcodes.REGION_ENTITY_UPDATE) {
                 let j3 = ((psize - 1) / 4) | 0;
 
                 for (let l10 = 0; l10 < j3; l10++) {
@@ -7846,12 +7847,12 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.APPEARANCE) {
+            if (opcode === serverOpcodes.APPEARANCE) {
                 this.showAppearanceChange = true;
                 return;
             }
 
-            if (opcode === S_OPCODES.TRADE_OPEN) {
+            if (opcode === serverOpcodes.TRADE_OPEN) {
                 let k3 = Utility.getUnsignedShort(pdata, 1);
 
                 if (this.playerServer[k3] !== null) {
@@ -7866,14 +7867,14 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.TRADE_CLOSE) {
+            if (opcode === serverOpcodes.TRADE_CLOSE) {
                 this.showDialogTrade = false;
                 this.showDialogTradeConfirm = false;
 
                 return;
             }
 
-            if (opcode === S_OPCODES.TRADE_ITEMS) {
+            if (opcode === serverOpcodes.TRADE_ITEMS) {
                 this.tradeRecipientItemsCount = pdata[1] & 0xff;
 
                 let l3 = 2;
@@ -7891,7 +7892,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.TRADE_RECIPIENT_STATUS) {
+            if (opcode === serverOpcodes.TRADE_RECIPIENT_STATUS) {
                 let byte0 = pdata[1];
 
                 if (byte0 === 1) {
@@ -7903,7 +7904,7 @@ class mudclient extends GameConnection {
                 }
             }
 
-            if (opcode === S_OPCODES.SHOP_OPEN) {
+            if (opcode === serverOpcodes.SHOP_OPEN) {
                 this.showDialogShop = true;
 
                 let off = 1;
@@ -7967,12 +7968,12 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.SHOP_CLOSE) {
+            if (opcode === serverOpcodes.SHOP_CLOSE) {
                 this.showDialogShop = false;
                 return;
             }
 
-            if (opcode === S_OPCODES.TRADE_STATUS) {
+            if (opcode === serverOpcodes.TRADE_STATUS) {
                 let byte1 = pdata[1];
 
                 if (byte1 === 1) {
@@ -7984,7 +7985,7 @@ class mudclient extends GameConnection {
                 }
             }
 
-            if (opcode === S_OPCODES.GAME_SETTINGS) {
+            if (opcode === serverOpcodes.GAME_SETTINGS) {
                 this.optionCameraModeAuto = Utility.getUnsignedByte(pdata[1]) === 1;
                 this.optionMouseButtonOne = Utility.getUnsignedByte(pdata[2]) === 1;
                 this.optionSoundDisabled = Utility.getUnsignedByte(pdata[3]) === 1;
@@ -7992,7 +7993,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.PRAYER_STATUS) {
+            if (opcode === serverOpcodes.PRAYER_STATUS) {
                 for (let j4 = 0; j4 < psize - 1; j4++) {
                     let on = pdata[j4 + 1] === 1;
 
@@ -8010,15 +8011,15 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_QUEST_LIST) {
-                for (let k4 = 0; k4 < this.questCount; k4++) {
+            if (opcode === serverOpcodes.PLAYER_QUEST_LIST) {
+                for (let k4 = 0; k4 < QUEST_COUNT; k4++) {
                     this.questComplete[k4] = pdata[k4 + 1] === 1;
                 }
 
                 return;
             }
 
-            if (opcode === S_OPCODES.BANK_OPEN) {
+            if (opcode === serverOpcodes.BANK_OPEN) {
                 this.showDialogBank = true;
 
                 let l4 = 1;
@@ -8042,18 +8043,18 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.BANK_CLOSE) {
+            if (opcode === serverOpcodes.BANK_CLOSE) {
                 this.showDialogBank = false;
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_STAT_EXPERIENCE_UPDATE) {
+            if (opcode === serverOpcodes.PLAYER_STAT_EXPERIENCE_UPDATE) {
                 let i5 = pdata[1] & 0xff;
                 this.playerExperience[i5] = Utility.getUnsignedInt(pdata, 2);
                 return;
             }
 
-            if (opcode === S_OPCODES.DUEL_OPEN) {
+            if (opcode === serverOpcodes.DUEL_OPEN) {
                 let j5 = Utility.getUnsignedShort(pdata, 1);
 
                 if (this.playerServer[j5] !== null) {
@@ -8073,13 +8074,13 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.DUEL_CLOSE) {
+            if (opcode === serverOpcodes.DUEL_CLOSE) {
                 this.showDialogDuel = false;
                 this.showDialogDuelConfirm = false;
                 return;
             }
 
-            if (opcode === S_OPCODES.TRADE_CONFIRM_OPEN) {
+            if (opcode === serverOpcodes.TRADE_CONFIRM_OPEN) {
                 this.showDialogTradeConfirm = true;
                 this.tradeConfirmAccepted = false;
                 this.showDialogTrade = false;
@@ -8109,7 +8110,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.DUEL_UPDATE) {
+            if (opcode === serverOpcodes.DUEL_UPDATE) {
                 this.duelOfferOpponentItemCount = pdata[1] & 0xff;
 
                 let l5 = 2;
@@ -8127,7 +8128,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.DUEL_SETTINGS) {
+            if (opcode === serverOpcodes.DUEL_SETTINGS) {
                 if (pdata[1] === 1) {
                     this.duelSettingsRetreat = true;
                 } else {
@@ -8158,7 +8159,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.BANK_UPDATE) {
+            if (opcode === serverOpcodes.BANK_UPDATE) {
                 let i6 = 1;
                 let itemsCountOld = pdata[i6++] & 0xff;
                 let item = Utility.getUnsignedShort(pdata, i6);
@@ -8193,7 +8194,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.INVENTORY_ITEM_UPDATE) {
+            if (opcode === serverOpcodes.INVENTORY_ITEM_UPDATE) {
                 let offset = 1;
                 let stack = 1;
                 let index = pdata[offset++] & 0xff;
@@ -8222,7 +8223,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.INVENTORY_ITEM_REMOVE) {
+            if (opcode === serverOpcodes.INVENTORY_ITEM_REMOVE) {
                 let index = pdata[1] & 0xff;
 
                 this.inventoryItemsCount--;
@@ -8236,7 +8237,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_STAT_UPDATE) {
+            if (opcode === serverOpcodes.PLAYER_STAT_UPDATE) {
                 let l6 = 1;
                 let i13 = pdata[l6++] & 0xff;
 
@@ -8248,7 +8249,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.DUEL_OPPONENT_ACCEPTED) {
+            if (opcode === serverOpcodes.DUEL_OPPONENT_ACCEPTED) {
                 let byte2 = pdata[1];
 
                 if (byte2 === 1) {
@@ -8260,7 +8261,7 @@ class mudclient extends GameConnection {
                 }
             }
 
-            if (opcode === S_OPCODES.DUEL_ACCEPTED) {
+            if (opcode === serverOpcodes.DUEL_ACCEPTED) {
                 let byte3 = pdata[1];
 
                 if (byte3 === 1) {
@@ -8272,7 +8273,7 @@ class mudclient extends GameConnection {
                 }
             }
 
-            if (opcode === S_OPCODES.DUEL_CONFIRM_OPEN) {
+            if (opcode === serverOpcodes.DUEL_CONFIRM_OPEN) {
                 this.showDialogDuelConfirm = true;
                 this.duelAccepted = false;
                 this.showDialogDuel = false;
@@ -8307,13 +8308,13 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.SOUND) {
+            if (opcode === serverOpcodes.SOUND) {
                 let s = fromCharArray(pdata.slice(1, psize));
                 this.playSoundFile(s);
                 return;
             }
 
-            if (opcode === S_OPCODES.TELEPORT_BUBBLE) {
+            if (opcode === serverOpcodes.TELEPORT_BUBBLE) {
                 if (this.teleportBubbleCount < 50) {
                     let type = pdata[1] & 0xff;
                     let x = pdata[2] + this.localRegionX;
@@ -8328,7 +8329,7 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.WELCOME) {
+            if (opcode === serverOpcodes.WELCOME) {
                 if (!this.welcomScreenAlreadyShown) {
                     this.welcomeLastLoggedInIP = Utility.getUnsignedInt(pdata, 1);
                     this.welcomeLastLoggedInDays = Utility.getUnsignedShort(pdata, 5);
@@ -8342,28 +8343,28 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.SERVER_MESSAGE) {
+            if (opcode === serverOpcodes.SERVER_MESSAGE) {
                 this.serverMessage = fromCharArray(pdata.slice(1, psize));
-                this.showDialogServermessage = true;
+                this.showDialogServerMessage = true;
                 this.serverMessageBoxTop = false;
 
                 return;
             }
 
-            if (opcode === S_OPCODES.SERVER_MESSAGE_ONTOP) {
+            if (opcode === serverOpcodes.SERVER_MESSAGE_ONTOP) {
                 this.serverMessage = fromCharArray(pdata.slice(1, psize));
-                this.showDialogServermessage = true;
+                this.showDialogServerMessage = true;
                 this.serverMessageBoxTop = true;
 
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_STAT_FATIGUE) {
+            if (opcode === serverOpcodes.PLAYER_STAT_FATIGUE) {
                 this.statFatigue = Utility.getUnsignedShort(pdata, 1);
                 return;
             }
 
-            if (opcode === S_OPCODES.SLEEP_OPEN) {
+            if (opcode === serverOpcodes.SLEEP_OPEN) {
                 if (!this.isSleeping) {
                     this.fatigueSleeping = this.statFatigue;
                 }
@@ -8377,22 +8378,22 @@ class mudclient extends GameConnection {
                 return;
             }
 
-            if (opcode === S_OPCODES.PLAYER_STAT_FATIGUE_ASLEEP) {
+            if (opcode === serverOpcodes.PLAYER_STAT_FATIGUE_ASLEEP) {
                 this.fatigueSleeping = Utility.getUnsignedShort(pdata, 1);
                 return;
             }
 
-            if (opcode === S_OPCODES.SLEEP_CLOSE) {
+            if (opcode === serverOpcodes.SLEEP_CLOSE) {
                 this.isSleeping = false;
                 return;
             }
 
-            if (opcode === S_OPCODES.SLEEP_INCORRECT) {
+            if (opcode === serverOpcodes.SLEEP_INCORRECT) {
                 this.sleepingStatusText = 'Incorrect - Please wait...';
                 return;
             }
 
-            if (opcode === S_OPCODES.SYSTEM_UPDATE) {
+            if (opcode === serverOpcodes.SYSTEM_UPDATE) {
                 this.systemUpdate = Utility.getUnsignedShort(pdata, 1) * 32;
                 return;
             }
@@ -8403,7 +8404,7 @@ class mudclient extends GameConnection {
                 let s1 = e.stack;
                 let slen = s1.length;
 
-                this.clientStream.newPacket(C_OPCODES.PACKET_EXCEPTION);
+                this.clientStream.newPacket(clientOpcodes.PACKET_EXCEPTION);
                 this.clientStream.putShort(slen);
                 this.clientStream.putString(s1);
                 this.clientStream.putShort(slen = (s1 = 'p-type: ' + opcode + '(' + ptype + ') p-size:' + psize).length);
@@ -8521,7 +8522,7 @@ class mudclient extends GameConnection {
                 i1 += 12;
                 let l2 = 0;
 
-                for (let j3 = 0; j3 < this.playerStatCount; j3++) {
+                for (let j3 = 0; j3 < PLAYER_STAT_COUNT; j3++) {
                     l2 += this.playerStatBase[j3];
                 }
 
@@ -8536,7 +8537,7 @@ class mudclient extends GameConnection {
             this.panelQuestList.clearList(this.controlListQuest);
             this.panelQuestList.addListEntry(this.controlListQuest, 0, '@whi@Quest-list (green=completed)');
 
-            for (let j1 = 0; j1 < this.questCount; j1++) {
+            for (let j1 = 0; j1 < QUEST_COUNT; j1++) {
                 this.panelQuestList.addListEntry(this.controlListQuest, j1 + 1, (this.questComplete[j1] ? '@gre@' : '@red@') + this.questName[j1]);
             }
 

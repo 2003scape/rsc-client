@@ -198,18 +198,13 @@ class Utility {
             wantedHash = (((wantedHash * 61) | 0) + filename.charCodeAt(k)) - 32;
         }
 
-        let offset = 2 + numEntries * 10;
-
         for (let i1 = 0; i1 < numEntries; i1++) {
             let fileHash = ((data[i1 * 10 + 2] & 0xff) * 0x1000000 + (data[i1 * 10 + 3] & 0xff) * 0x10000 + (data[i1 * 10 + 4] & 0xff) * 256 + (data[i1 * 10 + 5] & 0xff)) | 0;
             let fileSize = ((data[i1 * 10 + 6] & 0xff) * 0x10000 + (data[i1 * 10 + 7] & 0xff) * 256 + (data[i1 * 10 + 8] & 0xff)) | 0;
-            let fileSizeCompressed = ((data[i1 * 10 + 9] & 0xff) * 0x10000 + (data[i1 * 10 + 10] & 0xff) * 256 + (data[i1 * 10 + 11] & 0xff)) | 0;
 
             if (fileHash === wantedHash) {
                 return fileSize;
             }
-
-            offset += fileSizeCompressed;
         }
 
         return 0;

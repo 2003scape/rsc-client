@@ -1,6 +1,3 @@
-const Font = require('./font');
-const Color = require('./color');
-
 class Graphics {
     constructor(canvas) {
         this.canvas = canvas;

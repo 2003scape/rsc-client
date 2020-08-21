@@ -15,6 +15,8 @@ function fixPixel(pixel) {
 
 class Surface {
     constructor(width, height, limit, component) {
+        this.mudclientref = null;
+
         this.image = null;
         this.landscapeColours = null;
         this.anIntArray340 = null;
@@ -831,6 +833,31 @@ class Surface {
             this._plotScale_from13(this.pixels, this.surfacePixels[spriteId], 0, l1, i2, i3, k3, width, height, j2, k2, spriteWidth, yInc);
         } catch (e) {
             console.log('error in sprite clipping routine');
+        }
+    }
+
+    _spriteClipping_from7(x, y, w, h, id, tx, ty) {
+        if (id >= 50000) {
+            this.mudclientref.drawTeleportBubble(x, y, w, h, id - 50000, tx, ty);
+            return;
+        }
+
+        if (id >= 40000) {
+            this.mudclientref.drawItem(x, y, w, h, id - 40000, tx, ty);
+            return;
+        }
+
+        if (id >= 20000) {
+            this.mudclientref.drawNpc(x, y, w, h, id - 20000, tx, ty);
+            return;
+        }
+
+        if (id >= 5000) {
+            this.mudclientref.drawPlayer(x, y, w, h, id - 5000, tx, ty);
+            return;
+        } else {
+            super._spriteClipping_from5(x, y, w, h, id);
+            return;
         }
     }
 
@@ -2239,11 +2266,8 @@ class Surface {
                 k += j1;
                 j += k1;
             }
-
-            return;
         } catch (e) {
             console.error(e);
-            return;
         }
     }
 

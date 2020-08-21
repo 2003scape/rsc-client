@@ -1,4 +1,4 @@
-const PCMPlayer = require('./lib/pcm-player');
+const PCMPlayer = require('pcm-player');
 const { mulaw } = require('alawmulaw');
 
 class StreamAudioPlayer {

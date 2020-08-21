@@ -2,13 +2,13 @@ const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const Graphics = require('./lib/graphics/graphics');
-const KEYCODES = require('./lib/keycodes');
 const Socket = require('./lib/net/socket');
 const Surface = require('./surface');
+const TGA = require('tga-js');
 const Utility = require('./utility');
-const VERSION = require('./version');
+const keycodes = require('./lib/keycodes');
+const version = require('./version');
 const zzz = require('sleep-promise');
-const { TGA } = require('./lib/tga');
 
 class GameShell {
     constructor(canvas) {
@@ -20,7 +20,8 @@ class GameShell {
             mouseWheel: false,
             resetCompass: false,
             zoomCamera: false,
-            showRoofs: true
+            showRoofs: true,
+            remainingXp: false
         };
 
         this.middleButtonDown = false;
@@ -116,23 +117,23 @@ class GameShell {
 
         this.handleKeyPress(chr);
 
-        if (code === KEYCODES.LEFT_ARROW) {
+        if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = true;
-        } else if (code === KEYCODES.RIGHT_ARROW) {
+        } else if (code === keycodes.RIGHT_ARROW) {
             this.keyRight = true;
-        } else if (code === KEYCODES.UP_ARROW) {
+        } else if (code === keycodes.UP_ARROW) {
             this.keyUp = true;
-        } else if (code === KEYCODES.DOWN_ARROW) {
+        } else if (code === keycodes.DOWN_ARROW) {
             this.keyDown = true;
-        } else if (code === KEYCODES.SPACE) {
+        } else if (code === keycodes.SPACE) {
             this.keySpace = true;
-        } else if (code === KEYCODES.F1) {
+        } else if (code === keycodes.F1) {
             this.interlace = !this.interlace;
-        } else if (code === KEYCODES.HOME) {
+        } else if (code === keycodes.HOME) {
             this.keyHome = true;
-        } else if (code === KEYCODES.PAGE_UP) {
+        } else if (code === keycodes.PAGE_UP) {
             this.keyPgUp = true;
-        } else if (code === KEYCODES.PAGE_DOWN) {
+        } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = true;
         }
 
@@ -155,12 +156,12 @@ class GameShell {
             }
         }
 
-        if (code === KEYCODES.ENTER) {
+        if (code === keycodes.ENTER) {
             this.inputTextFinal = this.inputTextCurrent;
             this.inputPmFinal = this.inputPmCurrent;
         }
 
-        if (code === KEYCODES.BACKSPACE) {
+        if (code === keycodes.BACKSPACE) {
             if (this.inputTextCurrent.length > 0) {
                 this.inputTextCurrent = this.inputTextCurrent.substring(0, this.inputTextCurrent.length - 1);
             }
@@ -178,21 +179,21 @@ class GameShell {
 
         let code = e.keyCode;
 
-        if (code === KEYCODES.LEFT_ARROW) {
+        if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = false;
-        } else if (code === KEYCODES.RIGHT_ARROW) {
+        } else if (code === keycodes.RIGHT_ARROW) {
             this.keyRight = false;
-        } else if (code === KEYCODES.UP_ARROW) {
+        } else if (code === keycodes.UP_ARROW) {
             this.keyUp = false;
-        } else if (code === KEYCODES.DOWN_ARROW) {
+        } else if (code === keycodes.DOWN_ARROW) {
             this.keyDown = false;
-        } else if (code === KEYCODES.SPACE) {
+        } else if (code === keycodes.SPACE) {
             this.keySpace = false;
-        } else if (code === KEYCODES.HOME) {
+        } else if (code === keycodes.HOME) {
             this.keyHome = false;
-        } else if (code === KEYCODES.PAGE_UP) {
+        } else if (code === keycodes.PAGE_UP) {
             this.keyPgUp = false;
-        } else if (code === KEYCODES.PAGE_DOWN) {
+        } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = false;
         }
 
@@ -399,7 +400,7 @@ class GameShell {
             this.imageLogo = this.createImage(logo);
         }
 
-        buff = await this.readDataFile(`fonts${VERSION.FONTS}.jag`, 'Game fonts', 5);
+        buff = await this.readDataFile(`fonts${version.FONTS}.jag`, 'Game fonts', 5);
 
         if (buff !== null) {
             Surface.createFont(Utility.loadData('h11p.jf', 0, buff), 0);
@@ -497,7 +498,7 @@ class GameShell {
     createImage(buff) {
         const tgaImage = new TGA();
 
-        tgaImage.load(buff.buffer);
+        tgaImage.load(new Uint8Array(buff.buffer));
 
         const canvas = tgaImage.getCanvas();
         const ctx = canvas.getContext('2d');

@@ -1,6 +1,6 @@
 const Surface = require('./surface');
 
-const CONTROL_TYPES = {
+const controlTypes = {
     TEXT: 0,
     CENTRE_TEXT: 1,
     GRADIENT_BG: 2,
@@ -37,7 +37,7 @@ class Panel {
         this.controlMaskText = new Int8Array(max);
         this.controlClicked = new Int8Array(max);
         this.controlUseAlternativeColour = new Int8Array(max);
-        this.controlFlashText = new Int32Array(max);// not so sure
+        this.controlFlashText = new Int32Array(max);
         this.controlListEntryCount = new Int32Array(max);
         this.controlListEntryMouseButtonDown = new Int32Array(max);
         this.controlListEntryMouseOver = new Int32Array(max);
@@ -88,11 +88,11 @@ class Panel {
 
         if (lastMb === 1) {
             for (let i1 = 0; i1 < this.controlCount; i1++) {
-                if (this.controlShown[i1] && this.controlType[i1] === CONTROL_TYPES.BUTTON && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
+                if (this.controlShown[i1] && this.controlType[i1] === controlTypes.BUTTON && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
                     this.controlClicked[i1] = true;
                 }
 
-                if (this.controlShown[i1] && this.controlType[i1] === CONTROL_TYPES.CHECKBOX && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
+                if (this.controlShown[i1] && this.controlType[i1] === controlTypes.CHECKBOX && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
                     this.controlListEntryMouseButtonDown[i1] = 1 - this.controlListEntryMouseButtonDown[i1];
                 }
             }
@@ -161,29 +161,29 @@ class Panel {
     drawPanel() {
         for (let i = 0; i < this.controlCount; i++) {
             if (this.controlShown[i]) {
-                if (this.controlType[i] === CONTROL_TYPES.TEXT) {
+                if (this.controlType[i] === controlTypes.TEXT) {
                     this.drawText(i, this.controlX[i], this.controlY[i], this.controlText[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.CENTRE_TEXT) {
+                } else if (this.controlType[i] === controlTypes.CENTRE_TEXT) {
                     this.drawText(i, this.controlX[i] - ((this.surface.textWidth(this.controlText[i], this.controlTextSize[i]) / 2) | 0), this.controlY[i], this.controlText[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.GRADIENT_BG) {
+                } else if (this.controlType[i] === controlTypes.GRADIENT_BG) {
                     this.drawBox(this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.HORIZ_LINE) {
+                } else if (this.controlType[i] === controlTypes.HORIZ_LINE) {
                     this.drawLineHoriz(this.controlX[i], this.controlY[i], this.controlWidth[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.TEXT_LIST) {
+                } else if (this.controlType[i] === controlTypes.TEXT_LIST) {
                     this.drawTextList(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlTextSize[i], this.controlListEntries[i], this.controlListEntryCount[i], this.controlFlashText[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.LIST_INPUT || this.controlType[i] === CONTROL_TYPES.TEXT_INPUT) {
+                } else if (this.controlType[i] === controlTypes.LIST_INPUT || this.controlType[i] === controlTypes.TEXT_INPUT) {
                     this.drawTextInput(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlText[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.HORIZ_OPTION) {
+                } else if (this.controlType[i] === controlTypes.HORIZ_OPTION) {
                     this.drawOptionListHoriz(i, this.controlX[i], this.controlY[i], this.controlTextSize[i], this.controlListEntries[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.VERT_OPTION) {
+                } else if (this.controlType[i] === controlTypes.VERT_OPTION) {
                     this.drawOptionListVert(i, this.controlX[i], this.controlY[i], this.controlTextSize[i], this.controlListEntries[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.I_TEXT_LIST) {
+                } else if (this.controlType[i] === controlTypes.I_TEXT_LIST) {
                     this.drawTextListInteractive(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlTextSize[i], this.controlListEntries[i], this.controlListEntryCount[i], this.controlFlashText[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.ROUND_BOX) {
+                } else if (this.controlType[i] === controlTypes.ROUND_BOX) {
                     this.drawRoundedBox(this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.IMAGE) {
+                } else if (this.controlType[i] === controlTypes.IMAGE) {
                     this.drawPicture(this.controlX[i], this.controlY[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.CHECKBOX) {
+                } else if (this.controlType[i] === controlTypes.CHECKBOX) {
                     this.drawCheckbox(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
                 }
             }
@@ -235,11 +235,11 @@ class Panel {
             }
         }
 
-        if (this.controlType[control] === CONTROL_TYPES.LIST_INPUT) {
+        if (this.controlType[control] === controlTypes.LIST_INPUT) {
             if (this.mouseLastButtonDown === 1 && this.mouseX >= x && this.mouseY >= y - ((height / 2) | 0) && this.mouseX <= x + width && this.mouseY <= y + ((height / 2) | 0)) {
                 this.focusControlIndex = control;
             }
-        } else if (this.controlType[control] === CONTROL_TYPES.TEXT_INPUT) {
+        } else if (this.controlType[control] === controlTypes.TEXT_INPUT) {
             if (this.mouseLastButtonDown === 1 && this.mouseX >= x - ((width / 2) | 0) && this.mouseY >= y - ((height / 2) | 0) && this.mouseX <= x + width / 2 && this.mouseY <= y + ((height / 2) |0)) {
                 this.focusControlIndex = control;
             }
@@ -374,7 +374,7 @@ class Panel {
             j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / (listEntryCount - displayedEntryCount)) | 0;
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
-        
+
         let entryListStartY = height - displayedEntryCount * this.surface.textHeight(textSize);
         let y2 = y + ((this.surface.textHeight(textSize) * 5) / 6 + entryListStartY / 2) | 0;
 
@@ -519,7 +519,7 @@ class Panel {
             }
 
             // the up and down arrow buttons on the scrollbar
-            if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) { 
+            if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) {
                 if (this.mouseY > y && this.mouseY < y + 12 && listEntryPosition > 0) {
                     listEntryPosition--;
                 }
@@ -642,7 +642,7 @@ class Panel {
         let imgWidth = this.surface.spriteWidth[spriteId];
         let imgHeight = this.surface.spriteHeight[spriteId];
 
-        this.controlType[this.controlCount] = CONTROL_TYPES.IMAGE;
+        this.controlType[this.controlCount] = controlTypes.IMAGE;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x - ((imgWidth / 2) | 0);
@@ -655,7 +655,7 @@ class Panel {
     }
 
     addTextList(x, y, width, height, size, maxLength, flag) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.TEXT_LIST;
+        this.controlType[this.controlCount] = controlTypes.TEXT_LIST;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x;
@@ -670,12 +670,12 @@ class Panel {
         this.controlListEntries[this.controlCount] = [];
         this.controlListEntries[this.controlCount].length = maxLength;
         this.controlListEntries[this.controlCount].fill(null);
-        
+
         return this.controlCount++;
     }
 
     addTextListInput(x, y, width, height, size, maxLength, flag, flag1) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.LIST_INPUT;
+        this.controlType[this.controlCount] = controlTypes.LIST_INPUT;
         this.controlShown[this.controlCount] = true;
         this.controlMaskText[this.controlCount] = flag;
         this.controlClicked[this.controlCount] = false;
@@ -687,12 +687,12 @@ class Panel {
         this.controlHeight[this.controlCount] = height;
         this.controlInputMaxLen[this.controlCount] = maxLength;
         this.controlText[this.controlCount] = '';
-        
+
         return this.controlCount++;
     }
 
     addTextInput(x, y, width, height, size, maxLength, flag, flag1) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.TEXT_INPUT;
+        this.controlType[this.controlCount] = controlTypes.TEXT_INPUT;
         this.controlShown[this.controlCount] = true;
         this.controlMaskText[this.controlCount] = flag;
         this.controlClicked[this.controlCount] = false;
@@ -709,7 +709,7 @@ class Panel {
     }
 
     addTextListInteractive(x, y, width, height, textSize, maxLength, flag) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.I_TEXT_LIST;
+        this.controlType[this.controlCount] = controlTypes.I_TEXT_LIST;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlTextSize[this.controlCount] = textSize;
@@ -731,7 +731,7 @@ class Panel {
     }
 
     addButton(x, y, width, height) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.BUTTON;
+        this.controlType[this.controlCount] = controlTypes.BUTTON;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x - ((width / 2) | 0);
@@ -743,7 +743,7 @@ class Panel {
     }
 
     addLineHoriz(x, y, width) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.HORIZ_LINE;
+        this.controlType[this.controlCount] = controlTypes.HORIZ_LINE;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -753,7 +753,7 @@ class Panel {
     }
 
     addOptionListHoriz(x, y, textSize, maxListCount, useAltColour) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.HORIZ_OPTION;
+        this.controlType[this.controlCount] = controlTypes.HORIZ_OPTION;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -769,7 +769,7 @@ class Panel {
     }
 
     addOptionListVert(x, y, textSize, maxListCount, useAltColour) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.VERT_OPTION;
+        this.controlType[this.controlCount] = controlTypes.VERT_OPTION;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -785,7 +785,7 @@ class Panel {
     }
 
     addCheckbox(x, y, width, height) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.CHECKBOX;
+        this.controlType[this.controlCount] = controlTypes.CHECKBOX;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -862,8 +862,8 @@ class Panel {
     }
 }
 
-Panel.drawBackgroundArrow = true;
 Panel.baseSpriteStart = 0;
+Panel.drawBackgroundArrow = true;
 Panel.redMod = 114;
 Panel.greenMod = 114;
 Panel.blueMod = 176;

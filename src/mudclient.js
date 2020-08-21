@@ -1,4 +1,3 @@
-const clientOpcodes = require('./opcodes/client');
 const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -9,15 +8,17 @@ const GameData = require('./game-data');
 const GameModel = require('./game-model');
 const Long = require('long');
 const Panel = require('./panel');
-const serverOpcodes = require('./opcodes/server');
 const Scene = require('./scene');
 const StreamAudioPlayer = require('./stream-audio-player');
 const Surface = require('./surface');
-const SurfaceSprite = require('./surface-sprite');
+//const SurfaceSprite = require('./surface-sprite');
 const Utility = require('./utility');
-const VERSION = require('./version');
 const WordFilter = require('./word-filter');
 const World = require('./world');
+const applyUIComponents = require('./ui');
+const clientOpcodes = require('./opcodes/client');
+const serverOpcodes = require('./opcodes/server');
+const version = require('./version');
 
 const ZOOM_MIN = 450;
 const ZOOM_MAX = 1250;
@@ -45,6 +46,8 @@ class mudclient extends GameConnection {
     constructor(canvas) {
         super(canvas);
 
+        applyUIComponents(this);
+
         this.localRegionX = 0;
         this.localRegionY = 0;
         this.controlTextListChat = 0;
@@ -58,18 +61,15 @@ class mudclient extends GameConnection {
         this.uiTabSocialSubTab = 0;
         this.privateMessageTarget = new Long(0);
         this.controlListQuest = 0;
-        this.uiTabPlayerInfoSubTab = 0;
         this.controlListMagic = 0;
         this.tabMagicPrayer = 0;
         this.packetErrorCount = 0;
         this.mouseButtonDownTime = 0;
         this.mouseButtonItemCountIncrement = 0;
-        this.anInt659 = 0;
-        this.anInt660 = 0;
+        this.animationIndex = 0;
         this.cameraRotationX = 0;
         this.scene = null;
         this.loginScreen = 0;
-        this.showDialogReportAbuseStep = 0;
         this.tradeConfirmAccepted = false;
         this.audioPlayer = null;
         this.appearanceHeadType = 0;
@@ -78,7 +78,6 @@ class mudclient extends GameConnection {
         this.anInt707 = 0;
         this.deathScreenTimeout = 0;
         this.cameraRotationY = 0;
-        this.combatStyle = 0;
         this.welcomeUnreadMessages = 0;
         this.controlButtonAppearanceHead1 = 0;
         this.controlButtonAppearanceHead2 = 0;
@@ -103,13 +102,6 @@ class mudclient extends GameConnection {
         this.regionY = 0;
         this.welcomScreenAlreadyShown = false;
         this.mouseButtonClick = 0;
-        this.questName = [
-            'Black knight\'s fortress', 'Cook\'s assistant', 'Demon slayer', 'Doric\'s quest', 'The restless ghost', 'Goblin diplomacy', 'Ernest the chicken', 'Imp catcher', 'Pirate\'s treasure', 'Prince Ali rescue',
-            'Romeo & Juliet', 'Sheep shearer', 'Shield of Arrav', 'The knight\'s sword', 'Vampire slayer', 'Witch\'s potion', 'Dragon slayer', 'Witch\'s house (members)', 'Lost city (members)', 'Hero\'s quest (members)',
-            'Druidic ritual (members)', 'Merlin\'s crystal (members)', 'Scorpion catcher (members)', 'Family crest (members)', 'Tribal totem (members)', 'Fishing contest (members)', 'Monk\'s friend (members)', 'Temple of Ikov (members)', 'Clock tower (members)', 'The Holy Grail (members)',
-            'Fight Arena (members)', 'Tree Gnome Village (members)', 'The Hazeel Cult (members)', 'Sheep Herder (members)', 'Plague City (members)', 'Sea Slug (members)', 'Waterfall quest (members)', 'Biohazard (members)', 'Jungle potion (members)', 'Grand tree (members)',
-            'Shilo village (members)', 'Underground pass (members)', 'Observatory quest (members)', 'Tourist trap (members)', 'Watchtower (members)', 'Dwarf Cannon (members)', 'Murder Mystery (members)', 'Digsite (members)', 'Gertrude\'s Cat (members)', 'Legend\'s Quest (members)'
-        ];
         this.healthBarCount = 0;
         this.spriteMedia = 0;
         this.spriteUtil = 0;
@@ -166,7 +158,6 @@ class mudclient extends GameConnection {
         this.combatTimeout = 0;
         this.optionMenuCount = 0;
         this.errorLoadingCodebase = false;
-        this.reportAbuseOffence = 0;
         this.cameraRotationTime = 0;
         this.duelOpponentItemsCount = 0;
         this.duelItemsCount = 0;
@@ -177,7 +168,6 @@ class mudclient extends GameConnection {
             0xe000e0, 0x303030, 0x604000, 0x805000, 0xffffff
         ]);
         this.itemsAboveHeadCount = 0;
-        this.showUiWildWarn = 0;
         this.selectedItemInventoryIndex = 0;
         this.soundData = null;
         this.statFatigue = 0;
@@ -201,15 +191,10 @@ class mudclient extends GameConnection {
         ]);
         this.bankActivePage = 0;
         this.welcomeLastLoggedInDays = 0;
-        this.equipmentStatNames = ['Armour', 'WeaponAim', 'WeaponPower', 'Magic', 'Prayer'];
         this.inventoryItemsCount = 0;
-        this.skillNameShort = [
-            'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic', 'Cooking', 'Woodcut', 'Fletching',
-            'Fishing', 'Firemaking', 'Crafting', 'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
-        ];
         this.duelOpponentNameHash = new Long(0);
-        this.minimapRandom_1 = 0;
-        this.minimapRandom_2 = 0;
+        this.minimapRandom1 = 0;
+        this.minimapRandom2 = 0;
         this.objectCount = 0;
         this.duelOfferItemCount = 0;
         this.objectCount = 0;
@@ -217,10 +202,6 @@ class mudclient extends GameConnection {
         this.cameraAutoRotatePlayerX = 0;
         this.cameraAutoRotatePlayerY = 0;
         this.npcCombatModelArray1 = new Int32Array([0, 1, 2, 1, 0, 0, 0, 0]);
-        this.skillNamesLong = [
-            'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic', 'Cooking', 'Woodcutting', 'Fletching',
-            'Fishing', 'Firemaking', 'Crafting', 'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
-        ];
         this.playerCount = 0;
         this.knownPlayerCount = 0;
         this.spriteCount = 0;
@@ -392,7 +373,6 @@ class mudclient extends GameConnection {
         this.messageHistory = [];
         this.messageHistory.length = 5;
         this.messageHistory.fill(null);
-        this.reportAbuseMute = false;
         this.duelOfferItemId = new Int32Array(8);
         this.duelOfferItemStack = new Int32Array(8);
         this.actionBubbleScale = new Int32Array(50);
@@ -452,188 +432,6 @@ class mudclient extends GameConnection {
         if (!this.optionSoundDisabled) {
             this.audioPlayer.writeStream(this.soundData, Utility.getDataFileOffset(s + '.pcm', this.soundData), Utility.getDataFileLength(s + '.pcm', this.soundData));
         }
-    }
-
-    drawDialogReportAbuse() {
-        this.reportAbuseOffence = 0;
-        let y = 135;
-
-        for (let i = 0; i < 12; i++) {
-            if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 12 && this.mouseY < y + 3) {
-                this.reportAbuseOffence = i + 1;
-            }
-
-            y += 14;
-        }
-
-        if (this.mouseButtonClick !== 0 && this.reportAbuseOffence !== 0) {
-            this.mouseButtonClick = 0;
-            this.showDialogReportAbuseStep = 2;
-            this.inputTextCurrent = '';
-            this.inputTextFinal = '';
-            return;
-        }
-
-        y += 15;
-
-        if (this.mouseButtonClick !== 0) {
-            this.mouseButtonClick = 0;
-
-            if (this.mouseX < 56 || this.mouseY < 35 || this.mouseX > 456 || this.mouseY > 325) {
-                this.showDialogReportAbuseStep = 0;
-                return;
-            }
-
-            if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 15 && this.mouseY < y + 5) {
-                this.showDialogReportAbuseStep = 0;
-                return;
-            }
-        }
-
-        this.surface.drawBox(56, 35, 400, 290, 0);
-        this.surface.drawBoxEdge(56, 35, 400, 290, 0xffffff);
-        y = 50;
-        this.surface.drawStringCenter('This form is for reporting players who are breaking our rules', 256, y, 1, 0xffffff);
-        y += 15;
-        this.surface.drawStringCenter('Using it sends a snapshot of the last 60 secs of activity to us', 256, y, 1, 0xffffff);
-        y += 15;
-        this.surface.drawStringCenter('If you misuse this form, you will be banned.', 256, y, 1, 0xff8000);
-        y += 15;
-        y += 10;
-        this.surface.drawStringCenter('First indicate which of our 12 rules is being broken. For a detailed', 256, y, 1, 0xffff00);
-        y += 15;
-        this.surface.drawStringCenter('explanation of each rule please read the manual on our website.', 256, y, 1, 0xffff00);
-        y += 15;
-
-        let textColour = 0;
-
-        if (this.reportAbuseOffence === 1) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('1: Offensive language', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 2) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('2: Item scamming', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 3) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('3: Password scamming', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 4) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('4: Bug abuse', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 5) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('5: Jagex Staff impersonation', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 6) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('6: Account sharing/trading', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 7) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('7: Macroing', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 8) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('8: Mutiple logging in', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 9) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('9: Encouraging others to break rules', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 10) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('10: Misuse of customer support', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 11) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('11: Advertising / website', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 12) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('12: Real world item trading', 256, y, 1, textColour);
-        y += 14;
-        y += 15;
-        textColour = 0xffffff;
-
-        if (this.mouseX > 196 && this.mouseX < 316 && this.mouseY > y - 15 && this.mouseY < y + 5) {
-            textColour = 0xffff00;
-        }
-
-        this.surface.drawStringCenter('Click here to cancel', 256, y, 1, textColour);
     }
 
     _walkToActionSource_from8(startX, startY, x1, y1, x2, y2, checkObjects, walkToAction) {
@@ -720,12 +518,12 @@ class mudclient extends GameConnection {
         return true;
     }
 
-    drawMinimapEntity(x, y, c) {
-        this.surface.setPixel(x, y, c);
-        this.surface.setPixel(x - 1, y, c);
-        this.surface.setPixel(x + 1, y, c);
-        this.surface.setPixel(x, y - 1, c);
-        this.surface.setPixel(x, y + 1, c);
+    drawMinimapEntity(x, y, colour) {
+        this.surface.setPixel(x, y, colour);
+        this.surface.setPixel(x - 1, y, colour);
+        this.surface.setPixel(x + 1, y, colour);
+        this.surface.setPixel(x, y - 1, colour);
+        this.surface.setPixel(x, y + 1, colour);
     }
 
     updateBankItems() {
@@ -758,49 +556,6 @@ class mudclient extends GameConnection {
                 this.bankItemsCount[this.bankItemCount] = 0;
                 this.bankItemCount++;
             }
-        }
-    }
-
-    drawDialogWildWarn() {
-        let y = 97;
-
-        this.surface.drawBox(86, 77, 340, 180, 0);
-        this.surface.drawBoxEdge(86, 77, 340, 180, 0xffffff);
-        this.surface.drawStringCenter('Warning! Proceed with caution', 256, y, 4, 0xff0000);
-        y += 26;
-        this.surface.drawStringCenter('If you go much further north you will enter the', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('wilderness. This a very dangerous area where', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('other players can attack you!', 256, y, 1, 0xffffff);
-        y += 22;
-        this.surface.drawStringCenter('The further north you go the more dangerous it', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('becomes, but the more treasure you will find.', 256, y, 1, 0xffffff);
-        y += 22;
-        this.surface.drawStringCenter('In the wilderness an indicator at the bottom-right', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('of the screen will show the current level of danger', 256, y, 1, 0xffffff);
-        y += 22;
-
-        let j = 0xffffff;
-
-        if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 && this.mouseX < 331) {
-            j = 0xff0000;
-        }
-
-        this.surface.drawStringCenter('Click here to close window', 256, y, 1, j);
-
-        if (this.mouseButtonClick !== 0) {
-            if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 && this.mouseX < 331) {
-                this.showUiWildWarn = 2;
-            }
-
-            if (this.mouseX < 86 || this.mouseX > 426 || this.mouseY < 77 || this.mouseY > 257) {
-                this.showUiWildWarn = 2;
-            }
-
-            this.mouseButtonClick = 0;
         }
     }
 
@@ -903,7 +658,7 @@ class mudclient extends GameConnection {
         } else if (this.showDialogWelcome) {
             this.drawDialogWelcome();
         } else if (this.showDialogServerMessage) {
-            this.drawDialogServermessage();
+            this.drawDialogServerMessage();
         } else if (this.showUiWildWarn === 1) {
             this.drawDialogWildWarn();
         } else if (this.showDialogBank && this.combatTimeout === 0) {
@@ -935,38 +690,38 @@ class mudclient extends GameConnection {
 
             this.setActiveUiTab();
 
-            let nomenus = !this.showOptionMenu && !this.showRightClickMenu;
+            const noMenus = !this.showOptionMenu && !this.showRightClickMenu;
 
-            if (nomenus) {
+            if (noMenus) {
                 this.menuItemsCount = 0;
             }
 
-            if (this.showUiTab === 0 && nomenus) {
+            if (this.showUiTab === 0 && noMenus) {
                 this.createRightClickMenu();
             }
 
             if (this.showUiTab === 1) {
-                this.drawUiTabInventory(nomenus);
+                this.drawUiTabInventory(noMenus);
             }
 
             if (this.showUiTab === 2) {
-                this.drawUiTabMinimap(nomenus);
+                this.drawUiTabMinimap(noMenus);
             }
 
             if (this.showUiTab === 3) {
-                this.drawUiTabPlayerInfo(nomenus);
+                this.drawUiTabPlayerInfo(noMenus);
             }
 
             if (this.showUiTab === 4) {
-                this.drawUiTabMagic(nomenus);
+                this.drawUiTabMagic(noMenus);
             }
 
             if (this.showUiTab === 5) {
-                this.drawUiTabSocial(nomenus);
+                this.drawUiTabSocial(noMenus);
             }
 
             if (this.showUiTab === 6) {
-                this.drawUiTabOptions(nomenus);
+                this.drawUiTabOptions(noMenus);
             }
 
             if (!this.showRightClickMenu && !this.showOptionMenu) {
@@ -1299,17 +1054,17 @@ class mudclient extends GameConnection {
 
         if (this.uiTabSocialSubTab === 0) {
             for (let i1 = 0; i1 < this.friendListCount; i1++) {
-                let s = null;
+                let colour = null;
 
                 if (this.friendListOnline[i1] === 255) {
-                    s = '@gre@';
+                    colour = '@gre@';
                 } else if (this.friendListOnline[i1] > 0) {
-                    s = '@yel@';
+                    colour = '@yel@';
                 } else {
-                    s = '@red@';
+                    colour = '@red@';
                 }
 
-                this.panelSocialList.addListEntry(this.controlListSocialPlayers, i1, s + Utility.hashToUsername(this.friendListHashes[i1]) + '~439~@whi@Remove         WWWWWWWWWW');
+                this.panelSocialList.addListEntry(this.controlListSocialPlayers, i1, colour + Utility.hashToUsername(this.friendListHashes[i1]) + '~439~@whi@Remove         WWWWWWWWWW');
             }
 
         }
@@ -2813,8 +2568,8 @@ class mudclient extends GameConnection {
         this.surface.drawBox(uiX, 36, uiWidth, uiHeight, 0);
         this.surface.setBounds(uiX, 36, uiX + uiWidth, 36 + uiHeight);
 
-        let k = 192 + this.minimapRandom_2;
-        let i1 = this.cameraRotation + this.minimapRandom_1 & 0xff;
+        let k = 192 + this.minimapRandom2;
+        let i1 = this.cameraRotation + this.minimapRandom1 & 0xff;
         let k1 = (((this.localPlayer.currentX - 6040) * 3 * k) / 2048) | 0;
         let i3 = (((this.localPlayer.currentY - 6040) * 3 * k) / 2048) | 0;
         let k4 = Scene.sin2048Cache[1024 - i1 * 4 & 0x3ff];
@@ -2907,8 +2662,8 @@ class mudclient extends GameConnection {
         if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
             let c1 = 156;
             let c3 = 152;
-            let l = 192 + this.minimapRandom_2;
-            let j1 = this.cameraRotation + this.minimapRandom_1 & 0xff;
+            let l = 192 + this.minimapRandom2;
+            let j1 = this.cameraRotation + this.minimapRandom1 & 0xff;
             let j = this.surface.width2 - 199;
 
             j += 40;
@@ -3012,8 +2767,8 @@ class mudclient extends GameConnection {
 
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 35) {
             this.showUiTab = 2;
-            this.minimapRandom_1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom_2 = ((Math.random() * 23) | 0) - 11;
+            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
+            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
         }
 
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 35) {
@@ -3038,8 +2793,8 @@ class mudclient extends GameConnection {
 
         if (this.showUiTab !== 0 && this.showUiTab !== 2 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 26) {
             this.showUiTab = 2;
-            this.minimapRandom_1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom_2 = ((Math.random() * 23) | 0) - 11;
+            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
+            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
         }
 
         if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 26) {
@@ -3240,7 +2995,7 @@ class mudclient extends GameConnection {
     }
 
     async loadGameConfig() {
-        let buff = await this.readDataFile('config' + VERSION.CONFIG + '.jag', 'Configuration', 10);
+        let buff = await this.readDataFile('config' + version.CONFIG + '.jag', 'Configuration', 10);
 
         if (buff === null) {
             this.errorLoadingData = true;
@@ -3249,7 +3004,7 @@ class mudclient extends GameConnection {
 
         GameData.loadData(buff, this.members);
 
-        let abyte1 = await this.readDataFile('filter' + VERSION.FILTER + '.jag', 'Chat system', 15);
+        let abyte1 = await this.readDataFile('filter' + version.FILTER + '.jag', 'Chat system', 15);
 
         if (abyte1 === null) {
             this.errorLoadingData = true;
@@ -4339,7 +4094,7 @@ class mudclient extends GameConnection {
     }
 
     async loadMedia() {
-        let media = await this.readDataFile('media' + VERSION.MEDIA + '.jag', '2d graphics', 20);
+        let media = await this.readDataFile('media' + version.MEDIA + '.jag', '2d graphics', 20);
 
         if (media === null) {
             this.errorLoadingData = true;
@@ -4443,18 +4198,9 @@ class mudclient extends GameConnection {
     }
 
     async startGame() {
-        let totalExp = 0;
-
-        for (let level = 0; level < 99; level++) {
-            let level_1 = level + 1;
-            let exp = (level_1 + 300 * Math.pow(2, level_1 / 7)) | 0;
-            totalExp += exp;
-            this.experienceArray[level] = totalExp & 0xffffffc;
-        }
-
         this.port = this.port || 43595;
         this.maxReadTries = 1000;
-        GameConnection.clientVersion = VERSION.CLIENT;
+        GameConnection.clientVersion = version.CLIENT;
 
         await this.loadGameConfig();
 
@@ -4474,7 +4220,8 @@ class mudclient extends GameConnection {
 
         this.setTargetFps(50);
 
-        this.surface = new SurfaceSprite(this.gameWidth, this.gameHeight + 12, 4000, this);
+        this.surface = new Surface(this.gameWidth, this.gameHeight + 12, 4000,
+            this);
         this.surface.mudclientref = this;
         this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
@@ -5316,10 +5063,9 @@ class mudclient extends GameConnection {
 
     async loadSounds() {
         try {
-            this.soundData = await this.readDataFile('sounds' + VERSION.SOUNDS + '.mem', 'Sound effects', 90);
+            this.soundData = await this.readDataFile('sounds' + version.SOUNDS + '.mem', 'Sound effects', 90);
             this.audioPlayer = new StreamAudioPlayer();
         } catch (e) {
-            console.log('Unable to init sounds:' + e.message);
             console.error(e);
         }
     }
@@ -5338,7 +5084,7 @@ class mudclient extends GameConnection {
         let entityBuff = null;
         let indexDat = null;
 
-        entityBuff = await this.readDataFile('entity' + VERSION.ENTITY + '.jag', 'people and monsters', 30);
+        entityBuff = await this.readDataFile('entity' + version.ENTITY + '.jag', 'people and monsters', 30);
 
         if (entityBuff === null) {
             this.errorLoadingData = true;
@@ -5351,7 +5097,7 @@ class mudclient extends GameConnection {
         let indexDatMem = null;
 
         if (this.members) {
-            entityBuffMem = await this.readDataFile('entity' + VERSION.ENTITY + '.mem', 'member graphics', 45);
+            entityBuffMem = await this.readDataFile('entity' + version.ENTITY + '.mem', 'member graphics', 45);
 
             if (entityBuffMem === null) {
                 this.errorLoadingData = true;
@@ -5363,15 +5109,14 @@ class mudclient extends GameConnection {
 
         let frameCount = 0;
 
-        this.anInt659 = 0;
-        this.anInt660 = this.anInt659;
+        this.animationIndex = 0;
 
         label0:
         for (let j = 0; j < GameData.animationCount; j++) {
-            let s = GameData.animationName[j];
+            let animationName = GameData.animationName[j];
 
             for (let k = 0; k < j; k++) {
-                if (GameData.animationName[k].toLowerCase() !== s.toLowerCase()) {
+                if (GameData.animationName[k].toLowerCase() !== animationName.toLowerCase()) {
                     continue;
                 }
 
@@ -5379,54 +5124,54 @@ class mudclient extends GameConnection {
                 continue label0;
             }
 
-            let abyte7 = Utility.loadData(s + '.dat', 0, entityBuff);
-            let abyte4 = indexDat;
+            let animationDat = Utility.loadData(animationName + '.dat', 0, entityBuff);
+            let animationIndex = indexDat;
 
-            if (abyte7 === null && this.members) {
-                abyte7 = Utility.loadData(s + '.dat', 0, entityBuffMem);
-                abyte4 = indexDatMem;
+            if (animationDat === null && this.members) {
+                animationDat = Utility.loadData(animationName + '.dat', 0, entityBuffMem);
+                animationIndex = indexDatMem;
             }
 
-            if (abyte7 !== null) {
-                this.surface.parseSprite(this.anInt660, abyte7, abyte4, 15);
+            if (animationDat !== null) {
+                this.surface.parseSprite(this.animationIndex, animationDat, animationIndex, 15);
 
                 frameCount += 15;
 
                 if (GameData.animationHasA[j] === 1) {
-                    let aDat = Utility.loadData(s + 'a.dat', 0, entityBuff);
-                    let aIndexDat = indexDat;
+                    let aDat = Utility.loadData(animationName + 'a.dat', 0, entityBuff);
+                    let aIndex = indexDat;
 
                     if (aDat === null && this.members) {
-                        aDat = Utility.loadData(s + 'a.dat', 0, entityBuffMem);
-                        aIndexDat = indexDatMem;
+                        aDat = Utility.loadData(animationName + 'a.dat', 0, entityBuffMem);
+                        aIndex = indexDatMem;
                     }
 
-                    this.surface.parseSprite(this.anInt660 + 15, aDat, aIndexDat, 3);
+                    this.surface.parseSprite(this.animationIndex + 15, aDat, aIndex, 3);
                     frameCount += 3;
                 }
 
                 if (GameData.animationHasF[j] === 1) {
-                    let fDat = Utility.loadData(s + 'f.dat', 0, entityBuff);
-                    let fDatIndex = indexDat;
+                    let fDat = Utility.loadData(animationName + 'f.dat', 0, entityBuff);
+                    let fIndex = indexDat;
 
                     if (fDat === null && this.members) {
-                        fDat = Utility.loadData(s + 'f.dat', 0, entityBuffMem);
-                        fDatIndex = indexDatMem;
+                        fDat = Utility.loadData(animationName + 'f.dat', 0, entityBuffMem);
+                        fIndex = indexDatMem;
                     }
 
-                    this.surface.parseSprite(this.anInt660 + 18, fDat, fDatIndex, 9);
+                    this.surface.parseSprite(this.animationIndex + 18, fDat, fIndex, 9);
                     frameCount += 9;
                 }
 
                 if (GameData.animationSomething[j] !== 0) {
-                    for (let l = this.anInt660; l < this.anInt660 + 27; l++) {
+                    for (let l = this.animationIndex; l < this.animationIndex + 27; l++) {
                         this.surface.loadSprite(l);
                     }
                 }
             }
 
-            GameData.animationNumber[j] = this.anInt660;
-            this.anInt660 += 27;
+            GameData.animationNumber[j] = this.animationIndex;
+            this.animationIndex += 27;
         }
 
         console.log('Loaded: ' + frameCount + ' frames of animation');
@@ -5570,13 +5315,9 @@ class mudclient extends GameConnection {
             if (this.loggedIn === 0) {
                 this.surface.loggedIn = false;
                 this.drawLoginScreens();
-            }
-
-            if (this.loggedIn === 1) {
+            } else if (this.loggedIn === 1) {
                 this.surface.loggedIn = true;
                 this.drawGame();
-
-                return;
             }
         } catch (e) {
             // OutOfMemory
@@ -5721,7 +5462,7 @@ class mudclient extends GameConnection {
         GameData.getModelIndex('spellcharge2');
         GameData.getModelIndex('spellcharge3');
 
-        let abyte0 = await this.readDataFile('models' + VERSION.MODELS + '.jag', '3d models', 60);
+        let abyte0 = await this.readDataFile('models' + version.MODELS + '.jag', '3d models', 60);
 
         if (abyte0 === null) {
             this.errorLoadingData = true;
@@ -5743,7 +5484,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogServermessage() {
+    drawDialogServerMessage() {
         let width = 400;
         let height = 100;
 
@@ -6241,7 +5982,7 @@ class mudclient extends GameConnection {
     }
 
     async loadTextures() {
-        let buffTextures = await this.readDataFile('textures' + VERSION.TEXTURES + '.jag', 'Textures', 50);
+        let buffTextures = await this.readDataFile('textures' + version.TEXTURES + '.jag', 'Textures', 50);
 
         if (buffTextures === null) {
             this.errorLoadingData = true;
@@ -6487,45 +6228,6 @@ class mudclient extends GameConnection {
         this.surface.drawBox(126, 137, 260, 60, 0);
         this.surface.drawBoxEdge(126, 137, 260, 60, 0xffffff);
         this.surface.drawStringCenter('Logging out...', 256, 173, 5, 0xffffff);
-    }
-
-    drawDialogCombatStyle() {
-        let byte0 = 7;
-        let byte1 = 15;
-        let width = 175;
-
-        if (this.mouseButtonClick !== 0) {
-            for (let i = 0; i < 5; i++) {
-
-                if (i <= 0 || this.mouseX <= byte0 || this.mouseX >= byte0 + width || this.mouseY <= byte1 + i * 20 || this.mouseY >= byte1 + i * 20 + 20) {
-                    continue;
-                }
-
-                this.combatStyle = i - 1;
-                this.mouseButtonClick = 0;
-                this.clientStream.newPacket(clientOpcodes.COMBAT_STYLE);
-                this.clientStream.putByte(this.combatStyle);
-                this.clientStream.sendPacket();
-                break;
-            }
-        }
-
-        for (let j = 0; j < 5; j++) {
-            if (j === this.combatStyle + 1) {
-                this.surface.drawBoxAlpha(byte0, byte1 + j * 20, width, 20, Surface.rgbToLong(255, 0, 0), 128);
-            } else {
-                this.surface.drawBoxAlpha(byte0, byte1 + j * 20, width, 20, Surface.rgbToLong(190, 190, 190), 128);
-            }
-
-            this.surface.drawLineHoriz(byte0, byte1 + j * 20, width, 0);
-            this.surface.drawLineHoriz(byte0, byte1 + j * 20 + 20, width, 0);
-        }
-
-        this.surface.drawStringCenter('Select combat style', byte0 + ((width / 2) | 0), byte1 + 16, 3, 0xffffff);
-        this.surface.drawStringCenter('Controlled (+1 of each)', byte0 + ((width / 2) | 0), byte1 + 36, 3, 0);
-        this.surface.drawStringCenter('Aggressive (+3 strength)', byte0 + ((width / 2) | 0), byte1 + 56, 3, 0);
-        this.surface.drawStringCenter('Accurate   (+3 attack)', byte0 + ((width / 2) | 0), byte1 + 76, 3, 0);
-        this.surface.drawStringCenter('Defensive  (+3 defense)', byte0 + ((width / 2) | 0), byte1 + 96, 3, 0);
     }
 
     menuItemClick(i) {
@@ -8429,146 +8131,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawUiTabPlayerInfo(nomenus) {
-        let uiX = this.surface.width2 - 199;
-        let uiY = 36;
-
-        this.surface._drawSprite_from3(uiX - 49, 3, this.spriteMedia + 3);
-
-        let uiWidth = 196;
-        let uiHeight = 275;
-        let l = 0;
-        let k = l = Surface.rgbToLong(160, 160, 160);
-
-        if (this.uiTabPlayerInfoSubTab === 0) {
-            k = Surface.rgbToLong(220, 220, 220);
-        } else {
-            l = Surface.rgbToLong(220, 220, 220);
-        }
-
-        this.surface.drawBoxAlpha(uiX, uiY, (uiWidth / 2) | 0, 24, k, 128);
-        this.surface.drawBoxAlpha(uiX + ((uiWidth / 2) | 0), uiY, (uiWidth / 2) | 0, 24, l, 128);
-        this.surface.drawBoxAlpha(uiX, uiY + 24, uiWidth, uiHeight - 24, Surface.rgbToLong(220, 220, 220), 128);
-        this.surface.drawLineHoriz(uiX, uiY + 24, uiWidth, 0);
-        this.surface.drawLineVert(uiX + ((uiWidth / 2) | 0), uiY, 24, 0);
-        this.surface.drawStringCenter('Stats', uiX + ((uiWidth / 4) | 0), uiY + 16, 4, 0);
-        this.surface.drawStringCenter('Quests', uiX + ((uiWidth / 4) | 0) + ((uiWidth / 2) | 0), uiY + 16, 4, 0);
-
-        if (this.uiTabPlayerInfoSubTab === 0) {
-            let i1 = 72;
-            let k1 = -1;
-
-            this.surface.drawString('Skills', uiX + 5, i1, 3, 0xffff00);
-
-            i1 += 13;
-
-            for (let l1 = 0; l1 < 9; l1++) {
-                let i2 = 0xffffff;
-
-                if (this.mouseX > uiX + 3 && this.mouseY >= i1 - 11 && this.mouseY < i1 + 2 && this.mouseX < uiX + 90) {
-                    i2 = 0xff0000;
-                    k1 = l1;
-                }
-
-                this.surface.drawString(this.skillNameShort[l1] + ':@yel@' + this.playerStatCurrent[l1] + '/' + this.playerStatBase[l1], uiX + 5, i1, 1, i2);
-                i2 = 0xffffff;
-
-                if (this.mouseX >= uiX + 90 && this.mouseY >= i1 - 13 - 11 && this.mouseY < (i1 - 13) + 2 && this.mouseX < uiX + 196) {
-                    i2 = 0xff0000;
-                    k1 = l1 + 9;
-                }
-
-                this.surface.drawString(this.skillNameShort[l1 + 9] + ':@yel@' + this.playerStatCurrent[l1 + 9] + '/' + this.playerStatBase[l1 + 9], (uiX + ((uiWidth / 2) | 0)) - 5, i1 - 13, 1, i2);
-                i1 += 13;
-            }
-
-            this.surface.drawString('Quest Points:@yel@' + this.playerQuestPoints, (uiX + ((uiWidth / 2) | 0)) - 5, i1 - 13, 1, 0xffffff);
-            i1 += 12;
-            this.surface.drawString('Fatigue: @yel@' + (((this.statFatigue * 100) / 750) | 0) + '%', uiX + 5, i1 - 13, 1, 0xffffff);
-            i1 += 8;
-            this.surface.drawString('Equipment Status', uiX + 5, i1, 3, 0xffff00);
-            i1 += 12;
-
-            for (let j2 = 0; j2 < 3; j2++) {
-                this.surface.drawString(this.equipmentStatNames[j2] + ':@yel@' + this.playerStatEquipment[j2], uiX + 5, i1, 1, 0xffffff);
-
-                if (j2 < 2) {
-                    this.surface.drawString(this.equipmentStatNames[j2 + 3] + ':@yel@' + this.playerStatEquipment[j2 + 3], uiX + ((uiWidth / 2) | 0) + 25, i1, 1, 0xffffff);
-                }
-
-                i1 += 13;
-            }
-
-            i1 += 6;
-            this.surface.drawLineHoriz(uiX, i1 - 15, uiWidth, 0);
-
-            if (k1 !== -1) {
-                this.surface.drawString(this.skillNamesLong[k1] + ' skill', uiX + 5, i1, 1, 0xffff00);
-                i1 += 12;
-
-                let k2 = this.experienceArray[0];
-
-                for (let i3 = 0; i3 < 98; i3++) {
-                    if (this.playerExperience[k1] >= this.experienceArray[i3]) {
-                        k2 = this.experienceArray[i3 + 1];
-                    }
-                }
-
-                this.surface.drawString('Total xp: ' + ((this.playerExperience[k1] / 4) | 0), uiX + 5, i1, 1, 0xffffff);
-                i1 += 12;
-                this.surface.drawString('Next level at: ' + ((k2 / 4) | 0), uiX + 5, i1, 1, 0xffffff);
-            } else {
-                this.surface.drawString('Overall levels', uiX + 5, i1, 1, 0xffff00);
-                i1 += 12;
-                let l2 = 0;
-
-                for (let j3 = 0; j3 < PLAYER_STAT_COUNT; j3++) {
-                    l2 += this.playerStatBase[j3];
-                }
-
-                this.surface.drawString('Skill total: ' + l2, uiX + 5, i1, 1, 0xffffff);
-                i1 += 12;
-                this.surface.drawString('Combat level: ' + this.localPlayer.level, uiX + 5, i1, 1, 0xffffff);
-                i1 += 12;
-            }
-        }
-
-        if (this.uiTabPlayerInfoSubTab === 1) {
-            this.panelQuestList.clearList(this.controlListQuest);
-            this.panelQuestList.addListEntry(this.controlListQuest, 0, '@whi@Quest-list (green=completed)');
-
-            for (let j1 = 0; j1 < QUEST_COUNT; j1++) {
-                this.panelQuestList.addListEntry(this.controlListQuest, j1 + 1, (this.questComplete[j1] ? '@gre@' : '@red@') + this.questName[j1]);
-            }
-
-            this.panelQuestList.drawPanel();
-        }
-
-        if (!nomenus) {
-            return;
-        }
-
-        let mouseX = this.mouseX - (this.surface.width2 - 199);
-        let mouseY = this.mouseY - 36;
-
-        if (mouseX >= 0 && mouseY >= 0 && mouseX < uiWidth && mouseY < uiHeight) {
-            if (this.uiTabPlayerInfoSubTab === 1) {
-                this.panelQuestList.handleMouse(mouseX + (this.surface.width2 - 199), mouseY + 36, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
-            }
-
-            if (mouseY <= 24 && this.mouseButtonClick === 1) {
-                if (mouseX < 98) {
-                    this.uiTabPlayerInfoSubTab = 0;
-                    return;
-                }
-
-                if (mouseX > 98) {
-                    this.uiTabPlayerInfoSubTab = 1;
-                }
-            }
-        }
-    }
-
     createRightClickMenu() {
         let i = 2203 - (this.localRegionY + this.planeHeight + this.regionY);
 
@@ -9133,16 +8695,16 @@ class mudclient extends GameConnection {
     }
 
     async loadMaps() {
-        this.world.mapPack = await this.readDataFile('maps' + VERSION.MAPS + '.jag', 'map', 70);
+        this.world.mapPack = await this.readDataFile('maps' + version.MAPS + '.jag', 'map', 70);
 
         if (this.members) {
-            this.world.memberMapPack = await this.readDataFile('maps' + VERSION.MAPS + '.mem', 'members map', 75);
+            this.world.memberMapPack = await this.readDataFile('maps' + version.MAPS + '.mem', 'members map', 75);
         }
 
-        this.world.landscapePack = await this.readDataFile('land' + VERSION.MAPS + '.jag', 'landscape', 80);
+        this.world.landscapePack = await this.readDataFile('land' + version.MAPS + '.jag', 'landscape', 80);
 
         if (this.members) {
-            this.world.memberLandscapePack = await this.readDataFile('land' + VERSION.MAPS + '.mem', 'members landscape', 85);
+            this.world.memberLandscapePack = await this.readDataFile('land' + version.MAPS + '.mem', 'members landscape', 85);
         }
     }
 

@@ -27,14 +27,9273 @@ if (typeof window === 'undefined') {
 
     await mc.startApplication(512, 346, 'Runescape by Andrew Gower', false);
 })();
-},{"./src/mudclient":25}],2:[function(require,module,exports){
+},{"./src/mudclient":54}],2:[function(require,module,exports){
+/** Burrows-Wheeler transform, computed with the Induced Sorting Suffix Array
+ *  construction mechanism (sais).  Code is a port of:
+ *    https://sites.google.com/site/yuta256/sais
+ *  which is:
+ *    Copyright (c) 2008-2010 Yuta Mori All Rights Reserved.
+ *  and licensed under an MIT/X11 license.  I generally looked at both
+ *  the C and the Java implementations to guide my work.
+ *
+ * This JavaScript port is:
+ *    Copyright (c) 2013 C. Scott Ananian
+ * and licensed under GPLv2; see the README at the top level of this package.
+ */
+const freeze = require('./freeze');
+const Util = require('./Util');
+
+var ASSERT = console.assert.bind(console);
+
+// we're dispensing with the "arbitrary alphabet" stuff of the source
+// and just using Uint8Arrays.
+
+/** Find the start or end of each bucket. */
+var getCounts = function(T, C, n, k) {
+    var i;
+    for (i = 0; i < k; i++) { C[i] = 0; }
+    for (i = 0; i < n; i++) { C[T[i]]++; }
+};
+var getBuckets = function(C, B, k, end) {
+    var i, sum = 0;
+    if (end) {
+        for (i = 0; i < k; i++) { sum += C[i]; B[i] = sum; }
+    } else {
+        for (i = 0; i < k; i++) { sum += C[i]; B[i] = sum - C[i]; }
+    }
+};
+
+/** Sort all type LMS suffixes */
+var LMSsort = function(T, SA, C, B, n, k) {
+    var b, i, j;
+    var c0, c1;
+    /* compute SAl */
+    if (C === B) { getCounts(T, C, n, k); }
+    getBuckets(C, B, k, false); /* find starts of buckets */
+    j = n - 1;
+    b = B[c1 = T[j]];
+    j--;
+    SA[b++] = (T[j] < c1) ? ~j : j;
+    for (i = 0; i < n; i++) {
+        if ((j = SA[i]) > 0) {
+            ASSERT(T[j] >= T[j+1]);
+            if ((c0 = T[j]) !== c1) { B[c1] = b; b = B[c1 = c0]; }
+            ASSERT(i < b);
+            j--;
+            SA[b++] = (T[j] < c1) ? ~j : j;
+            SA[i] = 0;
+        } else if (j < 0) {
+            SA[i] = ~j;
+        }
+    }
+    /* compute SAs */
+    if (C === B) { getCounts(T, C, n, k); }
+    getBuckets(C, B, k, 1); /* find ends of buckets */
+    for (i = n-1, b = B[c1 = 0]; i >= 0; i--) {
+        if ((j = SA[i]) > 0) {
+            ASSERT(T[j] <= T[j+1]);
+            if ((c0 = T[j]) !== c1) { B[c1] = b; b = B[c1 = c0]; }
+            ASSERT(b <= i);
+            j--;
+            SA[--b] = (T[j] > c1) ? ~(j+1) : j;
+            SA[i] = 0;
+        }
+    }
+};
+
+var LMSpostproc = function(T, SA, n, m) {
+    var i, j, p, q, plen, qlen, name;
+    var c0, c1;
+    var diff;
+
+    /* compact all the sorted substrings into the first m items of SA
+        * 2*m must not be larger than n (provable) */
+    ASSERT(n > 0);
+    for (i = 0; (p = SA[i]) < 0; i++) { SA[i] = ~p; ASSERT((i+1) < n); }
+    if (i < m) {
+        for (j = i, i++; ; i++) {
+            ASSERT(i < n);
+            if ((p = SA[i]) < 0) {
+                SA[j++] = ~p; SA[i] = 0;
+                if (j === m) { break; }
+            }
+        }
+    }
+
+    /* store the length of all substrings */
+    c0 = T[i = j = n - 1];
+    do { c1 = c0; } while ( ((--i) >= 0 ) && ((c0=T[i]) >= c1) );
+    for (; i >= 0; ) {
+        do { c1 = c0; } while ( ((--i) >= 0 ) && ((c0=T[i]) <= c1) );
+        if (i >= 0) {
+            SA[m + ((i + 1) >>> 1)] = j - i; j = i + 1;
+            do { c1 = c0; } while ( ((--i) >= 0 ) && ((c0=T[i]) >= c1) );
+        }
+    }
+
+    /* find the lexicographic names of all substrings */
+    for (i = 0, name = 0, q = n, qlen = 0; i < m; i++) {
+        p = SA[i]; plen = SA[m + (p >>> 1)]; diff = true;
+        if ((plen === qlen) && ((q + plen) < n)) {
+            for (j = 0; (j < plen) && (T[p + j] === T[q + j]); ) { j++; }
+            if (j === plen) { diff = false; }
+        }
+        if (diff) { name++; q = p; qlen = plen; }
+        SA[m + (p >>> 1)] = name;
+    }
+
+    return name;
+};
+
+/* compute SA and BWT */
+var induceSA = function(T, SA, C, B, n, k) {
+    var b, i, j;
+    var c0, c1;
+    /* compute SAl */
+    if (C === B) { getCounts(T, C, n, k); }
+    getBuckets(C, B, k, false); /* find starts of buckets */
+    j = n - 1;
+    b = B[c1 = T[j]];
+    SA[b++] = ((j > 0) && (T[j-1] < c1)) ? ~j : j;
+    for (i = 0; i < n; i++) {
+        j = SA[i]; SA[i] = ~j;
+        if (j > 0) {
+            j--;
+            ASSERT( T[j] >= T[j + 1] );
+            if ((c0 = T[j]) !== c1) { B[c1]  = b; b = B[c1=c0]; }
+            ASSERT( i < b );
+            SA[b++] = ((j > 0) && (T[j-1] < c1)) ? ~j : j;
+        }
+    }
+    /* compute SAs */
+    if (C === B) { getCounts(T, C, n, k); }
+    getBuckets(C, B, k, true); /* find ends of buckets */
+    for (i = n-1, b = B[c1 = 0]; i >= 0; i--) {
+        if ((j = SA[i]) > 0) {
+            j--;
+            ASSERT( T[j] <= T[j + 1] );
+            if ((c0 = T[j]) !== c1) { B[c1] = b; b = B[c1 = c0]; }
+            ASSERT( b <= i );
+            SA[--b] = ((j === 0) || (T[j - 1] > c1)) ? ~j : j;
+        } else {
+            SA[i] = ~j;
+        }
+    }
+};
+
+var computeBWT = function(T, SA, C, B, n, k) {
+    var b, i, j, pidx = -1;
+    var c0, c1;
+    /* compute SAl */
+    if (C === B) { getCounts(T, C, n, k); }
+    getBuckets(C, B, k, false); /* find starts of buckets */
+    j = n - 1;
+    b = B[c1 = T[j]];
+    SA[b++] = ((j > 0) && (T[j - 1] < c1)) ? ~j : j;
+    for (i = 0; i < n; i++) {
+        if ((j=SA[i]) > 0) {
+            j--;
+            ASSERT( T[j] >= T[j+1] );
+            SA[i] = ~(c0 = T[j]);
+            if (c0 !== c1) { B[c1] = b; b = B[c1 = c0]; }
+            ASSERT( i < b );
+            SA[b++] = ((j > 0) && (T[j - 1] < c1)) ? ~j : j;
+        } else if (j !== 0) {
+            SA[i] = ~j;
+        }
+    }
+    /* compute SAs */
+    if (C === B) { getCounts(T, C, n, k); }
+    getBuckets(C, B, k, true); /* find ends of buckets */
+    for (i = n-1, b = B[c1 = 0]; i >= 0; i--) {
+        if ((j = SA[i]) > 0) {
+            j--;
+            ASSERT( T[j] <= T[j+1] );
+            SA[i] = c0 = T[j];
+            if (c0 !== c1) { B[c1] = b; b = B[c1 = c0]; }
+            ASSERT( b <= i );
+            SA[--b] = ((j > 0) && (T[j-1] > c1)) ? (~T[j-1]) : j;
+        } else if (j !== 0) {
+            SA[i] = ~j;
+        } else {
+            pidx = i;
+        }
+    }
+    return pidx;
+};
+
+/* find the suffix array SA of T[0..n-1] in {0..k-1}^n
+    use a working space (excluding T and SA) of at most 2n+O(1) for a
+    constant alphabet */
+var SA_IS = function(T, SA, fs, n, k, isbwt) {
+    var C, B, RA;
+    var i, j, b, c, m, p, q, name, pidx = 0, newfs;
+    var c0, c1;
+    var flags = 0;
+
+    // allocate temporary storage [CSA]
+    if (k <= 256) {
+        C = Util.makeS32Buffer(k);
+        if (k <= fs) { B = SA.subarray(n + fs - k); flags = 1; }
+        else { B = Util.makeS32Buffer(k); flags = 3; }
+    } else if (k <= fs) {
+        C = SA.subarray(n + fs - k);
+        if (k <= (fs - k)) { B = SA.subarray(n + fs - k * 2); flags = 0; }
+        else if (k <= 1024) { B = Util.makeS32Buffer(k); flags = 2; }
+        else { B = C; flags = 8; }
+    } else {
+        C = B = Util.makeS32Buffer(k);
+        flags = 4 | 8;
+    }
+
+    /* stage 1: reduce the problem by at least 1/2
+        sort all the LMS-substrings */
+    getCounts(T, C, n, k);
+    getBuckets(C, B, k, true); /* find ends of buckets */
+    for (i = 0; i < n; i++) { SA[i] = 0; }
+    b = -1; i = n - 1; j = n; m = 0; c0 = T[n - 1];
+    do { c1 = c0; } while ((--i >= 0) && ((c0 = T[i]) >= c1));
+    for (; i >= 0 ;) {
+        do { c1 = c0; } while ((--i >= 0) && ((c0 = T[i]) <= c1));
+        if ( i >= 0 ) {
+            if ( b >= 0 ) { SA[b] = j; }
+            b = --B[c1];
+            j = i;
+            ++m;
+            do { c1 = c0; } while ((--i >= 0) && ((c0 = T[i]) >= c1));
+        }
+    }
+
+    if (m > 1) {
+        LMSsort(T, SA, C, B, n, k);
+        name = LMSpostproc(T, SA, n, m);
+    } else if (m === 1) {
+        SA[b] = j + 1;
+        name = 1;
+    } else {
+        name = 0;
+    }
+
+    /* stage 2: solve the reduced problem
+        recurse if names are not yet unique */
+    if(name < m) {
+        if((flags & 4) !== 0) { C = null; B = null; }
+        if((flags & 2) !== 0) { B = null; }
+        newfs = (n + fs) - (m * 2);
+        if((flags & (1 | 4 | 8)) === 0) {
+            if((k + name) <= newfs) { newfs -= k; }
+            else { flags |= 8; }
+        }
+        ASSERT( (n >>> 1) <= (newfs + m) );
+        for (i = m + (n >>> 1) - 1, j = m * 2 + newfs - 1; m <= i; i--) {
+            if(SA[i] !== 0) { SA[j--] = SA[i] - 1; }
+        }
+        RA = SA.subarray(m + newfs);
+        SA_IS(RA, SA, newfs, m, name, false);
+        RA = null;
+
+        i = n - 1; j = m * 2 - 1; c0 = T[n - 1];
+        do { c1 = c0; } while ((--i >= 0) && ((c0 = T[i]) >= c1));
+        for (; i >= 0 ;) {
+            do { c1 = c0; } while ((--i >= 0) && ((c0 = T[i]) <= c1));
+            if ( i >= 0 ) {
+                SA[j--] = i + 1;
+                do { c1 = c0; } while ((--i >= 0) && ((c0 = T[i]) >= c1));
+            }
+        }
+
+        for (i = 0; i < m; i++) { SA[i] = SA[m + SA[i]]; }
+        if((flags & 4) !== 0) { C = B = Util.makeS32Buffer(k); }
+        if((flags & 2) !== 0) { B = Util.makeS32Buffer(k); }
+    }
+
+    /* stage 3: induce the result for the original problem */
+    if((flags & 8) !== 0) { getCounts(T, C, n, k); }
+    /* put all left-most S characters into their buckets */
+    if (m > 1) {
+        getBuckets(C, B, k, true); /* find ends of buckets */
+        i = m - 1; j = n; p = SA[m - 1]; c1 = T[p];
+        do {
+            q = B[c0 = c1];
+            while (q < j) { SA[--j] = 0; }
+            do {
+                SA[--j] = p;
+                if(--i < 0) { break; }
+                p = SA[i];
+            } while((c1 = T[p]) === c0);
+        } while (i >= 0 );
+        while ( j > 0 ) { SA[--j] = 0; }
+    }
+    if (!isbwt) { induceSA(T, SA, C, B, n, k); }
+    else { pidx = computeBWT(T, SA, C, B, n, k); }
+    C = null; B = null;
+    return pidx;
+};
+
+var BWT = Object.create(null);
+/** SA should be a Int32Array (signed!); T can be any typed array.
+ *  alphabetSize is optional if T is an Uint8Array or Uint16Array. */
+BWT.suffixsort = function(T, SA, n, alphabetSize) {
+    ASSERT( T && SA && T.length >= n && SA.length >= n );
+    if (n <= 1) {
+        if (n === 1) { SA[0] = 0; }
+        return 0;
+    }
+    if (!alphabetSize) {
+        if (T.BYTES_PER_ELEMENT === 1) { alphabetSize = 256; }
+        else if (T.BYTES_PER_ELEMENT === 2) { alphabetSize = 65536; }
+        else throw new Error('Need to specify alphabetSize');
+    }
+    ASSERT( alphabetSize > 0 );
+    if (T.BYTES_PER_ELEMENT) {
+        ASSERT( alphabetSize <= (1 << (T.BYTES_PER_ELEMENT*8) ) );
+    }
+    return SA_IS(T, SA, 0, n, alphabetSize, false);
+};
+/** Burrows-Wheeler Transform.
+    A should be Int32Array (signed!); T can be any typed array.
+    U is the same type as T (it is used for output).
+    alphabetSize is optional if T is an Uint8Array or Uint16Array.
+    ASSUMES STRING IS TERMINATED WITH AN EOF CHARACTER.
+*/
+BWT.bwtransform = function(T, U, A, n, alphabetSize) {
+    var i, pidx;
+    ASSERT( T && U && A );
+    ASSERT( T.length >= n && U.length >= n && A.length >= n );
+    if (n <= 1) {
+        if (n === 1) { U[0] = T[0]; }
+        return n;
+    }
+    if (!alphabetSize) {
+        if (T.BYTES_PER_ELEMENT === 1) { alphabetSize = 256; }
+        else if (T.BYTES_PER_ELEMENT === 2) { alphabetSize = 65536; }
+        else throw new Error('Need to specify alphabetSize');
+    }
+    ASSERT( alphabetSize > 0 );
+    if (T.BYTES_PER_ELEMENT) {
+        ASSERT( alphabetSize <= (1 << (T.BYTES_PER_ELEMENT*8) ) );
+    }
+    pidx = SA_IS(T, A, 0, n, alphabetSize, true);
+    U[0] = T[n - 1];
+    for (i = 0; i < pidx ; i++) { U[i + 1] = A[i]; }
+    for (i += 1; i < n; i++) { U[i] = A[i]; }
+    return pidx + 1;
+};
+/** Reverses transform above. (ASSUMED STRING IS TERMINATED WITH EOF.) */
+BWT.unbwtransform = function(T, U, LF, n, pidx) {
+    var C = Util.makeU32Buffer(256);
+    var i, t;
+    for (i=0; i<256; i++) { C[i] = 0; }
+    for (i=0; i<n; i++) { LF[i] = C[T[i]]++; }
+    for (i=0, t=0; i<256; i++) { t += C[i]; C[i] = t - C[i]; }
+    for (i=n-1, t=0; i>=0; i--) {
+        t = LF[t] + C[U[i]=T[t]];
+        t += (t<pidx) ? 1 : 0;
+    }
+    C = null;
+};
+
+/** Burrows-Wheeler Transform.
+    A should be Int32Array (signed!); T can be any typed array.
+    U is the same type as T (it is used for output).
+    alphabetSize is optional if T is an Uint8Array or Uint16Array.
+    ASSUMES STRING IS CYCLIC.
+    (XXX: this is twice as inefficient as I'd like! [CSA])
+*/
+BWT.bwtransform2 = function(T, U, n, alphabetSize) {
+    var i, j, pidx = 0;
+    ASSERT( T && U );
+    ASSERT( T.length >= n && U.length >= n );
+    if (n <= 1) {
+        if (n === 1) { U[0] = T[0]; }
+        return 0;
+    }
+    if (!alphabetSize) {
+        if (T.BYTES_PER_ELEMENT === 1) { alphabetSize = 256; }
+        else if (T.BYTES_PER_ELEMENT === 2) { alphabetSize = 65536; }
+        else throw new Error('Need to specify alphabetSize');
+    }
+    ASSERT( alphabetSize > 0 );
+    if (T.BYTES_PER_ELEMENT) {
+        ASSERT( alphabetSize <= (1 << (T.BYTES_PER_ELEMENT*8) ) );
+    }
+    // double length of T
+    var TT;
+    if (T.length >= n*2) {
+        TT = T; // do it in place if possible
+    } else if (alphabetSize <= 256) {
+        TT = Util.makeU8Buffer(n*2);
+    } else if (alphabetSize <= 65536) {
+        TT = Util.makeU16Buffer(n*2);
+    } else {
+        TT = Util.makeU32Buffer(n*2);
+    }
+    if (TT!==T) {
+        for (i=0; i<n; i++) { TT[i] = T[i]; }
+    }
+    for (i=0; i<n; i++) { TT[n+i] = TT[i]; }
+    // sort doubled string
+    var A = Util.makeS32Buffer(n*2);
+    SA_IS(TT, A, 0, n*2, alphabetSize, false);
+    for (i=0, j=0; i<2*n; i++) {
+        var s = A[i];
+        if (s < n) {
+            if (s === 0) { pidx = j; }
+            if (--s < 0) { s = n-1; }
+            U[j++] = T[s];
+        }
+    }
+    ASSERT(j===n);
+    return pidx;
+};
+
+module.exports = freeze(BWT);
+
+},{"./Util":23,"./freeze":24}],3:[function(require,module,exports){
+const freeze = require('./freeze');
+const Stream = require('./Stream');
+const BWT = require('./BWT');
+const DefSumModel = require('./DefSumModel');
+const FenwickModel = require('./FenwickModel');
+const LogDistanceModel = require('./LogDistanceModel');
+const NoModel = require('./NoModel');
+const RangeCoder = require('./RangeCoder');
+const Util = require('./Util');
+
+/* A simple bzip-like BWT compressor with a range encoder; written as a
+ * self-test of the BWT package. */
+var EOF = Stream.EOF;
+
+var F_PROB_MAX  = 0xFF00;
+var F_PROB_INCR = 0x0100;
+
+BWTC = Object.create(null);
+BWTC.MAGIC = "bwtc";
+BWTC.compressFile = Util.compressFileHelper(BWTC.MAGIC, function(input, output, size, props, finalByte) {
+    var encoder = new RangeCoder(output);
+    encoder.encodeStart(finalByte, 1);
+
+    var blockSize = 9;
+    if (typeof(props)==='number' && props >= 1 && props <= 9) {
+        blockSize = props;
+    }
+    encoder.encodeByte(blockSize);
+    var fast = (blockSize <= 5);
+    blockSize *= 100000;
+
+    var block = Util.makeU8Buffer(blockSize);
+    var readBlock = function() {
+        var pos;
+        for (pos=0; pos < blockSize; ) {
+            var ch = input.readByte();
+            if (ch < 0) { break; }
+            block[pos++] = ch;
+        }
+        return pos;
+    };
+    var U = Util.makeU8Buffer(blockSize);
+    var A = Util.makeS32Buffer(blockSize);
+    var M = Util.makeU8Buffer(256); // move to front array
+    var bitModelFactory = NoModel.factory(encoder);
+    var lenModel = new LogDistanceModel(blockSize, 0,
+                                        bitModelFactory,
+                                        bitModelFactory);
+    var length, b, c, pidx, i, j;
+    do {
+        length = readBlock();
+        if (length === 0) { break; }
+        // indicate that there's another block comin'
+        // and encode the length of the block if necessary
+        if (length === block.length) {
+            encoder.encodeFreq(1, 0, 3); // "full size block"
+            b = block;
+        } else {
+            encoder.encodeFreq(1, 1, 3); // "short block"
+            lenModel.encode(length);
+            b = block.subarray(0, length);
+        }
+        pidx = BWT.bwtransform(b, U, A, length, 256);
+        lenModel.encode(pidx); // starting index
+        // encode the alphabet subset used
+        var useTree = Util.makeU16Buffer(512);
+        for (i=0; i<length; i++) {
+            c = U[i];
+            useTree[256+c] = 1;
+        }
+        for (i=255; i>0; i--) { // sum all the way up the tree
+            useTree[i] = useTree[2*i] + useTree[2*i + 1];
+        }
+        useTree[0] = 1; // sentinel
+        for (i=1; i<512; i++) {
+            var parent = i>>>1;
+            var full = 1 << (9-Util.fls(i));
+            if (useTree[parent] === 0 || useTree[parent] === (full*2)) {
+                /* already known full/empty */
+            } else if (i >= 256) {
+                encoder.encodeBit(useTree[i]); // leaf node
+            } else {
+                var v = useTree[i];
+                v = (v===0) ? 0 : (v===full) ? 2 : 1;
+                encoder.encodeFreq(1, v, 3);
+            }
+        }
+        // remap symbols to this subset
+        var alphabetSize = 0;
+        for (i=0; i<256; i++) {
+            if (useTree[256+i]) { // symbol in use
+                M[alphabetSize++] = i;
+            }
+        }
+        useTree = null;
+        // MTF encoding of U
+        for (i=0; i<length; i++) {
+            c = U[i];
+            for (j=0; j<alphabetSize; j++) {
+                if (M[j] === c) {
+                    break;
+                }
+            }
+            console.assert(j<alphabetSize);
+            U[i] = j;
+            // move to front
+            for (; j>0; j--) {
+                M[j] = M[j-1];
+            }
+            M[0] = c;
+        }
+        // RLE/range encoding
+        var model = new FenwickModel(encoder, alphabetSize+1,
+                                        F_PROB_MAX, F_PROB_INCR);
+        if (fast) { model = new DefSumModel(encoder, alphabetSize+1); }
+        var runLength = 0;
+        var emitLastRun = function() {
+            // binary encode runs of zeros
+            while (runLength !== 0) {
+                if (runLength&1) {
+                    model.encode(0); // RUNA
+                    runLength-=1;
+                } else {
+                    model.encode(1); // RUNB
+                    runLength-=2;
+                }
+                runLength >>>= 1;
+            }
+        };
+        for (i=0; i<length; i++) {
+            c = U[i];
+            if (c === 0) {
+                runLength++;
+            } else {
+                emitLastRun();
+                model.encode(c+1);
+                // reset for next
+                runLength = 0;
+            }
+        }
+        emitLastRun();
+        // done with this block!
+    } while (length === block.length);
+
+    encoder.encodeFreq(1, 2, 3); // "no more blocks"
+    encoder.encodeFinish();
+}, true);
+
+BWTC.decompressFile = Util.decompressFileHelper(BWTC.MAGIC, function(input, output, size) {
+    var decoder = new RangeCoder(input);
+    decoder.decodeStart(true/* already read the extra byte */);
+    var blockSize = decoder.decodeByte();
+    console.assert(blockSize >= 1 && blockSize <= 9);
+    var fast = (blockSize <= 5);
+    blockSize *= 100000;
+
+    var block = Util.makeU8Buffer(blockSize);
+    var U = Util.makeU8Buffer(blockSize);
+    var A = Util.makeS32Buffer(blockSize);
+    var M = Util.makeU8Buffer(256); // move to front array
+    var bitModelFactory = NoModel.factory(decoder);
+    var lenModel = new LogDistanceModel(blockSize, 0,
+                                        bitModelFactory,
+                                        bitModelFactory);
+    var b, length, i, j, c;
+    while (true) {
+        var blockIndicator = decoder.decodeCulFreq(3);
+        decoder.decodeUpdate(1, blockIndicator, 3);
+        if (blockIndicator === 0) { // full-length block
+            length = blockSize;
+            b = block;
+        } else if (blockIndicator === 1) { // short block
+            length = lenModel.decode();
+            b = block.subarray(0, length);
+        } else if (blockIndicator === 2) { // all done, no more blocks
+            break;
+        }
+        // read starting index for unBWT
+        var pidx = lenModel.decode();
+        // decode the alphabet subset used
+        var useTree = Util.makeU16Buffer(512);
+        useTree[0] = 1; // sentinel
+        for (i=1; i<512; i++) {
+            var parent = i>>>1;
+            var full = 1 << (9-Util.fls(i));
+            if (useTree[parent] === 0 || useTree[parent] === (full*2)) {
+                /* already known full/empty */
+                useTree[i] = useTree[parent] >>> 1;
+            } else if (i >= 256) {
+                useTree[i] = decoder.decodeBit(); // leaf node
+            } else {
+                var v = decoder.decodeCulFreq(3);
+                decoder.decodeUpdate(1, v, 3);
+                useTree[i] = (v===2) ? full : v;
+            }
+        }
+        // remap symbols to this subset
+        var alphabetSize = 0;
+        for (i=0; i<256; i++) {
+            if (useTree[256+i]) { // symbol in use
+                M[alphabetSize++] = i;
+            }
+        }
+        useTree = null;
+        // RLE/range decoding
+        var model = new FenwickModel(decoder, alphabetSize+1,
+                                        F_PROB_MAX, F_PROB_INCR);
+        if (fast) { model = new DefSumModel(decoder, alphabetSize+1, true);}
+        var val = 1; // repeat count
+        for (i=0; i<length; ) {
+            c = model.decode();
+            if (c===0) {
+                for (j=0; j<val; j++) { b[i++] = 0; }
+                val *= 2;
+            } else if (c===1) {
+                for (j=0; j<val; j++) { b[i++] = 0; b[i++] = 0; }
+                val *= 2;
+            } else {
+                val = 1;
+                b[i++] = c-1;
+            }
+        }
+        // MTF decode
+        for (i=0; i<length; i++) {
+            j = b[i];
+            b[i] = c = M[j];
+            // move to front
+            for (; j>0; j--) {
+                M[j] = M[j-1];
+            }
+            M[0] = c;
+        }
+        // unBWT
+        BWT.unbwtransform(block, U, A, length, pidx);
+        // emit!
+        output.write(U, 0, length);
+    }
+    decoder.decodeFinish();
+});
+
+module.exports = BWTC;
+
+},{"./BWT":2,"./DefSumModel":8,"./FenwickModel":10,"./LogDistanceModel":13,"./NoModel":18,"./RangeCoder":20,"./Stream":22,"./Util":23,"./freeze":24}],4:[function(require,module,exports){
+/** Big-Endian Bit Stream, implemented on top of a (normal byte) stream. */
+const Stream = require('./Stream');
+
+var BitStream = function(stream) {
+    (function() {
+        var bufferByte = 0x100; // private var for readers
+        this.readBit = function() {
+            if ((bufferByte & 0xFF) === 0) {
+                var ch = stream.readByte();
+                if (ch === Stream.EOF) {
+                    this._eof = true;
+                    return ch; /* !!! */
+                }
+                bufferByte = (ch << 1) | 1;
+            }
+            var bit = (bufferByte & 0x100) ? 1 : 0;
+            bufferByte <<= 1;
+            return bit;
+        };
+        // seekable iff the provided stream is
+        this.seekBit = function(pos) {
+            var n_byte = pos >>> 3;
+            var n_bit = pos - (n_byte*8);
+            this.seek(n_byte);
+            this._eof = false;
+            this.readBits(n_bit);
+        };
+        this.tellBit = function() {
+            var pos = stream.tell() * 8;
+            var b = bufferByte;
+            while ((b & 0xFF) !== 0) {
+                pos--;
+                b <<= 1;
+            }
+            return pos;
+        };
+        // implement byte stream interface as well.
+        this.readByte = function() {
+            if ((bufferByte & 0xFF) === 0) {
+                return stream.readByte();
+            }
+            return this.readBits(8);
+        };
+        this.seek = function(pos) {
+            stream.seek(pos);
+            bufferByte = 0x100;
+        };
+    }).call(this);
+    (function() {
+        var bufferByte = 1; // private var for writers
+        this.writeBit = function(b) {
+            bufferByte <<= 1;
+            if (b) { bufferByte |= 1; }
+            if (bufferByte & 0x100) {
+                stream.writeByte(bufferByte & 0xFF);
+                bufferByte = 1;
+            }
+        };
+        // implement byte stream interface as well
+        this.writeByte = function(_byte) {
+            if (bufferByte===1) {
+                stream.writeByte(_byte);
+            } else {
+                stream.writeBits(8, _byte);
+            }
+        };
+        this.flush = function() {
+            while (bufferByte !== 1) {
+                this.writeBit(0);
+            }
+            if (stream.flush) { stream.flush(); }
+        };
+    }).call(this);
+};
+// inherit read/write methods from Stream.
+BitStream.EOF = Stream.EOF;
+BitStream.prototype = Object.create(Stream.prototype);
+// bit chunk read/write
+BitStream.prototype.readBits = function(n) {
+    var i, r = 0, b;
+    if (n > 31) {
+        r = this.readBits(n-16)*0x10000; // fp multiply, not shift
+        return r + this.readBits(16);
+    }
+    for (i = 0; i < n; i++) {
+        r <<= 1; // this could make a negative value if n>31
+        // bits read past EOF are all zeros!
+        if (this.readBit() > 0) { r++; }
+    }
+    return r;
+};
+BitStream.prototype.writeBits = function(n, value) {
+    if (n > 32) {
+        var low = (value & 0xFFFF);
+        var high = (value - low) / (0x10000); // fp division, not shift
+        this.writeBits(n-16, high);
+        this.writeBits(16, low);
+        return;
+    }
+    var i;
+    for (i = n-1; i >= 0; i--) {
+        this.writeBit( (value >>> i) & 1 );
+    }
+};
+
+module.exports = BitStream;
+
+},{"./Stream":22}],5:[function(require,module,exports){
+/*
+An implementation of Bzip2 de/compression, including the ability to
+seek within bzip2 data.
+
+Copyright (C) 2013 C. Scott Ananian
+Copyright (C) 2012 Eli Skeggs
+Copyright (C) 2011 Kevin Kwok
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, see
+http://www.gnu.org/licenses/lgpl-2.1.html
+
+Adapted from node-bzip, copyright 2012 Eli Skeggs.
+Adapted from bzip2.js, copyright 2011 Kevin Kwok (antimatter15@gmail.com).
+
+Based on micro-bunzip by Rob Landley (rob@landley.net).
+
+Based on bzip2 decompression code by Julian R Seward (jseward@acm.org),
+which also acknowledges contributions by Mike Burrows, David Wheeler,
+Peter Fenwick, Alistair Moffat, Radford Neal, Ian H. Witten,
+Robert Sedgewick, and Jon L. Bentley.
+
+BWT implementation based on work by Yuta Mori; see BWT.js for details.
+
+bzip2 compression code inspired by https://code.google.com/p/jbzip2
+*/
+const freeze = require('./freeze');
+const BitStream = require('./BitStream');
+const BWT = require('./BWT');
+const CRC32 = require('./CRC32');
+const HuffmanAllocator = require('./HuffmanAllocator');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+var MAX_HUFCODE_BITS = 20;
+var MAX_SYMBOLS = 258;
+var SYMBOL_RUNA = 0;
+var SYMBOL_RUNB = 1;
+var MIN_GROUPS = 2;
+var MAX_GROUPS = 6;
+var GROUP_SIZE = 50;
+
+var WHOLEPI = 0x314159265359; // 48-bit integer
+var SQRTPI =  0x177245385090; // 48-bit integer
+
+var EOF = Stream.EOF;
+
+var mtf = function(array, index) {
+  var src = array[index], i;
+  for (i = index; i > 0; i--) {
+    array[i] = array[i-1];
+  }
+  array[0] = src;
+  return src;
+};
+
+var Err = {
+  OK: 0,
+  LAST_BLOCK: -1,
+  NOT_BZIP_DATA: -2,
+  UNEXPECTED_INPUT_EOF: -3,
+  UNEXPECTED_OUTPUT_EOF: -4,
+  DATA_ERROR: -5,
+  OUT_OF_MEMORY: -6,
+  OBSOLETE_INPUT: -7,
+  END_OF_BLOCK: -8
+};
+var ErrorMessages = {};
+ErrorMessages[Err.LAST_BLOCK] =            "Bad file checksum";
+ErrorMessages[Err.NOT_BZIP_DATA] =         "Not bzip data";
+ErrorMessages[Err.UNEXPECTED_INPUT_EOF] =  "Unexpected input EOF";
+ErrorMessages[Err.UNEXPECTED_OUTPUT_EOF] = "Unexpected output EOF";
+ErrorMessages[Err.DATA_ERROR] =            "Data error";
+ErrorMessages[Err.OUT_OF_MEMORY] =         "Out of memory";
+ErrorMessages[Err.OBSOLETE_INPUT] = "Obsolete (pre 0.9.5) bzip format not supported.";
+
+var _throw = function(status, optDetail) {
+  var msg = ErrorMessages[status] || 'unknown error';
+  if (optDetail) { msg += ': '+optDetail; }
+  var e = new TypeError(msg);
+  e.errorCode = status;
+  throw e;
+};
+
+var Bunzip = function(inputStream, outputStream) {
+  this.writePos = this.writeCurrent = this.writeCount = 0;
+
+  this._start_bunzip(inputStream, outputStream);
+};
+Bunzip.prototype._init_block = function() {
+  var moreBlocks = this._get_next_block();
+  if ( !moreBlocks ) {
+    this.writeCount = -1;
+    return false; /* no more blocks */
+  }
+  this.blockCRC = new CRC32();
+  return true;
+};
+/* XXX micro-bunzip uses (inputStream, inputBuffer, len) as arguments */
+Bunzip.prototype._start_bunzip = function(inputStream, outputStream) {
+  /* Ensure that file starts with "BZh['1'-'9']." */
+  var buf = Util.makeU8Buffer(4);
+  if (inputStream.read(buf, 0, 4) !== 4 ||
+      String.fromCharCode(buf[0], buf[1], buf[2]) !== 'BZh')
+    _throw(Err.NOT_BZIP_DATA, 'bad magic');
+
+  var level = buf[3] - 0x30;
+  if (level < 1 || level > 9)
+    _throw(Err.NOT_BZIP_DATA, 'level out of range');
+
+  this.reader = new BitStream(inputStream);
+
+  /* Fourth byte (ascii '1'-'9'), indicates block size in units of 100k of
+     uncompressed data.  Allocate intermediate buffer for block. */
+  this.dbufSize = 100000 * level;
+  this.nextoutput = 0;
+  this.outputStream = outputStream;
+  this.streamCRC = 0;
+};
+Bunzip.prototype._get_next_block = function() {
+  var i, j, k;
+  var reader = this.reader;
+  // this is get_next_block() function from micro-bunzip:
+  /* Read in header signature and CRC, then validate signature.
+     (last block signature means CRC is for whole file, return now) */
+  var h = reader.readBits(48);
+  if (h === SQRTPI) { // last block
+    return false; /* no more blocks */
+  }
+  if (h !== WHOLEPI)
+    _throw(Err.NOT_BZIP_DATA);
+  this.targetBlockCRC = reader.readBits(32);
+  this.streamCRC = (this.targetBlockCRC ^
+                    ((this.streamCRC << 1) | (this.streamCRC>>>31))) >>> 0;
+  /* We can add support for blockRandomised if anybody complains.  There was
+     some code for this in busybox 1.0.0-pre3, but nobody ever noticed that
+     it didn't actually work. */
+  if (reader.readBits(1))
+    _throw(Err.OBSOLETE_INPUT);
+  var origPointer = reader.readBits(24);
+  if (origPointer > this.dbufSize)
+    _throw(Err.DATA_ERROR, 'initial position out of bounds');
+  /* mapping table: if some byte values are never used (encoding things
+     like ASCII text), the compression code removes the gaps to have fewer
+     symbols to deal with, and writes a sparse bitfield indicating which
+     values were present.  We make a translation table to convert the symbols
+     back to the corresponding bytes. */
+  var t = reader.readBits(16);
+  var symToByte = Util.makeU8Buffer(256), symTotal = 0;
+  for (i = 0; i < 16; i++) {
+    if (t & (1 << (0xF - i))) {
+      var o = i * 16;
+      k = reader.readBits(16);
+      for (j = 0; j < 16; j++)
+        if (k & (1 << (0xF - j)))
+          symToByte[symTotal++] = o + j;
+    }
+  }
+
+  /* How many different Huffman coding groups does this block use? */
+  var groupCount = reader.readBits(3);
+  if (groupCount < MIN_GROUPS || groupCount > MAX_GROUPS)
+    _throw(Err.DATA_ERROR);
+  /* nSelectors: Every GROUP_SIZE many symbols we select a new Huffman coding
+     group.  Read in the group selector list, which is stored as MTF encoded
+     bit runs.  (MTF=Move To Front, as each value is used it's moved to the
+     start of the list.) */
+  var nSelectors = reader.readBits(15);
+  if (nSelectors === 0)
+    _throw(Err.DATA_ERROR);
+
+  var mtfSymbol = Util.makeU8Buffer(256);
+  for (i = 0; i < groupCount; i++)
+    mtfSymbol[i] = i;
+
+  var selectors = Util.makeU8Buffer(nSelectors); // was 32768...
+
+  for (i = 0; i < nSelectors; i++) {
+    /* Get next value */
+    for (j = 0; reader.readBits(1); j++)
+      if (j >= groupCount) _throw(Err.DATA_ERROR);
+    /* Decode MTF to get the next selector */
+    selectors[i] = mtf(mtfSymbol, j);
+  }
+
+  /* Read the Huffman coding tables for each group, which code for symTotal
+     literal symbols, plus two run symbols (RUNA, RUNB) */
+  var symCount = symTotal + 2;
+  var groups = [], hufGroup;
+  for (j = 0; j < groupCount; j++) {
+    var length = Util.makeU8Buffer(symCount), temp = Util.makeU16Buffer(MAX_HUFCODE_BITS + 1);
+    /* Read Huffman code lengths for each symbol.  They're stored in
+       a way similar to MTF; record a starting value for the first symbol,
+       and an offset from the previous value for every symbol after that. */
+    t = reader.readBits(5); // lengths
+    for (i = 0; i < symCount; i++) {
+      for (;;) {
+        if (t < 1 || t > MAX_HUFCODE_BITS) _throw(Err.DATA_ERROR);
+        /* If first bit is 0, stop.  Else second bit indicates whether
+           to increment or decrement the value. */
+        if(!reader.readBits(1))
+          break;
+        if(!reader.readBits(1))
+          t++;
+        else
+          t--;
+      }
+      length[i] = t;
+    }
+
+    /* Find largest and smallest lengths in this group */
+    var minLen,  maxLen;
+    minLen = maxLen = length[0];
+    for (i = 1; i < symCount; i++) {
+      if (length[i] > maxLen)
+        maxLen = length[i];
+      else if (length[i] < minLen)
+        minLen = length[i];
+    }
+
+    /* Calculate permute[], base[], and limit[] tables from length[].
+     *
+     * permute[] is the lookup table for converting Huffman coded symbols
+     * into decoded symbols.  base[] is the amount to subtract from the
+     * value of a Huffman symbol of a given length when using permute[].
+     *
+     * limit[] indicates the largest numerical value a symbol with a given
+     * number of bits can have.  This is how the Huffman codes can vary in
+     * length: each code with a value>limit[length] needs another bit.
+     */
+    hufGroup = {};
+    groups.push(hufGroup);
+    hufGroup.permute = Util.makeU16Buffer(MAX_SYMBOLS);
+    hufGroup.limit = Util.makeU32Buffer(MAX_HUFCODE_BITS + 2);
+    hufGroup.base = Util.makeU32Buffer(MAX_HUFCODE_BITS + 1);
+    hufGroup.minLen = minLen;
+    hufGroup.maxLen = maxLen;
+    /* Calculate permute[].  Concurrently, initialize temp[] and limit[]. */
+    var pp = 0;
+    for (i = minLen; i <= maxLen; i++) {
+      temp[i] = hufGroup.limit[i] = 0;
+      for (t = 0; t < symCount; t++)
+        if (length[t] === i)
+          hufGroup.permute[pp++] = t;
+    }
+    /* Count symbols coded for at each bit length */
+    for (i = 0; i < symCount; i++)
+      temp[length[i]]++;
+    /* Calculate limit[] (the largest symbol-coding value at each bit
+     * length, which is (previous limit<<1)+symbols at this level), and
+     * base[] (number of symbols to ignore at each bit length, which is
+     * limit minus the cumulative count of symbols coded for already). */
+    pp = t = 0;
+    for (i = minLen; i < maxLen; i++) {
+      pp += temp[i];
+      /* We read the largest possible symbol size and then unget bits
+         after determining how many we need, and those extra bits could
+         be set to anything.  (They're noise from future symbols.)  At
+         each level we're really only interested in the first few bits,
+         so here we set all the trailing to-be-ignored bits to 1 so they
+         don't affect the value>limit[length] comparison. */
+      hufGroup.limit[i] = pp - 1;
+      pp <<= 1;
+      t += temp[i];
+      hufGroup.base[i + 1] = pp - t;
+    }
+    hufGroup.limit[maxLen + 1] = Number.MAX_VALUE; /* Sentinel value for reading next sym. */
+    hufGroup.limit[maxLen] = pp + temp[maxLen] - 1;
+    hufGroup.base[minLen] = 0;
+  }
+  /* We've finished reading and digesting the block header.  Now read this
+     block's Huffman coded symbols from the file and undo the Huffman coding
+     and run length encoding, saving the result into dbuf[dbufCount++]=uc */
+
+  /* Initialize symbol occurrence counters and symbol Move To Front table */
+  var byteCount = Util.makeU32Buffer(256);
+  for (i = 0; i < 256; i++)
+    mtfSymbol[i] = i;
+  /* Loop through compressed symbols. */
+  var runPos = 0, dbufCount = 0, selector = 0, uc;
+  var dbuf = this.dbuf = Util.makeU32Buffer(this.dbufSize);
+  symCount = 0;
+  for (;;) {
+    /* Determine which Huffman coding group to use. */
+    if (!(symCount--)) {
+      symCount = GROUP_SIZE - 1;
+      if (selector >= nSelectors) { _throw(Err.DATA_ERROR); }
+      hufGroup = groups[selectors[selector++]];
+    }
+    /* Read next Huffman-coded symbol. */
+    i = hufGroup.minLen;
+    j = reader.readBits(i);
+    for (;;i++) {
+      if (i > hufGroup.maxLen) { _throw(Err.DATA_ERROR); }
+      if (j <= hufGroup.limit[i])
+        break;
+      j = (j << 1) | reader.readBits(1);
+    }
+    /* Huffman decode value to get nextSym (with bounds checking) */
+    j -= hufGroup.base[i];
+    if (j < 0 || j >= MAX_SYMBOLS) { _throw(Err.DATA_ERROR); }
+    var nextSym = hufGroup.permute[j];
+    /* We have now decoded the symbol, which indicates either a new literal
+       byte, or a repeated run of the most recent literal byte.  First,
+       check if nextSym indicates a repeated run, and if so loop collecting
+       how many times to repeat the last literal. */
+    if (nextSym === SYMBOL_RUNA || nextSym === SYMBOL_RUNB) {
+      /* If this is the start of a new run, zero out counter */
+      if (!runPos){
+        runPos = 1;
+        t = 0;
+      }
+      /* Neat trick that saves 1 symbol: instead of or-ing 0 or 1 at
+         each bit position, add 1 or 2 instead.  For example,
+         1011 is 1<<0 + 1<<1 + 2<<2.  1010 is 2<<0 + 2<<1 + 1<<2.
+         You can make any bit pattern that way using 1 less symbol than
+         the basic or 0/1 method (except all bits 0, which would use no
+         symbols, but a run of length 0 doesn't mean anything in this
+         context).  Thus space is saved. */
+      if (nextSym === SYMBOL_RUNA)
+        t += runPos;
+      else
+        t += 2 * runPos;
+      runPos <<= 1;
+      continue;
+    }
+    /* When we hit the first non-run symbol after a run, we now know
+       how many times to repeat the last literal, so append that many
+       copies to our buffer of decoded symbols (dbuf) now.  (The last
+       literal used is the one at the head of the mtfSymbol array.) */
+    if (runPos){
+      runPos = 0;
+      if (dbufCount + t > this.dbufSize) { _throw(Err.DATA_ERROR); }
+      uc = symToByte[mtfSymbol[0]];
+      byteCount[uc] += t;
+      while (t--)
+        dbuf[dbufCount++] = uc;
+    }
+    /* Is this the terminating symbol? */
+    if (nextSym > symTotal)
+      break;
+    /* At this point, nextSym indicates a new literal character.  Subtract
+       one to get the position in the MTF array at which this literal is
+       currently to be found.  (Note that the result can't be -1 or 0,
+       because 0 and 1 are RUNA and RUNB.  But another instance of the
+       first symbol in the MTF array, position 0, would have been handled
+       as part of a run above.  Therefore 1 unused MTF position minus
+       2 non-literal nextSym values equals -1.) */
+    if (dbufCount >= this.dbufSize) { _throw(Err.DATA_ERROR); }
+    i = nextSym - 1;
+    uc = mtf(mtfSymbol, i);
+    uc = symToByte[uc];
+    /* We have our literal byte.  Save it into dbuf. */
+    byteCount[uc]++;
+    dbuf[dbufCount++] = uc;
+  }
+  /* At this point, we've read all the Huffman-coded symbols (and repeated
+     runs) for this block from the input stream, and decoded them into the
+     intermediate buffer.  There are dbufCount many decoded bytes in dbuf[].
+     Now undo the Burrows-Wheeler transform on dbuf.
+     See http://dogma.net/markn/articles/bwt/bwt.htm
+  */
+  if (origPointer < 0 || origPointer >= dbufCount) { _throw(Err.DATA_ERROR); }
+  /* Turn byteCount into cumulative occurrence counts of 0 to n-1. */
+  j = 0;
+  for (i = 0; i < 256; i++) {
+    k = j + byteCount[i];
+    byteCount[i] = j;
+    j = k;
+  }
+  /* Figure out what order dbuf would be in if we sorted it. */
+  for (i = 0; i < dbufCount; i++) {
+    uc = dbuf[i] & 0xff;
+    dbuf[byteCount[uc]] |= (i << 8);
+    byteCount[uc]++;
+  }
+  /* Decode first byte by hand to initialize "previous" byte.  Note that it
+     doesn't get output, and if the first three characters are identical
+     it doesn't qualify as a run (hence writeRunCountdown=5). */
+  var pos = 0, current = 0, run = 0;
+  if (dbufCount) {
+    pos = dbuf[origPointer];
+    current = (pos & 0xff);
+    pos >>= 8;
+    run = -1;
+  }
+  this.writePos = pos;
+  this.writeCurrent = current;
+  this.writeCount = dbufCount;
+  this.writeRun = run;
+
+  return true; /* more blocks to come */
+};
+/* Undo burrows-wheeler transform on intermediate buffer to produce output.
+   If start_bunzip was initialized with out_fd=-1, then up to len bytes of
+   data are written to outbuf.  Return value is number of bytes written or
+   error (all errors are negative numbers).  If out_fd!=-1, outbuf and len
+   are ignored, data is written to out_fd and return is RETVAL_OK or error.
+*/
+Bunzip.prototype._read_bunzip = function(outputBuffer, len) {
+    var copies, previous, outbyte;
+    /* james@jamestaylor.org: writeCount goes to -1 when the buffer is fully
+       decoded, which results in this returning RETVAL_LAST_BLOCK, also
+       equal to -1... Confusing, I'm returning 0 here to indicate no
+       bytes written into the buffer */
+  if (this.writeCount < 0) { return 0; }
+
+  var gotcount = 0;
+  var dbuf = this.dbuf, pos = this.writePos, current = this.writeCurrent;
+  var dbufCount = this.writeCount, outputsize = this.outputsize;
+  var run = this.writeRun;
+
+  while (dbufCount) {
+    dbufCount--;
+    previous = current;
+    pos = dbuf[pos];
+    current = pos & 0xff;
+    pos >>= 8;
+    if (run++ === 3){
+      copies = current;
+      outbyte = previous;
+      current = -1;
+    } else {
+      copies = 1;
+      outbyte = current;
+    }
+    this.blockCRC.updateCRCRun(outbyte, copies);
+    while (copies--) {
+      this.outputStream.writeByte(outbyte);
+      this.nextoutput++;
+    }
+    if (current != previous)
+      run = 0;
+  }
+  this.writeCount = dbufCount;
+  // check CRC
+  if (this.blockCRC.getCRC() !== this.targetBlockCRC) {
+    _throw(Err.DATA_ERROR, "Bad block CRC "+
+           "(got "+this.blockCRC.getCRC().toString(16)+
+           " expected "+this.targetBlockCRC.toString(16)+")");
+  }
+  return this.nextoutput;
+};
+
+/* Static helper functions */
+Bunzip.Err = Err;
+// 'input' can be a stream or a buffer
+// 'output' can be a stream or a buffer or a number (buffer size)
+Bunzip.decode = function(input, output, multistream) {
+  // make a stream from a buffer, if necessary
+  var inputStream = Util.coerceInputStream(input);
+  var o = Util.coerceOutputStream(output, output);
+  var outputStream = o.stream;
+
+  var bz = new Bunzip(inputStream, outputStream);
+  while (true) {
+    if ('eof' in inputStream && inputStream.eof()) break;
+    if (bz._init_block()) {
+      bz._read_bunzip();
+    } else {
+      var targetStreamCRC = bz.reader.readBits(32);
+      if (targetStreamCRC !== bz.streamCRC) {
+        _throw(Err.DATA_ERROR, "Bad stream CRC "+
+               "(got "+bz.streamCRC.toString(16)+
+               " expected "+targetStreamCRC.toString(16)+")");
+      }
+      if (multistream &&
+          'eof' in inputStream &&
+          !inputStream.eof()) {
+        // note that start_bunzip will also resync the bit reader to next byte
+        bz._start_bunzip(inputStream, outputStream);
+      } else break;
+    }
+  }
+  return o.retval;
+};
+Bunzip.decodeBlock = function(input, pos, output) {
+  // make a stream from a buffer, if necessary
+  var inputStream = Util.coerceInputStream(input);
+  var o = Util.coerceOutputStream(output, output);
+  var outputStream = o.stream;
+  var bz = new Bunzip(inputStream, outputStream);
+  bz.reader.seekBit(pos);
+  /* Fill the decode buffer for the block */
+  var moreBlocks = bz._get_next_block();
+  if (moreBlocks) {
+    /* Init the CRC for writing */
+    bz.blockCRC = new CRC32();
+
+    /* Zero this so the current byte from before the seek is not written */
+    bz.writeCopies = 0;
+
+    /* Decompress the block and write to stdout */
+    bz._read_bunzip();
+    // XXX keep writing?
+  }
+  return o.retval;
+};
+/* Reads bzip2 file from stream or buffer `input`, and invoke
+ * `callback(position, size)` once for each bzip2 block,
+ * where position gives the starting position (in *bits*)
+ * and size gives uncompressed size of the block (in *bytes*). */
+Bunzip.table = function(input, callback, multistream) {
+  // make a stream from a buffer, if necessary
+  var inputStream = new Stream();
+  inputStream.delegate = Util.coerceInputStream(input);
+  inputStream.pos = 0;
+  inputStream.readByte = function() {
+    this.pos++;
+    return this.delegate.readByte();
+  };
+  inputStream.tell = function() { return this.pos; };
+  if (inputStream.delegate.eof) {
+    inputStream.eof = inputStream.delegate.eof.bind(inputStream.delegate);
+  }
+  var outputStream = new Stream();
+  outputStream.pos = 0;
+  outputStream.writeByte = function() { this.pos++; };
+
+  var bz = new Bunzip(inputStream, outputStream);
+  var blockSize = bz.dbufSize;
+  while (true) {
+    if ('eof' in inputStream && inputStream.eof()) break;
+
+    var position = bz.reader.tellBit();
+
+    if (bz._init_block()) {
+      var start = outputStream.pos;
+      bz._read_bunzip();
+      callback(position, outputStream.pos - start);
+    } else {
+      var crc = bz.reader.readBits(32); // (but we ignore the crc)
+      if (multistream &&
+          'eof' in inputStream &&
+          !inputStream.eof()) {
+        // note that start_bunzip will also resync the bit reader to next byte
+        bz._start_bunzip(inputStream, outputStream);
+        console.assert(bz.dbufSize === blockSize,
+                       "shouldn't change block size within multistream file");
+      } else break;
+    }
+  }
+};
+
+// create a Huffman tree from the table of frequencies
+var StaticHuffman = function(freq, alphabetSize) {
+  // As in BZip2HuffmanStageEncoder.java (from jbzip2):
+  // The Huffman allocator needs its input symbol frequencies to be
+  // sorted, but we need to return code lengths in the same order as
+  // the corresponding frequencies are passed in.
+  // The symbol frequency and index are merged into a single array of
+  // integers - frequency in the high 23 bits, index in the low 9
+  // bits.
+  //     2^23 = 8,388,608 which is higher than the maximum possible
+  //            frequency for one symbol in a block
+  //     2^9 = 512 which is higher than the maximum possible
+  //            alphabet size (== 258)
+  // Sorting this array simultaneously sorts the frequencies and
+  // leaves a lookup that can be used to cheaply invert the sort
+  var i, mergedFreq = [];
+  for (i=0; i<alphabetSize; i++) {
+    mergedFreq[i] = (freq[i] << 9) | i;
+  }
+  mergedFreq.sort(function(a,b) { return a-b; });
+  var sortedFreq = mergedFreq.map(function(v) { return v>>>9; });
+  // allocate code lengths in place. (result in sortedFreq array)
+  HuffmanAllocator.allocateHuffmanCodeLengths(sortedFreq, MAX_HUFCODE_BITS);
+  // reverse the sort to put codes & code lengths in order of input symbols
+  this.codeLengths = Util.makeU8Buffer(alphabetSize);
+  for (i=0; i<alphabetSize; i++) {
+    var sym = mergedFreq[i] & 0x1FF;
+    this.codeLengths[sym] = sortedFreq[i];
+  }
+};
+// compute canonical Huffman codes, given code lengths
+StaticHuffman.prototype.computeCanonical = function() {
+  var alphabetSize = this.codeLengths.length;
+  // merge arrays; sort first by length then by symbol.
+  var i, merged = [];
+  for (i=0; i<alphabetSize; i++) {
+    merged[i] = (this.codeLengths[i] << 9) | i;
+  }
+  merged.sort(function(a,b) { return a-b; });
+  // use sorted lengths to assign codes
+  this.code = Util.makeU32Buffer(alphabetSize);
+  var code = 0, prevLen = 0;
+  for (i=0; i<alphabetSize; i++) {
+    var curLen = merged[i] >>> 9;
+    var sym = merged[i] & 0x1FF;
+    console.assert(prevLen <= curLen);
+    code <<= (curLen - prevLen);
+    this.code[sym] = code++;
+    prevLen = curLen;
+  }
+};
+// compute the cost of encoding the given range of symbols w/ this Huffman code
+StaticHuffman.prototype.cost = function(array, offset, length) {
+  var i, cost = 0;
+  for (i=0; i<length; i++) {
+    cost += this.codeLengths[array[offset+i]];
+  }
+  return cost;
+};
+// emit the bit lengths used by this Huffman code
+StaticHuffman.prototype.emit = function(outStream) {
+  // write the starting length
+  var i, currentLength = this.codeLengths[0];
+  outStream.writeBits(5, currentLength);
+  for (i=0; i<this.codeLengths.length; i++) {
+    var codeLength = this.codeLengths[i];
+    var value, delta;
+    console.assert(codeLength > 0 && codeLength <= MAX_HUFCODE_BITS);
+    if (currentLength < codeLength) {
+      value = 2; delta = codeLength - currentLength;
+    } else {
+      value = 3; delta = currentLength - codeLength;
+    }
+    while (delta-- > 0) {
+      outStream.writeBits(2, value);
+    }
+    outStream.writeBit(0);
+    currentLength = codeLength;
+  }
+};
+// encode the given symbol with this Huffman code
+StaticHuffman.prototype.encode = function(outStream, symbol) {
+  outStream.writeBits(this.codeLengths[symbol], this.code[symbol]);
+};
+
+// read a block for bzip2 compression.
+var readBlock = function(inStream, block, length, crc) {
+  var pos = 0;
+  var lastChar = -1;
+  var runLength = 0;
+  while (pos < length) {
+    if (runLength===4) {
+      block[pos++] = 0;
+      if (pos >= length) { break; }
+    }
+    var ch = inStream.readByte();
+    if (ch === EOF) {
+      break;
+    }
+    crc.updateCRC(ch);
+    if (ch !== lastChar) {
+      lastChar = ch;
+      runLength = 1;
+    } else {
+      runLength++;
+      if (runLength > 4) {
+        if (runLength < 256) {
+          block[pos-1]++;
+          continue;
+        } else {
+          runLength = 1;
+        }
+      }
+    }
+    block[pos++] = ch;
+  }
+  return pos;
+};
+
+// divide the input into groups at most GROUP_SIZE symbols long.
+// assign each group to the Huffman table which compresses it best.
+var assignSelectors = function(selectors, groups, input) {
+  var i, j, k;
+  for (i=0, k=0; i<input.length; i+=GROUP_SIZE) {
+    var groupSize = Math.min(GROUP_SIZE, input.length - i);
+    var best = 0, bestCost = groups[0].cost(input, i, groupSize);
+    for (j=1; j<groups.length; j++) {
+      var groupCost = groups[j].cost(input, i, groupSize);
+      if (groupCost < bestCost) {
+        best = j; bestCost = groupCost;
+      }
+    }
+    selectors[k++] = best;
+  }
+};
+var optimizeHuffmanGroups = function(groups, targetGroups, input,
+                                     selectors, alphabetSize) {
+  // until we've got "targetGroups" Huffman codes, pick the Huffman code which
+  // matches the largest # of groups and split it by picking the groups
+  // which require more than the median number of bits to encode.
+  // then recompute frequencies and reassign Huffman codes.
+  var i, j, k, groupCounts = [];
+  while (groups.length < targetGroups) {
+    assignSelectors(selectors, groups, input);
+    // which code gets used the most?
+    for (i=0; i<groups.length; i++) { groupCounts[i] = 0; }
+    for (i=0; i<selectors.length; i++) {
+      groupCounts[selectors[i]]++;
+    }
+    var which = groupCounts.indexOf(Math.max.apply(Math, groupCounts));
+    // ok, let's look at the size of those blocks
+    var splits = [];
+    for (i=0, j=0; i<selectors.length; i++) {
+      if (selectors[i] !== which) { continue; }
+      var start = i*GROUP_SIZE;
+      var end = Math.min(start + GROUP_SIZE, input.length);
+      splits.push({index: i, cost:groups[which].cost(input, start, end-start)});
+    }
+    // find the median.  there are O(n) algorithms to do this, but we'll
+    // be lazy and use a full O(n ln n) sort.
+    splits.sort(function(s1, s2) { return s1.cost - s2.cost; });
+    // assign the groups in the top half to the "new" selector
+    for (i=(splits.length>>>1); i<splits.length; i++) {
+      selectors[splits[i].index] = groups.length;
+    }
+    groups.push(null);
+    // recompute frequencies
+    var freq = [], f;
+    for (i=0; i<groups.length; i++) {
+      f = freq[i] = [];
+      for (j=0; j<alphabetSize; j++) { f[j] = 0; }
+    }
+    for (i=0, j=0; i<input.length; ) {
+      f = freq[selectors[j++]];
+      for (k=0; k<GROUP_SIZE && i<input.length; k++) {
+        f[input[i++]]++;
+      }
+    }
+    // reconstruct Huffman codes
+    for (i=0; i<groups.length; i++) {
+      groups[i] = new StaticHuffman(freq[i], alphabetSize);
+    }
+  }
+};
+
+var compressBlock = function(block, length, outStream) {
+  var c, i, j, k;
+  // do BWT transform
+  var U = Util.makeU8Buffer(length);
+  var pidx = BWT.bwtransform2(block, U, length, 256);
+  outStream.writeBit(0); // not randomized
+  outStream.writeBits(24, pidx);
+  // track values used; write bitmap
+  var used = [], compact = [];
+  for (i=0; i<length; i++) {
+    c = block[i];
+    used[c] = true;
+    compact[c>>>4] = true;
+  }
+  for (i=0; i<16; i++) {
+    outStream.writeBit(!!compact[i]);
+  }
+  for (i=0; i<16; i++) {
+    if (compact[i]) {
+      for (j=0; j<16; j++) {
+        outStream.writeBit(!!used[(i<<4)|j]);
+      }
+    }
+  }
+  var alphabetSize = 0;
+  for (i=0; i<256; i++) {
+    if (used[i]) {
+      alphabetSize++;
+    }
+  }
+  // now MTF and RLE/2 encoding, while tracking symbol statistics.
+  // output can be one longer than length, because we include the
+  // end-of-block character at the end. Similarly, we need a U16
+  // array because the end-of-block character can be 256.
+  var A = Util.makeU16Buffer(length+1);
+  var endOfBlock = alphabetSize + 1;
+  var freq = [];
+  for (i=0; i<=endOfBlock; i++) { freq[i] = 0; }
+  var M = Util.makeU8Buffer(alphabetSize);
+  for (i=0, j=0; i<256; i++) {
+    if (used[i]) { M[j++] = i; }
+  }
+  used = null; compact = null;
+  var pos = 0, runLength = 0;
+  var emit = function(c) {
+    A[pos++] = c;
+    freq[c]++;
+  };
+  var emitLastRun = function() {
+    while (runLength !== 0) {
+      if (runLength & 1) {
+        emit(0); // RUNA
+        runLength -= 1;
+      } else {
+        emit(1); // RUNB
+        runLength -= 2;
+      }
+      runLength >>>= 1;
+    }
+  };
+  for (i=0; i<U.length; i++) {
+    c = U[i];
+    // look for C in M
+    for (j=0; j<alphabetSize; j++) {
+      if (M[j]===c) { break; }
+    }
+    console.assert(j!==alphabetSize);
+    // shift MTF array
+    mtf(M, j);
+    // emit j
+    if (j===0) {
+      runLength++;
+    } else {
+      emitLastRun();
+      emit(j+1);
+      runLength = 0;
+    }
+  }
+  emitLastRun();
+  emit(endOfBlock); // end of block symbol
+  A = A.subarray(0, pos);
+  // now A[0...pos) has the encoded output, and freq[0-alphabetSize] has the
+  // frequencies.  Use these to construct Huffman tables.
+  // the canonical bzip2 encoder does some complicated optimization
+  // to attempt to select the best tables.  We're going to simplify things:
+  // (unless the block is very short) we're always going to create MAX_GROUPS
+  // tables; 1 based on global frequencies, and the rest based on dividing the
+  // block into MAX_GROUPS-1 pieces.
+  var groups = [];
+  var targetGroups; // how many Huffman groups should we create?
+  // look at length of MTF-encoded block to pick a good number of groups
+  if (pos >= 2400) { targetGroups = 6; }
+  else if (pos >= 1200) { targetGroups = 5; }
+  else if (pos >= 600) { targetGroups = 4; }
+  else if (pos >= 200) { targetGroups = 3; }
+  else { targetGroups = 2; }
+  // start with two Huffman groups: one with the global frequencies, and
+  // a second with a flat frequency distribution (which is also the smallest
+  // possible Huffman table to encode, which is handy to prevent excessive
+  // bloat if the input file size is very small)
+  groups.push(new StaticHuffman(freq, endOfBlock+1));
+  for (i=0; i<=endOfBlock; i++) { freq[i] = 1; }
+  groups.push(new StaticHuffman(freq, endOfBlock+1));
+  freq = null;
+  // Now optimize the Huffman groups!  this is a black art.
+  // we probably don't want to waste too much time on it, though.
+  var selectors = Util.makeU8Buffer(Math.ceil(pos / GROUP_SIZE));
+  optimizeHuffmanGroups(groups, targetGroups, A, selectors, endOfBlock+1);
+  assignSelectors(selectors, groups, A);
+
+  // okay, let's start writing out our Huffman tables
+  console.assert(groups.length >= MIN_GROUPS && groups.length <= MAX_GROUPS);
+  outStream.writeBits(3, groups.length);
+  // and write out the best selector for each group
+  outStream.writeBits(15, selectors.length);
+  for (i=0; i<groups.length; i++) { M[i] = i; } // initialize MTF table.
+  for (i=0; i<selectors.length; i++) {
+    var s = selectors[i];
+    // find selector in MTF list
+    for (j=0; j<groups.length; j++) { if (M[j]===s) { break; } }
+    console.assert(j<groups.length);
+    mtf(M, j);
+    // emit 'j' as a unary number
+    for (;j>0; j--) {
+      outStream.writeBit(1);
+    }
+    outStream.writeBit(0);
+  }
+  // okay, now emit the Huffman tables in order.
+  for (i=0; i<groups.length; i++) {
+    groups[i].emit(outStream);
+    groups[i].computeCanonical(); // get ready for next step while we're at it
+  }
+  // okay, now (finally!) emit the actual data!
+  for (i=0, k=0; i<pos; ) {
+    var huff = groups[selectors[k++]];
+    for (j=0; j<GROUP_SIZE && i<pos; j++) {
+      huff.encode(outStream, A[i++]);
+    }
+  }
+  // done.
+};
+
+var Bzip2 = Object.create(null);
+Bzip2.compressFile = function(inStream, outStream, props) {
+  inStream = Util.coerceInputStream(inStream);
+  var o = Util.coerceOutputStream(outStream, outStream);
+  outStream = new BitStream(o.stream);
+
+  var blockSizeMultiplier = 9;
+  if (typeof(props)==='number') {
+    blockSizeMultiplier = props;
+  }
+  if (blockSizeMultiplier < 1 || blockSizeMultiplier > 9) {
+    throw new Error('Invalid block size multiplier');
+  }
+
+  var blockSize = blockSizeMultiplier * 100000;
+  // the C implementation always writes at least length-19 characters,
+  // but it reads ahead enough that if the last character written was part
+  // of a run, it writes out the full run.
+  // That's really annoying to implement.
+  // So instead just subtract 19 from the blockSize; in most cases (unless
+  // there's a run at the end of the block) this will yield block divisions
+  // matching the C implementation.
+  blockSize -= 19;
+
+  // write file magic
+  outStream.writeByte('B'.charCodeAt(0));
+  outStream.writeByte('Z'.charCodeAt(0));
+  outStream.writeByte('h'.charCodeAt(0)); // Huffman-coded bzip
+  outStream.writeByte('0'.charCodeAt(0) + blockSizeMultiplier);
+
+  // allocate a buffer for the block
+  var block = Util.makeU8Buffer(blockSize);
+  var streamCRC = 0;
+  var length;
+
+  do {
+    var crc = new CRC32();
+    length = readBlock(inStream, block, blockSize, crc);
+    if (length > 0) {
+      streamCRC = (((streamCRC << 1) | (streamCRC>>>31)) ^ crc.getCRC()) >>> 0;
+      outStream.writeBits(48, WHOLEPI);
+      outStream.writeBits(32, crc.getCRC());
+      compressBlock(block, length, outStream);
+    }
+  } while (length === blockSize);
+
+  // finish up
+  outStream.writeBits(48, SQRTPI);
+  outStream.writeBits(32, streamCRC);
+  outStream.flush(); // get the last bits flushed out
+  return o.retval;
+};
+
+Bzip2.decompressFile = Bunzip.decode;
+Bzip2.decompressBlock = Bunzip.decodeBlock;
+Bzip2.table = Bunzip.table;
+
+module.exports = Bzip2;
+
+},{"./BWT":2,"./BitStream":4,"./CRC32":6,"./HuffmanAllocator":12,"./Stream":22,"./Util":23,"./freeze":24}],6:[function(require,module,exports){
+/* CRC32, used in Bzip2 implementation.
+ * This is a port of CRC32.java from the jbzip2 implementation at
+ *   https://code.google.com/p/jbzip2
+ * which is:
+ *   Copyright (c) 2011 Matthew Francis
+ *
+ *   Permission is hereby granted, free of charge, to any person
+ *   obtaining a copy of this software and associated documentation
+ *   files (the "Software"), to deal in the Software without
+ *   restriction, including without limitation the rights to use,
+ *   copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the
+ *   Software is furnished to do so, subject to the following
+ *   conditions:
+ *
+ *   The above copyright notice and this permission notice shall be
+ *   included in all copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *   OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *   HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *   OTHER DEALINGS IN THE SOFTWARE.
+ * This JavaScript implementation is:
+ *   Copyright (c) 2013 C. Scott Ananian
+ * with the same licensing terms as Matthew Francis' original implementation.
+ */
+const Util = require('./Util');
+
+/**
+ * A static CRC lookup table
+ */
+  var crc32Lookup = Util.arraycopy(Util.makeU32Buffer(256), [
+  0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9, 0x130476dc, 0x17c56b6b, 0x1a864db2, 0x1e475005,
+  0x2608edb8, 0x22c9f00f, 0x2f8ad6d6, 0x2b4bcb61, 0x350c9b64, 0x31cd86d3, 0x3c8ea00a, 0x384fbdbd,
+  0x4c11db70, 0x48d0c6c7, 0x4593e01e, 0x4152fda9, 0x5f15adac, 0x5bd4b01b, 0x569796c2, 0x52568b75,
+  0x6a1936c8, 0x6ed82b7f, 0x639b0da6, 0x675a1011, 0x791d4014, 0x7ddc5da3, 0x709f7b7a, 0x745e66cd,
+  0x9823b6e0, 0x9ce2ab57, 0x91a18d8e, 0x95609039, 0x8b27c03c, 0x8fe6dd8b, 0x82a5fb52, 0x8664e6e5,
+  0xbe2b5b58, 0xbaea46ef, 0xb7a96036, 0xb3687d81, 0xad2f2d84, 0xa9ee3033, 0xa4ad16ea, 0xa06c0b5d,
+  0xd4326d90, 0xd0f37027, 0xddb056fe, 0xd9714b49, 0xc7361b4c, 0xc3f706fb, 0xceb42022, 0xca753d95,
+  0xf23a8028, 0xf6fb9d9f, 0xfbb8bb46, 0xff79a6f1, 0xe13ef6f4, 0xe5ffeb43, 0xe8bccd9a, 0xec7dd02d,
+  0x34867077, 0x30476dc0, 0x3d044b19, 0x39c556ae, 0x278206ab, 0x23431b1c, 0x2e003dc5, 0x2ac12072,
+  0x128e9dcf, 0x164f8078, 0x1b0ca6a1, 0x1fcdbb16, 0x018aeb13, 0x054bf6a4, 0x0808d07d, 0x0cc9cdca,
+  0x7897ab07, 0x7c56b6b0, 0x71159069, 0x75d48dde, 0x6b93dddb, 0x6f52c06c, 0x6211e6b5, 0x66d0fb02,
+  0x5e9f46bf, 0x5a5e5b08, 0x571d7dd1, 0x53dc6066, 0x4d9b3063, 0x495a2dd4, 0x44190b0d, 0x40d816ba,
+  0xaca5c697, 0xa864db20, 0xa527fdf9, 0xa1e6e04e, 0xbfa1b04b, 0xbb60adfc, 0xb6238b25, 0xb2e29692,
+  0x8aad2b2f, 0x8e6c3698, 0x832f1041, 0x87ee0df6, 0x99a95df3, 0x9d684044, 0x902b669d, 0x94ea7b2a,
+  0xe0b41de7, 0xe4750050, 0xe9362689, 0xedf73b3e, 0xf3b06b3b, 0xf771768c, 0xfa325055, 0xfef34de2,
+  0xc6bcf05f, 0xc27dede8, 0xcf3ecb31, 0xcbffd686, 0xd5b88683, 0xd1799b34, 0xdc3abded, 0xd8fba05a,
+  0x690ce0ee, 0x6dcdfd59, 0x608edb80, 0x644fc637, 0x7a089632, 0x7ec98b85, 0x738aad5c, 0x774bb0eb,
+  0x4f040d56, 0x4bc510e1, 0x46863638, 0x42472b8f, 0x5c007b8a, 0x58c1663d, 0x558240e4, 0x51435d53,
+  0x251d3b9e, 0x21dc2629, 0x2c9f00f0, 0x285e1d47, 0x36194d42, 0x32d850f5, 0x3f9b762c, 0x3b5a6b9b,
+  0x0315d626, 0x07d4cb91, 0x0a97ed48, 0x0e56f0ff, 0x1011a0fa, 0x14d0bd4d, 0x19939b94, 0x1d528623,
+  0xf12f560e, 0xf5ee4bb9, 0xf8ad6d60, 0xfc6c70d7, 0xe22b20d2, 0xe6ea3d65, 0xeba91bbc, 0xef68060b,
+  0xd727bbb6, 0xd3e6a601, 0xdea580d8, 0xda649d6f, 0xc423cd6a, 0xc0e2d0dd, 0xcda1f604, 0xc960ebb3,
+  0xbd3e8d7e, 0xb9ff90c9, 0xb4bcb610, 0xb07daba7, 0xae3afba2, 0xaafbe615, 0xa7b8c0cc, 0xa379dd7b,
+  0x9b3660c6, 0x9ff77d71, 0x92b45ba8, 0x9675461f, 0x8832161a, 0x8cf30bad, 0x81b02d74, 0x857130c3,
+  0x5d8a9099, 0x594b8d2e, 0x5408abf7, 0x50c9b640, 0x4e8ee645, 0x4a4ffbf2, 0x470cdd2b, 0x43cdc09c,
+  0x7b827d21, 0x7f436096, 0x7200464f, 0x76c15bf8, 0x68860bfd, 0x6c47164a, 0x61043093, 0x65c52d24,
+  0x119b4be9, 0x155a565e, 0x18197087, 0x1cd86d30, 0x029f3d35, 0x065e2082, 0x0b1d065b, 0x0fdc1bec,
+  0x3793a651, 0x3352bbe6, 0x3e119d3f, 0x3ad08088, 0x2497d08d, 0x2056cd3a, 0x2d15ebe3, 0x29d4f654,
+  0xc5a92679, 0xc1683bce, 0xcc2b1d17, 0xc8ea00a0, 0xd6ad50a5, 0xd26c4d12, 0xdf2f6bcb, 0xdbee767c,
+  0xe3a1cbc1, 0xe760d676, 0xea23f0af, 0xeee2ed18, 0xf0a5bd1d, 0xf464a0aa, 0xf9278673, 0xfde69bc4,
+  0x89b8fd09, 0x8d79e0be, 0x803ac667, 0x84fbdbd0, 0x9abc8bd5, 0x9e7d9662, 0x933eb0bb, 0x97ffad0c,
+  0xafb010b1, 0xab710d06, 0xa6322bdf, 0xa2f33668, 0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
+]);
+
+var CRC32 = function() {
+  /**
+   * The current CRC
+   */
+  var crc = 0xffffffff;
+
+  /**
+   * @return The current CRC
+   */
+  this.getCRC = function() {
+    return (~crc) >>> 0; // return an unsigned value
+  };
+
+  /**
+   * Update the CRC with a single byte
+   * @param value The value to update the CRC with
+   */
+  this.updateCRC = function(value) {
+    crc = (crc << 8) ^ crc32Lookup[((crc >>> 24) ^ value) & 0xff];
+  };
+
+  /**
+   * Update the CRC with a sequence of identical bytes
+   * @param value The value to update the CRC with
+   * @param count The number of bytes
+   */
+  this.updateCRCRun = function(value, count) {
+    while (count-- > 0) {
+      crc = (crc << 8) ^ crc32Lookup[((crc >>> 24) ^ value) & 0xff];
+    }
+  };
+};
+module.exports = CRC32;
+
+},{"./Util":23}],7:[function(require,module,exports){
+/** A simple context-1 model. */
+const BitStream = require('./BitStream');
+const Huffman = require('./Huffman');
+const Util = require('./Util');
+
+var Context1Model = function(modelFactory, contextSize, alphabetSize) {
+  var i;
+  this.literalModel = [];
+  // even if there's an EOF symbol, we don't need a context for it!
+  for (i=0; i<contextSize; i++) {
+    this.literalModel[i] = modelFactory(alphabetSize);
+  }
+};
+Context1Model.prototype.encode = function(ch, context) {
+  this.literalModel[context].encode(ch);
+};
+Context1Model.prototype.decode = function(context) {
+  return this.literalModel[context].decode();
+};
+
+/** Simple self-test. */
+Context1Model.MAGIC='ctx1';
+Context1Model.compressFile = Util.compressFileHelper(Context1Model.MAGIC, function(inStream, outStream, fileSize, props) {
+  var bitstream = new BitStream(outStream);
+  var alphabetSize = 256;
+  if (fileSize < 0) { alphabetSize++; }
+  var coder = Huffman.factory(bitstream, 8191);
+  var model = new Context1Model(coder, 256, alphabetSize);
+  var lastchar = 0x20;
+  var modelp = {
+    encode: function(symbol) {
+      model.encode(symbol, lastchar);
+      lastchar = symbol;
+    }
+  };
+  Util.compressWithModel(inStream, fileSize, modelp);
+  bitstream.flush();
+});
+Context1Model.decompressFile = Util.decompressFileHelper(Context1Model.MAGIC, function(inStream, outStream, fileSize) {
+  var bitstream = new BitStream(inStream);
+  var alphabetSize = 256;
+  if (fileSize < 0) { alphabetSize++; }
+  var coder = Huffman.factory(bitstream, 8191);
+  var model = new Context1Model(coder, 256, alphabetSize);
+  var lastchar = 0x20;
+  var modelp = {
+    decode: function() {
+      var symbol = model.decode(lastchar);
+      lastchar = symbol;
+      return symbol;
+    }
+  };
+  Util.decompressWithModel(outStream, fileSize, modelp);
+});
+
+module.exports = Context1Model;
+
+},{"./BitStream":4,"./Huffman":11,"./Util":23}],8:[function(require,module,exports){
+/** Deferred-sum model, suitable for small ( ~ 256 ) ranges. */
+// See http://cbloom.com/src/defsum.zip
+//     http://cbloom.com/papers/context.pdf
+const RangeCoder = require('./RangeCoder');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+var LOG_PROB_TOTAL = 8;
+var PROB_TOTAL = 1 << LOG_PROB_TOTAL;
+var MAX_ESCAPE_COUNT = 40;
+
+var DefSumModel = function(coder, size, isDecoder) {
+  var i;
+  console.assert(size < 300); // not meant for sparse
+  var ESCAPE = this.numSyms = size;
+  this.coder = coder;
+  this.prob = Util.makeU16Buffer(size+2); /* size + ESC + 1 */
+  this.escape = Util.makeU16Buffer(size+1);  /* size + 1*/
+  this.update = Util.makeU16Buffer(size+1); /* size + ESC */
+  this.prob[ESCAPE+1] = PROB_TOTAL;
+  for (i=0; i<=this.numSyms; i++) {
+    this.escape[i] = i;
+  }
+  this.updateCount = 0;
+  this.updateThresh = PROB_TOTAL - Math.floor(PROB_TOTAL / 2);
+  if (!isDecoder) { return; }
+  // extra tables for fast decoding
+  this.probToSym = Util.makeU16Buffer(PROB_TOTAL);
+  this.escProbToSym = Util.makeU16Buffer(this.numSyms);
+  for (i=0; i<PROB_TOTAL; i++) {
+    this.probToSym[i] = ESCAPE;
+  }
+  for (i=0; i<this.numSyms; i++) {
+    this.escProbToSym[i] = i;
+  }
+};
+DefSumModel.factory = function(coder, isDecoder) {
+  return function(size) { return new DefSumModel(coder, size, isDecoder); };
+};
+DefSumModel.prototype._update = function(symbol, isDecoder) {
+  if (symbol === this.numSyms) {
+    // some special cases for the escape character
+    if (this.update[symbol] >= MAX_ESCAPE_COUNT) { return; } // hard limit
+    // don't let an escape character trigger an update, because then the
+    // escaped character might find itself unescaped after the tables have
+    // been updated!
+    if (this.updateCount >= (this.updateThresh - 1)) { return; }
+  }
+  this.update[symbol]++;
+  this.updateCount++;
+  // is it time to transfer the updated probabilities?
+  if (this.updateCount < this.updateThresh) {
+    return; //defer update
+  }
+  var cumProb, cumEscProb, odd, i, j, k;
+  this.escape[0] = this.prob[0] = cumProb = cumEscProb = odd = 0;
+  for (i=0; i < this.numSyms+1; i++) {
+    var newProb = ((this.prob[i+1]-this.prob[i]) >>> 1) + this.update[i];
+    if (newProb) {
+      // live 'un
+      this.prob[i] = cumProb;
+      cumProb += newProb;
+      if (newProb & 1) { odd++; }
+      this.escape[i] = cumEscProb;
+    } else {
+      // this symbol will escape
+      this.prob[i] = cumProb;
+      this.escape[i] = cumEscProb;
+      cumEscProb++;
+    }
+  }
+  this.prob[i] = cumProb;
+  console.assert(cumProb === PROB_TOTAL);
+  /* how many updates will be required after current probs are halved? */
+  this.updateThresh = PROB_TOTAL - Math.floor((cumProb-odd) / 2);
+  /* reset the update table */
+  for (i=0; i < (this.numSyms + 1); i++) {
+    this.update[i] = 0;
+  }
+  this.update[this.numSyms] = 1; // ensure that escape never goes away
+  this.updateCount = 1;
+  /* compute decode table, if this is a decoder */
+  if (!isDecoder) { return; }
+  for (i=0, j=0, k=0; i<(this.numSyms+1); i++) {
+    var probLimit = this.prob[i+1];
+    for (; j<probLimit; j++) {
+      this.probToSym[j] = i;
+    }
+    var escProbLimit = this.escape[i+1];
+    for (; k<escProbLimit; k++) {
+      this.escProbToSym[k] = i;
+    }
+  }
+};
+DefSumModel.prototype.encode = function(symbol) {
+  var lt_f = this.prob[symbol];
+  var sy_f = this.prob[symbol+1] - lt_f;
+  console.assert(this.prob[this.numSyms+1] === PROB_TOTAL);
+  if (sy_f) {
+    this.coder.encodeShift(sy_f, lt_f, LOG_PROB_TOTAL);
+    return this._update(symbol);
+  }
+  // escape!
+  console.assert(symbol !== this.numSyms); // catch infinite recursion
+  this.encode(this.numSyms); // guaranteed non-zero probability
+  // code symbol as literal, taking advantage of reduced escape range.
+  lt_f = this.escape[symbol];
+  sy_f = this.escape[symbol+1] - lt_f;
+  var tot_f = this.escape[this.numSyms];
+  this.coder.encodeFreq(sy_f, lt_f, tot_f);
+  return this._update(symbol);
+};
+DefSumModel.prototype.decode = function() {
+  var prob = this.coder.decodeCulShift(LOG_PROB_TOTAL);
+  var symbol = this.probToSym[prob];
+  var lt_f = this.prob[symbol];
+  var sy_f = this.prob[symbol+1] - lt_f;
+  this.coder.decodeUpdate(sy_f, lt_f, PROB_TOTAL);
+  this._update(symbol, true);
+  if (symbol !== this.numSyms) {
+    return symbol;
+  }
+  // escape!
+  var tot_f = this.escape[this.numSyms];
+  prob = this.coder.decodeCulFreq(tot_f);
+  symbol = this.escProbToSym[prob];
+  lt_f = this.escape[symbol];
+  sy_f = this.escape[symbol+1] - lt_f;
+  this.coder.decodeUpdate(sy_f, lt_f, tot_f);
+  this._update(symbol, true);
+  return symbol;
+};
+
+DefSumModel.MAGIC='dfsm';
+/** Simple order-0 compressor, as self-test. */
+DefSumModel.compressFile = Util.compressFileHelper(DefSumModel.MAGIC, function(inStream, outStream, fileSize, props, finalByte) {
+  var range = new RangeCoder(outStream);
+  range.encodeStart(finalByte, 1);
+  var model = new DefSumModel(range, (fileSize<0) ? 257 : 256);
+  Util.compressWithModel(inStream, fileSize, model);
+  range.encodeFinish();
+},true);
+/** Simple order-0 decompresser, as self-test. */
+DefSumModel.decompressFile = Util.decompressFileHelper(DefSumModel.MAGIC, function(inStream, outStream, fileSize) {
+  var range = new RangeCoder(inStream);
+  range.decodeStart(true/*already read the final byte*/);
+  var model = new DefSumModel(range, (fileSize<0) ? 257 : 256, true);
+  Util.decompressWithModel(outStream, fileSize, model);
+  range.decodeFinish();
+});
+
+module.exports = DefSumModel;
+
+},{"./RangeCoder":20,"./Stream":22,"./Util":23}],9:[function(require,module,exports){
+/**
+ * Implementation of Dynamic Markov Compression, using byte-oriented
+ * nodes/transitions.
+ *
+ * Currently no model-shrinking is done, so be careful trying to use
+ * this on large inputs!
+ *
+ * Notes for the future / TO DO:
+ *
+ * Add node merging to Dmc:
+ *  - once (total states traversed / total node count) exceeds a certain value
+ *    - find the median node w/rt total visits
+ *    - combine all nodes w/ less visits into a single node, with transitions
+ *      to node[0] - node[255] (initial context-1 states)
+ *      - initially transition counts are zero?  or summed from components?
+ *        needs to be summed so kirchoff principle holds
+ *    - halve the edge counts of all nodes, to provide for adaptation
+ *      - enforce property that all nodes point "higher" except for
+ *        links to nodes 0-255.  So we can resum all nodes in one pass,
+ *        after resetting all node.sum to zero. X YES because we know
+ *        what the total sum must be, so we can arrange to scale to maintain
+ *        proper sum. XXX what about node 0-255? XXX maybe just clear all
+ *        edge counts XXX
+ *
+ * Fix buglet: ensure that kirchoff principle *exactly* holds by
+ * paying attention to rounding when we distribute edge counts.  track
+ * highest edge and give (desiredSum - newSum) extra counts to that
+ * outgoing edge? add one to each nonzero edge until all gone?
+ *
+ * Split 'to' nodes when to.sum grows too high -- only if we're
+ * highest incoming edge?  Fix bug again here with saturating counts;
+ * we can't ignore counts w/o violating kirchoff principle, so we need
+ * to clone it.  Maybe start trying to clone early (before our counter
+ * saturates) so we have a better chance of cloning on the high
+ * incoming edge? XXX we don't track incoming edges.  XXX so just
+ * clone when we visit.
+ */
+const MTFModel = require('./MTFModel');
+const RangeCoder = require('./RangeCoder');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+// nm = no model cloning, MAX_TRANS_CNT=0xFF, MAX_MODEL_PROB=0xFFFF
+// nm2 = "                            0xFFFF                 0xFFFF
+// nm3 = "                             0xFFF                 0x0FFF
+// nm4 = "                            0xFFFF                   0xFF
+// cl1 = model cloning, MAX_TRANS_CNT=0xFFFF  MAX_MODEL_PROB=0xFF
+// cl2 = model cloning, MAX_TRANS_CNT=  0xFF  MAX_MODEL_PROB=0xFF
+// cl3 = model cloning, MAX_TRANS_CNT=0xFFFF  MAX_MODEL_PROB=0xFFFF
+var MAX_TRANS_CNT = 0xFFFF;
+var DEFAULT_MIN_CNT1 = 8;
+var DEFAULT_MIN_CNT2 = 128;
+var MODEL_PROB_MAX = 0xFF00;
+var MODEL_PROB_INCR= 0x0100;
+var CLONE_MODELS=false;
+var PRINT_STATS=false; // for quick benchmarking
+
+// XXX need to limit growth of model (throw away and retrain if model
+//     gets too large)
+
+var Dmc = Object.create(null);
+Dmc.MAGIC = 'dmc!';
+
+var MarkovNode = function(coder, size, optModel) {
+  this.out = [];
+  this.model = optModel ? optModel.clone() :
+    new MTFModel(coder, size, MODEL_PROB_MAX, MODEL_PROB_INCR);
+  this.count = Util.makeU16Buffer(size);
+  this.sum = 0;
+};
+MarkovNode.prototype.clone = function(coder, size) {
+  var i;
+  var newNode = new MarkovNode(coder, size, CLONE_MODELS ? this.model : null);
+  for (i=0; i<size; i++) {
+    newNode.out[i] = this.out[i];
+  }
+  return newNode;
+};
+
+var MarkovModel = function(coder, size, MIN_CNT1, MIN_CNT2) {
+  var i, j;
+  // initial model is 'size' states, completely linked.
+  this.coder = coder;
+  this.size = size;
+  this.MIN_CNT1 = MIN_CNT1 || DEFAULT_MIN_CNT1;
+  this.MIN_CNT2 = MIN_CNT2 || DEFAULT_MIN_CNT2;
+  this.nodes = [];
+  for (i=0; i<size; i++) {
+    this.nodes[i] = new MarkovNode(coder, size);
+  }
+  // now link nodes
+  for (i=0; i<size; i++) {
+    for (j=0; j<size; j++) {
+      this.nodes[i].out[j] = this.nodes[j];
+    }
+  }
+  // select an arbitrary node as the start state.
+  this.current = this.nodes[0];
+};
+MarkovModel.prototype.maybeSplit = function(from, symbol, to) {
+  var trans_cnt = from.count[symbol];
+  var next_cnt = to.sum;
+  var i;
+  if ( (trans_cnt <= this.MIN_CNT1) ||
+       (next_cnt - trans_cnt <= this.MIN_CNT2) ) {
+    return to; // no split
+  }
+
+  // split this guy!
+  var newNode = to.clone(this.coder, this.size);
+  this.nodes.push(newNode);
+  from.out[symbol] = newNode;
+  // distribute transition counts among new and cloned node
+  newNode.sum = to.sum = 0;
+  for (i=0; i<this.size; i++) {
+    newNode.count[i] = to.count[i] * trans_cnt / next_cnt;
+    newNode.sum += newNode.count[i];
+    to.count[i] -= newNode.count[i];
+    to.sum += to.count[i];
+  }
+
+  return newNode;
+};
+MarkovModel.prototype.encode = function(symbol) {
+  var from = this.current;
+  from.model.encode(symbol);
+  var to = from.out[symbol];
+  if (from.count[symbol] !== MAX_TRANS_CNT) {
+      from.count[symbol]++;
+      from.sum++;
+  }
+  this.current = this.maybeSplit(from, symbol, to);
+};
+MarkovModel.prototype.decode = function() {
+  var from = this.current;
+  var symbol = from.model.decode();
+  var to = from.out[symbol];
+  if (from.count[symbol] !== MAX_TRANS_CNT) {
+      from.count[symbol]++;
+      from.sum++;
+  }
+  this.current = this.maybeSplit(from, symbol, to);
+  return symbol;
+};
+
+Dmc.compressFile = Util.compressFileHelper(Dmc.MAGIC, function(inStream, outStream, fileSize, props) {
+
+  props = props || {};
+  var MIN_CNT1 = (+props.m) || DEFAULT_MIN_CNT1;
+  var MIN_CNT2 = (+props.n) || DEFAULT_MIN_CNT2;
+  Util.writeUnsignedNumber(outStream, MIN_CNT1);
+  Util.writeUnsignedNumber(outStream, MIN_CNT2);
+
+  var range = new RangeCoder(outStream);
+  range.encodeStart(0xCA, 0);
+
+  var mm = new MarkovModel(range, (fileSize<0) ? 257 : 256,
+                           MIN_CNT1, MIN_CNT2);
+  var inSize = 0;
+  while (inSize !== fileSize) {
+    var ch = inStream.readByte();
+    if (ch===Stream.EOF) {
+      mm.encode(256); // end of stream
+      break;
+    }
+    mm.encode(ch);
+    inSize++;
+  }
+  var outSize = range.encodeFinish();
+  if (PRINT_STATS) {
+    console.log('M1', mm.MIN_CNT1, 'M2', mm.MIN_CNT2,
+                'states', mm.nodes.length, 'size', outSize);
+  }
+});
+
+Dmc.decompressFile = Util.decompressFileHelper(Dmc.MAGIC, function(inStream, outStream, fileSize) {
+
+  var MIN_CNT1 = Util.readUnsignedNumber(inStream);
+  var MIN_CNT2 = Util.readUnsignedNumber(inStream);
+
+  var range = new RangeCoder(inStream);
+  range.decodeStart();
+
+  var mm = new MarkovModel(range, (fileSize<0) ? 257 : 256,
+                           MIN_CNT1, MIN_CNT2);
+  var outSize = 0;
+  while (outSize !== fileSize) {
+    var ch = mm.decode();
+    if (ch===256) {
+      break; // EOF
+    }
+    outStream.writeByte(ch);
+    outSize++;
+  }
+  range.decodeFinish();
+});
+
+module.exports = Dmc;
+
+},{"./MTFModel":17,"./RangeCoder":20,"./Stream":22,"./Util":23}],10:[function(require,module,exports){
+/** Range coding model based on Fenwick trees for O(ln N) query/update. */
+const RangeCoder = require('./RangeCoder');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+/** We store two probabilities in a U32, so max prob is going to be 0xFFFF */
+var DEFAULT_MAX_PROB = 0xFF00;
+var DEFAULT_INCREMENT= 0x0100;
+
+var ESC_MASK = 0x0000FFFF, ESC_SHIFT = 0;
+var SYM_MASK = 0xFFFF0000, SYM_SHIFT = 16;
+var SCALE_MASK=0xFFFEFFFE;
+
+var FenwickModel = function(coder, size, max_prob, increment) {
+    this.coder = coder;
+    this.numSyms = size + 1; // save space for an escape symbol
+    this.tree = Util.makeU32Buffer(this.numSyms*2);
+    this.increment = (+increment) || DEFAULT_INCREMENT;
+    this.max_prob = (+max_prob) || DEFAULT_MAX_PROB;
+    // sanity-check to prevent overflow.
+    console.assert((this.max_prob + (this.increment-1)) <= 0xFFFF);
+    console.assert(size <= 0xFFFF);
+    // record escape probability as 1.
+    var i;
+    for (i=0; i<size; i++) {
+        this.tree[this.numSyms + i] = // escape prob=1, sym prob = 0
+            (1 << ESC_SHIFT) | (0 << SYM_SHIFT);
+    }
+    this.tree[this.numSyms + i] = // escape prob = 0, sym prob = 1
+        (0 << ESC_SHIFT) | (this.increment << SYM_SHIFT);
+    this._sumTree();
+    // probability sums are in this.tree[1].  this.tree[0] is unused.
+};
+FenwickModel.factory = function(coder, max_prob, increment) {
+    return function(size) {
+        return new FenwickModel(coder, size, max_prob, increment);
+    };
+};
+FenwickModel.prototype.clone = function() {
+    var newModel = new FenwickModel(this.coder, this.size,
+                                    this.max_prob, this.increment);
+    var i;
+    for (i=1; i<this.tree.length; i++) {
+        newModel.tree[i] = this.tree[i];
+    }
+    return newModel;
+};
+FenwickModel.prototype.encode = function(symbol) {
+    var i = this.numSyms + symbol;
+    var sy_f = this.tree[i];
+    var mask = SYM_MASK, shift = SYM_SHIFT;
+    var update = (this.increment << SYM_SHIFT);
+
+    if ((sy_f & SYM_MASK) === 0) { // escape!
+        this.encode(this.numSyms-1);
+        mask = ESC_MASK;
+        update -= (1<<ESC_SHIFT); // not going to escape no mo'
+        shift = ESC_SHIFT;
+    } else if (symbol === (this.numSyms-1) &&
+            ((this.tree[1] & ESC_MASK) >>> ESC_SHIFT) === 1) {
+        // this is the last escape, zero it out
+        update = -this.tree[i];
+    }
+    // sum up the proper lt_f
+    var lt_f = 0;
+    while (i > 1) {
+        var isRight = (i & 1);
+        var parent = (i >>> 1);
+        // if we're the right child, we need to
+        // add the prob from the left child
+        if (isRight) {
+            lt_f += this.tree[2*parent];
+        }
+        // update sums
+        this.tree[i] += update; // increase sym / decrease esc
+        i = parent;
+    }
+    var tot_f = this.tree[1];
+    this.tree[1] += update; // update prob in root
+    sy_f = (sy_f & mask) >>> shift;
+    lt_f = (lt_f & mask) >>> shift;
+    tot_f =(tot_f& mask) >>> shift;
+    this.coder.encodeFreq(sy_f, lt_f, tot_f);
+    // rescale?
+    if ((( this.tree[1] & SYM_MASK ) >>> SYM_SHIFT) >= this.max_prob) {
+        this._rescale();
+    }
+};
+FenwickModel.prototype._decode = function(isEscape) {
+    var mask = SYM_MASK, shift = SYM_SHIFT;
+    var update = (this.increment << SYM_SHIFT);
+    if (isEscape) {
+        mask = ESC_MASK;
+        update -= (1 << ESC_SHIFT);
+        shift = ESC_SHIFT;
+    }
+    var tot_f = (this.tree[1] & mask) >>> shift;
+    var prob = this.coder.decodeCulFreq(tot_f);
+    // travel down the tree looking for this
+    var i = 1, lt_f = 0;
+    while (i < this.numSyms) {
+        this.tree[i] += update;
+        // look at probability in left child.
+        var leftProb = (this.tree[2*i] & mask) >>> shift;
+        i *= 2;
+        if ((prob-lt_f) >= leftProb) {
+            lt_f += leftProb;
+            i++; // take the right child.
+        }
+    }
+    var symbol = i - this.numSyms;
+    var sy_f = (this.tree[i] & mask) >>> shift;
+    this.tree[i] += update;
+    this.coder.decodeUpdate(sy_f, lt_f, tot_f);
+    // was this the last escape?
+    if (symbol === (this.numSyms-1) &&
+        ((this.tree[1] & ESC_MASK) >>> ESC_SHIFT) === 1) {
+        update = -this.tree[i]; // zero it out
+        while (i >= 1) {
+            this.tree[i] += update;
+            i = (i >>> 1); // parent
+        }
+    }
+    // rescale?
+    if ((( this.tree[1] & SYM_MASK ) >>> SYM_SHIFT) >= this.max_prob) {
+        this._rescale();
+    }
+    return symbol;
+};
+FenwickModel.prototype.decode = function() {
+    var symbol = this._decode(false); // not escape
+    if (symbol === (this.numSyms-1)) {
+        // this was an escape!
+        symbol = this._decode(true); // an escape!
+    }
+    return symbol;
+};
+FenwickModel.prototype._rescale = function() {
+    var i, prob, noEscape = true;
+    // scale symbols (possible causing them to escape)
+    for (i=0; i < this.numSyms-1; i++) {
+        prob = this.tree[this.numSyms + i];
+        if ((prob & ESC_MASK) !== 0) {
+            // this symbol escapes
+            noEscape = false;
+            continue;
+        }
+        prob = (prob & SCALE_MASK) >>> 1;
+        if (prob === 0) {
+            // this symbol newly escapes
+            prob = (1 << ESC_SHIFT);
+            noEscape = false;
+        }
+        this.tree[this.numSyms + i] = prob;
+    }
+    // scale the escape symbol
+    prob = this.tree[this.numSyms + i];
+    prob = (prob & SCALE_MASK) >>> 1;
+    // prob should be zero if there are no escaping symbols, otherwise
+    // it must be at least 1.
+    if (noEscape) { prob = 0; }
+    else if (prob === 0) { prob = (1 << SYM_SHIFT); }
+    this.tree[this.numSyms + i] = prob;
+    // sum it all up afresh
+    this._sumTree();
+};
+FenwickModel.prototype._sumTree = function() {
+    var i;
+    // sum it all. (we know we won't overflow)
+    for (i=this.numSyms - 1; i > 0; i--) {
+        this.tree[i] = this.tree[2*i] + this.tree[2*i + 1];
+    }
+};
+
+FenwickModel.MAGIC = 'fenw';
+/** Simple order-0 compressor, as self-test. */
+FenwickModel.compressFile = Util.compressFileHelper(FenwickModel.MAGIC, function(inStream, outStream, fileSize, props, finalByte) {
+    var range = new RangeCoder(outStream);
+    range.encodeStart(finalByte, 1);
+    var model = new FenwickModel(range, (fileSize<0) ? 257 : 256);
+    Util.compressWithModel(inStream, fileSize, model);
+    range.encodeFinish();
+}, true);
+
+/** Simple order-0 decompresser, as self-test. */
+FenwickModel.decompressFile = Util.decompressFileHelper(FenwickModel.MAGIC, function(inStream, outStream, fileSize) {
+    var range = new RangeCoder(inStream);
+    range.decodeStart(true/*already read the final byte*/);
+    var model = new FenwickModel(range, (fileSize<0) ? 257 : 256);
+    Util.decompressWithModel(outStream, fileSize, model);
+    range.decodeFinish();
+});
+
+module.exports = FenwickModel;
+
+},{"./RangeCoder":20,"./Stream":22,"./Util":23}],11:[function(require,module,exports){
+/* Adaptive Huffman code, using Vitter's algorithm ported from
+ * vitter.c at http://code.google.com/p/compression-code/downloads/list
+ * The original code was placed in the public domain, and so I
+ * also place this JavaScript port in the public domain.
+ *   -- C. Scott Ananian <cscott@cscott.net>, 2013
+ * ps. some truly grotty C code in the originally, faithfully ported to
+ *     evil comma-operator-using, assignment-in-if-condition JavaScript.
+ */
+const BitStream = require('./BitStream');
+const Util = require('./Util');
+
+//  This code is adapted from Professor Vitter's
+//  article, Design and Analysis of Dynamic Huffman Codes,
+//  which appeared in JACM October 1987
+
+//  A design trade-off has been made to simplify the
+//  code:  a node's block is determined dynamically,
+//  and the implicit tree structure is maintained,
+//  e.g. explicit node numbers are also implicit.
+
+//  Dynamic Huffman table weight ranking
+//  is maintained per Professor Vitter's
+//  invariant (*) for algorithm FGK:
+
+//  leaves precede internal nodes of the
+//  same weight in a non-decreasing ranking
+//  of weights using implicit node numbers:
+
+//  1) leaves slide over internal nodes, internal nodes
+//  swap over groups of leaves, leaves are swapped
+//  into group leader position, but two internal
+//  nodes never change positions relative
+//  to one another.
+
+//  2) weights are incremented by 2:
+//  leaves always have even weight values;
+//  internal nodes always have odd values.
+
+//  3) even node numbers are always right children;
+//  odd numbers are left children in the tree.
+
+//  node 2 * HuffSize - 1 is always the tree root;
+//  node HuffEsc is the escape node;
+
+//  the tree is initialized by creating an
+//  escape node as the root.
+
+//  each new leaf symbol is paired with a new escape
+//  node into the previous escape node in the tree,
+//  until the last symbol which takes over the
+//  tree position of the escape node, and
+//  HuffEsc is left at zero.
+
+//  overall table size: 2 * HuffSize
+
+//  huff_init(alphabet_size, potential symbols used)
+//  huff_encode(next_symbol)
+//  next_symbol = huff_decode()
+
+//  huff_scale(by_bits) -- scale weights and re-balance tree
+
+var HTable = function(up, down, symbol, weight) {
+    this.up = up; // next node up the tree
+    this.down = down; // pair of down nodes
+    this.symbol = symbol;       // node symbol value
+    this.weight = weight;       // node weight
+};
+HTable.prototype.clone = function() {
+  return new HTable(this.up, this.down, this.symbol, this.weight);
+};
+HTable.prototype.set = function(htable) {
+  this.up = htable.up;
+  this.down = htable.down;
+  this.symbol = htable.symbol;
+  this.weight = htable.weight;
+};
+
+//  initialize an adaptive coder
+//  for alphabet size, and count
+//  of nodes to be used
+var Huffman = function(size, root, bitstream, max_weight) {
+  var i;
+  //  default: all alphabet symbols are used
+
+  console.assert(size && typeof(size)==='number');
+  if( !root || root > size )
+      root = size;
+
+  //  create the initial escape node
+  //  at the tree root
+
+  if ( root <<= 1 ) {
+      root--;
+  }
+
+  // create root+1 htables (coding table)
+  // XXX this could be views on a backing Uint32 array?
+  this.table = [];
+  for (i=0; i<=root; i++) {
+    this.table[i] = new HTable(0,0,0,0);
+  }
+
+  // this.map => mapping for symbols to nodes
+  this.map = [];
+  // this.size => the alphabet size
+  if( this.size = size ) {
+    for (i=0; i<size; i++) {
+      this.map[i] = 0;
+    }
+  }
+
+  // this.esc  => the current tree height
+  // this.root => the root of the tree
+  this.esc = this.root = root;
+
+  if (bitstream) {
+    this.readBit = bitstream.readBit.bind(bitstream);
+    this.writeBit = bitstream.writeBit.bind(bitstream);
+  }
+  this.max_weight = max_weight; // may be null or undefined
+}
+// factory interface
+Huffman.factory = function(bitstream, max_weight) {
+  return function(size) {
+    return new Huffman(size, size, bitstream, max_weight);
+  };
+};
+
+
+// split escape node to incorporate new symbol
+
+Huffman.prototype.split = function(symbol) {
+  var pair, node;
+
+  //  is the tree already full???
+
+  if( pair = this.esc ) {
+    this.esc--;
+  } else {
+    console.assert(false);
+    return 0;
+  }
+
+  //  if this is the last symbol, it moves into
+  //  the escape node's old position, and
+  //  this.esc is set to zero.
+
+  //  otherwise, the escape node is promoted to
+  //  parent a new escape node and the new symbol.
+
+  if( node = this.esc ) {
+    this.table[pair].down = node;
+    this.table[pair].weight = 1;
+    this.table[node].up = pair;
+    this.esc--;
+  } else {
+    pair = 0;
+    node = 1;
+  }
+
+  //  initialize the new symbol node
+
+  this.table[node].symbol = symbol;
+  this.table[node].weight = 0;
+  this.table[node].down = 0;
+  this.map[symbol] = node;
+
+  //  initialize a new escape node.
+
+  this.table[this.esc].weight = 0;
+  this.table[this.esc].down = 0;
+  this.table[this.esc].up = pair;
+  return node;
+};
+
+//  swap leaf to group leader position
+//  return symbol's new node
+
+Huffman.prototype.leader = function(node) {
+  var weight = this.table[node].weight;
+  var leader = node, prev, symbol;
+
+  while( weight === this.table[leader + 1].weight ) {
+    leader++;
+  }
+
+  if( leader === node ) {
+    return node;
+  }
+
+  // swap the leaf nodes
+
+  symbol = this.table[node].symbol;
+  prev = this.table[leader].symbol;
+
+  this.table[leader].symbol = symbol;
+  this.table[node].symbol = prev;
+  this.map[symbol] = leader;
+  this.map[prev] = node;
+  return leader;
+};
+
+//  slide internal node up over all leaves of equal weight;
+//  or exchange leaf with next smaller weight internal node
+
+//  return node's new position
+
+Huffman.prototype.slide = function(node) {
+  var next = node;
+  var swap;
+
+  swap = this.table[next++].clone();
+
+  // if we're sliding an internal node, find the
+  // highest possible leaf to exchange with
+
+  if( swap.weight & 1 ) {
+    while( swap.weight > this.table[next + 1].weight ) {
+      next++;
+    }
+  }
+
+  //  swap the two nodes
+
+  this.table[node].set(this.table[next]);
+  this.table[next].set(swap);
+
+  this.table[next].up = this.table[node].up;
+  this.table[node].up = swap.up;
+
+  //  repair the symbol map and tree structure
+
+  if( swap.weight & 1 ) {
+    this.table[swap.down].up = next;
+    this.table[swap.down - 1].up = next;
+    this.map[this.table[node].symbol] = node;
+  } else {
+    this.table[this.table[node].down - 1].up = node;
+    this.table[this.table[node].down].up = node;
+    this.map[swap.symbol] = next;
+  }
+
+  return next;
+};
+
+//  increment symbol weight and re balance the tree.
+
+Huffman.prototype.increment = function(node) {
+  var up;
+
+  //  obviate swapping a parent with its child:
+  //    increment the leaf and proceed
+  //    directly to its parent.
+
+  //  otherwise, promote leaf to group leader position in the tree
+
+  if( this.table[node].up === node + 1 ) {
+    this.table[node].weight += 2;
+    node++;
+  } else {
+    node = this.leader (node);
+  }
+
+  //  increase the weight of each node and slide
+  //  over any smaller weights ahead of it
+  //  until reaching the root
+
+  //  internal nodes work upwards from
+  //  their initial positions; while
+  //  symbol nodes slide over first,
+  //  then work up from their final
+  //  positions.
+
+  while( this.table[node].weight += 2, up = this.table[node].up ) {
+    while( this.table[node].weight > this.table[node + 1].weight ) {
+        node = this.slide (node);
+    }
+
+    if( this.table[node].weight & 1 ) {
+        node = up;
+    } else {
+        node = this.table[node].up;
+    }
+  }
+
+  /* Re-scale if necessary. */
+  if (this.max_weight) {
+    if (this.table[this.root].weight >= this.max_weight) {
+      this.scale(1);
+    }
+  }
+};
+
+//  scale all weights and re-balance the tree
+
+//  zero weight nodes are removed from the tree
+//  by sliding them out the left of the rank list
+
+Huffman.prototype.scale = function(bits) {
+  var node = this.esc, weight, prev;
+
+  //  work up the tree from the escape node
+  //  scaling weights by the value of bits
+
+  while( ++node <= this.root ) {
+    //  recompute the weight of internal nodes;
+    //  slide down and out any unused ones
+
+    if( this.table[node].weight & 1 ) {
+      if( weight = this.table[this.table[node].down].weight & ~1 ) {
+        weight += this.table[this.table[node].down - 1].weight | 1;
+      }
+
+      //  remove zero weight leaves by incrementing HuffEsc
+      //  and removing them from the symbol map.  take care
+
+    } else if( !(weight = this.table[node].weight >> bits & ~1) ) {
+      if( this.map[this.table[node].symbol] = 0, this.esc++ ) {
+        this.esc++;
+      }
+    }
+
+    // slide the scaled node back down over any
+    // previous nodes with larger weights
+
+    this.table[node].weight = weight;
+    prev = node;
+
+    while( weight < this.table[--prev].weight ) {
+      this.slide(prev);
+    }
+  }
+
+  // prepare a new escape node
+
+  this.table[this.esc].down = 0;
+};
+
+//  send the bits for an escaped symbol
+
+Huffman.prototype.sendid = function(symbol) {
+  var empty = 0, max;
+
+  //  count the number of empty symbols
+  //  before the symbol in the table
+
+  while( symbol-- ) {
+    if( !this.map[symbol] ) {
+      empty++;
+    }
+  }
+
+  //  send LSB of this count first, using
+  //  as many bits as are required for
+  //  the maximum possible count
+
+  if( max = this.size - Math.floor((this.root - this.esc) / 2) - 1 ) {
+    do {
+      this.writeBit(empty & 1);
+      empty >>= 1;
+    } while( max >>= 1 );
+  }
+};
+
+//  encode the next symbol
+
+Huffman.prototype.encode = function(symbol) {
+  var emit = 1, bit;
+  var up, idx, node;
+
+  if( symbol < this.size ) {
+    node = this.map[symbol];
+  } else {
+    console.assert(false);
+    return;
+  }
+
+  //  for a new symbol, direct the receiver to the escape node
+  //  but refuse input if table is already full.
+
+  if( !(idx = node) ) {
+    if( !(idx = this.esc) ) {
+      return;
+    }
+  }
+
+  //  accumulate the code bits by
+  //  working up the tree from
+  //  the node to the root
+
+  while( up = this.table[idx].up ) {
+    emit <<= 1; emit |= idx & 1; idx = up;
+  }
+
+  //  send the code, root selector bit first
+
+  while( bit = emit & 1, emit >>= 1 ) {
+    this.writeBit(bit);
+  }
+
+  //  send identification and incorporate
+  //  new symbols into the tree
+
+  if( !node ) {
+    this.sendid(symbol);
+    node = this.split(symbol);
+  }
+
+  //  adjust and re-balance the tree
+
+  this.increment(node);
+};
+
+//  read the identification bits
+//  for an escaped symbol
+
+Huffman.prototype.readid = function() {
+  var empty = 0, bit = 1, max, symbol;
+
+  //  receive the symbol, LSB first, reading
+  //  only the number of bits necessary to
+  //  transmit the maximum possible symbol value
+
+  if( max = this.size - Math.floor((this.root - this.esc) / 2) - 1 ) {
+    do {
+      empty |= this.readBit() ? bit : 0;
+      bit <<= 1;
+    } while( max >>= 1 );
+  }
+
+  //  the count is of unmapped symbols
+  //  in the table before the new one
+
+  for( symbol = 0; symbol < this.size; symbol++ ) {
+    if( !this.map[symbol] ) {
+      if( !empty-- ) {
+        return symbol;
+      }
+    }
+  }
+
+  //  oops!  our count is too big, either due
+  //  to a bit error, or a short node count
+  //  given to huff_init.
+
+  console.assert(false);
+  return 0;
+};
+
+//  decode the next symbol
+
+Huffman.prototype.decode = function() {
+  var node = this.root;
+  var symbol, down;
+
+  //  work down the tree from the root
+  //  until reaching either a leaf
+  //  or the escape node.  A one
+  //  bit means go left, a zero
+  //  means go right.
+
+  while( down = this.table[node].down ) {
+    if( this.readBit() ) {
+      node = down - 1;  // the left child precedes the right child
+    } else {
+      node = down;
+    }
+  }
+
+  //  sent to the escape node???
+  //  refuse to add to a full tree
+
+  if( node === this.esc ) {
+    if( this.esc ) {
+      symbol = this.readid ();
+      node = this.split (symbol);
+    } else {
+      console.assert(false);
+      return 0;
+    }
+  } else {
+    symbol = this.table[node].symbol;
+  }
+
+  //  increment weights and re-balance
+  //  the coding tree
+
+  this.increment (node);
+  return symbol;
+};
+
+// stand alone compressor, mostly for testing
+Huffman.MAGIC = 'huff';
+Huffman.compressFile = Util.compressFileHelper(Huffman.MAGIC, function(input, output, size, props) {
+  var bitstream = new BitStream(output);
+
+  var alphabetSize = 256;
+  if (size < 0) { alphabetSize++; }
+  var huff = new Huffman(257, alphabetSize, bitstream, 8191);
+  Util.compressWithModel(input, size, huff);
+  bitstream.flush();
+});
+
+// stand alone decompresser, again for testing
+Huffman.decompressFile = Util.decompressFileHelper(Huffman.MAGIC, function(input, output, size) {
+  var bitstream = new BitStream(input);
+
+  var alphabetSize = 256;
+  if (size < 0) { alphabetSize++; }
+  var huff = new Huffman(257, alphabetSize, bitstream, 8191);
+  Util.decompressWithModel(output, size, huff);
+});
+
+module.exports = Huffman;
+
+},{"./BitStream":4,"./Util":23}],12:[function(require,module,exports){
+/**
+ * An in-place, length restricted Canonical Huffman code length allocator
+ *
+ * Based on the algorithm proposed by R. L. Milidiú, A. A. Pessoa and
+ * E. S. Laber in "In-place Length-Restricted Prefix Coding" (see:
+ * http://www-di.inf.puc-rio.br/~laber/public/spire98.ps) and
+ * incorporating additional ideas from the implementation of "shcodec"
+ * by Simakov Alexander (see: http://webcenter.ru/~xander/)
+ *
+ * This JavaScript implementation ported from HuffmanAllocator.java from
+ *   https://code.google.com/p/jbzip2
+ * which is:
+ *
+ *   Copyright (c) 2011 Matthew Francis
+ *
+ *   Permission is hereby granted, free of charge, to any person
+ *   obtaining a copy of this software and associated documentation
+ *   files (the "Software"), to deal in the Software without
+ *   restriction, including without limitation the rights to use,
+ *   copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the
+ *   Software is furnished to do so, subject to the following
+ *   conditions:
+ *
+ *   The above copyright notice and this permission notice shall be
+ *   included in all copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *   OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *   HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *   OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This JavaScript implementation is:
+ *   Copyright (c) 2013 C. Scott Ananian
+ * with the same licensing terms as Matthew Francis' original implementation.
+ */
+const freeze = require('./freeze');
+const Util = require('./Util');
+
+/**
+ * FIRST() function
+ * @param array The code length array
+ * @param i The input position
+ * @param nodesToMove The number of internal nodes to be relocated
+ * @return The smallest {@code k} such that {@code nodesToMove <= k <= i} and
+ *         {@code i <= (array[k] % array.length)}
+ */
+var first = function(array, i, nodesToMove) {
+var length = array.length;
+var limit = i;
+var k = array.length - 2;
+
+while ((i >= nodesToMove) && ((array[i] % length) > limit)) {
+    k = i;
+    i -= (limit - i + 1);
+}
+i = Math.max (nodesToMove - 1, i);
+
+while (k > (i + 1)) {
+    var temp = (i + k) >> 1;
+    if ((array[temp] % length) > limit) {
+    k = temp;
+    } else {
+    i = temp;
+    }
+}
+
+return k;
+};
+
+/**
+ * Fills the code array with extended parent pointers
+ * @param array The code length array
+ */
+var setExtendedParentPointers = function(array) {
+var length = array.length;
+
+array[0] += array[1];
+
+var headNode, tailNode, topNode, temp;
+for (headNode = 0, tailNode = 1, topNode = 2;
+        tailNode < (length - 1);
+        tailNode++) {
+    if ((topNode >= length) || (array[headNode] < array[topNode])) {
+    temp = array[headNode];
+    array[headNode++] = tailNode;
+    } else {
+    temp = array[topNode++];
+    }
+
+    if ((topNode >= length) ||
+        ((headNode < tailNode) && (array[headNode] < array[topNode]))) {
+    temp += array[headNode];
+    array[headNode++] = tailNode + length;
+    } else {
+    temp += array[topNode++];
+    }
+
+    array[tailNode] = temp;
+}
+};
+
+/**
+ * Finds the number of nodes to relocate in order to achieve a given code
+ * length limit
+ * @param array The code length array
+ * @param maximumLength The maximum bit length for the generated codes
+ * @return The number of nodes to relocate
+ */
+var findNodesToRelocate = function(array, maximumLength) {
+var currentNode = array.length - 2;
+var currentDepth;
+for (currentDepth = 1;
+        (currentDepth < (maximumLength - 1)) && (currentNode > 1);
+        currentDepth++) {
+    currentNode =  first (array, currentNode - 1, 0);
+}
+
+return currentNode;
+};
+
+
+/**
+ * A final allocation pass with no code length limit
+ * @param array The code length array
+ */
+var allocateNodeLengths = function(array) {
+var firstNode = array.length - 2;
+var nextNode = array.length - 1;
+var currentDepth, availableNodes, lastNode, i;
+
+for (currentDepth = 1, availableNodes = 2;
+        availableNodes > 0;
+        currentDepth++) {
+    lastNode = firstNode;
+    firstNode = first (array, lastNode - 1, 0);
+
+    for (i = availableNodes - (lastNode - firstNode); i > 0; i--) {
+    array[nextNode--] = currentDepth;
+    }
+
+    availableNodes = (lastNode - firstNode) << 1;
+}
+};
+
+/**
+ * A final allocation pass that relocates nodes in order to achieve a
+ * maximum code length limit
+ * @param array The code length array
+ * @param nodesToMove The number of internal nodes to be relocated
+ * @param insertDepth The depth at which to insert relocated nodes
+ */
+var allocateNodeLengthsWithRelocation = function(array, nodesToMove,
+                                                insertDepth) {
+var firstNode = array.length - 2;
+var nextNode = array.length - 1;
+var currentDepth = (insertDepth == 1) ? 2 : 1;
+var nodesLeftToMove = (insertDepth == 1) ? nodesToMove - 2 : nodesToMove;
+var availableNodes, lastNode, offset, i;
+
+for (availableNodes = currentDepth << 1;
+        availableNodes > 0;
+        currentDepth++) {
+    lastNode = firstNode;
+    firstNode = (firstNode <= nodesToMove) ? firstNode : first (array, lastNode - 1, nodesToMove);
+
+    offset = 0;
+    if (currentDepth >= insertDepth) {
+    offset = Math.min (nodesLeftToMove, 1 << (currentDepth - insertDepth));
+    } else if (currentDepth == (insertDepth - 1)) {
+    offset = 1;
+    if ((array[firstNode]) == lastNode) {
+        firstNode++;
+    }
+    }
+
+    for (i = availableNodes - (lastNode - firstNode + offset); i > 0; i--) {
+    array[nextNode--] = currentDepth;
+    }
+
+    nodesLeftToMove -= offset;
+    availableNodes = (lastNode - firstNode + offset) << 1;
+}
+};
+
+/**
+ * Allocates Canonical Huffman code lengths in place based on a sorted
+ * frequency array
+ * @param array On input, a sorted array of symbol frequencies; On output,
+ *              an array of Canonical Huffman code lengths
+ * @param maximumLength The maximum code length. Must be at least
+ *                      {@code ceil(log2(array.length))}
+ */
+// public
+var allocateHuffmanCodeLengths = function(array, maximumLength) {
+switch (array.length) {
+case 2:
+    array[1] = 1;
+case 1:
+    array[0] = 1;
+    return;
+}
+
+/* Pass 1 : Set extended parent pointers */
+setExtendedParentPointers (array);
+
+/* Pass 2 : Find number of nodes to relocate in order to achieve
+    *          maximum code length */
+var nodesToRelocate = findNodesToRelocate (array, maximumLength);
+
+/* Pass 3 : Generate code lengths */
+if ((array[0] % array.length) >= nodesToRelocate) {
+    allocateNodeLengths (array);
+} else {
+    var insertDepth = maximumLength - (Util.fls(nodesToRelocate - 1));
+    allocateNodeLengthsWithRelocation (array, nodesToRelocate, insertDepth);
+}
+};
+
+module.exports = freeze({
+    allocateHuffmanCodeLengths: allocateHuffmanCodeLengths
+});
+
+},{"./Util":23,"./freeze":24}],13:[function(require,module,exports){
+/** Simple (log n)(n) distance model. */
+const Util = require('./Util');
+
+// lengthBitsModelFactory will be called with arguments 2, 4, 8, 16, etc
+// and must return an appropriate model or coder.
+var LogDistanceModel = function(size, extraStates,
+                                lgDistanceModelFactory,
+                                lengthBitsModelFactory) {
+    var i;
+    var bits = Util.fls(size-1);
+    this.extraStates = +extraStates || 0;
+    this.lgDistanceModel = lgDistanceModelFactory(1 + bits + extraStates);
+    // this.distanceModel[n] used for distances which are n-bits long,
+    // but only n-1 bits are encoded: the top bit is known to be one.
+    this.distanceModel = [];
+    for (i=2 ; i <= bits; i++) {
+        var numBits = i - 1;
+        this.distanceModel[i] = lengthBitsModelFactory(1<<numBits);
+    }
+};
+/* you can give this model arguments between 0 and (size-1), or else
+    a negative argument which is one of the 'extra states'. */
+LogDistanceModel.prototype.encode = function(distance) {
+    if (distance < 2) { // small distance or an 'extra state'
+        this.lgDistanceModel.encode(distance + this.extraStates);
+        return;
+    }
+    var lgDistance = Util.fls(distance);
+    console.assert(distance & (1<<(lgDistance-1))); // top bit is set
+    console.assert(lgDistance >= 2);
+    this.lgDistanceModel.encode(lgDistance + this.extraStates);
+    // now encode the rest of the bits.
+    var rest = distance & ((1 << (lgDistance-1)) - 1);
+    this.distanceModel[lgDistance].encode(rest);
+};
+LogDistanceModel.prototype.decode = function() {
+    var lgDistance = this.lgDistanceModel.decode() - this.extraStates;
+    if (lgDistance < 2) {
+        return lgDistance; // this is a small distance or an 'extra state'
+    }
+    var rest = this.distanceModel[lgDistance].decode();
+    return (1 << (lgDistance-1)) + rest;
+};
+module.exports = LogDistanceModel;
+
+},{"./Util":23}],14:[function(require,module,exports){
+/* LZJB compression: http://en.wikipedia.org/wiki/LZJB */
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+/**
+$Id: Iuppiter.js 3026 2010-06-23 10:03:13Z Bear $
+
+Copyright (c) 2010 Nuwa Information Co., Ltd, and individual contributors.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+
+  3. Neither the name of Nuwa Information nor the names of its contributors
+     may be used to endorse or promote products derived from this software
+     without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+$Author: Bear $
+$Date: 2010-06-23 18:03:13 +0800 (星期三, 23 六月 2010) $
+$Revision: 3026 $
+*/
+
+var Lzjb = Object.create(null);
+Lzjb.MAGIC = 'lzjb';
+
+// Constants was used for compress/decompress function.
+var NBBY = 8,
+    MATCH_BITS = 6,
+    MATCH_MIN = 3,
+    MATCH_MAX = ((1 << MATCH_BITS) + (MATCH_MIN - 1)),
+    OFFSET_MASK = ((1 << (16 - MATCH_BITS)) - 1),
+    LEMPEL_SIZE_BASE = 1024;
+var EOF = Stream.EOF;
+
+// set C_COMPAT to true if you need to decompress with the (untweaked) C lzjb
+// implementation, which breaks if offset==0; the javascript
+// implementation uses 0 to indicate an offset of OFFSET_MASK+1.
+var C_COMPAT = true;
+
+/**
+ * Compress string or byte array using fast and efficient algorithm.
+ *
+ * Because of weak of javascript's natural, many compression algorithm
+ * become useless in javascript implementation. The main problem is
+ * performance, even the simple Huffman, LZ77/78 algorithm will take many
+ * many time to operate. We use LZJB algorithm to do that, it suprisingly
+ * fulfills our requirement to compress string fastly and efficiently.
+ *
+ * Our implementation is based on
+ * http://src.opensolaris.org/source/raw/onnv/onnv-gate/usr/src/uts/common/fs/zfs/lzjb.c
+ * and
+ * http://src.opensolaris.org/source/raw/onnv/onnv-gate/usr/src/uts/common/os/compress.c
+ * It is licensed under CDDL.
+ *
+ * @param {Array|Uint8Array|Buffer|stream} input The stream or byte array
+ *        that you want to compress.
+ * @param {stream} output Optional output stream.
+ * @return {Array|Uint8Array|Buffer} Compressed byte array, or 'output'
+ */
+Lzjb.compressFile = Util.compressFileHelper(Lzjb.MAGIC, function(inStream, outStream, fileSize, props) {
+    var sstart, dstart = [], slen,
+        src = 0, dst = 0,
+        cpy, copymap,
+        mlen, offset,
+        hash, hp,
+        lempel,
+        i, j;
+    var retval;
+
+    // in an improvement over the original C implementation, we expand
+    // the hash table to track a number of potential matches, not just the
+    // most recent.  This doesn't require any changes to the decoder.
+    // Sample impact on compression size (on wikipedia data):
+    //  EXPAND  Time     Size      Option
+    //    1   0m20.321s  50185613    -1
+    //    2   0m22.437s  46503301    -2
+    //    3   0m23.773s  45744564    -3
+    //    4   0m25.666s  45199866    -4
+    //    5   0m35.810s  44821413    -5
+    //    6   0m40.947s  44666638    -6
+    //    8   0m49.639s  44413865    -7
+    //   12   0m49.927s  44124825    -8
+    //   16   1m01.180s  43972515    -9
+    //   32   1m30.530s  43554099
+    //   64   2m14.504s  43005530
+    //  128   3m43.570s  42361718
+    //  256   6m38.681s  41684853
+    var LEMPEL_SIZE = LEMPEL_SIZE_BASE;
+    var EXPAND = 1; // default to original C impl
+    if (typeof(props)==='number') {
+        LEMPEL_SIZE *= 2;
+        props = Math.max(1, Math.min(9, props)) - 1;
+        EXPAND = 1<<Math.floor(props/2);
+        if (props&1) EXPAND = Math.round(EXPAND * 1.5);
+        if (props >=2 && props <= 4) EXPAND++;
+    }
+
+    // use Uint16Array if available (zero-filled)
+    lempel = Util.makeU16Buffer(LEMPEL_SIZE * EXPAND);
+
+    var window = Util.makeU8Buffer(OFFSET_MASK+1);
+    var windowpos = 0;
+    var winput = function(_byte) {
+        window[windowpos++] = _byte;
+        if (windowpos >= window.length) {
+            windowpos = 0;
+        }
+        return _byte;
+    };
+
+    var outwindow = Util.makeU8Buffer(17);
+    var outpos = 0;
+    var dumpout = function() {
+        var i;
+        for (i=0; i<outpos; i++) {
+            outStream.writeByte(outwindow[i]);
+        }
+        outpos = 0;
+    };
+
+    var unbuffer = [];
+    var get = function() {
+        if (unbuffer.length)
+            return unbuffer.pop();
+        return inStream.readByte();
+    };
+    var unget = function(_byte) {
+        unbuffer.push(_byte);
+    };
+
+    var copymask = 1 << (NBBY - 1);
+    var matchpossibility = [];
+    while (true) {
+        var c1 = get();
+        if (c1 === EOF) break;
+
+        if ((copymask <<= 1) == (1 << NBBY)) {
+            dumpout();
+            copymask = 1;
+            outwindow[0] = 0;
+            outpos = 1;
+        }
+
+        var c2 = get();
+        if (c2 === EOF) {
+            outwindow[outpos++] = winput(c1);
+            break;
+        }
+        var c3 = get();
+        if (c3 === EOF) {
+            outwindow[outpos++] = winput(c1);
+            unget(c2);
+            continue;
+        }
+
+        hash = (c1 << 16) + (c2 << 8) + c3;
+        hash ^= (hash >> 9);
+        hash += (hash >> 5);
+        hash ^= c1;
+        hp = (hash & (LEMPEL_SIZE - 1)) * EXPAND;
+        matchpossibility.length = 0;
+        for (j=0; j<EXPAND; j++) {
+            offset = (windowpos - lempel[hp+j]) & OFFSET_MASK;
+            cpy = window.length + windowpos - offset;
+            var w1 = window[cpy & OFFSET_MASK];
+            var w2 = window[(cpy+1) & OFFSET_MASK];
+            var w3 = window[(cpy+2) & OFFSET_MASK];
+            // if offset is small, we might not have copied the tentative
+            // bytes into the window yet.  (Note that offset=0 really means
+            // offset=(OFFSET_MASK+1).)
+            if (C_COMPAT && offset===0) {
+                w1 = c1 ^ 1; // ensure match will fail
+            } else if (offset==1) { w2 = c1; w3 = c2; }
+            else if (offset==2) { w3 = c1; }
+            if (c1 === w1 && c2 === w2 && c3 === w3) {
+                matchpossibility.push(offset);
+            }
+        }
+        // store this location in the hash, move the others over to make room
+        // oldest match drops off
+        for (j=EXPAND-1; j>0; j--)
+            lempel[hp+j] = lempel[hp+j-1];
+        lempel[hp] = windowpos;
+        // did we find any matches?
+        if (matchpossibility.length === 0) {
+            outwindow[outpos++] = winput(c1);
+            unget(c3);
+            unget(c2);
+        } else {
+            // find the longest of the possible matches
+            outwindow[0] |= copymask;
+            winput(c1); winput(c2); winput(c3);
+            var c4 = get(), last = matchpossibility[0];
+            var base = window.length + windowpos;
+            for (mlen = MATCH_MIN; mlen < MATCH_MAX; mlen++, base++) {
+                if (c4 === EOF) break;
+                for (j=0; j < matchpossibility.length; ) {
+                    var w4 = window[(base - matchpossibility[j]) & OFFSET_MASK];
+                    if (c4 !== w4) {
+                        last = matchpossibility[j];
+                        matchpossibility.splice(j, 1);
+                    } else {
+                        j++;
+                    }
+                }
+                if (matchpossibility.length===0) break; // no more matches
+                winput(c4);
+                c4 = get();
+            }
+            if (matchpossibility.length !== 0) {
+                // maximum length match, rock on!
+                last = matchpossibility[0];
+            }
+            unget(c4);
+
+            outwindow[outpos++] = ((mlen - MATCH_MIN) << (NBBY - MATCH_BITS)) |
+                (last >> NBBY);
+            outwindow[outpos++] = last & 0xFF;
+        }
+    }
+    dumpout();
+});
+
+/**
+ * Decompress string or byte array using fast and efficient algorithm.
+ *
+ * Our implementation is based on
+ * http://src.opensolaris.org/source/raw/onnv/onnv-gate/usr/src/uts/common/fs/zfs/lzjb.c
+ * and
+ * http://src.opensolaris.org/source/raw/onnv/onnv-gate/usr/src/uts/common/os/compress.c
+ * It is licensed under CDDL.
+ *
+ * @param {Array|Uint8Array|Buffer|stream} input The stream or byte array
+ *        that you want to decompress.
+ * @param {stream} output Optional output stream.
+ * @return {Array|Uint8Array|Buffer} Decompressed byte array, or 'output'
+ */
+Lzjb.decompressFile = Util.decompressFileHelper(Lzjb.MAGIC, function(inStream, outStream, outSize) {
+    var sstart, dstart = [], slen,
+        src = 0, dst = 0,
+        cpy, copymap,
+        mlen, offset,
+        i, c;
+    var retval;
+
+    var window = Util.makeU8Buffer(OFFSET_MASK+1);
+    var windowpos = 0;
+
+    var copymask = 1 << (NBBY - 1);
+
+    while (outSize !== 0) {
+        c = inStream.readByte();
+        if (c === EOF) break;
+
+        if ((copymask <<= 1) == (1 << NBBY)) {
+            copymask = 1;
+            copymap = c;
+            c = inStream.readByte();
+        }
+        if (copymap & copymask) {
+            mlen = (c >> (NBBY - MATCH_BITS)) + MATCH_MIN;
+            offset = ((c << NBBY) | inStream.readByte()) & OFFSET_MASK;
+            cpy = windowpos - offset;
+            if (cpy < 0) cpy += window.length;
+            if (outSize >= 0) outSize -= mlen;
+            while (--mlen >= 0) {
+                c = window[windowpos++] = window[cpy++];
+                outStream.writeByte(c);
+                if (windowpos >= window.length) { windowpos=0; }
+                if (cpy >= window.length) { cpy = 0; }
+            }
+        } else {
+            outStream.writeByte(c);
+            window[windowpos++] = c;
+            if (windowpos >= window.length) { windowpos=0; }
+            if (outSize >= 0) outSize--;
+        }
+    }
+});
+
+module.exports = Lzjb;
+
+},{"./Stream":22,"./Util":23}],15:[function(require,module,exports){
+/* Tweaked version of LZJB, using range coder. */
+const Context1Model = require('./Context1Model');
+const FenwickModel = require('./FenwickModel');
+const LogDistanceModel = require('./LogDistanceModel');
+const NoModel = require('./NoModel');
+const RangeCoder = require('./RangeCoder');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+var LzjbR = Object.create(null);
+LzjbR.MAGIC = 'lzjR';
+
+// Constants was used for compress/decompress function.
+var NBBY = 8,
+    MATCH_BITS = 6,
+    MATCH_MIN = 3,
+    MATCH_MAX = ((1 << MATCH_BITS) + (MATCH_MIN - 1)),
+    OFFSET_MASK = ((1 << (16 - MATCH_BITS)) - 1),
+    LEMPEL_SIZE_BASE = 1024;
+var LENGTH_MODEL_CUTOFF = 32;
+
+
+/**
+ * Compress using modified LZJB algorithm.  Instead of using the simple
+ * 9-bit literal / 17-bit match format of the original, use a range
+ * coder for the literal/match bit and for the offset and length.
+ */
+LzjbR.compressFile = Util.compressFileHelper(LzjbR.MAGIC, function(inStream, outStream, fileSize, props, finalByte) {
+    var sstart, dstart = [], slen,
+        src = 0, dst = 0,
+        cpy, copymap,
+        mlen, offset,
+        hash, hp,
+        lempel,
+        i, j;
+
+    // in an improvement over the original C implementation of LZJB, we expand
+    // the hash table to track a number of potential matches, not just the
+    // most recent.  This doesn't require any changes to the decoder.
+    var LEMPEL_SIZE = LEMPEL_SIZE_BASE;
+    var EXPAND = 1; // default to original C impl
+    if (typeof(props)==='number') {
+        LEMPEL_SIZE *= 2;
+        props = Math.max(1, Math.min(9, props)) - 1;
+        EXPAND = 1<<Math.floor(props/2);
+        if (props&1) EXPAND = Math.round(EXPAND * 1.5);
+        if (props >=2 && props <= 4) EXPAND++;
+    }
+
+    var encoder = new RangeCoder(outStream);
+    encoder.encodeStart(finalByte, 1);
+
+    // use Uint16Array if available (zero-filled)
+    lempel = Util.makeU16Buffer(LEMPEL_SIZE * EXPAND);
+
+    var window = Util.makeU8Buffer(OFFSET_MASK+1);
+    var windowpos = 0;
+    var winput = function(_byte) {
+        window[windowpos++] = _byte;
+        if (windowpos >= window.length) {
+            windowpos = 0;
+        }
+        return _byte;
+    };
+
+    var unbuffer = [];
+    var get = function() {
+        if (unbuffer.length)
+            return unbuffer.pop();
+        return inStream.readByte();
+    };
+    var unget = function(_byte) {
+        unbuffer.push(_byte);
+    };
+
+    var matchpossibility = [];
+    var MATCH = 256;
+    var EOF_SYM = 257;
+    var noModelFactory = NoModel.factory(encoder);
+    var modelFactory = FenwickModel.factory(encoder, 0xFF00, 0x100);
+    var literalModel = new Context1Model(modelFactory, 256,
+                                         ((fileSize<0) ? EOF_SYM : MATCH) + 1);
+    var sparseModelFactory = function(size) {
+        if (size <= LENGTH_MODEL_CUTOFF) { return modelFactory(size); }
+        return noModelFactory(size);
+    };
+    var lenModel = new LogDistanceModel((MATCH_MAX-MATCH_MIN)+1, 0,
+                                        modelFactory, sparseModelFactory);
+    var posModel = new LogDistanceModel(OFFSET_MASK+1, 1,
+                                        modelFactory, sparseModelFactory);
+    var lastChar = 0x20, lastOffset = 0;
+    while (true) {
+        var initialPos = windowpos;
+        var c1 = get();
+        if (c1 === Stream.EOF) break;
+
+        var c2 = get();
+        if (c2 === Stream.EOF) {
+            literalModel.encode(winput(c1), lastChar); // literal, not a match
+            break;
+        }
+        var c3 = get();
+        if (c3 === Stream.EOF) {
+            literalModel.encode(winput(c1), lastChar); // literal, not a match
+            unget(c2); lastChar = c1;
+            continue;
+        }
+
+        hash = (c1 << 16) + (c2 << 8) + c3;
+        hash ^= (hash >> 9);
+        hash += (hash >> 5);
+        hash ^= c1;
+        hp = (hash & (LEMPEL_SIZE - 1)) * EXPAND;
+        matchpossibility.length = 0;
+        for (j=0; j<EXPAND; j++) {
+            offset = (windowpos - lempel[hp+j]) & OFFSET_MASK;
+            cpy = window.length + windowpos - offset;
+            var w1 = window[cpy & OFFSET_MASK];
+            var w2 = window[(cpy+1) & OFFSET_MASK];
+            var w3 = window[(cpy+2) & OFFSET_MASK];
+            // if offset is small, we might not have copied the tentative
+            // bytes into the window yet.  (Note that offset=0 really means
+            // offset=(OFFSET_MASK+1).)
+            if (offset==1) { w2 = c1; w3 = c2; }
+            else if (offset==2) { w3 = c1; }
+            if (c1 === w1 && c2 === w2 && c3 === w3) {
+                matchpossibility.push(offset);
+            }
+        }
+        // store this location in the hash, move the others over to make room
+        // oldest match drops off
+        for (j=EXPAND-1; j>0; j--)
+            lempel[hp+j] = lempel[hp+j-1];
+        lempel[hp] = windowpos;
+        // did we find any matches?
+        if (matchpossibility.length === 0) {
+            literalModel.encode(winput(c1), lastChar); // literal, not a match
+            unget(c3);
+            unget(c2);
+            lastChar = c1;
+        } else {
+            literalModel.encode(MATCH, lastChar); // a match!
+            // find the longest of the possible matches
+            winput(c1); winput(c2); winput(c3); lastChar = c3;
+            var c4 = get(), last = matchpossibility[0];
+            var base = window.length + windowpos;
+            for (mlen = MATCH_MIN; mlen < MATCH_MAX; mlen++, base++) {
+                if (c4 === Stream.EOF) break;
+                for (j=0; j < matchpossibility.length; ) {
+                    var w4 = window[(base - matchpossibility[j]) & OFFSET_MASK];
+                    if (c4 !== w4) {
+                        last = matchpossibility[j];
+                        matchpossibility.splice(j, 1);
+                    } else {
+                        j++;
+                    }
+                }
+                if (matchpossibility.length===0) break; // no more matches
+                winput(c4); lastChar = c4;
+                c4 = get();
+            }
+            if (matchpossibility.length !== 0) {
+                // maximum length match, rock on!
+                last = matchpossibility[0];
+            }
+            unget(c4);
+
+            // encode match length
+            // XXX we could get a bit more compression if we allowed
+            // the length to predict the offset (or vice-versa)
+            lenModel.encode(mlen - MATCH_MIN);
+            offset = (initialPos - last) & OFFSET_MASK;
+            if (offset === lastOffset) {
+                posModel.encode(-1); // common case!
+            } else {
+                posModel.encode(offset);
+                lastOffset = offset;
+            }
+        }
+    }
+    if (fileSize < 0) {
+        literalModel.encode(EOF_SYM, lastChar); // end of file (streaming)
+    }
+    encoder.encodeFinish();
+}, true);
+
+/**
+ * Decompress using modified LZJB algorithm.
+ */
+LzjbR.decompressFile = Util.decompressFileHelper(LzjbR.MAGIC, function(inStream, outStream, outSize) {
+    var sstart, dstart = [], slen,
+        src = 0, dst = 0,
+        cpy, copymap,
+        mlen, offset,
+        i, c;
+
+    var window = Util.makeU8Buffer(OFFSET_MASK+1);
+    var windowpos = 0;
+
+    var decoder = new RangeCoder(inStream);
+    decoder.decodeStart(true/* we already read the 'free' byte*/);
+
+    var MATCH = 256;
+    var EOF_SYM = 257;
+    var noModelFactory = NoModel.factory(decoder);
+    var modelFactory = FenwickModel.factory(decoder, 0xFF00, 0x100);
+    var literalModel = new Context1Model(modelFactory, 256,
+                                         ((outSize<0) ? EOF_SYM : MATCH) + 1);
+    var sparseModelFactory = function(size) {
+        if (size <= LENGTH_MODEL_CUTOFF) { return modelFactory(size); }
+        return noModelFactory(size);
+    };
+    var lenModel = new LogDistanceModel((MATCH_MAX-MATCH_MIN)+1, 0,
+                                        modelFactory, sparseModelFactory);
+    var posModel = new LogDistanceModel(OFFSET_MASK+1, 1,
+                                        modelFactory, sparseModelFactory);
+    var lastChar = 0x20, lastOffset = 0;
+    while (outSize !== 0) {
+        c = literalModel.decode(lastChar);
+        if (c === EOF_SYM) {
+            break;
+        } else if (c === MATCH) {
+            mlen = lenModel.decode() + MATCH_MIN;
+            cpy = posModel.decode();
+            if (cpy<0) { cpy = lastOffset; }
+            else       { lastOffset = cpy; }
+            if (outSize >= 0) outSize -= mlen;
+            while (--mlen >= 0) {
+                c = lastChar = window[windowpos++] = window[cpy++];
+                outStream.writeByte(c);
+                if (windowpos >= window.length) { windowpos=0; }
+                if (cpy >= window.length) { cpy = 0; }
+            }
+        } else {
+            outStream.writeByte(c);
+            window[windowpos++] = lastChar = c;
+            if (windowpos >= window.length) { windowpos=0; }
+            if (outSize >= 0) outSize--;
+        }
+    }
+    decoder.decodeFinish();
+});
+
+module.exports = LzjbR;
+
+},{"./Context1Model":7,"./FenwickModel":10,"./LogDistanceModel":13,"./NoModel":18,"./RangeCoder":20,"./Stream":22,"./Util":23}],16:[function(require,module,exports){
+/* Implementation of LZP3(ish), with an adaptive Huffman code or a range
+ * coder (instead of LZP3's original static Huffman code).
+ * See: http://www.cbloom.com/papers/lzp.pdf
+ */
+const BitStream = require('./BitStream');
+const Context1Model = require('./Context1Model');
+const DefSumModel = require('./DefSumModel');
+const FenwickModel = require('./FenwickModel');
+const Huffman = require('./Huffman');
+const LogDistanceModel = require('./LogDistanceModel');
+const NoModel = require('./NoModel');
+const RangeCoder = require('./RangeCoder');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+var Lzp3 = Object.create(null);
+Lzp3.MAGIC = 'lzp3';
+
+// use Huffman coder (fast) or else use range coder (slow)
+var USE_HUFFMAN_CODE = false;
+// use deferred-sum model, which is supposed to be faster (but compresses worse)
+var USE_DEFSUM = false;
+// when to give up attempting to model the length
+var LENGTH_MODEL_CUTOFF = 256;
+var MODEL_MAX_PROB = 0xFF00;
+var MODEL_INCREMENT = 0x100;
+
+// Constants was used for compress/decompress function.
+var CTXT4_TABLE_SIZE = 1 << 16;
+var CTXT3_TABLE_SIZE = 1 << 12;
+var CTXT2_TABLE_SIZE = 1 << 16;
+var CONTEXT_LEN = 4;
+var LOG_WINDOW_SIZE = 20;
+var WINDOW_SIZE = 1 << LOG_WINDOW_SIZE;
+var MAX_MATCH_LEN = WINDOW_SIZE-1;
+var MATCH_LEN_CONTEXTS = 16;
+
+var MAX32 = 0xFFFFFFFF;
+var MAX24 = 0x00FFFFFF;
+var MAX16 = 0x0000FFFF;
+var MAX8  = 0x000000FF;
+
+
+var Window = function(maxSize) {
+  this.buffer = Util.makeU8Buffer(Math.min(maxSize+4, WINDOW_SIZE));
+  this.pos = 0;
+  // context-4 hash table.
+  this.ctxt4 = Util.makeU32Buffer(CTXT4_TABLE_SIZE);
+  // context-3 hash table
+  this.ctxt3 = Util.makeU32Buffer(CTXT3_TABLE_SIZE);
+  // context-2 table (not really a hash any more)
+  this.ctxt2 = Util.makeU32Buffer(CTXT2_TABLE_SIZE);
+  // initial context
+  this.put(0x63); this.put(0x53); this.put(0x61); this.put(0x20);
+};
+Window.prototype.put = function(_byte) {
+  this.buffer[this.pos++] = _byte;
+  if (this.pos >= WINDOW_SIZE) { this.pos = 0; }
+  return _byte;
+};
+Window.prototype.get = function(pos) {
+  return this.buffer[pos & (WINDOW_SIZE-1)];
+};
+Window.prototype.context = function(pos, n) {
+  var c = 0, i;
+  pos = (pos - n) & (WINDOW_SIZE-1);
+  for (i=0; i<n; i++) {
+    c = (c << 8) | this.buffer[pos++];
+    if (pos >= WINDOW_SIZE) { pos = 0; }
+  }
+  return c;
+};
+// if matchLen !== 0, update the index; otherwise get index value.
+Window.prototype.getIndex = function(s, matchLen) {
+  var c = this.context(s, 4);
+  // compute context hashes
+  var h4 = ((c>>>15) ^ c) & (CTXT4_TABLE_SIZE-1);
+  var h3 = ((c>>>11) ^ c) & (CTXT3_TABLE_SIZE-1);
+  var h2 = c & MAX16;
+  // check order-4 context
+  var p = 0, checkc;
+  // only do context confirmation if matchLen==0 (that is, if we're not just
+  // doing an update)
+  if (matchLen===0) {
+    p = this.ctxt4[h4];
+    if (p !== 0 && c !== this.context(p-1, 4)) {
+      p = 0; // context confirmation failed
+    }
+    if (p === 0) {
+      // check order-3 context
+      p = this.ctxt3[h3];
+      if (p !== 0 && (c & MAX24) !== this.context(p-1, 3)) {
+        p = 0; // context confirmation failed
+      }
+      if (p === 0) {
+        // check order-2 context
+        p = this.ctxt2[h2];
+        if (p !== 0 && (c && MAX16) !== this.context(p-1, 2)) {
+          p = 0; // context confirmation failed
+        }
+      }
+    }
+  }
+  // update context index
+  if (matchLen) { matchLen--; }
+  this.ctxt4[h4] = this.ctxt3[h3] = this.ctxt2[h2] =
+    (s | (matchLen << LOG_WINDOW_SIZE)) + 1;
+  // return lookup result.
+  return p;
+};
+
+/**
+ * Compress using modified LZP3 algorithm.  Instead of using static
+ * Huffman coding, we use an adaptive Huffman code or range encoding.
+ */
+Lzp3.compressFile = Util.compressFileHelper(Lzp3.MAGIC, function(inStream, outStream, fileSize, props) {
+  // sliding window & hash table
+  var window = new Window( (fileSize>=0) ? fileSize : WINDOW_SIZE );
+
+  var coderFactory, sparseCoderFactory, flush;
+
+  if (USE_HUFFMAN_CODE) {
+    // Huffman contexts
+    outStream.writeByte(0x80); // mark that this is Huffman coded.
+    var bitstream = new BitStream(outStream);
+    flush = bitstream.flush.bind(bitstream);
+    coderFactory = Huffman.factory(bitstream, MAX16);
+    sparseCoderFactory = NoModel.factory(bitstream);
+
+  } else { // range encoder
+    var range = new RangeCoder(outStream);
+    range.encodeStart(0x00, 0); // 0x00 == range encoded
+
+    coderFactory = FenwickModel.factory(range, MODEL_MAX_PROB, MODEL_INCREMENT);
+    if (USE_DEFSUM) {
+      coderFactory = DefSumModel.factory(range, false /* encoder */);
+    }
+    // switch sparseCoderFactory to a NoModel when size > cutoff
+    var noCoderFactory = NoModel.factory(range);
+    sparseCoderFactory = function(size) {
+      if (size > LENGTH_MODEL_CUTOFF) {
+        return noCoderFactory(size);
+      }
+      return coderFactory(size);
+    };
+    flush = function() { range.encodeFinish(); };
+  }
+
+  var huffLiteral= new Context1Model(coderFactory, 256,
+                                     (fileSize<0) ? 257 : 256);
+  var huffLen = [], i;
+  for (i=0; i<MATCH_LEN_CONTEXTS; i++) {
+    huffLen[i] = new LogDistanceModel(MAX_MATCH_LEN+1, 1,
+                                      coderFactory, sparseCoderFactory);
+  }
+
+  var inSize = 0, s, matchContext = 0;
+  while (inSize !== fileSize) {
+    var ch = inStream.readByte();
+    s = window.pos;
+    var p = window.getIndex(s, 0);
+    if (p !== 0) {
+      // great, a match! how long is it?
+      p--; // p=0 is used for 'not here'. p=1 really means WINDOW_SIZE
+      var prevMatchLen = (p >>> LOG_WINDOW_SIZE) + 1;
+      var matchLen = 0;
+      while (window.get(p + matchLen) === ch && matchLen < MAX_MATCH_LEN) {
+        matchLen++;
+        window.put(ch);
+        ch = inStream.readByte();
+      }
+      // code match length; match len = 0 means "literal"
+      // use "extra state" -1 to mean "same as previous match length"
+      if (prevMatchLen===matchLen) {
+        huffLen[matchContext&(MATCH_LEN_CONTEXTS-1)].encode(-1);
+      } else {
+        huffLen[matchContext&(MATCH_LEN_CONTEXTS-1)].encode(matchLen);
+      }
+      // update hash with this match
+      window.getIndex(s, matchLen);
+      inSize += matchLen;
+      matchContext <<= 1;
+      if (matchLen > 0) { matchContext |= 1; }
+      // XXX: LZMA uses a special "delta match" context here if matchLen==0
+      // XXX: it also uses the offset as context for the length (or vice-versa)
+    }
+    // always encode a literal after a match
+    var context1 = window.get(window.pos-1);
+    if (ch===Stream.EOF) {
+      if (fileSize < 0) {
+        huffLiteral.encode(256, context1);
+      }
+      break;
+    }
+    huffLiteral.encode(ch, context1);
+    window.put(ch);
+    inSize++;
+  }
+  if (flush) flush();
+});
+
+/**
+ * Decompress using modified LZP3 algorithm.
+ */
+Lzp3.decompressFile = Util.decompressFileHelper(Lzp3.MAGIC, function(inStream, outStream, fileSize) {
+  var flags = inStream.readByte();
+  var use_huffman_code = !!(flags & 0x80);
+
+  // sliding window & hash table
+  var window = new Window( (fileSize>=0) ? fileSize : WINDOW_SIZE );
+
+  var coderFactory, sparseCoderFactory, finish;
+
+  if (use_huffman_code) {
+    // Huffman contexts
+    var bitstream = new BitStream(inStream);
+    coderFactory = Huffman.factory(bitstream, MAX16);
+    sparseCoderFactory = NoModel.factory(bitstream);
+  } else { // range encoder
+    var range = new RangeCoder(inStream);
+    range.decodeStart(true/* skip initial read */);
+    coderFactory = FenwickModel.factory(range, MODEL_MAX_PROB, MODEL_INCREMENT);
+    if (USE_DEFSUM) {
+      coderFactory = DefSumModel.factory(range, true /* decoder */);
+    }
+    // switch sparseCoderFactory to a NoModel when size > cutoff
+    var noCoderFactory = NoModel.factory(range);
+    sparseCoderFactory = function(size) {
+      if (size > LENGTH_MODEL_CUTOFF) {
+        return noCoderFactory(size);
+      }
+      return coderFactory(size);
+    };
+    finish = function() { range.decodeFinish(); };
+  }
+
+  var huffLiteral= new Context1Model(coderFactory, 256,
+                                     (fileSize<0) ? 257 : 256);
+  var huffLen = [], i;
+  for (i=0; i<MATCH_LEN_CONTEXTS; i++) {
+    huffLen[i] = new LogDistanceModel(MAX_MATCH_LEN+1, 1,
+                                      coderFactory, sparseCoderFactory);
+  }
+
+  var s, ch, outSize = 0, matchContext = 0;
+  while (outSize !== fileSize) {
+    s = window.pos;
+    var p = window.getIndex(s, 0);
+    if (p !== 0) {
+      p--; // p=0 is used for 'not here'. p=1 really means WINDOW_SIZE
+      var prevMatchLen = (p >>> LOG_WINDOW_SIZE) + 1;
+      var matchLen = huffLen[matchContext&(MATCH_LEN_CONTEXTS-1)].decode();
+      if (matchLen < 0) { matchLen = prevMatchLen; }
+      // copy characters!
+      for (i=0; i<matchLen; i++) {
+        ch = window.get(p + i);
+        outStream.writeByte(window.put(ch));
+      }
+      window.getIndex(s, matchLen);
+      outSize += matchLen;
+      matchContext <<= 1;
+      if (matchLen > 0) matchContext |= 1;
+    }
+    // literal always follows match (or failed match)
+    if (outSize === fileSize) {
+      break; // EOF
+    }
+    var context1 = window.get(window.pos-1);
+    ch = huffLiteral.decode(context1);
+    if (ch === 256) {
+      break; // EOF
+    }
+    outStream.writeByte(window.put(ch));
+    outSize++;
+  }
+  if (finish) finish();
+});
+
+
+module.exports = Lzp3;
+
+},{"./BitStream":4,"./Context1Model":7,"./DefSumModel":8,"./FenwickModel":10,"./Huffman":11,"./LogDistanceModel":13,"./NoModel":18,"./RangeCoder":20,"./Stream":22,"./Util":23}],17:[function(require,module,exports){
+/** Simple range coding model w/ escape, suitable for sparse symbol sets.
+ *  Uses a move-to-front list, which is simple and relatively performant,
+ *  but slows down a lot if you want to try to model escapes more precisely
+ *  (which is why this feature is disabled by default).
+ */
+const RangeCoder = require('./RangeCoder');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+var DEFAULT_MAX_PROB = 0xFF00;
+var DEFAULT_INCREMENT= 0x0100;
+
+var NUMERIC_SORT = function(a, b) { return a - b; };
+
+var MTFModel = function(coder, size, max_prob, increment, betterEscape) {
+    this.coder = coder;
+    this.increment = (+increment) || DEFAULT_INCREMENT;
+    this.max_prob = (+max_prob) || DEFAULT_MAX_PROB;
+    console.assert((this.max_prob + (this.increment-1)) <= 0xFFFF);
+    this.sym = Util.makeU16Buffer(size+1);
+    this.prob= Util.makeU16Buffer(size+2);
+    this.sym[0] = size; // escape code
+    this.prob[0]= 0;
+    this.seenSyms = 1;
+    // total probability always found in this.prob[this.seenSyms]
+    this.prob[this.seenSyms] = this.increment;
+    this.numSyms = size;
+    if (betterEscape) {
+        this.sortedSeen = [size];
+    }
+};
+MTFModel.factory = function(coder, max_prob, increment, betterEscape) {
+    return function(size) {
+        return new MTFModel(coder, size, max_prob, increment, betterEscape);
+    };
+};
+MTFModel.prototype.clone = function() {
+    var newModel = new MTFModel(this.coder, this.numSyms, this.max_prob,
+                                this.increment, !!this.sortedSeen);
+    var i;
+    for (i=0; i<this.seenSyms; i++) {
+        newModel.sym[i] = this.sym[i];
+        newModel.prob[i] = this.prob[i];
+    }
+    newModel.prob[i] = this.prob[i]; // total probability
+    newModel.seenSyms = this.seenSyms;
+    if (this.sortedSeen) {
+        newModel.sortedSeen = this.sortedSeen.slice(0);
+    }
+    return newModel;
+};
+MTFModel.prototype._update = function(symbol, index, sy_f) {
+    var j, tot_f;
+    // move this symbol to the end
+    for (j=index; j<this.seenSyms-1; j++) {
+        this.sym[j] = this.sym[j+1];
+        this.prob[j] = this.prob[j+1] - sy_f;
+    }
+    if (index < this.seenSyms) {
+        this.sym[j] = symbol;
+        this.prob[j] = this.prob[j+1] - sy_f;
+        // increase frequency for this symbol, and total freq at same time
+        this.prob[this.seenSyms] = tot_f =
+            this.prob[this.seenSyms] + this.increment;
+        if (symbol === this.numSyms && this.seenSyms >= this.numSyms) {
+            // this is the last time we'll see an escape! remove it.
+            tot_f = this.prob[--this.seenSyms];
+            if (this.sortedSeen) { this.sortedSeen.length--; }
+        }
+    } else { // add to the end
+        tot_f = this.prob[this.seenSyms];
+        this.sym[index] = symbol;
+        this.prob[index] = tot_f;
+        tot_f += this.increment;
+        this.prob[++this.seenSyms] = tot_f;
+        if (this.sortedSeen) {
+            this.sortedSeen.push(symbol);
+            // hopefully sort is very fast on a mostly-sorted array
+            this.sortedSeen.sort(NUMERIC_SORT);
+        }
+    }
+    if (tot_f >= this.max_prob) { this._rescale(); }
+    return;
+};
+MTFModel.prototype._rescale = function() {
+    var i, j, total=0;
+    var noEscape = true;
+    if (this.sortedSeen) { this.sortedSeen.length = 0; }
+    for(i=0, j=0; i<this.seenSyms; i++) {
+        var sym = this.sym[i];
+        var sy_f = this.prob[i+1] - this.prob[i];
+        sy_f >>>= 1;
+        if (sy_f > 0) {
+            if (sym === this.numSyms) {
+                noEscape = false;
+            }
+            this.sym[j] = sym;
+            this.prob[j++] = total;
+            total += sy_f;
+            if (this.sortedSeen) { this.sortedSeen.push(sym); }
+        }
+    }
+    this.prob[j] = total;
+    this.seenSyms = j;
+    if (this.sortedSeen) {
+        this.sortedSeen.sort(NUMERIC_SORT);
+    }
+    // don't allow escape to go to zero prob if we still need it
+    if (noEscape && this.seenSyms < this.numSyms) {
+        // NOTE this adds this.increment to escape freq; the FenwickModel
+        //      just adds one.
+        this._update(this.numSyms/*escape*/, this.seenSyms/*at end*/);
+    }
+};
+MTFModel.prototype.decode = function() {
+    var tot_f = this.prob[this.seenSyms];
+    var prob = this.coder.decodeCulFreq(tot_f);
+    // we're expecting to find the probability near the "most recent" side
+    // of our array
+    var i;
+    for (i=this.seenSyms-1; i>=0; i--) {
+        if (this.prob[i] <= prob /*&& prob < this.prob[i+1]*/)
+            break;
+    }
+    console.assert(i>=0);
+    var symbol = this.sym[i];
+    var lt_f = this.prob[i];
+    var sy_f = this.prob[i + 1] - lt_f;
+    this.coder.decodeUpdate(sy_f, lt_f, tot_f);
+    this._update(symbol, i, sy_f);
+    if (symbol === this.numSyms) {
+        /* this is an escape */
+        /* decode the literal */
+        sy_f = 1;
+        tot_f = this.numSyms;
+        if (this.sortedSeen) {
+            // do a slower, but more precise decoding of the literal
+            // by excluding the already-seen symbols.
+            var seen = this.sortedSeen;
+            tot_f = this.numSyms - this.seenSyms;
+            if (seen[seen.length-1] === this.numSyms) { tot_f++; }
+            symbol = lt_f = this.coder.decodeCulFreq(tot_f);
+            for (i=0; i < seen.length && seen[i] <= symbol ; i++) {
+                symbol++;
+            }
+        } else {
+            symbol = lt_f = this.coder.decodeCulFreq(tot_f);
+        }
+        this.coder.decodeUpdate(sy_f, lt_f, tot_f);
+        this._update(symbol, this.seenSyms);
+    }
+    return symbol;
+};
+MTFModel.prototype.encode = function(symbol) {
+    // look for symbol, from most-recent to oldest
+    var i, sy_f, lt_f, tot_f;
+    for (i=this.seenSyms-1; i>=0; i--) {
+        if (symbol === this.sym[i]) {
+            // ok, found it.
+            lt_f = this.prob[i];
+            sy_f = this.prob[i + 1] - lt_f;
+            tot_f = this.prob[this.seenSyms];
+            this.coder.encodeFreq(sy_f, lt_f, tot_f);
+            return this._update(symbol, i, sy_f);
+        }
+    }
+    // couldn't find this symbol.  encode as escape.
+    console.assert(symbol !== this.numSyms); // catch infinite recursion
+    this.encode(this.numSyms); // guaranteed to be found in the table.
+    // code symbol as literal
+    sy_f = 1;
+    lt_f = symbol;
+    tot_f = this.numSyms;
+    if (this.sortedSeen) {
+        // do a slower, but more precise encoding of the literal
+        // by excluding the already-seen symbols.
+        var seen = this.sortedSeen;
+        tot_f -= this.seenSyms;
+        if (seen[seen.length-1] === this.numSyms) { tot_f++; }
+        for (i=0; i < seen.length && seen[i] < symbol; i++) {
+            lt_f--;
+        }
+    }
+    this.coder.encodeFreq(sy_f, lt_f, tot_f);
+    // now add symbol to the end.
+    return this._update(symbol, this.seenSyms);
+};
+
+MTFModel.MAGIC = 'mtfm';
+/** Simple order-0 compressor, as self-test. */
+MTFModel.compressFile = Util.compressFileHelper(MTFModel.MAGIC, function(inStream, outStream, fileSize, props, finalByte) {
+  var range = new RangeCoder(outStream);
+  range.encodeStart(finalByte, 1);
+  var model = new MTFModel(range, (fileSize<0) ? 257 : 256);
+  Util.compressWithModel(inStream, fileSize, model);
+  range.encodeFinish();
+}, true);
+
+/** Simple order-0 decompresser, as self-test. */
+MTFModel.decompressFile = Util.decompressFileHelper(MTFModel.MAGIC, function(inStream, outStream, fileSize) {
+  var range = new RangeCoder(inStream);
+  range.decodeStart(true/*we already read the 'free' byte*/);
+  var model = new MTFModel(range, (fileSize<0) ? 257 : 256);
+  Util.decompressWithModel(outStream, fileSize, model);
+  range.decodeFinish();
+});
+
+module.exports = MTFModel;
+
+},{"./RangeCoder":20,"./Stream":22,"./Util":23}],18:[function(require,module,exports){
+/** Simple "lack of model" -- just encode the bits directly.
+ *  Useful especially with sparse spaces or Huffman coders where there's
+ *  no obvious prediction to be made that will pay for itself.
+ */
+const BitStream = require('./BitStream');
+const Util = require('./Util');
+
+var NoModel = function(bitstream, size) {
+  this.bitstream = bitstream;
+  this.bits = Util.fls(size-1);
+};
+NoModel.factory = function(bitstream) {
+  return function(size) { return new NoModel(bitstream, size); };
+};
+NoModel.prototype.encode = function(symbol) {
+  var i;
+  for (i=this.bits-1; i>=0; i--) {
+    var b = (symbol >>> i) & 1;
+    this.bitstream.writeBit(b);
+  }
+};
+NoModel.prototype.decode = function() {
+  var i, r = 0;
+  for (i=this.bits-1; i>=0; i--) {
+    r <<= 1;
+    if (this.bitstream.readBit()) r++;
+  }
+  return r;
+};
+
+/** Brain-dead self-test. */
+NoModel.MAGIC = 'nomo';
+NoModel.compressFile = Util.compressFileHelper(NoModel.MAGIC, function(inStream, outStream, fileSize, props) {
+    var bitstream = new BitStream(outStream);
+    var model = new NoModel(bitstream, (fileSize<0) ? 257 : 256);
+    Util.compressWithModel(inStream, fileSize, model);
+    bitstream.flush();
+});
+NoModel.decompressFile = Util.decompressFileHelper(NoModel.MAGIC, function(inStream, outStream, fileSize) {
+    var bitstream = new BitStream(inStream);
+    var model = new NoModel(bitstream, (fileSize<0) ? 257 : 256);
+    Util.decompressWithModel(outStream, fileSize, model);
+});
+
+module.exports = NoModel;
+
+},{"./BitStream":4,"./Util":23}],19:[function(require,module,exports){
+/** Particularly simple-minded implementation of PPM compression. */
+const RangeCoder = require('./RangeCoder');
+const Util = require('./Util');
+
+var MAX_CONTEXT = 5;
+var LOG_WINDOW_SIZE = 18;
+var WINDOW_SIZE = 1 << LOG_WINDOW_SIZE;
+
+var Window = function() {
+  this.buffer = Util.makeU8Buffer(WINDOW_SIZE);
+  this.pos = 0;
+  this.firstPass = true;
+  for (var i=0; i<MAX_CONTEXT; i++) {
+    this.put('cSaCsA'.charCodeAt(i%6));
+  }
+};
+Window.prototype.put = function(_byte) {
+  this.buffer[this.pos++] = _byte;
+  if (this.pos >= WINDOW_SIZE) { this.pos = 0; this.firstPass = false; }
+  return _byte;
+};
+Window.prototype.get = function(pos) {
+  return this.buffer[pos & (WINDOW_SIZE-1)];
+};
+// the context ending just before 'pos'
+Window.prototype.context = function(pos, n) {
+  var c = [], i;
+  pos = (pos - n) & (WINDOW_SIZE-1);
+  for (i=0; i<n; i++) {
+    c.push(this.buffer[pos++]);
+    if (pos >= WINDOW_SIZE) { pos = 0; }
+  }
+  return String.fromCharCode.apply(String, c);
+};
+
+var DMM_INCREMENT = 0x100, DMM_MAX_PROB = 0xFF00;
+
+var PPM = function(coder, size) {
+  this.window = new Window();
+  this.contexts = Object.create(null);
+  // brain-dead '-1' context, using full exclusion
+  var Cm1Context = function() { };
+  Cm1Context.prototype.encode = function(symbol, exclude) {
+    var i, lt_f = 0;
+    for (i=0; i<symbol; i++) {
+      if (!exclude[i]) {
+        lt_f++;
+      }
+    }
+    var tot_f = size - exclude.total;
+    coder.encodeFreq(1, lt_f, tot_f);
+  };
+  Cm1Context.prototype.decode = function(exclude) {
+    var i, symbol, lt_f;
+    var tot_f = size - exclude.total;
+    symbol = lt_f = coder.decodeCulFreq(tot_f);
+    for (i=0; i<=symbol; i++) {
+      if (exclude[i]) {
+        symbol++;
+      }
+    }
+    coder.decodeUpdate(1, lt_f, tot_f);
+    return symbol;
+  };
+  this.cm1coder = new Cm1Context();
+
+  var DenseMTFModel = function() {
+    this.sym = [size];
+    this.prob= [0, DMM_INCREMENT];
+    this.refcount = 0;
+  };
+  DenseMTFModel.prototype._rescale = function() {
+    var seenSyms = this.sym.length;
+    var i, j, total=0;
+    var noEscape = true;
+    for(i=0, j=0; i<seenSyms; i++) {
+      var sym = this.sym[i];
+      var sy_f = this.prob[i+1] - this.prob[i];
+      sy_f >>>= 1;
+      if (sy_f > 0) {
+        if (sym === size) {
+          noEscape = false;
+        }
+        this.sym[j] = sym;
+        this.prob[j++] = total;
+        total += sy_f;
+      }
+    }
+    this.prob[j] = total;
+    seenSyms = this.sym.length = j;
+    this.prob.length = seenSyms + 1;
+    // don't allow escape to go to zero prob if we still need it
+    if (noEscape && seenSyms < size) {
+      total = this._update(size/*escape*/, seenSyms/*at end*/, 0, 1);
+    }
+    return total;
+  };
+  DenseMTFModel.prototype.update = function(symbol, incr) {
+    // find symbol
+    var i=0;
+    for (i=0; i<this.sym.length; i++) {
+      if (this.sym[i] === symbol) {
+        return this._update(symbol, i, this.prob[i+1] - this.prob[i], incr);
+      }
+    }
+    // symbol escaped
+    return this._update(symbol, i, 0, incr);
+  };
+  DenseMTFModel.prototype._update = function(symbol, index, sy_f, incr) {
+    var seenSyms = this.sym.length;
+    var i, j, tot_f;
+    // move this symbol to the end
+    for (j=index; j<seenSyms-1; j++) {
+      this.sym[j] = this.sym[j+1];
+      this.prob[j] = this.prob[j+1] - sy_f;
+    }
+    // "method D" -- if we add a new escaped symbol, escape & the symbol
+    // both increase by 1/2.
+    if (index < seenSyms) {
+      this.sym[j] = symbol;
+      this.prob[j] = this.prob[j+1] - sy_f;
+      // increase frequency for this symbol, and total freq at same time
+      this.prob[seenSyms] = tot_f =
+        this.prob[seenSyms] + incr;
+    } else { // add to the end
+      tot_f = this.prob[seenSyms];
+      this.sym[index] = symbol;
+      this.prob[index] = tot_f;
+      tot_f += incr;
+      this.prob[++seenSyms] = tot_f;
+      // remove probability of escape if table just filled up
+      if (this.sym.length > size) {
+        for (i=0; i<seenSyms; i++) {
+          if (size === this.sym[i]) {
+            // found it.
+            this._update(size, i, this.prob[i+1] - this.prob[i], -1);
+            this.sym.length--;
+            this.prob.length--;
+            tot_f = this.prob[this.prob.length-1];
+          }
+        }
+      }
+    }
+    if (tot_f >= DMM_MAX_PROB) { tot_f = this._rescale(); }
+    return tot_f;
+  };
+  DenseMTFModel.prototype.encode = function(symbol, exclude) {
+    // look for symbol, from most-recent to oldest
+    var i, j, sy_f, lt_f, tot_f, seenSyms = this.sym.length;
+    var ex_seen = 0, ex_lt_f = 0, ex_tot_f = 0, ex_sy_f;
+    for (i=seenSyms-1; i>=0; i--) {
+      lt_f = this.prob[i];
+      sy_f = this.prob[i + 1] - lt_f;
+      if (symbol === this.sym[i]) {
+        // ok, found it.
+        // count up the rest of the probabilities
+        for (j=i-1; j>=0 && ex_seen < exclude.total; j--) {
+          if (exclude[this.sym[j]]) {
+            ex_seen += 1;
+            ex_sy_f = this.prob[j+1] - this.prob[j];
+            ex_lt_f += ex_sy_f;
+            ex_tot_f += ex_sy_f;
+          }
+        }
+        tot_f = this.prob[seenSyms];
+        // adjust by excluded symbols
+        lt_f -= ex_lt_f;
+        tot_f -= ex_tot_f;
+        coder.encodeFreq(sy_f, lt_f, tot_f);
+        if (symbol === size) { // only update table for escapes
+          this._update(symbol, i, sy_f, DMM_INCREMENT/2);
+          return false; // escape.
+        } // otherwise we'll do update later
+        return true; // encoded character!
+      } else if (exclude[this.sym[i]]) {
+        ex_seen += 1;
+        ex_tot_f += sy_f;
+      }
+    }
+    // couldn't find this symbol.  encode as escape.
+    this.encode(size, exclude);
+    // add symbols to exclusion table
+    console.assert(this.sym[this.sym.length-1] === size);//escape
+    for (i=0; i<this.sym.length-1; i++) {
+      if (!exclude[this.sym[i]]) {
+        exclude[this.sym[i]] = true;
+        exclude.total++;
+      }
+    }
+  };
+  DenseMTFModel.prototype.decode = function(exclude) {
+    var seenSyms = this.sym.length;
+    var tot_f = this.prob[seenSyms];
+    var ex_seen = 0, ex_lt_f = 0, ex_tot_f = 0, ex_sy_f;
+    var i;
+    for (i=seenSyms-1; i>=0 && ex_seen < exclude.total; i--) {
+      if (exclude[this.sym[i]]) {
+        ex_seen += 1;
+        ex_tot_f += this.prob[i+1] - this.prob[i];
+      }
+    }
+    var prob = coder.decodeCulFreq(tot_f - ex_tot_f) + ex_tot_f;
+    // we're expecting to find the probability near the "most recent" side
+    // of our array
+    ex_lt_f = ex_tot_f;
+    for (i=seenSyms-1; i>=0; i--) {
+      if (exclude[this.sym[i]]) {
+        ex_sy_f = this.prob[i+1] - this.prob[i];
+        ex_lt_f -= ex_sy_f;
+        prob -= ex_sy_f;
+      } else if (this.prob[i] <= prob /*&& prob < this.prob[i+1]*/)
+        break;
+    }
+    console.assert(i>=0);
+    var symbol = this.sym[i];
+    var lt_f = this.prob[i];
+    var sy_f = this.prob[i + 1] - lt_f;
+    coder.decodeUpdate(sy_f, lt_f - ex_lt_f, tot_f - ex_tot_f);
+    // defer update
+    if (symbol < size) { return symbol; }
+    // an escape
+    this._update(symbol, i, sy_f, DMM_INCREMENT/2);
+    // add symbols to exclusion table
+    console.assert(this.sym[this.sym.length-1] === size);//escape
+    for (i=0; i<this.sym.length-1; i++) {
+      if (!exclude[this.sym[i]]) {
+        exclude[this.sym[i]] = true;
+        exclude.total++;
+      }
+    }
+    return -1;
+  };
+  this.newContext = function(initialSymbol) {
+    return new DenseMTFModel();
+  };
+  this.newExclude = function() {
+    var result = Object.create(null);
+    result.total = 0; // no excluded symbols (yet)
+    return result;
+  };
+  // set up some initial contexts
+  (function() {
+    var i, j;
+    for (i=0; i<MAX_CONTEXT; i++) {
+      for (j=0; j<=i; j++) {
+        var cc = this.window.context(j+((MAX_CONTEXT-1)-i), j);
+        if (!this.contexts[cc]) { this.contexts[cc] = this.newContext(); }
+        this.contexts[cc].refcount++;
+      }
+    }
+  }).call(this);
+};
+PPM.prototype.update = function(symbol, contextString, matchLevel) {
+  // slide up the contexts, updating them
+  var model, c, cc;
+  for (c=0; c <= MAX_CONTEXT; c++) {
+    cc = contextString.slice(MAX_CONTEXT - c);
+    model = this.contexts[cc];
+    if (!model) {
+      model = this.contexts[cc] = this.newContext();
+    }
+    if (c >= matchLevel) {
+      // only update useful contexts
+      model.update(symbol, DMM_INCREMENT / 2);
+    }
+    // refcount all contexts, whether used/updated or not
+    model.refcount++;
+  }
+  // now garbage-collect old contexts
+  contextString = this.window.context(this.window.pos + MAX_CONTEXT,
+                                      MAX_CONTEXT);
+  var firstPass = this.window.firstPass;
+  for (c=MAX_CONTEXT; c>=0 && !firstPass; c--) {
+    cc = contextString.slice(0, c);
+    model = this.contexts[cc];
+    console.assert(model);
+    if ((--model.refcount) <= 0) {
+      console.assert(cc !== ''); // don't allow context-0 to be gc'ed!
+      delete this.contexts[cc];
+    }
+  }
+  // ok, advance window.
+  this.window.put(symbol);
+};
+PPM.prototype.decode = function() {
+  var contextString = this.window.context(this.window.pos, MAX_CONTEXT);
+  var exclude = this.newExclude();
+  var model, c, cc, symbol;
+  for (c=MAX_CONTEXT; c>=0; c--) {
+    cc = contextString.slice(MAX_CONTEXT - c);
+    model = this.contexts[cc];
+    if (model) {
+      symbol = model.decode(exclude);
+      if (symbol >= 0) {
+        this.update(symbol, contextString, c);
+        return symbol;
+      }
+    }
+  }
+  // still no match, fall back to context -1
+  symbol = this.cm1coder.decode(exclude);
+  this.update(symbol, contextString, c);
+  return symbol;
+};
+PPM.prototype.encode = function(symbol) {
+  var contextString = this.window.context(this.window.pos, MAX_CONTEXT);
+  var exclude = this.newExclude();
+  var c;
+  for (c=MAX_CONTEXT; c>=0; c--) {
+    var cc = contextString.slice(MAX_CONTEXT - c);
+    var model = this.contexts[cc];
+    if (model) {
+      var success = model.encode(symbol, exclude);
+      if (success) {
+        this.update(symbol, contextString, c);
+        return;
+      }
+    }
+  }
+  // fall back to context -1 (but still use exclusion table)
+  this.cm1coder.encode(symbol, exclude);
+  this.update(symbol, contextString, c);
+  return;
+};
+
+PPM.MAGIC = 'ppm2';
+PPM.compressFile = Util.compressFileHelper(PPM.MAGIC, function(inStream, outStream, fileSize, props, finalByte) {
+  var range = new RangeCoder(outStream);
+  range.encodeStart(finalByte, 1);
+  var model = new PPM(range, (fileSize<0) ? 257 : 256);
+  Util.compressWithModel(inStream, fileSize, model);
+  range.encodeFinish();
+}, true);
+PPM.decompressFile = Util.decompressFileHelper(PPM.MAGIC, function(inStream, outStream, fileSize) {
+  var range = new RangeCoder(inStream);
+  range.decodeStart(true/*we already read the 'free' byte*/);
+  var model = new PPM(range, (fileSize<0) ? 257 : 256);
+  Util.decompressWithModel(outStream, fileSize, model);
+  range.decodeFinish();
+});
+
+module.exports = PPM;
+
+},{"./RangeCoder":20,"./Util":23}],20:[function(require,module,exports){
+/* Range Coder.  Inspired by rangecod.c from rngcod13.zip from
+ *    http://www.compressconsult.com/rangecoder/
+ * This JavaScript version is:
+ *    Copyright (c) 2013 C. Scott Ananian.
+ */
+
+// Uses 32-bit integer math.  Hopefully the JavaScript runtime figures
+// that out. ;)
+// see https://github.com/kripken/emscripten/wiki/LLVM-Types-in-JavaScript
+// for some hints on doing 32-bit unsigned match in JavaScript.
+// One key is the use of ">>>0" to change a signed result to unsigned.
+var CODE_BITS = 32;
+var Top_value = Math.pow(2, CODE_BITS-1);
+var SHIFT_BITS = (CODE_BITS - 9);
+var EXTRA_BITS = ((CODE_BITS-2) % 8 + 1);
+var Bottom_value = (Top_value >>> 8);
+
+var MAX_INT = Math.pow(2, CODE_BITS) - 1;
+
+/* it is highly recommended that the total frequency count is less  */
+/* than 1 << 19 to minimize rounding effects.                       */
+/* the total frequency count MUST be less than 1<<23                */
+
+
+var RangeCoder = function(stream) {
+    this.low = 0; /* low end of interval */
+    this.range = Top_value; /* length of interval */
+    this.buffer = 0; /* buffer for input/output */
+    this.help = 0; /* bytes_to_follow / intermediate value */
+    this.bytecount = 0; /* counter for output bytes */
+    this.stream = stream;
+};
+
+/* Do the normalization before we need a defined state, instead of
+    * after messing it up.  This simplifies starting and ending. */
+var enc_normalize = function(rc, outputStream) {
+    while (rc.range <= Bottom_value) { /* do we need renormalization? */
+        if (rc.low < (0xFF << SHIFT_BITS)) {//no carry possible, so output
+            outputStream.writeByte(rc.buffer);
+            for (; rc.help; rc.help--)
+                outputStream.writeByte(0xFF);
+            rc.buffer = (rc.low >>> SHIFT_BITS) & 0xFF;
+        } else if (rc.low & Top_value) { /* carry now, no future carry */
+            outputStream.writeByte(rc.buffer+1);
+            for (; rc.help; rc.help--)
+                outputStream.writeByte(0x00);
+            rc.buffer = (rc.low >>> SHIFT_BITS) & 0xFF;
+        } else {
+            rc.help++;
+            if (rc.help > MAX_INT)
+                throw new Error("Too many bytes outstanding, "+
+                                "file too large!");
+        }
+        rc.range = (rc.range << 8) >>> 0;/*ensure result remains positive*/
+        rc.low = ((rc.low << 8) & (Top_value - 1)) >>> 0; /* unsigned */
+        rc.bytecount++;
+    }
+};
+
+/* Start the encoder                                         */
+/* c is written as the first byte in the datastream.
+    * one could do w/o, but then you have an additional if per output byte */
+RangeCoder.prototype.encodeStart = function(c, initlength) {
+    this.low = 0;
+    this.range = Top_value;
+    this.buffer = c;
+    this.help = 0;
+    this.bytecount = initlength;
+};
+
+/* Encode a symbol using frequencies                         */
+/* rc is the range coder to be used                          */
+/* sy_f is the interval length (frequency of the symbol)     */
+/* lt_f is the lower end (frequency sum of < symbols)        */
+/* tot_f is the total interval length (total frequency sum)  */
+/* or (faster): tot_f = (code_value)1<<shift                             */
+RangeCoder.prototype.encodeFreq = function(sy_f, lt_f, tot_f) {
+    enc_normalize(this, this.stream);
+    var r = (this.range / tot_f) >>> 0; // note coercion to integer
+    var tmp = r * lt_f;
+    this.low += tmp;
+    if ((lt_f + sy_f) < tot_f) {
+        this.range = r * sy_f;
+    } else {
+        this.range -= tmp;
+    }
+};
+RangeCoder.prototype.encodeShift = function(sy_f, lt_f, shift) {
+    enc_normalize(this, this.stream);
+    var r = this.range >>> shift;
+    var tmp = r * lt_f;
+    this.low += tmp;
+    if ((lt_f + sy_f) >>> shift) {
+        this.range -= tmp;
+    } else {
+        this.range = r * sy_f;
+    }
+};
+/* Encode a bit w/o modelling. */
+RangeCoder.prototype.encodeBit = function(b) {
+    this.encodeShift(1, b?1:0, 1);
+};
+/* Encode a byte w/o modelling. */
+RangeCoder.prototype.encodeByte = function(b) {
+    this.encodeShift(1, b, 8);
+};
+/* Encode a short w/o modelling. */
+RangeCoder.prototype.encodeShort = function(s) {
+    this.encodeShift(1, s, 16);
+};
+
+/* Finish encoding                                           */
+/* returns number of bytes written                           */
+RangeCoder.prototype.encodeFinish = function() {
+    var outputStream = this.stream;
+    enc_normalize(this, outputStream);
+    this.bytecount += 5;
+    var tmp = this.low >>> SHIFT_BITS;
+    if ((this.low & (Bottom_value-1)) >= ((this.bytecount&0xFFFFFF)>>>1)) {
+        tmp++;
+    }
+    if (tmp > 0xFF) { /* we have a carry */
+        outputStream.writeByte(this.buffer + 1);
+        for (; this.help; this.help--)
+            outputStream.writeByte(0x00);
+    } else { /* no carry */
+        outputStream.writeByte(this.buffer);
+        for (; this.help; this.help--)
+            outputStream.writeByte(0xFF);
+    }
+    outputStream.writeByte(tmp & 0xFF);
+    // XXX: i'm pretty sure these could be three arbitrary bytes
+    //      they are consumed by the decoder at the end
+    outputStream.writeByte((this.bytecount >>> 16) & 0xFF);
+    outputStream.writeByte((this.bytecount >>>  8) & 0xFF);
+    outputStream.writeByte((this.bytecount       ) & 0xFF);
+    return this.bytecount;
+};
+
+/* Start the decoder; you need to provide the *second* byte from the
+    * datastream. (The first byte was provided to startEncoding and is
+    * ignored by the decoder.)
+    */
+RangeCoder.prototype.decodeStart = function(skipInitialRead) {
+    var c = skipInitialRead ? 0 : this.stream.readByte();
+    if (typeof(c) !== 'number' || c < 0) {
+        return c; // EOF
+    }
+    this.buffer = this.stream.readByte();
+    this.low = this.buffer >>> (8 - EXTRA_BITS);
+    this.range = 1 << EXTRA_BITS;
+    return c;
+};
+
+var dec_normalize = function(rc, inputStream) {
+    while (rc.range <= Bottom_value) {
+        rc.low = (rc.low << 8) | ((rc.buffer << EXTRA_BITS) & 0xFF);
+        /* rc.low could be negative here; don't fix it quite yet */
+        rc.buffer = inputStream.readByte();
+        rc.low |= rc.buffer >>> (8-EXTRA_BITS);
+        rc.low = rc.low >>> 0; /* fix it now */
+        rc.range = (rc.range << 8) >>> 0; /* ensure stays positive */
+    }
+};
+
+/* Calculate cumulative frequency for next symbol. Does NO update!*/
+/* rc is the range coder to be used                          */
+/* tot_f is the total frequency                              */
+/* or: totf is (code_value)1<<shift                                      */
+/* returns the <= cumulative frequency                         */
+RangeCoder.prototype.decodeCulFreq = function(tot_f) {
+    dec_normalize(this, this.stream);
+    this.help = (this.range / tot_f) >>> 0; // note coercion to integer
+    var tmp = (this.low / this.help) >>> 0; // again
+    return (tmp >= tot_f ? tot_f-1 : tmp);
+};
+RangeCoder.prototype.decodeCulShift = function(shift) {
+    dec_normalize(this, this.stream);
+    this.help = this.range >>> shift;
+    var tmp = (this.low / this.help) >>> 0; // coercion to unsigned
+    // shift is less than 31, so shift below will remain positive
+    return ((tmp>>>shift) ? (1<<shift)-1 : tmp);
+};
+
+/* Update decoding state                                     */
+/* rc is the range coder to be used                          */
+/* sy_f is the interval length (frequency of the symbol)     */
+/* lt_f is the lower end (frequency sum of < symbols)        */
+/* tot_f is the total interval length (total frequency sum)  */
+RangeCoder.prototype.decodeUpdate = function(sy_f, lt_f, tot_f) {
+    var tmp = this.help * lt_f; // should not overflow!
+    this.low -= tmp;
+    if (lt_f + sy_f < tot_f) {
+        this.range = (this.help * sy_f);
+    } else {
+        this.range -= tmp;
+    }
+};
+
+/* Decode a bit w/o modelling. */
+RangeCoder.prototype.decodeBit = function() {
+    var tmp = this.decodeCulShift(1);
+    this.decodeUpdate(1, tmp, 1<<1);
+    return tmp;
+};
+/* decode a byte w/o modelling */
+RangeCoder.prototype.decodeByte = function() {
+    var tmp = this.decodeCulShift(8);
+    this.decodeUpdate(1, tmp, 1<<8);
+    return tmp;
+};
+/* decode a short w/o modelling */
+RangeCoder.prototype.decodeShort = function() {
+    var tmp = this.decodeCulShift(16);
+    this.decodeUpdate(1, tmp, 1<<16);
+    return tmp;
+};
+
+/* Finish decoding */
+RangeCoder.prototype.decodeFinish = function() {
+    /* normalize to use up all bytes */
+    dec_normalize(this, this.stream);
+};
+
+/** Utility functions */
+
+// bitstream interface
+RangeCoder.prototype.writeBit = RangeCoder.prototype.encodeBit;
+RangeCoder.prototype.readBit = RangeCoder.prototype.decodeBit;
+
+// stream interface
+RangeCoder.prototype.writeByte = RangeCoder.prototype.encodeByte;
+RangeCoder.prototype.readByte = RangeCoder.prototype.decodeByte;
+
+module.exports = RangeCoder;
+
+},{}],21:[function(require,module,exports){
+/* *Very* simple de/compression utility, based on simple_c and simple_d from
+ * rngcod13.zip at http://www.compressconsult.com/rangecoder/
+ * Really just a demonstration/test of the rangecoder.
+ */
+const RangeCoder = require('./RangeCoder');
+const Stream = require('./Stream');
+const Util = require('./Util');
+
+var MAX_BLOCK_SIZE = 1<<17;
+
+var Simple = Object.create(null);
+Simple.MAGIC = 'smpl';
+Simple.compressFile = Util.compressFileHelper(Simple.MAGIC, function(input, output, size, props, finalByte) {
+    var encoder = new RangeCoder(output);
+    encoder.encodeStart(finalByte, 1);
+
+    // read a block
+    var block = Util.makeU8Buffer(MAX_BLOCK_SIZE);
+    var counts = [];
+    var blockLength = 0, sawEOF = false;
+
+    var readBlock = function() {
+        var pos = 0;
+        // initialize counts
+        for (pos=0; pos < 256; pos++) {
+            counts[pos] = 0;
+        }
+        if (sawEOF) {
+            blockLength = 0;
+            return;
+        }
+        for (pos=0; pos < MAX_BLOCK_SIZE; ) {
+            var c = input.readByte();
+            if (c===Stream.EOF) {
+                sawEOF = true;
+                break;
+            }
+            block[pos++] = c;
+            counts[c]++;
+            // bail if some count reaches maximum
+            if (counts[c]===0xFFFF) {
+                break;
+            }
+        }
+        blockLength = pos;
+    };
+
+    while (true) {
+        var i;
+        readBlock();
+        if (sawEOF && blockLength===0) {
+            break;
+        }
+        // indicate that there's another block comin'
+        encoder.encodeBit(true);
+        // write all the statistics
+        for (i=0; i<256; i++) {
+            encoder.encodeShort(counts[i]);
+        }
+        // convert counts to cumulative counts
+        counts[256] = blockLength;
+        for (i=256; i; i--) {
+            counts[i-1] = counts[i] - counts[i-1];
+        }
+        // encode the symbols using the probability table.
+        for (i=0; i<blockLength; i++) {
+            var ch = block[i];
+            encoder.encodeFreq(counts[ch+1]-counts[ch], counts[ch],
+                                counts[256]);
+        }
+    }
+    // write a stop bit
+    encoder.encodeBit(false);
+    // done!
+    encoder.encodeFinish();
+}, true);
+Simple.decompressFile = Util.decompressFileHelper(Simple.MAGIC, function(input, output, size) {
+    var decoder = new RangeCoder(input);
+    decoder.decodeStart(true/*we already read the 'free' byte*/);
+    while (decoder.decodeBit()) {
+        var i, counts = [];
+        // read all the statistics
+        for (i=0; i<256; i++) {
+            counts[i] = decoder.decodeShort();
+        }
+        // compute cumulative stats & total block size
+        var blocksize = 0;
+        for (i=0; i<256; i++) {
+            var tmp = counts[i];
+            counts[i] = blocksize;
+            blocksize += tmp;
+        }
+        counts[256] = blocksize;
+
+        for (i=0; i<blocksize; i++) {
+            var cf = decoder.decodeCulFreq(blocksize);
+            // inefficient way to look up the symbol.
+            var symbol;
+            for (symbol=0; symbol<256; symbol++)
+                // careful, there are length-0 ranges
+                // (where counts[symbol]===counts[symbol+1])
+                if (counts[symbol]<=cf && cf < counts[symbol+1])
+                    break;
+            var ch = symbol;
+            decoder.decodeUpdate(counts[symbol+1] - counts[symbol],
+                                    counts[symbol], blocksize);
+            output.writeByte(symbol);
+        }
+    }
+    decoder.decodeFinish();
+});
+module.exports = Simple;
+
+},{"./RangeCoder":20,"./Stream":22,"./Util":23}],22:[function(require,module,exports){
+/** Abstract Stream interface, for byte-oriented i/o. */
+const freeze = require('./freeze');
+
+var EOF = -1;
+
+var Stream = function() {
+    /* ABSTRACT */
+};
+// you must define one of read / readByte for a readable stream
+Stream.prototype.readByte = function() {
+    var buf = [ 0 ];
+    var len = this.read(buf, 0, 1);
+    if (len===0) { this._eof = true; return EOF; }
+    return buf[0];
+};
+Stream.prototype.read = function(buf, bufOffset, length) {
+    var ch, bytesRead = 0;
+    while (bytesRead < length) {
+        ch = this.readByte();
+        if (ch === EOF) { this._eof = true; break; }
+        buf[bufOffset+(bytesRead++)] = ch;
+    }
+    return bytesRead;
+};
+// reasonable default implementation of 'eof'
+Stream.prototype.eof = function() { return !!this._eof; };
+// not all readable streams are seekable
+Stream.prototype.seek = function(pos) {
+    throw new Error('Stream is not seekable.');
+};
+Stream.prototype.tell = function() {
+    throw new Error('Stream is not seekable.');
+};
+// you must define one of write / writeByte for a writable stream
+Stream.prototype.writeByte = function(_byte) {
+    var buf = [ _byte ];
+    this.write(buf, 0, 1);
+};
+Stream.prototype.write = function(buf, bufOffset, length) {
+    var i;
+    for (i=0; i<length; i++) {
+        this.writeByte(buf[bufOffset + i]);
+    }
+    return length;
+};
+// flush will happily do nothing if you don't override it.
+Stream.prototype.flush = function() { };
+
+// export EOF as a constant.
+Stream.EOF = EOF;
+
+module.exports = freeze(Stream);
+
+},{"./freeze":24}],23:[function(require,module,exports){
+(function (process,Buffer){
+/* Some basic utilities, used in a number of places. */
+
+const freeze = require('./freeze');
+const Stream = require('./Stream');
+
+var Util = Object.create(null);
+var EOF = Stream.EOF;
+
+/* Take a buffer, array, or stream, and return an input stream. */
+Util.coerceInputStream = function(input, forceRead) {
+    if (!('readByte' in input)) {
+        var buffer = input;
+        input = new Stream();
+        input.size = buffer.length;
+        input.pos = 0;
+        input.readByte = function() {
+            if (this.pos >= this.size) { return EOF; }
+            return buffer[this.pos++];
+        };
+        input.read = function(buf, bufOffset, length) {
+            var bytesRead = 0;
+            while (bytesRead < length && this.pos < buffer.length) {
+                buf[bufOffset++] = buffer[this.pos++];
+                bytesRead++;
+            }
+            return bytesRead;
+        };
+        input.seek = function(pos) { this.pos = pos; };
+        input.tell = function() { return this.pos; };
+        input.eof = function() { return this.pos >= buffer.length; };
+    } else if (forceRead && !('read' in input)) {
+        // wrap input if it doesn't implement read
+        var s = input;
+        input = new Stream();
+        input.readByte = function() {
+            var ch = s.readByte();
+            if (ch === EOF) { this._eof = true; }
+            return ch;
+        };
+        if ('size' in s) { input.size = s.size; }
+        if ('seek' in s) {
+            input.seek = function(pos) {
+                s.seek(pos); // may throw if s doesn't implement seek
+                this._eof = false;
+            };
+        }
+        if ('tell' in s) {
+            input.tell = s.tell.bind(s);
+        }
+    }
+    return input;
+};
+
+var BufferStream = function(buffer, resizeOk) {
+    this.buffer = buffer;
+    this.resizeOk = resizeOk;
+    this.pos = 0;
+};
+BufferStream.prototype = Object.create(Stream.prototype);
+BufferStream.prototype.writeByte = function(_byte) {
+    if (this.resizeOk && this.pos >= this.buffer.length) {
+        var newBuffer = Util.makeU8Buffer(this.buffer.length * 2);
+        newBuffer.set(this.buffer);
+        this.buffer = newBuffer;
+    }
+    this.buffer[this.pos++] = _byte;
+};
+BufferStream.prototype.getBuffer = function() {
+    // trim buffer if needed
+    if (this.pos !== this.buffer.length) {
+        if (!this.resizeOk)
+            throw new TypeError('outputsize does not match decoded input');
+        var newBuffer = Util.makeU8Buffer(this.pos);
+        newBuffer.set(this.buffer.subarray(0, this.pos));
+        this.buffer = newBuffer;
+    }
+    return this.buffer;
+};
+
+/* Take a stream (or not) and an (optional) size, and return an
+    * output stream.  Return an object with a 'retval' field equal to
+    * the output stream (if that was given) or else a pointer at the
+    * internal Uint8Array/buffer/array; and a 'stream' field equal to
+    * an output stream to use.
+    */
+Util.coerceOutputStream = function(output, size) {
+    var r = { stream: output, retval: output };
+    if (output) {
+        if (typeof(output)==='object' && 'writeByte' in output) {
+            return r; /* leave output alone */
+        } else if (typeof(size) === 'number') {
+            console.assert(size >= 0);
+            r.stream = new BufferStream(Util.makeU8Buffer(size), false);
+        } else { // output is a buffer
+            r.stream = new BufferStream(output, false);
+        }
+    } else {
+        r.stream = new BufferStream(Util.makeU8Buffer(16384), true);
+    }
+    Object.defineProperty(r, 'retval', {
+        get: r.stream.getBuffer.bind(r.stream)
+    });
+    return r;
+};
+
+Util.compressFileHelper = function(magic, guts, suppressFinalByte) {
+    return function(inStream, outStream, props) {
+        inStream = Util.coerceInputStream(inStream);
+        var o = Util.coerceOutputStream(outStream, outStream);
+        outStream = o.stream;
+
+        // write the magic number to identify this file type
+        // (it better be ASCII, we're not doing utf-8 conversion)
+        var i;
+        for (i=0; i<magic.length; i++) {
+            outStream.writeByte(magic.charCodeAt(i));
+        }
+
+        // if we know the size, write it
+        var fileSize;
+        if ('size' in inStream && inStream.size >= 0) {
+            fileSize = inStream.size;
+        } else {
+            fileSize = -1; // size unknown
+        }
+        if (suppressFinalByte) {
+            var tmpOutput = Util.coerceOutputStream([]);
+            Util.writeUnsignedNumber(tmpOutput.stream, fileSize + 1);
+            tmpOutput = tmpOutput.retval;
+            for (i=0; i<tmpOutput.length-1; i++) {
+                outStream.writeByte(tmpOutput[i]);
+            }
+            suppressFinalByte = tmpOutput[tmpOutput.length-1];
+        } else {
+            Util.writeUnsignedNumber(outStream, fileSize + 1);
+        }
+
+        // call the guts to do the real compression
+        guts(inStream, outStream, fileSize, props, suppressFinalByte);
+
+        return o.retval;
+    };
+};
+Util.decompressFileHelper = function(magic, guts) {
+    return function(inStream, outStream) {
+        inStream = Util.coerceInputStream(inStream);
+
+        // read the magic number to confirm this file type
+        // (it better be ASCII, we're not doing utf-8 conversion)
+        var i;
+        for (i=0; i<magic.length; i++) {
+            if (magic.charCodeAt(i) !== inStream.readByte()) {
+                throw new Error("Bad magic");
+            }
+        }
+
+        // read the file size & create an appropriate output stream/buffer
+        var fileSize = Util.readUnsignedNumber(inStream) - 1;
+        var o = Util.coerceOutputStream(outStream, fileSize);
+        outStream = o.stream;
+
+        // call the guts to do the real decompression
+        guts(inStream, outStream, fileSize);
+
+        return o.retval;
+    };
+};
+// a helper for simple self-test of model encode
+Util.compressWithModel = function(inStream, fileSize, model) {
+    var inSize = 0;
+    while (inSize !== fileSize) {
+        var ch = inStream.readByte();
+        if (ch === EOF) {
+            model.encode(256); // end of stream;
+            break;
+        }
+        model.encode(ch);
+        inSize++;
+    }
+};
+// a helper for simple self-test of model decode
+Util.decompressWithModel = function(outStream, fileSize, model) {
+    var outSize = 0;
+    while (outSize !== fileSize) {
+        var ch = model.decode();
+        if (ch === 256) {
+            break; // end of stream;
+        }
+        outStream.writeByte(ch);
+        outSize++;
+    }
+};
+
+/** Write a number using a self-delimiting big-endian encoding. */
+Util.writeUnsignedNumber = function(output, n) {
+    console.assert(n >= 0);
+    var bytes = [], i;
+    do {
+        bytes.push(n & 0x7F);
+        // use division instead of shift to allow encoding numbers up to
+        // 2^53
+        n = Math.floor( n / 128 );
+    } while (n !== 0);
+    bytes[0] |= 0x80; // mark end of encoding.
+    for (i=bytes.length-1; i>=0; i--) {
+        output.writeByte(bytes[i]); // write in big-endian order
+    }
+    return output;
+};
+
+/** Read a number using a self-delimiting big-endian encoding. */
+Util.readUnsignedNumber = function(input) {
+    var n = 0, c;
+    while (true) {
+        c = input.readByte();
+        if (c&0x80) { n += (c&0x7F); break; }
+        // using + and * instead of << allows decoding numbers up to 2^53
+        n = (n + c) * 128;
+    }
+    return n;
+};
+
+// Compatibility thunks for Buffer/TypedArray constructors.
+
+var zerofill = function(a) {
+    for (var i = 0, len = a.length; i < len; i++) {
+        a[i] = 0;
+    }
+    return a;
+};
+
+var fallbackarray = function(size) {
+    return zerofill(new Array(size));
+};
+
+// Node 0.11.6 - 0.11.10ish don't properly zero fill typed arrays.
+// See https://github.com/joyent/node/issues/6664
+// Try to detect and workaround the bug.
+var ensureZeroed = function id(a) { return a; };
+if ((typeof(process) !== 'undefined') &&
+    Array.prototype.some.call(new Uint32Array(128), function(x) {
+        return x !== 0;
+    })) {
+    //console.warn('Working around broken TypedArray');
+    ensureZeroed = zerofill;
+}
+
+/** Portable 8-bit unsigned buffer. */
+Util.makeU8Buffer = (typeof(Uint8Array) !== 'undefined') ? function(size) {
+    // Uint8Array ought to be  automatically zero-filled
+    return ensureZeroed(new Uint8Array(size));
+} : (typeof(Buffer) !== 'undefined') ? function(size) {
+    var b = new Buffer(size);
+    b.fill(0);
+    return b;
+} : fallbackarray;
+
+/** Portable 16-bit unsigned buffer. */
+Util.makeU16Buffer = (typeof(Uint16Array) !== 'undefined') ? function(size) {
+    // Uint16Array ought to be  automatically zero-filled
+    return ensureZeroed(new Uint16Array(size));
+} : fallbackarray;
+
+/** Portable 32-bit unsigned buffer. */
+Util.makeU32Buffer = (typeof(Uint32Array) !== 'undefined') ? function(size) {
+    // Uint32Array ought to be  automatically zero-filled
+    return ensureZeroed(new Uint32Array(size));
+} : fallbackarray;
+
+/** Portable 32-bit signed buffer. */
+Util.makeS32Buffer = (typeof(Int32Array) !== 'undefined') ? function(size) {
+    // Int32Array ought to be  automatically zero-filled
+    return ensureZeroed(new Int32Array(size));
+} : fallbackarray;
+
+Util.arraycopy = function(dst, src) {
+    console.assert(dst.length >= src.length);
+    for (var i = 0, len = src.length; i < len ; i++) {
+        dst[i] = src[i];
+    }
+    return dst;
+};
+
+/** Highest bit set in a byte. */
+var bytemsb = [
+    0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5,
+    5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 /* 256 */
+];
+console.assert(bytemsb.length===0x100);
+/** Find last set (most significant bit).
+ *  @return the last bit set in the argument.
+ *          <code>fls(0)==0</code> and <code>fls(1)==1</code>. */
+var fls = Util.fls = function(v) {
+    console.assert(v>=0);
+    if (v > 0xFFFFFFFF) { // use floating-point mojo
+        return 32 + fls(Math.floor(v / 0x100000000));
+    }
+    if ( (v & 0xFFFF0000) !== 0) {
+        if ( (v & 0xFF000000) !== 0) {
+            return 24 + bytemsb[(v>>>24) & 0xFF];
+        } else {
+            return 16 + bytemsb[v>>>16];
+        }
+    } else if ( (v & 0x0000FF00) !== 0) {
+        return 8 + bytemsb[v>>>8];
+    } else {
+        return bytemsb[v];
+    }
+};
+/** Returns ceil(log2(n)) */
+Util.log2c = function(v) {
+    return (v===0)?-1:fls(v-1);
+};
+
+module.exports = freeze(Util); // ensure constants are recognized as such.
+
+}).call(this,require('_process'),require("buffer").Buffer)
+},{"./Stream":22,"./freeze":24,"_process":36,"buffer":28}],24:[function(require,module,exports){
+'use strict';
+
+// Object.freeze(), or a thunk if that method is not present in this
+// JavaScript environment.
+
+if (Object.freeze) {
+    module.exports = Object.freeze;
+} else {
+    module.exports = function(o) { return o; };
+}
+
+},{}],25:[function(require,module,exports){
+const freeze = require('./lib/freeze');
+const BitStream = require('./lib/BitStream');
+const Stream = require('./lib/Stream');
+const BWT = require('./lib/BWT');
+const Context1Model = require('./lib/Context1Model');
+const DefSumModel = require('./lib/DefSumModel');
+const FenwickModel = require('./lib/FenwickModel');
+const MTFModel = require('./lib/MTFModel');
+const NoModel = require('./lib/NoModel');
+const Huffman = require('./lib/Huffman');
+const RangeCoder = require('./lib/RangeCoder');
+const BWTC = require('./lib/BWTC');
+const Bzip2 = require('./lib/Bzip2');
+const Dmc = require('./lib/Dmc');
+const Lzjb = require('./lib/Lzjb');
+const LzjbR = require('./lib/LzjbR');
+const Lzp3 = require('./lib/Lzp3');
+const PPM = require('./lib/PPM');
+const Simple = require('./lib/Simple');
+
+module.exports = freeze({
+    version: "1.2.0",
+    // APIs
+    BitStream: BitStream,
+    Stream: Stream,
+    // transforms
+    BWT: BWT,
+    // models and coder
+    Context1Model: Context1Model,
+    DefSumModel: DefSumModel,
+    FenwickModel: FenwickModel,
+    MTFModel: MTFModel,
+    NoModel: NoModel,
+    Huffman: Huffman,
+    RangeCoder: RangeCoder,
+    // compression methods
+    BWTC: BWTC,
+    Bzip2: Bzip2,
+    Dmc: Dmc,
+    Lzjb: Lzjb,
+    LzjbR: LzjbR,
+    Lzp3: Lzp3,
+    PPM: PPM,
+    Simple: Simple
+});
+
+},{"./lib/BWT":2,"./lib/BWTC":3,"./lib/BitStream":4,"./lib/Bzip2":5,"./lib/Context1Model":7,"./lib/DefSumModel":8,"./lib/Dmc":9,"./lib/FenwickModel":10,"./lib/Huffman":11,"./lib/Lzjb":14,"./lib/LzjbR":15,"./lib/Lzp3":16,"./lib/MTFModel":17,"./lib/NoModel":18,"./lib/PPM":19,"./lib/RangeCoder":20,"./lib/Simple":21,"./lib/Stream":22,"./lib/freeze":24}],26:[function(require,module,exports){
 (function(d,e){"object"===typeof exports&&"undefined"!==typeof module?e(exports):"function"===typeof define&&define.amd?define(["exports"],e):(d=d||self,e(d.alawmulaw={}))})(this,function(d){function e(a){a=-32768==a?-32767:a;var c=~a>>8&128;c||(a*=-1);32635<a&&(a=32635);if(256<=a){var b=k[a>>8&127];a=b<<4|a>>b+3&15}else a>>=4;return a^c^85}function f(a){var c=0;a^=85;a&128&&(a&=-129,c=-1);var b=((a&240)>>4)+4;a=4!=b?1<<b|(a&15)<<b-4|1<<b-5:a<<1|1;return-8*(0===c?a:-a)}function g(a){var c=a>>8&128;
 0!=c&&(a=-a);a+=132;32635<a&&(a=32635);var b=l[a>>7&255];return~(c|b<<4|a>>b+3&15)}function h(a){a=~a;var c=a>>4&7;c=m[c]+((a&15)<<c+3);0!=(a&128)&&(c=-c);return c}var k=[1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],n=Object.freeze({__proto__:null,encodeSample:e,decodeSample:f,encode:function(a){for(var c=
 new Uint8Array(a.length),b=0;b<a.length;b++)c[b]=e(a[b]);return c},decode:function(a){for(var c=new Int16Array(a.length),b=0;b<a.length;b++)c[b]=f(a[b]);return c}}),l=[0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],m=[0,132,396,924,1980,4092,8316,16764],p=Object.freeze({__proto__:null,encodeSample:g,decodeSample:h,encode:function(a){for(var c=new Uint8Array(a.length),b=0;b<a.length;b++)c[b]=g(a[b]);return c},decode:function(a){for(var c=new Int16Array(a.length),b=0;b<a.length;b++)c[b]=h(a[b]);return c}});d.alaw=n;d.mulaw=p;Object.defineProperty(d,
 "__esModule",{value:!0})});
 
-},{}],3:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
+'use strict'
+
+exports.byteLength = byteLength
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup[i] = code[i]
+  revLookup[code.charCodeAt(i)] = i
+}
+
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
+revLookup['-'.charCodeAt(0)] = 62
+revLookup['_'.charCodeAt(0)] = 63
+
+function getLens (b64) {
+  var len = b64.length
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=')
+  if (validLen === -1) validLen = len
+
+  var placeHoldersLen = validLen === len
+    ? 0
+    : 4 - (validLen % 4)
+
+  return [validLen, placeHoldersLen]
+}
+
+// base64 is 4/3 + up to two characters of the original data
+function byteLength (b64) {
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function _byteLength (b64, validLen, placeHoldersLen) {
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function toByteArray (b64) {
+  var tmp
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+
+  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen))
+
+  var curByte = 0
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  var len = placeHoldersLen > 0
+    ? validLen - 4
+    : validLen
+
+  var i
+  for (i = 0; i < len; i += 4) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 18) |
+      (revLookup[b64.charCodeAt(i + 1)] << 12) |
+      (revLookup[b64.charCodeAt(i + 2)] << 6) |
+      revLookup[b64.charCodeAt(i + 3)]
+    arr[curByte++] = (tmp >> 16) & 0xFF
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 2) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 2) |
+      (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 10) |
+      (revLookup[b64.charCodeAt(i + 1)] << 4) |
+      (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] +
+    lookup[num >> 12 & 0x3F] +
+    lookup[num >> 6 & 0x3F] +
+    lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp =
+      ((uint8[i] << 16) & 0xFF0000) +
+      ((uint8[i + 1] << 8) & 0xFF00) +
+      (uint8[i + 2] & 0xFF)
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(
+      uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)
+    ))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 2] +
+      lookup[(tmp << 4) & 0x3F] +
+      '=='
+    )
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 10] +
+      lookup[(tmp >> 4) & 0x3F] +
+      lookup[(tmp << 2) & 0x3F] +
+      '='
+    )
+  }
+
+  return parts.join('')
+}
+
+},{}],28:[function(require,module,exports){
+(function (Buffer){
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+'use strict'
+
+var base64 = require('base64-js')
+var ieee754 = require('ieee754')
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+var K_MAX_LENGTH = 0x7fffffff
+exports.kMaxLength = K_MAX_LENGTH
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Print warning and recommend using `buffer` v4.x which has an Object
+ *               implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * We report that the browser does not support typed arrays if the are not subclassable
+ * using __proto__. Firefox 4-29 lacks support for adding new properties to `Uint8Array`
+ * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
+ * for __proto__ and has a buggy typed array implementation.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
+
+if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
+    typeof console.error === 'function') {
+  console.error(
+    'This browser lacks typed array (Uint8Array) support which is required by ' +
+    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
+  )
+}
+
+function typedArraySupport () {
+  // Can typed array instances can be augmented?
+  try {
+    var arr = new Uint8Array(1)
+    arr.__proto__ = { __proto__: Uint8Array.prototype, foo: function () { return 42 } }
+    return arr.foo() === 42
+  } catch (e) {
+    return false
+  }
+}
+
+Object.defineProperty(Buffer.prototype, 'parent', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.buffer
+  }
+})
+
+Object.defineProperty(Buffer.prototype, 'offset', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.byteOffset
+  }
+})
+
+function createBuffer (length) {
+  if (length > K_MAX_LENGTH) {
+    throw new RangeError('The value "' + length + '" is invalid for option "size"')
+  }
+  // Return an augmented `Uint8Array` instance
+  var buf = new Uint8Array(length)
+  buf.__proto__ = Buffer.prototype
+  return buf
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+
+function Buffer (arg, encodingOrOffset, length) {
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new TypeError(
+        'The "string" argument must be of type string. Received type number'
+      )
+    }
+    return allocUnsafe(arg)
+  }
+  return from(arg, encodingOrOffset, length)
+}
+
+// Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
+if (typeof Symbol !== 'undefined' && Symbol.species != null &&
+    Buffer[Symbol.species] === Buffer) {
+  Object.defineProperty(Buffer, Symbol.species, {
+    value: null,
+    configurable: true,
+    enumerable: false,
+    writable: false
+  })
+}
+
+Buffer.poolSize = 8192 // not used by this implementation
+
+function from (value, encodingOrOffset, length) {
+  if (typeof value === 'string') {
+    return fromString(value, encodingOrOffset)
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return fromArrayLike(value)
+  }
+
+  if (value == null) {
+    throw TypeError(
+      'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+      'or Array-like Object. Received type ' + (typeof value)
+    )
+  }
+
+  if (isInstance(value, ArrayBuffer) ||
+      (value && isInstance(value.buffer, ArrayBuffer))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'number') {
+    throw new TypeError(
+      'The "value" argument must not be of type number. Received type number'
+    )
+  }
+
+  var valueOf = value.valueOf && value.valueOf()
+  if (valueOf != null && valueOf !== value) {
+    return Buffer.from(valueOf, encodingOrOffset, length)
+  }
+
+  var b = fromObject(value)
+  if (b) return b
+
+  if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
+      typeof value[Symbol.toPrimitive] === 'function') {
+    return Buffer.from(
+      value[Symbol.toPrimitive]('string'), encodingOrOffset, length
+    )
+  }
+
+  throw new TypeError(
+    'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+    'or Array-like Object. Received type ' + (typeof value)
+  )
+}
+
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(value, encodingOrOffset, length)
+}
+
+// Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
+// https://github.com/feross/buffer/pull/148
+Buffer.prototype.__proto__ = Uint8Array.prototype
+Buffer.__proto__ = Uint8Array
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be of type number')
+  } else if (size < 0) {
+    throw new RangeError('The value "' + size + '" is invalid for option "size"')
+  }
+}
+
+function alloc (size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpretted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(size).fill(fill, encoding)
+      : createBuffer(size).fill(fill)
+  }
+  return createBuffer(size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(size, fill, encoding)
+}
+
+function allocUnsafe (size) {
+  assertSize(size)
+  return createBuffer(size < 0 ? 0 : checked(size) | 0)
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(size)
+}
+
+function fromString (string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('Unknown encoding: ' + encoding)
+  }
+
+  var length = byteLength(string, encoding) | 0
+  var buf = createBuffer(length)
+
+  var actual = buf.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    buf = buf.slice(0, actual)
+  }
+
+  return buf
+}
+
+function fromArrayLike (array) {
+  var length = array.length < 0 ? 0 : checked(array.length) | 0
+  var buf = createBuffer(length)
+  for (var i = 0; i < length; i += 1) {
+    buf[i] = array[i] & 255
+  }
+  return buf
+}
+
+function fromArrayBuffer (array, byteOffset, length) {
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('"offset" is outside of buffer bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('"length" is outside of buffer bounds')
+  }
+
+  var buf
+  if (byteOffset === undefined && length === undefined) {
+    buf = new Uint8Array(array)
+  } else if (length === undefined) {
+    buf = new Uint8Array(array, byteOffset)
+  } else {
+    buf = new Uint8Array(array, byteOffset, length)
+  }
+
+  // Return an augmented `Uint8Array` instance
+  buf.__proto__ = Buffer.prototype
+  return buf
+}
+
+function fromObject (obj) {
+  if (Buffer.isBuffer(obj)) {
+    var len = checked(obj.length) | 0
+    var buf = createBuffer(len)
+
+    if (buf.length === 0) {
+      return buf
+    }
+
+    obj.copy(buf, 0, 0, len)
+    return buf
+  }
+
+  if (obj.length !== undefined) {
+    if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
+      return createBuffer(0)
+    }
+    return fromArrayLike(obj)
+  }
+
+  if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+    return fromArrayLike(obj.data)
+  }
+}
+
+function checked (length) {
+  // Note: cannot use `length < K_MAX_LENGTH` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= K_MAX_LENGTH) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + K_MAX_LENGTH.toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return b != null && b._isBuffer === true &&
+    b !== Buffer.prototype // so Buffer.isBuffer(Buffer.prototype) will be false
+}
+
+Buffer.compare = function compare (a, b) {
+  if (isInstance(a, Uint8Array)) a = Buffer.from(a, a.offset, a.byteLength)
+  if (isInstance(b, Uint8Array)) b = Buffer.from(b, b.offset, b.byteLength)
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError(
+      'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
+    )
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!Array.isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  var buffer = Buffer.allocUnsafe(length)
+  var pos = 0
+  for (i = 0; i < list.length; ++i) {
+    var buf = list[i]
+    if (isInstance(buf, Uint8Array)) {
+      buf = Buffer.from(buf)
+    }
+    if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
+    }
+    buf.copy(buffer, pos)
+    pos += buf.length
+  }
+  return buffer
+}
+
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    throw new TypeError(
+      'The "string" argument must be one of type string, Buffer, or ArrayBuffer. ' +
+      'Received type ' + typeof string
+    )
+  }
+
+  var len = string.length
+  var mustMatch = (arguments.length > 2 && arguments[2] === true)
+  if (!mustMatch && len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) {
+          return mustMatch ? -1 : utf8ToBytes(string).length // assume utf8
+        }
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  var loweredCase = false
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
+
+  if (end <= 0) {
+    return ''
+  }
+
+  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
+
+  if (end <= start) {
+    return ''
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// This property is used by `Buffer.isBuffer` (and the `is-buffer` npm package)
+// to detect a Buffer instance. It's not possible to use `instanceof Buffer`
+// reliably in a browserify context because there could be multiple different
+// copies of the 'buffer' package in use. This method works even for Buffer
+// instances that were created from another copy of the `buffer` package.
+// See: https://github.com/feross/buffer/issues/154
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  var i = b[n]
+  b[n] = b[m]
+  b[m] = i
+}
+
+Buffer.prototype.swap16 = function swap16 () {
+  var len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (var i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
+}
+
+Buffer.prototype.swap32 = function swap32 () {
+  var len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (var i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
+}
+
+Buffer.prototype.swap64 = function swap64 () {
+  var len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (var i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
+}
+
+Buffer.prototype.toString = function toString () {
+  var length = this.length
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.toLocaleString = Buffer.prototype.toString
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
+  if (this.length > max) str += ' ... '
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (isInstance(target, Uint8Array)) {
+    target = Buffer.from(target, target.offset, target.byteLength)
+  }
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError(
+      'The "target" argument must be one of type Buffer or Uint8Array. ' +
+      'Received type ' + (typeof target)
+    )
+  }
+
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
+
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
+
+  if (this === target) return 0
+
+  var x = thisEnd - thisStart
+  var y = end - start
+  var len = Math.min(x, y)
+
+  var thisCopy = this.slice(thisStart, thisEnd)
+  var targetCopy = target.slice(start, end)
+
+  for (var i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset // Coerce to Number.
+  if (numberIsNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  var indexSize = 1
+  var arrLength = arr.length
+  var valLength = val.length
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
+
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
+    } else {
+      return buf.readUInt16BE(i * indexSize)
+    }
+  }
+
+  var i
+  if (dir) {
+    var foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      var found = true
+      for (var j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
+        }
+      }
+      if (found) return i
+    }
+  }
+
+  return -1
+}
+
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
+
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  var strLen = string.length
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; ++i) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (numberIsNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function latin1Write (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset >>> 0
+    if (isFinite(length)) {
+      length = length >>> 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Write(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  var res = []
+
+  var i = start
+  while (i < end) {
+    var firstByte = buf[i]
+    var codePoint = null
+    var bytesPerSequence = (firstByte > 0xEF) ? 4
+      : (firstByte > 0xDF) ? 3
+        : (firstByte > 0xBF) ? 2
+          : 1
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  var len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = ''
+  var i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; ++i) {
+    out += toHex(buf[i])
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + (bytes[i + 1] * 256))
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf = this.subarray(start, end)
+  // Return an augmented `Uint8Array` instance
+  newBuf.__proto__ = Buffer.prototype
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset + 3] = (value >>> 24)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 1] = (value >>> 8)
+  this[offset] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    var limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    var limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 3] = (value >>> 24)
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!Buffer.isBuffer(target)) throw new TypeError('argument should be a Buffer')
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('Index out of range')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+
+  if (this === target && typeof Uint8Array.prototype.copyWithin === 'function') {
+    // Use built-in when available, missing from IE11
+    this.copyWithin(targetStart, start, end)
+  } else if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (var i = len - 1; i >= 0; --i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, end),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+    if (val.length === 1) {
+      var code = val.charCodeAt(0)
+      if ((encoding === 'utf8' && code < 128) ||
+          encoding === 'latin1') {
+        // Fast path: If `val` fits into a single byte, use that numeric value.
+        val = code
+      }
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  var i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    var bytes = Buffer.isBuffer(val)
+      ? val
+      : Buffer.from(val, encoding)
+    var len = bytes.length
+    if (len === 0) {
+      throw new TypeError('The value "' + val +
+        '" is invalid for argument "value"')
+    }
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node takes equal signs as end of the Base64 encoding
+  str = str.split('=')[0]
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = str.trim().replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+
+  for (var i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+// ArrayBuffer or Uint8Array objects from other contexts (i.e. iframes) do not pass
+// the `instanceof` check but they should be treated as of that type.
+// See: https://github.com/feross/buffer/issues/166
+function isInstance (obj, type) {
+  return obj instanceof type ||
+    (obj != null && obj.constructor != null && obj.constructor.name != null &&
+      obj.constructor.name === type.name)
+}
+function numberIsNaN (obj) {
+  // For IE11 support
+  return obj !== obj // eslint-disable-line no-self-compare
+}
+
+}).call(this,require("buffer").Buffer)
+},{"base64-js":27,"buffer":28,"ieee754":30}],29:[function(require,module,exports){
+(function (Buffer){
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+'use strict'
+
+var base64 = require('base64-js')
+var ieee754 = require('ieee754')
+var customInspectSymbol =
+  (typeof Symbol === 'function' && typeof Symbol.for === 'function')
+    ? Symbol.for('nodejs.util.inspect.custom')
+    : null
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+var K_MAX_LENGTH = 0x7fffffff
+exports.kMaxLength = K_MAX_LENGTH
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Print warning and recommend using `buffer` v4.x which has an Object
+ *               implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * We report that the browser does not support typed arrays if the are not subclassable
+ * using __proto__. Firefox 4-29 lacks support for adding new properties to `Uint8Array`
+ * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
+ * for __proto__ and has a buggy typed array implementation.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
+
+if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
+    typeof console.error === 'function') {
+  console.error(
+    'This browser lacks typed array (Uint8Array) support which is required by ' +
+    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
+  )
+}
+
+function typedArraySupport () {
+  // Can typed array instances can be augmented?
+  try {
+    var arr = new Uint8Array(1)
+    var proto = { foo: function () { return 42 } }
+    Object.setPrototypeOf(proto, Uint8Array.prototype)
+    Object.setPrototypeOf(arr, proto)
+    return arr.foo() === 42
+  } catch (e) {
+    return false
+  }
+}
+
+Object.defineProperty(Buffer.prototype, 'parent', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.buffer
+  }
+})
+
+Object.defineProperty(Buffer.prototype, 'offset', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.byteOffset
+  }
+})
+
+function createBuffer (length) {
+  if (length > K_MAX_LENGTH) {
+    throw new RangeError('The value "' + length + '" is invalid for option "size"')
+  }
+  // Return an augmented `Uint8Array` instance
+  var buf = new Uint8Array(length)
+  Object.setPrototypeOf(buf, Buffer.prototype)
+  return buf
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+
+function Buffer (arg, encodingOrOffset, length) {
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new TypeError(
+        'The "string" argument must be of type string. Received type number'
+      )
+    }
+    return allocUnsafe(arg)
+  }
+  return from(arg, encodingOrOffset, length)
+}
+
+Buffer.poolSize = 8192 // not used by this implementation
+
+function from (value, encodingOrOffset, length) {
+  if (typeof value === 'string') {
+    return fromString(value, encodingOrOffset)
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return fromArrayLike(value)
+  }
+
+  if (value == null) {
+    throw new TypeError(
+      'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+      'or Array-like Object. Received type ' + (typeof value)
+    )
+  }
+
+  if (isInstance(value, ArrayBuffer) ||
+      (value && isInstance(value.buffer, ArrayBuffer))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof SharedArrayBuffer !== 'undefined' &&
+      (isInstance(value, SharedArrayBuffer) ||
+      (value && isInstance(value.buffer, SharedArrayBuffer)))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'number') {
+    throw new TypeError(
+      'The "value" argument must not be of type number. Received type number'
+    )
+  }
+
+  var valueOf = value.valueOf && value.valueOf()
+  if (valueOf != null && valueOf !== value) {
+    return Buffer.from(valueOf, encodingOrOffset, length)
+  }
+
+  var b = fromObject(value)
+  if (b) return b
+
+  if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
+      typeof value[Symbol.toPrimitive] === 'function') {
+    return Buffer.from(
+      value[Symbol.toPrimitive]('string'), encodingOrOffset, length
+    )
+  }
+
+  throw new TypeError(
+    'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+    'or Array-like Object. Received type ' + (typeof value)
+  )
+}
+
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(value, encodingOrOffset, length)
+}
+
+// Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
+// https://github.com/feross/buffer/pull/148
+Object.setPrototypeOf(Buffer.prototype, Uint8Array.prototype)
+Object.setPrototypeOf(Buffer, Uint8Array)
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be of type number')
+  } else if (size < 0) {
+    throw new RangeError('The value "' + size + '" is invalid for option "size"')
+  }
+}
+
+function alloc (size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpretted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(size).fill(fill, encoding)
+      : createBuffer(size).fill(fill)
+  }
+  return createBuffer(size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(size, fill, encoding)
+}
+
+function allocUnsafe (size) {
+  assertSize(size)
+  return createBuffer(size < 0 ? 0 : checked(size) | 0)
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(size)
+}
+
+function fromString (string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('Unknown encoding: ' + encoding)
+  }
+
+  var length = byteLength(string, encoding) | 0
+  var buf = createBuffer(length)
+
+  var actual = buf.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    buf = buf.slice(0, actual)
+  }
+
+  return buf
+}
+
+function fromArrayLike (array) {
+  var length = array.length < 0 ? 0 : checked(array.length) | 0
+  var buf = createBuffer(length)
+  for (var i = 0; i < length; i += 1) {
+    buf[i] = array[i] & 255
+  }
+  return buf
+}
+
+function fromArrayBuffer (array, byteOffset, length) {
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('"offset" is outside of buffer bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('"length" is outside of buffer bounds')
+  }
+
+  var buf
+  if (byteOffset === undefined && length === undefined) {
+    buf = new Uint8Array(array)
+  } else if (length === undefined) {
+    buf = new Uint8Array(array, byteOffset)
+  } else {
+    buf = new Uint8Array(array, byteOffset, length)
+  }
+
+  // Return an augmented `Uint8Array` instance
+  Object.setPrototypeOf(buf, Buffer.prototype)
+
+  return buf
+}
+
+function fromObject (obj) {
+  if (Buffer.isBuffer(obj)) {
+    var len = checked(obj.length) | 0
+    var buf = createBuffer(len)
+
+    if (buf.length === 0) {
+      return buf
+    }
+
+    obj.copy(buf, 0, 0, len)
+    return buf
+  }
+
+  if (obj.length !== undefined) {
+    if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
+      return createBuffer(0)
+    }
+    return fromArrayLike(obj)
+  }
+
+  if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+    return fromArrayLike(obj.data)
+  }
+}
+
+function checked (length) {
+  // Note: cannot use `length < K_MAX_LENGTH` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= K_MAX_LENGTH) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + K_MAX_LENGTH.toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return b != null && b._isBuffer === true &&
+    b !== Buffer.prototype // so Buffer.isBuffer(Buffer.prototype) will be false
+}
+
+Buffer.compare = function compare (a, b) {
+  if (isInstance(a, Uint8Array)) a = Buffer.from(a, a.offset, a.byteLength)
+  if (isInstance(b, Uint8Array)) b = Buffer.from(b, b.offset, b.byteLength)
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError(
+      'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
+    )
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!Array.isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  var buffer = Buffer.allocUnsafe(length)
+  var pos = 0
+  for (i = 0; i < list.length; ++i) {
+    var buf = list[i]
+    if (isInstance(buf, Uint8Array)) {
+      buf = Buffer.from(buf)
+    }
+    if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
+    }
+    buf.copy(buffer, pos)
+    pos += buf.length
+  }
+  return buffer
+}
+
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    throw new TypeError(
+      'The "string" argument must be one of type string, Buffer, or ArrayBuffer. ' +
+      'Received type ' + typeof string
+    )
+  }
+
+  var len = string.length
+  var mustMatch = (arguments.length > 2 && arguments[2] === true)
+  if (!mustMatch && len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) {
+          return mustMatch ? -1 : utf8ToBytes(string).length // assume utf8
+        }
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  var loweredCase = false
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
+
+  if (end <= 0) {
+    return ''
+  }
+
+  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
+
+  if (end <= start) {
+    return ''
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// This property is used by `Buffer.isBuffer` (and the `is-buffer` npm package)
+// to detect a Buffer instance. It's not possible to use `instanceof Buffer`
+// reliably in a browserify context because there could be multiple different
+// copies of the 'buffer' package in use. This method works even for Buffer
+// instances that were created from another copy of the `buffer` package.
+// See: https://github.com/feross/buffer/issues/154
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  var i = b[n]
+  b[n] = b[m]
+  b[m] = i
+}
+
+Buffer.prototype.swap16 = function swap16 () {
+  var len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (var i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
+}
+
+Buffer.prototype.swap32 = function swap32 () {
+  var len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (var i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
+}
+
+Buffer.prototype.swap64 = function swap64 () {
+  var len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (var i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
+}
+
+Buffer.prototype.toString = function toString () {
+  var length = this.length
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.toLocaleString = Buffer.prototype.toString
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
+  if (this.length > max) str += ' ... '
+  return '<Buffer ' + str + '>'
+}
+if (customInspectSymbol) {
+  Buffer.prototype[customInspectSymbol] = Buffer.prototype.inspect
+}
+
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (isInstance(target, Uint8Array)) {
+    target = Buffer.from(target, target.offset, target.byteLength)
+  }
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError(
+      'The "target" argument must be one of type Buffer or Uint8Array. ' +
+      'Received type ' + (typeof target)
+    )
+  }
+
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
+
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
+
+  if (this === target) return 0
+
+  var x = thisEnd - thisStart
+  var y = end - start
+  var len = Math.min(x, y)
+
+  var thisCopy = this.slice(thisStart, thisEnd)
+  var targetCopy = target.slice(start, end)
+
+  for (var i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset // Coerce to Number.
+  if (numberIsNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [val], byteOffset, encoding, dir)
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  var indexSize = 1
+  var arrLength = arr.length
+  var valLength = val.length
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
+
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
+    } else {
+      return buf.readUInt16BE(i * indexSize)
+    }
+  }
+
+  var i
+  if (dir) {
+    var foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      var found = true
+      for (var j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
+        }
+      }
+      if (found) return i
+    }
+  }
+
+  return -1
+}
+
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
+
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  var strLen = string.length
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; ++i) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (numberIsNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function latin1Write (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset >>> 0
+    if (isFinite(length)) {
+      length = length >>> 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Write(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  var res = []
+
+  var i = start
+  while (i < end) {
+    var firstByte = buf[i]
+    var codePoint = null
+    var bytesPerSequence = (firstByte > 0xEF) ? 4
+      : (firstByte > 0xDF) ? 3
+        : (firstByte > 0xBF) ? 2
+          : 1
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  var len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = ''
+  var i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; ++i) {
+    out += hexSliceLookupTable[buf[i]]
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + (bytes[i + 1] * 256))
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf = this.subarray(start, end)
+  // Return an augmented `Uint8Array` instance
+  Object.setPrototypeOf(newBuf, Buffer.prototype)
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset + 3] = (value >>> 24)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 1] = (value >>> 8)
+  this[offset] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    var limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    var limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 3] = (value >>> 24)
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!Buffer.isBuffer(target)) throw new TypeError('argument should be a Buffer')
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('Index out of range')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+
+  if (this === target && typeof Uint8Array.prototype.copyWithin === 'function') {
+    // Use built-in when available, missing from IE11
+    this.copyWithin(targetStart, start, end)
+  } else if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (var i = len - 1; i >= 0; --i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, end),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+    if (val.length === 1) {
+      var code = val.charCodeAt(0)
+      if ((encoding === 'utf8' && code < 128) ||
+          encoding === 'latin1') {
+        // Fast path: If `val` fits into a single byte, use that numeric value.
+        val = code
+      }
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  } else if (typeof val === 'boolean') {
+    val = Number(val)
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  var i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    var bytes = Buffer.isBuffer(val)
+      ? val
+      : Buffer.from(val, encoding)
+    var len = bytes.length
+    if (len === 0) {
+      throw new TypeError('The value "' + val +
+        '" is invalid for argument "value"')
+    }
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node takes equal signs as end of the Base64 encoding
+  str = str.split('=')[0]
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = str.trim().replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+
+  for (var i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+// ArrayBuffer or Uint8Array objects from other contexts (i.e. iframes) do not pass
+// the `instanceof` check but they should be treated as of that type.
+// See: https://github.com/feross/buffer/issues/166
+function isInstance (obj, type) {
+  return obj instanceof type ||
+    (obj != null && obj.constructor != null && obj.constructor.name != null &&
+      obj.constructor.name === type.name)
+}
+function numberIsNaN (obj) {
+  // For IE11 support
+  return obj !== obj // eslint-disable-line no-self-compare
+}
+
+// Create lookup table for `toString('hex')`
+// See: https://github.com/feross/buffer/issues/219
+var hexSliceLookupTable = (function () {
+  var alphabet = '0123456789abcdef'
+  var table = new Array(256)
+  for (var i = 0; i < 16; ++i) {
+    var i16 = i * 16
+    for (var j = 0; j < 16; ++j) {
+      table[i16 + j] = alphabet[i] + alphabet[j]
+    }
+  }
+  return table
+})()
+
+}).call(this,require("buffer").Buffer)
+},{"base64-js":27,"buffer":28,"ieee754":30}],30:[function(require,module,exports){
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = (e * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = (m * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = ((value * c) - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+
+},{}],31:[function(require,module,exports){
 "use strict"
 
 function iota(n) {
@@ -46,7 +9305,7 @@ function iota(n) {
 }
 
 module.exports = iota
-},{}],4:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -69,7 +9328,7 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],5:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 module.exports = Long;
 
 /**
@@ -1394,7 +10653,7 @@ Long.fromBytesBE = function fromBytesBE(bytes, unsigned) {
     );
 };
 
-},{}],6:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 var iota = require("iota-array")
 var isBuffer = require("is-buffer")
 
@@ -1745,676 +11004,410 @@ function wrappedNDArrayCtor(data, shape, stride, offset) {
 
 module.exports = wrappedNDArrayCtor
 
-},{"iota-array":3,"is-buffer":4}],7:[function(require,module,exports){
+},{"iota-array":31,"is-buffer":32}],35:[function(require,module,exports){
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = global || self, global.PCMPlayer = factory());
+}(this, (function () { 'use strict';
+
+  class PCMPlayer {
+    constructor(option) {
+      this.init(option);
+    }
+
+    init(option) {
+      const defaultOption = {
+        inputCodec: 'Int16', // 传入的数据是采用多少位编码，默认16位
+        channels: 1, // 声道数
+        sampleRate: 8000, // 采样率 单位Hz
+        flushTime: 1000 // 缓存时间 单位 ms
+      };
+
+      this.option = Object.assign({}, defaultOption, option); // 实例最终配置参数
+      this.samples = new Float32Array(); // 样本存放区域
+      this.interval = setInterval(this.flush.bind(this), this.option.flushTime);
+      this.convertValue = this.getConvertValue();
+      this.typedArray = this.getTypedArray();
+      this.initAudioContext();
+    }
+
+    getConvertValue() {
+      // 根据传入的目标编码位数
+      // 选定转换数据所需要的基本值
+      const inputCodecs = {
+        'Int8': 128,
+        'Int16': 327168,
+        'Int32': 2147483648,
+        'Float32': 1
+      };
+      if (!inputCodecs[this.option.inputCodec]) {
+        throw new Error('wrong codec.please input one of these codecs:Int8,Int16,Int32,Float32')
+      }
+      return inputCodecs[this.option.inputCodec]
+    }
+
+    getTypedArray() {
+      // 根据传入的目标编码位数
+      // 选定前端的所需要的保存的二进制数据格式
+      // 完整TypedArray请看文档
+      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
+      const typedArrays = {
+        'Int8': Int8Array,
+        'Int16': Int16Array,
+        'Int32': Int32Array,
+        'Float32': Float32Array
+      };
+      if (!typedArrays[this.option.inputCodec]) {
+        throw new Error('wrong codec.please input one of these codecs:Int8,Int16,Int32,Float32')
+      }
+      return typedArrays[this.option.inputCodec]
+    }
+
+    initAudioContext() {
+      // 初始化音频上下文的东西
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // 控制音量的 GainNode
+      // https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/createGain
+      this.gainNode = this.audioCtx.createGain();
+      this.gainNode.gain.value = 10;
+      this.gainNode.connect(this.audioCtx.destination);
+      this.startTime = this.audioCtx.currentTime;
+    }
+
+    static isTypedArray(data) {
+      // 检测输入的数据是否为 TypedArray 类型或 ArrayBuffer 类型
+      return (data.byteLength && data.buffer && data.buffer.constructor == ArrayBuffer) || data.constructor == ArrayBuffer;
+    }
+
+    isSupported(data) {
+      // 数据类型是否支持
+      // 目前支持 ArrayBuffer 或者 TypedArray
+      if (!PCMPlayer.isTypedArray(data)) {
+        throw new Error('请传入ArrayBuffer或者任意TypedArray')
+      }
+      return true
+    }
+
+    feed(data) {
+      this.isSupported(data);
+
+      // 获取格式化后的buffer
+      data = this.getFormatedValue(data);
+      // 开始拷贝buffer数据
+      // 新建一个Float32Array的空间
+      const tmp = new Float32Array(this.samples.length + data.length);
+      // console.log(data, this.samples, this.samples.length)
+      // 复制当前的实例的buffer值（历史buff)
+      // 从头（0）开始复制
+      tmp.set(this.samples, 0);
+      // 复制传入的新数据
+      // 从历史buff位置开始
+      tmp.set(data, this.samples.length);
+      // 将新的完整buff数据赋值给samples
+      // interval定时器也会从samples里面播放数据
+      this.samples = tmp;
+    }
+
+    getFormatedValue(data) {
+      if (data.constructor == ArrayBuffer) {
+        data = new this.typedArray(data);
+      } else {
+        data = new this.typedArray(data.buffer);
+      }
+
+      let float32 = new Float32Array(data.length);
+
+      for (let i = 0; i < data.length; i++) {
+        // buffer 缓冲区的数据，需要是IEEE754 里32位的线性PCM，范围从-1到+1
+        // 所以对数据进行除法
+        // 除以对应的位数范围，得到-1到+1的数据
+        // float32[i] = data[i] / 0x8000;
+        float32[i] = data[i] / this.convertValue;
+      }
+      return float32
+    }
+
+    volume(volume) {
+      this.gainNode.gain.value = volume;
+    }
+
+    destroy() {
+      if (this.interval) {
+        clearInterval(this.interval);
+      }
+      this.samples = null;
+      this.audioCtx.close();
+      this.audioCtx = null;
+    }
+
+    flush() {
+      if (!this.samples.length) return
+      var bufferSource = this.audioCtx.createBufferSource();
+      const length = this.samples.length / this.option.channels;
+      const audioBuffer = this.audioCtx.createBuffer(this.option.channels, length, this.option.sampleRate);
+
+      for (let channel = 0; channel < this.option.channels; channel++) {
+        const audioData = audioBuffer.getChannelData(channel);
+        let offset = channel;
+        let decrement = 50;
+        for (let i = 0; i < length; i++) {
+          audioData[i] = this.samples[offset];
+          /* fadein */
+          if (i < 50) {
+            audioData[i] = (audioData[i] * i) / 50;
+          }
+          /* fadeout*/
+          if (i >= (length - 51)) {
+            audioData[i] = (audioData[i] * decrement--) / 50;
+          }
+          offset += this.option.channels;
+        }
+      }
+
+      if (this.startTime < this.audioCtx.currentTime) {
+        this.startTime = this.audioCtx.currentTime;
+      }
+      console.log('start vs current ' + this.startTime + ' vs ' + this.audioCtx.currentTime + ' duration: ' + audioBuffer.duration);
+      bufferSource.buffer = audioBuffer;
+      bufferSource.connect(this.gainNode);
+      bufferSource.start(this.startTime);
+      this.startTime += audioBuffer.duration;
+      this.samples = new Float32Array();
+    }
+
+    async pause() {
+      await this.audioCtx.suspend();
+    }
+
+    async continue() {
+      await this.audioCtx.resume();
+    }
+
+  }
+
+  return PCMPlayer;
+
+})));
+
+},{}],36:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],37:[function(require,module,exports){
 'use strict';var cachedSetTimeout=setTimeout;function createSleepPromise(a,b){var c=b.useCachedSetTimeout,d=c?cachedSetTimeout:setTimeout;return new Promise(function(b){d(b,a)})}function sleep(a){function b(a){return e.then(function(){return a})}var c=1<arguments.length&&void 0!==arguments[1]?arguments[1]:{},d=c.useCachedSetTimeout,e=createSleepPromise(a,{useCachedSetTimeout:d});return b.then=function(){return e.then.apply(e,arguments)},b.catch=Promise.resolve().catch,b}module.exports=sleep;
 
-},{}],8:[function(require,module,exports){
-function init2DInt8Array(x, y) {
-    const a = [];
+},{}],38:[function(require,module,exports){
+/**
+ * @license tga-js 1.1.0
+ * Copyright (c) 2013-2019 Vincent Thibault, Inc.
+ * License: MIT
+ */
+var e,a;e=this,a=function(){"use strict";function e(e,a){for(var t=0;t<a.length;t++){var r=a[t];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(e,r.key,r)}}return function(){function a(){!function(e,a){if(!(e instanceof a))throw new TypeError("Cannot call a class as a function")}(this,a)}var t,r,i;return t=a,(r=[{key:"_checkHeader",value:function(){var e=this.header;if(0===e.imageType)throw Error("No data");if(e.hasColorMap){if(e.colorMapLength>256||24!==e.colorMapDepth||1!==e.colorMapType)throw Error("Invalid colormap for indexed type")}else if(e.colorMapType)throw Error("Why does the image contain a palette ?");if(!e.width||!e.height)throw Error("Invalid image size");if(8!==e.pixelDepth&&16!==e.pixelDepth&&24!==e.pixelDepth&&32!==e.pixelDepth)throw Error('Invalid pixel size "'+e.pixelDepth+'"')}},{key:"_decodeRLE",value:function(e,a,t,r){for(var i=new Uint8Array(r),o=new Uint8Array(t),n=0;n<r;){var h=e[a++],s=1+(127&h);if(128&h){for(var g=0;g<t;++g)o[g]=e[a+g];a+=t;for(var l=0;l<s;++l)i.set(o,n),n+=t}else{s*=t;for(var f=0;f<s;++f)i[n+f]=e[a+f];n+=s,a+=s}}return i}},{key:"_getImageData8bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l++){var u=a[l];e[4*(p+r*f)+3]=255,e[4*(p+r*f)+2]=t[3*u+0],e[4*(p+r*f)+1]=t[3*u+1],e[4*(p+r*f)+0]=t[3*u+2]}return e}},{key:"_getImageData16bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=2){var u=a[l+0]|a[l+1]<<8;e[4*(p+r*f)+0]=(31744&u)>>7,e[4*(p+r*f)+1]=(992&u)>>2,e[4*(p+r*f)+2]=(31&u)>>3,e[4*(p+r*f)+3]=32768&u?0:255}return e}},{key:"_getImageData24bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=3)e[4*(p+r*f)+3]=255,e[4*(p+r*f)+2]=a[l+0],e[4*(p+r*f)+1]=a[l+1],e[4*(p+r*f)+0]=a[l+2];return e}},{key:"_getImageData32bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=4)e[4*(p+r*f)+2]=a[l+0],e[4*(p+r*f)+1]=a[l+1],e[4*(p+r*f)+0]=a[l+2],e[4*(p+r*f)+3]=a[l+3];return e}},{key:"_getImageDataGrey8bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l++){var u=a[l];e[4*(p+r*f)+0]=u,e[4*(p+r*f)+1]=u,e[4*(p+r*f)+2]=u,e[4*(p+r*f)+3]=255}return e}},{key:"_getImageDataGrey16bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=2)e[4*(p+r*f)+0]=a[l+0],e[4*(p+r*f)+1]=a[l+0],e[4*(p+r*f)+2]=a[l+0],e[4*(p+r*f)+3]=a[l+1];return e}},{key:"open",value:function(e,a){var t=this,r=new XMLHttpRequest;r.responseType="arraybuffer",r.open("GET",e,!0),r.onload=function(){200===t.status&&(t.load(new Uint8Array(r.response)),a&&a())},r.send(null)}},{key:"load",value:function(e){var a=0;if(e.length<18)throw Error("Not enough data to contain header");var t={idLength:e[a++],colorMapType:e[a++],imageType:e[a++],colorMapIndex:e[a++]|e[a++]<<8,colorMapLength:e[a++]|e[a++]<<8,colorMapDepth:e[a++],offsetX:e[a++]|e[a++]<<8,offsetY:e[a++]|e[a++]<<8,width:e[a++]|e[a++]<<8,height:e[a++]|e[a++]<<8,pixelDepth:e[a++],flags:e[a++]};if(t.hasEncoding=9===t.imageType||10===t.imageType||11===t.imageType,t.hasColorMap=9===t.imageType||1===t.imageType,t.isGreyColor=11===t.imageType||3===t.imageType,this.header=t,this._checkHeader(),(a+=t.idLength)>=e.length)throw Error("No data");if(t.hasColorMap){var r=t.colorMapLength*(t.colorMapDepth>>3);this.palette=e.subarray(a,a+r),a+=r}var i=t.pixelDepth>>3,o=t.width*t.height,n=o*i;t.hasEncoding?this.imageData=this._decodeRLE(e,a,i,n):this.imageData=e.subarray(a,a+(t.hasColorMap?o:n))}},{key:"getImageData",value:function(e){var a,t,r,i,o,n,h,s=this.header,g=s.width,l=s.height,f=s.flags,p=s.pixelDepth,u=s.isGreyColor,c=(48&f)>>4;switch(e||(e=document?document.createElement("canvas").getContext("2d").createImageData(g,l):{width:g,height:l,data:new Uint8ClampedArray(g*l*4)}),2===c||3===c?(i=0,o=1,n=l):(i=l-1,o=-1,n=-1),2===c||0===c?(a=0,t=1,r=g):(a=g-1,t=-1,r=-1),p){case 8:h=u?this._getImageDataGrey8bits:this._getImageData8bits;break;case 16:h=u?this._getImageDataGrey16bits:this._getImageData16bits;break;case 24:h=this._getImageData24bits;break;case 32:h=this._getImageData32bits}return h.call(this,e.data,this.imageData,this.palette,g,i,o,n,a,t,r),e}},{key:"getCanvas",value:function(){var e=this.header,a=e.width,t=e.height,r=document.createElement("canvas"),i=r.getContext("2d"),o=i.createImageData(a,t);return r.width=a,r.height=t,i.putImageData(this.getImageData(o),0,0),r}},{key:"getDataURL",value:function(e){return this.getCanvas().toDataURL(e||"image/png")}}])&&e(t.prototype,r),i&&e(t,i),a}()},"object"==typeof exports&&"undefined"!=typeof module?module.exports=a():"function"==typeof define&&define.amd?define(a):(e=e||self).TgaLoader=a();
 
-    for (let i = 0; i < x; i += 1) {
-        a.push(new Int8Array(y));
-    }
+},{}],39:[function(require,module,exports){
+const Buffer = require('buffer/').Buffer;
+const { Bzip2 } = require('@ledgerhq/compressjs');
 
-    return a;
+// BZ is a magic symbol, h is for huffman and 1 is the level of compression (
+// from 1-9)
+const BZIP_HEADER = Buffer.from('BZh1'.split('').map(c => c.charCodeAt(0)));
+
+function decompress(fileData, fileSize, archiveData, fileSizeCompressed,
+    offset) {
+    const compressed = Buffer.from(
+        archiveData.slice(offset, fileSizeCompressed + offset));
+    const decompressed = Bzip2.decompressFile(
+        Buffer.concat([BZIP_HEADER, compressed]));
+
+    fileData.set(decompressed);
 }
 
-function init2DInt32Array(x, y) {
-    const a = [];
+module.exports.decompress = decompress;
 
-    for (let i = 0; i < x; i += 1) {
-        a.push(new Int32Array(y));
-    }
-
-    return a;
-}
-
-class BZState {
-    constructor() {
-        this.tt = null; // Int32Array
-        this.input = null; // Int8Array
-        this.nextIn = 0;
-        this.availIn = 0;
-        this.totalInLo32 = 0;
-        this.totalInHi32 = 0;
-        this.output = null; // Int8Array
-        this.availOut = 0;
-        this.decompressedSize = 0;
-        this.totalOutLo32 = 0;
-        this.totalOutHi32 = 0;
-        this.stateOutCh = 0; // char
-        this.stateOutLen = 0;
-        this.blockRandomised = false;
-        this.bsBuff = 0;
-        this.bsLive = 0;
-        this.blocksize100k = 0;
-        this.blockNo = 0;
-        this.origPtr = 0;
-        this.tpos = 0;
-        this.k0 = 0;
-        this.nblockUsed = 0;
-        this.nInUse = 0;
-        this.saveNblock = 0;
-
-        this.unzftab = new Int32Array(256);
-        this.cftab = new Int32Array(257);
-        this.inUse = new Int8Array(256); // this was a bool[]
-        this.inUse_16 = new Int8Array(16);
-        this.setToUnseq = new Int8Array(256);
-        this.mtfa = new Int8Array(4096);
-        this.mtfbase = new Int32Array(16);
-        this.selector = new Int8Array(18002);
-        this.selectorMtf = new Int8Array(18002);
-
-        this.len = init2DInt8Array(6, 258);
-        this.limit = init2DInt32Array(6, 258);
-        this.base = init2DInt32Array(6, 258);
-        this.perm = init2DInt32Array(6, 258);
-
-        this.minLens = new Int32Array(6);
-    }
-}
-
-// TODO should we just use functions here instead? it's all static.
-class BZLib {
-    static decompress(out, outSize, input, inSize, offset) {
-        let block = new BZState();
-
-        block.input = input;
-        block.nextIn = offset;
-        block.output = out;
-        block.availOut = 0;
-        block.availIn = inSize;
-        block.decompressedSize = outSize;
-        block.bsLive = 0;
-        block.bsBuff = 0;
-        block.totalInLo32 = 0;
-        block.totalInHi32 = 0;
-        block.totalOutLo32 = 0;
-        block.totalOutHi32 = 0;
-        block.blockNo = 0;
-        BZLib.decompressState(block);
-        outSize -= block.decompressedSize;
-
-        return outSize;
-    }
-
-    static nextHeader(state) {
-        let cStateOutCh = state.stateOutCh;
-        let cStateOutLen = state.stateOutLen;
-        let cNblockUsed = state.nblockUsed;
-        let cK0 = state.k0;
-        let cTt = state.tt;
-        let cTpos = state.tpos;
-        let output = state.output;
-        let csNextOut = state.availOut;
-        let csAvailOut = state.decompressedSize;
-        let asdasdasd = csAvailOut;
-        let sSaveNblockPP = state.saveNblock + 1;
-
-        returnNotr:
-        do {
-            if (cStateOutLen > 0) {
-                do {
-                    if (csAvailOut === 0) {
-                        break returnNotr;
-                    }
-
-                    if (cStateOutLen === 1) {
-                        break;
-                    }
-
-                    output[csNextOut] = cStateOutCh;
-                    cStateOutLen--;
-                    csNextOut++;
-                    csAvailOut--;
-                } while (true);
-
-                if (csAvailOut === 0) {
-                    cStateOutLen = 1;
-                    break;
-                }
-
-                output[csNextOut] = cStateOutCh;
-                csNextOut++;
-                csAvailOut--;
-            }
-
-            let flag = true;
-
-            while (flag) {
-                flag = false;
-
-                if (cNblockUsed === sSaveNblockPP) {
-                    cStateOutLen = 0;
-                    break returnNotr;
-                }
-
-                cStateOutCh = cK0 & 0xff;
-                cTpos = cTt[cTpos];
-                let k1 = cTpos & 0xff;
-                cTpos >>= 8;
-                cNblockUsed++;
-
-                if (k1 !== cK0) {
-                    cK0 = k1;
-
-                    if (csAvailOut === 0) {
-                        cStateOutLen = 1;
-                    } else {
-                        output[csNextOut] = cStateOutCh;
-                        csNextOut++;
-                        csAvailOut--;
-                        flag = true;
-                        continue;
-                    }
-
-                    break returnNotr;
-                }
-
-                if (cNblockUsed !== sSaveNblockPP) {
-                    continue;
-                }
-
-                if (csAvailOut === 0) {
-                    cStateOutLen = 1;
-                    break returnNotr;
-                }
-
-                output[csNextOut] = cStateOutCh;
-                csNextOut++;
-                csAvailOut--;
-                flag = true;
-            }
-
-            cStateOutLen = 2;
-            cTpos = cTt[cTpos];
-            let k2 = cTpos & 0xff;
-            cTpos >>= 8;
-
-            if (++cNblockUsed !== sSaveNblockPP) {
-                if (k2 !== cK0) {
-                    cK0 = k2;
-                } else {
-                    cStateOutLen = 3;
-                    cTpos = cTt[cTpos];
-                    let k3 = cTpos & 0xff;
-                    cTpos >>= 8;
-
-                    if (++cNblockUsed !== sSaveNblockPP) {
-                        if (k3 !== cK0) {
-                            cK0 = k3;
-                        } else {
-                            cTpos = cTt[cTpos];
-                            let byte3 = cTpos & 0xff;
-                            cTpos >>= 8;
-                            cNblockUsed++;
-                            cStateOutLen = (byte3 & 0xff) + 4;
-                            cTpos = cTt[cTpos];
-                            cK0 = cTpos & 0xff;
-                            cTpos >>= 8;
-                            cNblockUsed++;
-                        }
-                    }
-                }
-            }
-        } while (true);
-
-        let i2 = state.totalOutLo32;
-        state.totalOutLo32 += asdasdasd - csAvailOut;
-
-        if (state.totalOutLo32 < i2) {
-            state.totalOutHi32++;
-        }
-
-        state.stateOutCh = cStateOutCh;
-        state.stateOutLen = cStateOutLen;
-        state.nblockUsed = cNblockUsed;
-        state.k0 = cK0;
-        state.tt = cTt;
-        state.tpos = cTpos;
-        state.output = output;
-        state.availOut = csNextOut;
-        state.decompressedSize = csAvailOut;
-    }
-
-    static decompressState(state) {
-        let gMinLen = 0;
-        let gLimit = null;
-        let gBase = null;
-        let gPerm = null;
-
-        state.blocksize100k = 1;
-
-        if (state.tt === null) {
-            state.tt = new Int32Array(state.blocksize100k * 100000);
-        }
-
-        let goingandshit = true;
-
-        while (goingandshit) {
-            let uc = BZLib.getUChar(state);
-
-            if (uc === 23) {
-                return;
-            }
-
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getUChar(state);
-            state.blockNo++;
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getUChar(state);
-            uc = BZLib.getBit(state);
-            state.blockRandomised = uc !== 0;
-
-            if (state.blockRandomised) {
-                console.log('PANIC! RANDOMISED BLOCK!');
-            }
-
-            state.origPtr = 0;
-            uc = BZLib.getUChar(state);
-            state.origPtr = state.origPtr << 8 | uc & 0xff;
-            uc = BZLib.getUChar(state);
-            state.origPtr = state.origPtr << 8 | uc & 0xff;
-            uc = BZLib.getUChar(state);
-            state.origPtr = state.origPtr << 8 | uc & 0xff;
-
-            for (let i = 0; i < 16; i++) {
-                uc = BZLib.getBit(state);
-                state.inUse_16[i] = uc === 1;
-            }
-
-            for (let i = 0; i < 256; i++) {
-                state.inUse[i] = false;
-            }
-
-            for (let i = 0; i < 16; i++) {
-                if (state.inUse_16[i]) {
-                    for (let j = 0; j < 16; j++) {
-                        uc = BZLib.getBit(state);
-                        if (uc === 1) {
-                            state.inUse[i * 16 + j] = true;
-                        }
-                    }
-                }
-            }
-
-            BZLib.makeMaps(state);
-
-            let alphaSize = state.nInUse + 2;
-            let nGroups = BZLib.getBits(3, state);
-            let nSelectors = BZLib.getBits(15, state);
-
-            for (let i = 0; i < nSelectors; i++) {
-                let j = 0;
-
-                do {
-                    uc = BZLib.getBit(state);
-
-                    if (uc === 0) {
-                        break;
-                    }
-
-                    j++;
-                } while (true);
-
-                state.selectorMtf[i] = j & 0xff;
-            }
-
-            let pos = new Int8Array(6);
-
-            for (let v = 0; v < nGroups; v++) {
-                pos[v] = v;
-            }
-
-            for (let i = 0; i < nSelectors; i++) {
-                let v = state.selectorMtf[i];
-                let tmp = pos[v];
-
-                for (; v > 0; v--) {
-                    pos[v] = pos[v - 1];
-                }
-
-                pos[0] = tmp;
-                state.selector[i] = tmp;
-            }
-
-            for (let t = 0; t < nGroups; t++) {
-                let curr = BZLib.getBits(5, state);
-
-                for (let i = 0; i < alphaSize; i++) {
-                    do {
-                        uc = BZLib.getBit(state);
-
-                        if (uc === 0) {
-                            break;
-                        }
-
-                        uc = BZLib.getBit(state);
-
-                        if (uc === 0) {
-                            curr++;
-                        } else {
-                            curr--;
-                        }
-                    } while (true);
-
-                    state.len[t][i] = curr & 0xff;
-                }
-            }
-
-            for (let t = 0; t < nGroups; t++) {
-                let minLen = 32;
-                let maxLen = 0;
-
-                for (let l1 = 0; l1 < alphaSize; l1++) {
-                    if (state.len[t][l1] > maxLen) {
-                        maxLen = state.len[t][l1];
-                    }
-
-                    if (state.len[t][l1] < minLen) {
-                        minLen = state.len[t][l1];
-                    }
-                }
-
-                BZLib.createDecodeTables(state.limit[t], state.base[t], state.perm[t], state.len[t], minLen, maxLen, alphaSize);
-                state.minLens[t] = minLen;
-            }
-
-            let eob = state.nInUse + 1;
-            let groupNo = -1;
-            let groupPos = 0;
-
-            for (let i = 0; i <= 255; i++) {
-                state.unzftab[i] = 0;
-            }
-
-            let kk = 4095; // MTFASIZE-1;
-
-            for (let ii = 15; ii >= 0; ii--) {
-                for (let jj = 15; jj >= 0; jj--) {
-                    state.mtfa[kk] = (ii * 16 + jj) & 0xff;
-                    kk--;
-                }
-
-                state.mtfbase[ii] = kk + 1;
-            }
-
-            let nblock = 0;
-
-            // GETMTFVAL
-            if (groupPos === 0) {
-                groupNo++;
-                groupPos = 50; // BZGSIZE
-                let gSel = state.selector[groupNo];
-                gMinLen = state.minLens[gSel];
-                gLimit = state.limit[gSel];
-                gPerm = state.perm[gSel];
-                gBase = state.base[gSel];
-            }
-
-            groupPos--;
-            let zn = gMinLen;
-            let zvec = 0;
-            let zj = 0;
-
-            for (zvec = BZLib.getBits(zn, state); zvec > gLimit[zn]; zvec = zvec << 1 | zj) {
-                zn++;
-                zj = BZLib.getBit(state);
-            }
-
-            for (let nextSym = gPerm[zvec - gBase[zn]]; nextSym !== eob; ) {
-                if (nextSym === 0 || nextSym === 1) { // BZRUNA, BZRUNB
-                    let es = -1;
-                    let N = 1;
-
-                    do {
-                        if (nextSym === 0) {
-                            es += N;
-                        } else if (nextSym === 1) {
-                            es += 2 * N;
-                        }
-
-                        N *= 2;
-
-                        // GETMTFVAL, y da fuk did they not subroutine this
-                        if (groupPos === 0) {
-                            groupNo++;
-                            groupPos = 50;
-                            let gSel = state.selector[groupNo];
-                            gMinLen = state.minLens[gSel];
-                            gLimit = state.limit[gSel];
-                            gPerm = state.perm[gSel];
-                            gBase = state.base[gSel];
-                        }
-
-                        groupPos--;
-                        let zn_2 = gMinLen;
-                        let zvec_2 = 0;
-                        let zj_2 = 0;
-
-                        for (zvec_2 = BZLib.getBits(zn_2, state); zvec_2 > gLimit[zn_2]; zvec_2 = zvec_2 << 1 | zj_2) {
-                            zn_2++;
-                            zj_2 = BZLib.getBit(state);
-                        }
-
-                        nextSym = gPerm[zvec_2 - gBase[zn_2]];
-                    } while (nextSym === 0 || nextSym === 1);
-
-                    es++;
-                    uc = state.setToUnseq[state.mtfa[state.mtfbase[0]] & 0xff];
-                    state.unzftab[uc & 0xff] += es;
-
-                    for (; es > 0; es--) {
-                        state.tt[nblock] = uc & 0xff;
-                        nblock++;
-                    }
-                } else {
-                    let nn = nextSym - 1;
-
-                    if (nn < 16) { // MTFLSIZE
-                        let pp = state.mtfbase[0];
-                        uc = state.mtfa[pp + nn];
-
-                        for (; nn > 3; nn -= 4) {
-                            let z = pp + nn;
-                            state.mtfa[z] = state.mtfa[z - 1];
-                            state.mtfa[z - 1] = state.mtfa[z - 2];
-                            state.mtfa[z - 2] = state.mtfa[z - 3];
-                            state.mtfa[z - 3] = state.mtfa[z - 4];
-                        }
-
-                        for (; nn > 0; nn--) {
-                            state.mtfa[pp + nn] = state.mtfa[(pp + nn) - 1];
-                        }
-
-                        state.mtfa[pp] = uc;
-                    } else {
-                        let lno = (nn / 16) | 0;
-                        let off = nn % 16;
-                        let pp = state.mtfbase[lno] + off;
-                        uc = state.mtfa[pp];
-
-                        for (; pp > state.mtfbase[lno]; pp--) {
-                            state.mtfa[pp] = state.mtfa[pp - 1];
-                        }
-
-                        state.mtfbase[lno]++;
-
-                        for (; lno > 0; lno--) {
-                            state.mtfbase[lno]--;
-                            state.mtfa[state.mtfbase[lno]] = state.mtfa[(state.mtfbase[lno - 1] + 16) - 1];
-                        }
-
-                        state.mtfbase[0]--;
-                        state.mtfa[state.mtfbase[0]] = uc;
-
-                        if (state.mtfbase[0] === 0) {
-                            kk = 4095; // MTFASIZE - 1
-                            for (let ii = 15; ii >= 0; ii--) {
-                                for (let jj = 15; jj >= 0; jj--) {
-                                    state.mtfa[kk] = state.mtfa[state.mtfbase[ii] + jj];
-                                    kk--;
-                                }
-
-                                state.mtfbase[ii] = kk + 1;
-                            }
-
-                        }
-                    }
-
-                    state.unzftab[state.setToUnseq[uc & 0xff] & 0xff]++;
-                    state.tt[nblock] = state.setToUnseq[uc & 0xff] & 0xff;
-                    nblock++;
-
-                    // GETMTFVAL here we go AGAIN
-                    if (groupPos === 0) {
-                        groupNo++;
-                        groupPos = 50;
-                        let gSel = state.selector[groupNo];
-                        gMinLen = state.minLens[gSel];
-                        gLimit = state.limit[gSel];
-                        gPerm = state.perm[gSel];
-                        gBase = state.base[gSel];
-                    }
-
-                    groupPos--;
-                    let zn_2 = gMinLen;
-                    let zvec_2 = 0;
-                    let zj_2 = 0;
-
-                    for (zvec_2 = BZLib.getBits(zn_2, state); zvec_2 > gLimit[zn_2]; zvec_2 = zvec_2 << 1 | zj_2) {
-                        zn_2++;
-                        zj_2 = BZLib.getBit(state);
-                    }
-
-                    nextSym = gPerm[zvec_2 - gBase[zn_2]];
-                }
-            }
-
-            state.stateOutLen = 0;
-            state.stateOutCh = 0;
-            state.cftab[0] = 0;
-
-            for (let i = 1; i <= 256; i++) {
-                state.cftab[i] = state.unzftab[i - 1];
-            }
-
-            for (let i = 1; i <= 256; i++) {
-                state.cftab[i] += state.cftab[i - 1];
-            }
-
-            for (let i = 0; i < nblock; i++) {
-                uc = (state.tt[i] & 0xff);
-                state.tt[state.cftab[uc & 0xff]] |= i << 8;
-                state.cftab[uc & 0xff]++;
-            }
-
-            state.tpos = state.tt[state.origPtr] >> 8;
-            state.nblockUsed = 0;
-            state.tpos = state.tt[state.tpos];
-            state.k0 = state.tpos & 0xff;
-            state.tpos >>= 8;
-            state.nblockUsed++;
-            state.saveNblock = nblock;
-            BZLib.nextHeader(state);
-            goingandshit = state.nblockUsed === state.saveNblock + 1 && state.stateOutLen === 0;
-        }
-    }
-
-    static getUChar(state) {
-        return BZLib.getBits(8, state) & 0xff;
-    }
-
-    static getBit(state) {
-        return BZLib.getBits(1, state) & 0xff;
-    }
-
-    static getBits(i, state) {
-        let bits = 0;
-
-        do {
-            if (state.bsLive >= i) {
-                let v = state.bsBuff >> state.bsLive - i & (1 << i) - 1;
-                state.bsLive -= i;
-                bits = v;
-                break;
-            }
-
-            state.bsBuff = state.bsBuff << 8 | state.input[state.nextIn] & 0xff;
-            state.bsLive += 8;
-            state.nextIn++;
-            state.availIn--;
-            state.totalInLo32++;
-
-            if (state.totalInLo32 === 0) {
-                state.totalInHi32++;
-            }
-        } while (true);
-
-        return bits;
-    }
-
-    static makeMaps(state) {
-        state.nInUse = 0;
-
-        for (let i = 0; i < 256; i++) {
-            if (state.inUse[i]) {
-                state.setToUnseq[state.nInUse] = i & 0xff;
-                state.nInUse++;
-            }
-        }
-    }
-
-    static createDecodeTables(limit, base, perm, length, minLen, maxLen, alphaSize) {
-        let pp = 0;
-
-        for (let i = minLen; i <= maxLen; i++) {
-            for (let j = 0; j < alphaSize; j++)
-                if (length[j] === i) {
-                    perm[pp] = j;
-                    pp++;
-                }
-        }
-
-        for (let i = 0; i < 23; i++) {
-            base[i] = 0;
-        }
-
-        for (let i = 0; i < alphaSize; i++) {
-            base[length[i] + 1]++;
-        }
-
-        for (let i = 1; i < 23; i++) {
-            base[i] += base[i - 1];
-        }
-
-        for (let i = 0; i < 23; i++) {
-            limit[i] = 0;
-        }
-
-        let vec = 0;
-
-        for (let i = minLen; i <= maxLen; i++) {
-            vec += base[i + 1] - base[i];
-            limit[i] = vec - 1;
-            vec <<= 1;
-        }
-
-        for (let i = minLen + 1; i <= maxLen; i++) {
-            base[i] = (limit[i - 1] + 1 << 1) - base[i];
-        }
-    }
-}
-
-module.exports = BZLib;
-
-},{}],9:[function(require,module,exports){
+},{"@ledgerhq/compressjs":25,"buffer/":29}],40:[function(require,module,exports){
 const C_A = 'a'.charCodeAt(0);
 const C_AT = '@'.charCodeAt(0);
 const C_DOT = '.'.charCodeAt(0);
@@ -2560,7 +11553,7 @@ ChatMessage.charMap = new Uint16Array(ChatMessage.charMap.map(c => {
 
 module.exports = ChatMessage;
 
-},{}],10:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 const Packet = require('./packet');
 
 class ClientStream extends Packet {
@@ -2611,7 +11604,7 @@ class ClientStream extends Packet {
 }
 
 module.exports = ClientStream;
-},{"./packet":28}],11:[function(require,module,exports){
+},{"./packet":57}],42:[function(require,module,exports){
 class GameBuffer {
     // buffer is an Int8Array
     constructor(buffer) {
@@ -2673,7 +11666,7 @@ class GameBuffer {
 }
 
 module.exports = GameBuffer;
-},{}],12:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 const Long = require('long');
 
 class GameCharacter {
@@ -2716,15 +11709,15 @@ class GameCharacter {
 }
 
 module.exports = GameCharacter;
-},{"long":5}],13:[function(require,module,exports){
-const C_OPCODES = require('./opcodes/client');
+},{"long":33}],44:[function(require,module,exports){
+const clientOpcodes = require('./opcodes/client');
 const ChatMessage = require('./chat-message');
 const ClientStream = require('./client-stream');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameShell = require('./game-shell');
 const Long = require('long');
-const S_OPCODES = require('./opcodes/server');
+const serverOpcodes = require('./opcodes/server');
 const Utility = require('./utility');
 const WordFilter = require('./word-filter');
 const sleep = require('sleep-promise');
@@ -2806,7 +11799,7 @@ class GameConnection extends GameShell {
 
             let l = Utility.usernameToHash(u);
 
-            this.clientStream.newPacket(C_OPCODES.SESSION);
+            this.clientStream.newPacket(clientOpcodes.SESSION);
             this.clientStream.putByte(l.shiftRight(16).and(31).toInt());
             this.clientStream.flushPacket();
 
@@ -2826,7 +11819,7 @@ class GameConnection extends GameShell {
             ai[2] = sessId.shiftRight(32).toInt();
             ai[3] = sessId.toInt();
 
-            this.clientStream.newPacket(C_OPCODES.LOGIN);
+            this.clientStream.newPacket(clientOpcodes.LOGIN);
 
             if (reconnecting) {
                 this.clientStream.putByte(1);
@@ -2998,7 +11991,7 @@ class GameConnection extends GameShell {
     closeConnection() {
         if (this.clientStream !== null) {
             try {
-                this.clientStream.newPacket(C_OPCODES.CLOSE_CONNECTION);
+                this.clientStream.newPacket(clientOpcodes.CLOSE_CONNECTION);
                 this.clientStream.flushPacket();
             } catch (e) {
                 console.error(e);
@@ -3046,7 +12039,7 @@ class GameConnection extends GameShell {
 
         if (l - this.packetLastRead > 5000) {
             this.packetLastRead = l;
-            this.clientStream.newPacket(C_OPCODES.PING);
+            this.clientStream.newPacket(clientOpcodes.PING);
             this.clientStream.sendPacket();
         }
 
@@ -3068,21 +12061,21 @@ class GameConnection extends GameShell {
     handlePacket(opcode, ptype, psize) {
         console.log('opcode:' + opcode + ' psize:' + psize);
 
-        if (opcode === S_OPCODES.MESSAGE) {
+        if (opcode === serverOpcodes.MESSAGE) {
             let s = fromCharArray(this.incomingPacket.slice(1, psize));
             this.showServerMessage(s);
         }
 
-        if (opcode === S_OPCODES.CLOSE_CONNECTION) {
+        if (opcode === serverOpcodes.CLOSE_CONNECTION) {
             this.closeConnection();
         }
 
-        if (opcode === S_OPCODES.LOGOUT_DENY) {
+        if (opcode === serverOpcodes.LOGOUT_DENY) {
             this.cantLogout();
             return;
         }
 
-        if (opcode === S_OPCODES.FRIEND_LIST) {
+        if (opcode === serverOpcodes.FRIEND_LIST) {
             this.friendListCount = Utility.getUnsignedByte(this.incomingPacket[1]);
 
             for (let k = 0; k < this.friendListCount; k++) {
@@ -3094,7 +12087,7 @@ class GameConnection extends GameShell {
             return;
         }
 
-        if (opcode === S_OPCODES.FRIEND_STATUS_CHANGE) {
+        if (opcode === serverOpcodes.FRIEND_STATUS_CHANGE) {
             let hash = Utility.getUnsignedLong(this.incomingPacket, 1);
             let online = this.incomingPacket[9] & 0xff;
 
@@ -3122,7 +12115,7 @@ class GameConnection extends GameShell {
             return;
         }
 
-        if (opcode === S_OPCODES.IGNORE_LIST) {
+        if (opcode === serverOpcodes.IGNORE_LIST) {
             this.ignoreListCount = Utility.getUnsignedByte(this.incomingPacket[1]);
 
             for (let i1 = 0; i1 < this.ignoreListCount; i1++) {
@@ -3132,7 +12125,7 @@ class GameConnection extends GameShell {
             return;
         }
 
-        if (opcode === S_OPCODES.PRIVACY_SETTINGS) {
+        if (opcode === serverOpcodes.PRIVACY_SETTINGS) {
             this.settingsBlockChat = this.incomingPacket[1];
             this.settingsBlockPrivate = this.incomingPacket[2];
             this.settingsBlockTrade = this.incomingPacket[3];
@@ -3140,7 +12133,7 @@ class GameConnection extends GameShell {
             return;
         }
 
-        if (opcode === S_OPCODES.FRIEND_MESSAGE) {
+        if (opcode === serverOpcodes.FRIEND_MESSAGE) {
             let from = Utility.getUnsignedLong(this.incomingPacket, 1);
             let k1 = Utility.getUnsignedInt(this.incomingPacket, 9); // is this some sort of message id ?
 
@@ -3184,7 +12177,7 @@ class GameConnection extends GameShell {
     }
 
     sendPrivacySettings(chat, priv, trade, duel) {
-        this.clientStream.newPacket(C_OPCODES.SETTINGS_PRIVACY);
+        this.clientStream.newPacket(clientOpcodes.SETTINGS_PRIVACY);
         this.clientStream.putByte(chat);
         this.clientStream.putByte(priv);
         this.clientStream.putByte(trade);
@@ -3195,7 +12188,7 @@ class GameConnection extends GameShell {
     ignoreAdd(s) {
         let l = Utility.usernameToHash(s);
 
-        this.clientStream.newPacket(C_OPCODES.IGNORE_ADD);
+        this.clientStream.newPacket(clientOpcodes.IGNORE_ADD);
         this.clientStream.putLong(l);
         this.clientStream.sendPacket();
 
@@ -3214,7 +12207,7 @@ class GameConnection extends GameShell {
     }
 
     ignoreRemove(l) {
-        this.clientStream.newPacket(C_OPCODES.IGNORE_REMOVE);
+        this.clientStream.newPacket(clientOpcodes.IGNORE_REMOVE);
         this.clientStream.putLong(l);
         this.clientStream.sendPacket();
 
@@ -3232,7 +12225,7 @@ class GameConnection extends GameShell {
     }
 
     friendAdd(s) {
-        this.clientStream.newPacket(C_OPCODES.FRIEND_ADD);
+        this.clientStream.newPacket(clientOpcodes.FRIEND_ADD);
         this.clientStream.putLong(Utility.usernameToHash(s));
         this.clientStream.sendPacket();
 
@@ -3255,7 +12248,7 @@ class GameConnection extends GameShell {
     }
 
     friendRemove(l) {
-        this.clientStream.newPacket(C_OPCODES.FRIEND_REMOVE);
+        this.clientStream.newPacket(clientOpcodes.FRIEND_REMOVE);
         this.clientStream.putLong(l);
         this.clientStream.sendPacket();
 
@@ -3278,20 +12271,20 @@ class GameConnection extends GameShell {
     }
 
     sendPrivateMessage(u, buff, len) {
-        this.clientStream.newPacket(C_OPCODES.PM);
+        this.clientStream.newPacket(clientOpcodes.PM);
         this.clientStream.putLong(u);
         this.clientStream.putBytes(buff, 0, len);
         this.clientStream.sendPacket();
     }
 
     sendChatMessage(buff, len) {
-        this.clientStream.newPacket(C_OPCODES.CHAT);
+        this.clientStream.newPacket(clientOpcodes.CHAT);
         this.clientStream.putBytes(buff, 0, len);
         this.clientStream.sendPacket();
     }
 
     sendCommandString(s) {
-        this.clientStream.newPacket(C_OPCODES.COMMAND);
+        this.clientStream.newPacket(clientOpcodes.COMMAND);
         this.clientStream.putString(s);
         this.clientStream.sendPacket();
     }
@@ -3307,7 +12300,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./chat-message":9,"./client-stream":10,"./game-shell":16,"./lib/graphics/color":17,"./lib/graphics/font":18,"./opcodes/client":26,"./opcodes/server":27,"./utility":36,"./word-filter":38,"long":5,"sleep-promise":7}],14:[function(require,module,exports){
+},{"./chat-message":40,"./client-stream":41,"./game-shell":47,"./lib/graphics/color":48,"./lib/graphics/font":49,"./opcodes/client":55,"./opcodes/server":56,"./utility":69,"./word-filter":71,"long":33,"sleep-promise":37}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -3876,7 +12869,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":36,"ndarray":6}],15:[function(require,module,exports){
+},{"./utility":69,"ndarray":34}],46:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -5046,18 +14039,18 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":32,"./utility":36}],16:[function(require,module,exports){
+},{"./scene":61,"./utility":69}],47:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const Graphics = require('./lib/graphics/graphics');
-const KEYCODES = require('./lib/keycodes');
 const Socket = require('./lib/net/socket');
 const Surface = require('./surface');
+const TGA = require('tga-js');
 const Utility = require('./utility');
-const VERSION = require('./version');
+const keycodes = require('./lib/keycodes');
+const version = require('./version');
 const zzz = require('sleep-promise');
-const { TGA } = require('./lib/tga');
 
 class GameShell {
     constructor(canvas) {
@@ -5069,7 +14062,8 @@ class GameShell {
             mouseWheel: false,
             resetCompass: false,
             zoomCamera: false,
-            showRoofs: true
+            showRoofs: true,
+            remainingXp: false
         };
 
         this.middleButtonDown = false;
@@ -5165,23 +14159,23 @@ class GameShell {
 
         this.handleKeyPress(chr);
 
-        if (code === KEYCODES.LEFT_ARROW) {
+        if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = true;
-        } else if (code === KEYCODES.RIGHT_ARROW) {
+        } else if (code === keycodes.RIGHT_ARROW) {
             this.keyRight = true;
-        } else if (code === KEYCODES.UP_ARROW) {
+        } else if (code === keycodes.UP_ARROW) {
             this.keyUp = true;
-        } else if (code === KEYCODES.DOWN_ARROW) {
+        } else if (code === keycodes.DOWN_ARROW) {
             this.keyDown = true;
-        } else if (code === KEYCODES.SPACE) {
+        } else if (code === keycodes.SPACE) {
             this.keySpace = true;
-        } else if (code === KEYCODES.F1) {
+        } else if (code === keycodes.F1) {
             this.interlace = !this.interlace;
-        } else if (code === KEYCODES.HOME) {
+        } else if (code === keycodes.HOME) {
             this.keyHome = true;
-        } else if (code === KEYCODES.PAGE_UP) {
+        } else if (code === keycodes.PAGE_UP) {
             this.keyPgUp = true;
-        } else if (code === KEYCODES.PAGE_DOWN) {
+        } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = true;
         }
 
@@ -5204,12 +14198,12 @@ class GameShell {
             }
         }
 
-        if (code === KEYCODES.ENTER) {
+        if (code === keycodes.ENTER) {
             this.inputTextFinal = this.inputTextCurrent;
             this.inputPmFinal = this.inputPmCurrent;
         }
 
-        if (code === KEYCODES.BACKSPACE) {
+        if (code === keycodes.BACKSPACE) {
             if (this.inputTextCurrent.length > 0) {
                 this.inputTextCurrent = this.inputTextCurrent.substring(0, this.inputTextCurrent.length - 1);
             }
@@ -5227,21 +14221,21 @@ class GameShell {
 
         let code = e.keyCode;
 
-        if (code === KEYCODES.LEFT_ARROW) {
+        if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = false;
-        } else if (code === KEYCODES.RIGHT_ARROW) {
+        } else if (code === keycodes.RIGHT_ARROW) {
             this.keyRight = false;
-        } else if (code === KEYCODES.UP_ARROW) {
+        } else if (code === keycodes.UP_ARROW) {
             this.keyUp = false;
-        } else if (code === KEYCODES.DOWN_ARROW) {
+        } else if (code === keycodes.DOWN_ARROW) {
             this.keyDown = false;
-        } else if (code === KEYCODES.SPACE) {
+        } else if (code === keycodes.SPACE) {
             this.keySpace = false;
-        } else if (code === KEYCODES.HOME) {
+        } else if (code === keycodes.HOME) {
             this.keyHome = false;
-        } else if (code === KEYCODES.PAGE_UP) {
+        } else if (code === keycodes.PAGE_UP) {
             this.keyPgUp = false;
-        } else if (code === KEYCODES.PAGE_DOWN) {
+        } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = false;
         }
 
@@ -5448,7 +14442,7 @@ class GameShell {
             this.imageLogo = this.createImage(logo);
         }
 
-        buff = await this.readDataFile(`fonts${VERSION.FONTS}.jag`, 'Game fonts', 5);
+        buff = await this.readDataFile(`fonts${version.FONTS}.jag`, 'Game fonts', 5);
 
         if (buff !== null) {
             Surface.createFont(Utility.loadData('h11p.jf', 0, buff), 0);
@@ -5546,7 +14540,7 @@ class GameShell {
     createImage(buff) {
         const tgaImage = new TGA();
 
-        tgaImage.load(buff.buffer);
+        tgaImage.load(new Uint8Array(buff.buffer));
 
         const canvas = tgaImage.getCanvas();
         const ctx = canvas.getContext('2d');
@@ -5617,7 +14611,7 @@ GameShell.charMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456
 
 module.exports = GameShell;
 
-},{"./bzlib":8,"./lib/graphics/color":17,"./lib/graphics/font":18,"./lib/graphics/graphics":19,"./lib/keycodes":20,"./lib/net/socket":22,"./lib/tga":24,"./surface":35,"./utility":36,"./version":37,"sleep-promise":7}],17:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":48,"./lib/graphics/font":49,"./lib/graphics/graphics":50,"./lib/keycodes":51,"./lib/net/socket":53,"./surface":63,"./utility":69,"./version":70,"sleep-promise":37,"tga-js":38}],48:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -5671,7 +14665,8 @@ Color.blue = new Color(0, 0, 255);
 Color.BLUE = Color.blue;
 
 module.exports = Color;
-},{}],18:[function(require,module,exports){
+
+},{}],49:[function(require,module,exports){
 class Font {
     constructor(name, type, size) {
         this.name = name;
@@ -5695,10 +14690,7 @@ class Font {
 }
 
 module.exports = Font;
-},{}],19:[function(require,module,exports){
-const Font = require('./font');
-const Color = require('./color');
-
+},{}],50:[function(require,module,exports){
 class Graphics {
     constructor(canvas) {
         this.canvas = canvas;
@@ -5740,7 +14732,8 @@ class Graphics {
 }
 
 module.exports = Graphics;
-},{"./color":17,"./font":18}],20:[function(require,module,exports){
+
+},{}],51:[function(require,module,exports){
 module.exports={
    "0": 48,
    "1": 49,
@@ -5842,7 +14835,7 @@ module.exports={
    "CLOSE_BRAKET": 221,
    "SINGLE_QUOTE": 222
 }
-},{}],21:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 // a quick shim for downloading files
 
 class FileDownloadStream {
@@ -5890,7 +14883,7 @@ class FileDownloadStream {
 
 module.exports = FileDownloadStream;
 
-},{}],22:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 class Socket {
     constructor(host, port) {
         this.host = host;
@@ -6090,950 +15083,7 @@ class Socket {
 }
 
 module.exports = Socket;
-},{}],23:[function(require,module,exports){
-function PCMPlayer(t){this.init(t)}PCMPlayer.prototype.init=function(t){this.option=Object.assign({},{encoding:"16bitInt",channels:1,sampleRate:8e3,flushingTime:1e3},t),this.samples=new Float32Array,this.flush=this.flush.bind(this),this.interval=setInterval(this.flush,this.option.flushingTime),this.maxValue=this.getMaxValue(),this.typedArray=this.getTypedArray(),this.createContext()},PCMPlayer.prototype.getMaxValue=function(){var t={"8bitInt":128,"16bitInt":32768,"32bitInt":2147483648,"32bitFloat":1};return t[this.option.encoding]?t[this.option.encoding]:t["16bitInt"]},PCMPlayer.prototype.getTypedArray=function(){var t={"8bitInt":Int8Array,"16bitInt":Int16Array,"32bitInt":Int32Array,"32bitFloat":Float32Array};return t[this.option.encoding]?t[this.option.encoding]:t["16bitInt"]},PCMPlayer.prototype.createContext=function(){this.audioCtx=new(window.AudioContext||window.webkitAudioContext),this.gainNode=this.audioCtx.createGain(),this.gainNode.gain.value=1,this.gainNode.connect(this.audioCtx.destination),this.startTime=this.audioCtx.currentTime},PCMPlayer.prototype.isTypedArray=function(t){return t.byteLength&&t.buffer&&t.buffer.constructor==ArrayBuffer},PCMPlayer.prototype.feed=function(t){if(this.isTypedArray(t)){t=this.getFormatedValue(t);var e=new Float32Array(this.samples.length+t.length);e.set(this.samples,0),e.set(t,this.samples.length),this.samples=e}},PCMPlayer.prototype.getFormatedValue=function(t){t=new this.typedArray(t.buffer);var e,i=new Float32Array(t.length);for(e=0;e<t.length;e++)i[e]=t[e]/this.maxValue;return i},PCMPlayer.prototype.volume=function(t){this.gainNode.gain.value=t},PCMPlayer.prototype.destroy=function(){this.interval&&clearInterval(this.interval),this.samples=null,this.audioCtx.close(),this.audioCtx=null},PCMPlayer.prototype.flush=function(){if(this.samples.length){var t,e,i,n,a,s=this.audioCtx.createBufferSource(),r=this.samples.length/this.option.channels,o=this.audioCtx.createBuffer(this.option.channels,r,this.option.sampleRate);for(e=0;e<this.option.channels;e++)for(t=o.getChannelData(e),i=e,a=50,n=0;n<r;n++)t[n]=this.samples[i],n<50&&(t[n]=t[n]*n/50),r-51<=n&&(t[n]=t[n]*a--/50),i+=this.option.channels;this.startTime<this.audioCtx.currentTime&&(this.startTime=this.audioCtx.currentTime),console.log("start vs current "+this.startTime+" vs "+this.audioCtx.currentTime+" duration: "+o.duration),s.buffer=o,s.connect(this.gainNode),s.start(this.startTime),this.startTime+=o.duration,this.samples=new Float32Array}};
-module.exports = PCMPlayer;
-},{}],24:[function(require,module,exports){
-/**
- * @file tgajs - Javascript decoder & (experimental) encoder for TGA files
- * @desc tgajs is a fork from https://github.com/vthibault/jsTGALoader
- * @author Vincent Thibault (Original author)
- * @author Lukas Schmitt
- * @version 1.0.0
- */
-
-/* Copyright (c) 2013, Vincent Thibault. All rights reserved.
-
- Redistribution and use in source and binary forms, with or without modification,
- are permitted provided that the following conditions are met:
-
- * Redistributions of source code must retain the above copyright notice, this
- list of conditions and the following disclaimer.
- * Redistributions in binary form must reproduce the above copyright notice,
- this list of conditions and the following disclaimer in the documentation
- and/or other materials provided with the distribution.
-
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
-(function (_global) {
-  'use strict';
-
-  /**
-   * @var {object} TGA type constants
-   */
-  Targa.Type = {
-    NO_DATA: 0,
-    INDEXED: 1,
-    RGB: 2,
-    GREY: 3,
-    RLE_INDEXED: 9,
-    RLE_RGB: 10,
-    RLE_GREY: 11
-  };
-
-  /**
-   * @var {object} TGA origin constants
-   */
-  Targa.Origin = {
-    BOTTOM_LEFT: 0x00,
-    BOTTOM_RIGHT: 0x01,
-    TOP_LEFT: 0x02,
-    TOP_RIGHT: 0x03,
-    SHIFT: 0x04,
-    MASK: 0x30,
-    ALPHA: 0x08
-  };
-
-  Targa.HEADER_SIZE = 18;
-  Targa.FOOTER_SIZE = 26;
-  Targa.LITTLE_ENDIAN = true;
-  Targa.RLE_BIT = 0x80;
-  Targa.RLE_MASK = 0x7f;
-  Targa.RLE_PACKET = 1;
-  Targa.RAW_PACKET = 2;
-  Targa.SIGNATURE = "TRUEVISION-XFILE.\0";
-
-  /**
-   * TGA Namespace
-   * @constructor
-   */
-  function Targa() {
-    if (arguments.length == 1) {
-      var h = arguments[0];
-
-      this.header = createHeader(h);
-      setHeaderBooleans(this.header);
-      checkHeader(this.header);
-    }
-  }
-
-  /**
-   * Sets header or default values
-   * @param header header
-   * @returns {Object}
-   */
-  function createHeader(header) {
-    return {
-      /* 0x00  BYTE */  idLength: defaultFor(header.idLength, 0),
-      /* 0x01  BYTE */  colorMapType: defaultFor(header.colorMapType, 0),
-      /* 0x02  BYTE */  imageType: defaultFor(header.imageType, Targa.Type.RGB),
-      /* 0x03  WORD */  colorMapIndex: defaultFor(header.colorMapIndex, 0),
-      /* 0x05  WORD */  colorMapLength: defaultFor(header.colorMapLength, 0),
-      /* 0x07  BYTE */  colorMapDepth: defaultFor(header.colorMapDepth, 0),
-      /* 0x08  WORD */  offsetX: defaultFor(header.offsetX, 0),
-      /* 0x0a  WORD */  offsetY: defaultFor(header.offsetY, 0),
-      /* 0x0c  WORD */  width: defaultFor(header.width, 0),
-      /* 0x0e  WORD */  height: defaultFor(header.height, 0),
-      /* 0x10  BYTE */  pixelDepth: defaultFor(header.pixelDepth,32),
-      /* 0x11  BYTE */  flags: defaultFor(header.flags, 8)
-    };
-  }
-
-  function defaultFor(arg, val) { return typeof arg !== 'undefined' ? arg : val; }
-
-  /**
-   * Write footer of TGA file to view
-   * Byte 0-3 - Extension Area Offset, 0 if no Extension Area exists
-   * Byte 4-7 - Developer Directory Offset, 0 if no Developer Area exists
-   * Byte 8-25 - Signature
-   * @param {Uint8Array} footer
-   */
-  function writeFooter(footer) {
-    var signature = Targa.SIGNATURE;
-    var offset = footer.byteLength - signature.length;
-    for (var i = 0; i < signature.length; i++) {
-      footer[offset + i] = signature.charCodeAt(i);
-    }
-  }
-
-  /**
-   * Write header of TGA file to view
-   * @param header
-   * @param view DataView
-   */
-  function writeHeader(header, view) {
-    var littleEndian = Targa.LITTLE_ENDIAN;
-
-    view.setUint8(0x00, header.idLength);
-    view.setUint8(0x01, header.colorMapType);
-    view.setUint8(0x02, header.imageType);
-    view.setUint16(0x03, header.colorMapIndex, littleEndian);
-    view.setUint16(0x05, header.colorMapLength, littleEndian);
-    view.setUint8(0x07, header.colorMapDepth);
-    view.setUint16(0x08, header.offsetX, littleEndian);
-    view.setUint16(0x0a, header.offsetY, littleEndian);
-    view.setUint16(0x0c, header.width, littleEndian);
-    view.setUint16(0x0e, header.height, littleEndian);
-    view.setUint8(0x10, header.pixelDepth);
-    view.setUint8(0x11, header.flags);
-  }
-
-  function readHeader(view) {
-    var littleEndian = Targa.LITTLE_ENDIAN;
-
-    // Not enough data to contain header ?
-    if (view.byteLength  < 0x12) {
-      throw new Error('Targa::load() - Not enough data to contain header');
-    }
-
-    var header = {};
-    header.idLength = view.getUint8(0x00);
-    header.colorMapType = view.getUint8(0x01);
-    header.imageType =  view.getUint8(0x02);
-    header.colorMapIndex = view.getUint16(0x03, littleEndian);
-    header.colorMapLength = view.getUint16(0x05, littleEndian);
-    header.colorMapDepth = view.getUint8(0x07);
-    header.offsetX = view.getUint16(0x08, littleEndian);
-    header.offsetY = view.getUint16(0x0a, littleEndian);
-    header.width = view.getUint16(0x0c, littleEndian);
-    header.height = view.getUint16(0x0e, littleEndian);
-    header.pixelDepth = view.getUint8(0x10);
-    header.flags = view.getUint8(0x11);
-
-    return header;
-  }
-
-  /**
-   * Set additional header booleans
-   * @param header
-   */
-  function setHeaderBooleans(header) {
-    header.hasEncoding = (header.imageType === Targa.Type.RLE_INDEXED || header.imageType === Targa.Type.RLE_RGB || header.imageType === Targa.Type.RLE_GREY);
-    header.hasColorMap = (header.imageType === Targa.Type.RLE_INDEXED || header.imageType === Targa.Type.INDEXED);
-    header.isGreyColor = (header.imageType === Targa.Type.RLE_GREY || header.imageType === Targa.Type.GREY);
-    header.bytePerPixel = header.pixelDepth >> 3;
-    header.origin = (header.flags & Targa.Origin.MASK) >> Targa.Origin.SHIFT;
-    header.alphaBits = header.flags & Targa.Origin.ALPHA;
-  }
-
-  /**
-   * Check the header of TGA file to detect errors
-   *
-   * @param {object} header tga header structure
-   * @throws Error
-   */
-  function checkHeader(header) {
-    // What the need of a file without data ?
-    if (header.imageType === Targa.Type.NO_DATA) {
-      throw new Error('Targa::checkHeader() - No data');
-    }
-
-    // Indexed type
-    if (header.hasColorMap) {
-      if (header.colorMapLength > 256 || header.colorMapType !== 1) {
-        throw new Error('Targa::checkHeader() - Unsupported colormap for indexed type');
-      }
-      if (header.colorMapDepth !== 16 && header.colorMapDepth !== 24  && header.colorMapDepth !== 32) {
-        throw new Error('Targa::checkHeader() - Unsupported colormap depth');
-      }
-    }
-    else {
-      if (header.colorMapType) {
-        throw new Error('Targa::checkHeader() - Why does the image contain a palette ?');
-      }
-    }
-
-    // Check image size
-    if (header.width <= 0 || header.height <= 0) {
-      throw new Error('Targa::checkHeader() - Invalid image size');
-    }
-
-    // Check pixel size
-    if (header.pixelDepth !== 8 &&
-      header.pixelDepth !== 16 &&
-      header.pixelDepth !== 24 &&
-      header.pixelDepth !== 32) {
-      throw new Error('Targa::checkHeader() - Invalid pixel size "' + header.pixelDepth + '"');
-    }
-
-    // Check alpha size
-    if (header.alphaBits !== 0 &&
-        header.alphaBits !== 1 &&
-        header.alphaBits !== 8) {
-      throw new Error('Targa::checkHeader() - Unsuppported alpha size');
-    }
-  }
-
-
-  /**
-   * Decode RLE compression
-   *
-   * @param {Uint8Array} data
-   * @param {number} bytesPerPixel bytes per Pixel
-   * @param {number} outputSize in byte: width * height * pixelSize
-   */
-  function decodeRLE(data, bytesPerPixel, outputSize) {
-    var pos, c, count, i, offset;
-    var pixels, output;
-
-    output = new Uint8Array(outputSize);
-    pixels = new Uint8Array(bytesPerPixel);
-    offset = 0; // offset in data
-    pos = 0; // offset for output
-
-    while (pos < outputSize) {
-      c = data[offset++]; // current byte to check
-      count = (c & Targa.RLE_MASK) + 1; // repetition count of pixels, the lower 7 bits + 1
-
-      // RLE packet, if highest bit is set to 1.
-      if (c & Targa.RLE_BIT) {
-        // Copy pixel values to be repeated to tmp array
-        for (i = 0; i < bytesPerPixel; ++i) {
-          pixels[i] = data[offset++];
-        }
-
-        // Copy pixel values * count to output
-        for (i = 0; i < count; ++i) {
-          output.set(pixels, pos);
-          pos += bytesPerPixel;
-        }
-      }
-
-      // Raw packet (Non-Run-Length Encoded)
-      else {
-        count *= bytesPerPixel;
-        for (i = 0; i < count; ++i) {
-          output[pos++] = data[offset++];
-        }
-      }
-    }
-
-    if (pos > outputSize) {
-      throw new Error("Targa::decodeRLE() - Read bytes: " + pos + " Expected bytes: " + outputSize);
-    }
-
-    return output;
-  }
-
-  /**
-   * Encode ImageData object with RLE compression
-   *
-   * @param header
-   * @param imageData from canvas to compress
-   */
-  function encodeRLE(header, imageData) {
-    var maxRepetitionCount = 128;
-    var i;
-    var data = imageData;
-    var output = []; // output size is unknown
-    var pos = 0; // pos in imageData array
-    var bytesPerPixel = header.pixelDepth >> 3;
-    var offset = 0;
-    var packetType, packetLength, packetHeader;
-    var tgaLength = header.width * header.height * bytesPerPixel;
-    var isSamePixel = function isSamePixel(pos, offset) {
-      for (var i = 0; i < bytesPerPixel; i++) {
-        if (data[pos * bytesPerPixel + i] !== data[offset * bytesPerPixel + i]) {
-          return false;
-        }
-      }
-      return true;
-    };
-    var getPacketType = function(pos) {
-      if (isSamePixel(pos, pos + 1)) {
-        return Targa.RLE_PACKET;
-      }
-      return Targa.RAW_PACKET;
-    };
-
-    while (pos * bytesPerPixel < data.length && pos * bytesPerPixel < tgaLength) {
-      // determine packet type
-      packetType = getPacketType(pos);
-
-      // determine packet length
-      packetLength = 0;
-      if (packetType === Targa.RLE_PACKET) {
-        while (pos + packetLength < data.length
-        && packetLength < maxRepetitionCount
-        && isSamePixel(pos, pos + packetLength)) {
-          packetLength++;
-        }
-      } else { // packetType === Targa.RAW_PACKET
-        while (pos + packetLength < data.length
-        && packetLength < maxRepetitionCount
-        && getPacketType(pos + packetLength) === Targa.RAW_PACKET) {
-          packetLength++;
-        }
-      }
-
-      // write packet header
-      packetHeader = packetLength - 1;
-      if (packetType === Targa.RLE_PACKET) {
-        packetHeader |= Targa.RLE_BIT;
-      }
-      output[offset++] = packetHeader;
-
-      // write rle packet pixel OR raw pixels
-      if (packetType === Targa.RLE_PACKET) {
-        for (i = 0; i < bytesPerPixel; i++) {
-          output[i + offset] = data[i + pos * bytesPerPixel];
-        }
-        offset += bytesPerPixel;
-      } else {
-        for (i = 0; i < bytesPerPixel * packetLength; i++) {
-          output[i + offset] = data[i + pos * bytesPerPixel];
-        }
-        offset += bytesPerPixel * packetLength;
-      }
-      pos += packetLength;
-    }
-
-    return new Uint8Array(output);
-  }
-
-
-  /**
-   * Return a ImageData object from a TGA file (8bits)
-   *
-   * @param {Array} imageData - ImageData to bind
-   * @param {Array} indexes - index to colorMap
-   * @param {Array} colorMap
-   * @param {number} width
-   * @param {number} y_start - start at y pixel.
-   * @param {number} x_start - start at x pixel.
-   * @param {number} y_step  - increment y pixel each time.
-   * @param {number} y_end   - stop at pixel y.
-   * @param {number} x_step  - increment x pixel each time.
-   * @param {number} x_end   - stop at pixel x.
-   * @returns {Array} imageData
-   */
-  function getImageData8bits(imageData, indexes, colorMap, width, y_start, y_step, y_end, x_start, x_step, x_end) {
-    var color, index, offset, i, x, y;
-    var bytePerPixel = this.header.colorMapDepth >> 3;
-
-    for (i = 0, y = y_start; y !== y_end; y += y_step) {
-      for (x = x_start; x !== x_end; x += x_step, i++) {
-        offset = (x + width * y) * 4;
-        index = indexes[i] * bytePerPixel;
-        if (bytePerPixel === 4) {
-          imageData[offset    ] = colorMap[index + 2]; // red
-          imageData[offset + 1] = colorMap[index + 1]; // green
-          imageData[offset + 2] = colorMap[index    ]; // blue
-          imageData[offset + 3] = colorMap[index + 3]; // alpha
-        } else if (bytePerPixel === 3) {
-          imageData[offset    ] = colorMap[index + 2]; // red
-          imageData[offset + 1] = colorMap[index + 1]; // green
-          imageData[offset + 2] = colorMap[index    ]; // blue
-          imageData[offset + 3] = 255; // alpha
-        } else if (bytePerPixel === 2) {
-          color = colorMap[index] | (colorMap[index + 1] << 8);
-          imageData[offset    ] = (color & 0x7C00) >> 7; // red
-          imageData[offset + 1] = (color & 0x03E0) >> 2; // green
-          imageData[offset + 2] = (color & 0x001F) << 3; // blue
-          imageData[offset + 3] = (color & 0x8000) ? 0 : 255; // overlay 0 = opaque and 1 = transparent Discussion at: https://bugzilla.gnome.org/show_bug.cgi?id=683381
-        }
-      }
-    }
-
-    return imageData;
-  }
-
-
-  /**
-   * Return a ImageData object from a TGA file (16bits)
-   *
-   * @param {Array} imageData - ImageData to bind
-   * @param {Array} pixels data
-   * @param {Array} colormap - not used
-   * @param {number} width
-   * @param {number} y_start - start at y pixel.
-   * @param {number} x_start - start at x pixel.
-   * @param {number} y_step  - increment y pixel each time.
-   * @param {number} y_end   - stop at pixel y.
-   * @param {number} x_step  - increment x pixel each time.
-   * @param {number} x_end   - stop at pixel x.
-   * @returns {Array} imageData
-   */
-  function getImageData16bits(imageData, pixels, colormap, width, y_start, y_step, y_end, x_start, x_step, x_end) {
-    var color, offset, i, x, y;
-
-    for (i = 0, y = y_start; y !== y_end; y += y_step) {
-      for (x = x_start; x !== x_end; x += x_step, i += 2) {
-        color = pixels[i] | (pixels[i + 1] << 8);
-        offset = (x + width * y) * 4;
-        imageData[offset    ] = (color & 0x7C00) >> 7; // red
-        imageData[offset + 1] = (color & 0x03E0) >> 2; // green
-        imageData[offset + 2] = (color & 0x001F) << 3; // blue
-        imageData[offset + 3] = (color & 0x8000) ? 0 : 255; // overlay 0 = opaque and 1 = transparent Discussion at: https://bugzilla.gnome.org/show_bug.cgi?id=683381
-      }
-    }
-
-    return imageData;
-  }
-
-
-  /**
-   * Return a ImageData object from a TGA file (24bits)
-   *
-   * @param {Array} imageData - ImageData to bind
-   * @param {Array} pixels data
-   * @param {Array} colormap - not used
-   * @param {number} width
-   * @param {number} y_start - start at y pixel.
-   * @param {number} x_start - start at x pixel.
-   * @param {number} y_step  - increment y pixel each time.
-   * @param {number} y_end   - stop at pixel y.
-   * @param {number} x_step  - increment x pixel each time.
-   * @param {number} x_end   - stop at pixel x.
-   * @returns {Array} imageData
-   */
-  function getImageData24bits(imageData, pixels, colormap, width, y_start, y_step, y_end, x_start, x_step, x_end) {
-    var offset, i, x, y;
-    var bpp = this.header.pixelDepth >> 3;
-
-    for (i = 0, y = y_start; y !== y_end; y += y_step) {
-      for (x = x_start; x !== x_end; x += x_step, i += bpp) {
-        offset = (x + width * y) * 4;
-        imageData[offset + 3] = 255;  // alpha
-        imageData[offset + 2] = pixels[i    ]; // blue
-        imageData[offset + 1] = pixels[i + 1]; // green
-        imageData[offset    ] = pixels[i + 2]; // red
-      }
-    }
-
-    return imageData;
-  }
-
-
-  /**
-   * Return a ImageData object from a TGA file (32bits)
-   *
-   * @param {Array} imageData - ImageData to bind
-   * @param {Array} pixels data from TGA file
-   * @param {Array} colormap - not used
-   * @param {number} width
-   * @param {number} y_start - start at y pixel.
-   * @param {number} x_start - start at x pixel.
-   * @param {number} y_step  - increment y pixel each time.
-   * @param {number} y_end   - stop at pixel y.
-   * @param {number} x_step  - increment x pixel each time.
-   * @param {number} x_end   - stop at pixel x.
-   * @returns {Array} imageData
-   */
-  function getImageData32bits(imageData, pixels, colormap, width, y_start, y_step, y_end, x_start, x_step, x_end) {
-    var i, x, y, offset;
-
-    for (i = 0, y = y_start; y !== y_end; y += y_step) {
-      for (x = x_start; x !== x_end; x += x_step, i += 4) {
-        offset = (x + width * y) * 4;
-        imageData[offset + 2] = pixels[i    ]; // blue
-        imageData[offset + 1] = pixels[i + 1]; // green
-        imageData[offset    ] = pixels[i + 2]; // red
-        imageData[offset + 3] = pixels[i + 3]; // alpha
-      }
-    }
-
-    return imageData;
-  }
-
-  /**
-   * Return a ImageData object from a TGA file (32bits). Uses pre multiplied alpha values
-   *
-   * @param {Array} imageData - ImageData to bind
-   * @param {Array} pixels data from TGA file
-   * @param {Array} colormap - not used
-   * @param {number} width
-   * @param {number} y_start - start at y pixel.
-   * @param {number} x_start - start at x pixel.
-   * @param {number} y_step  - increment y pixel each time.
-   * @param {number} y_end   - stop at pixel y.
-   * @param {number} x_step  - increment x pixel each time.
-   * @param {number} x_end   - stop at pixel x.
-   * @returns {Array} imageData
-   */
-  function getImageData32bitsPre(imageData, pixels, colormap, width, y_start, y_step, y_end, x_start, x_step, x_end) {
-    var i, x, y, offset, alpha;
-
-    for (i = 0, y = y_start; y !== y_end; y += y_step) {
-      for (x = x_start; x !== x_end; x += x_step, i += 4) {
-        offset = (x + width * y) * 4;
-        alpha = pixels[i + 3] * 255; // TODO needs testing
-        imageData[offset + 2] = pixels[i    ] / alpha; // blue
-        imageData[offset + 1] = pixels[i + 1] / alpha; // green
-        imageData[offset    ] = pixels[i + 2] / alpha; // red
-        imageData[offset + 3] = pixels[i + 3]; // alpha
-      }
-    }
-
-    return imageData;
-  }
-
-
-  /**
-   * Return a ImageData object from a TGA file (8bits grey)
-   *
-   * @param {Array} imageData - ImageData to bind
-   * @param {Array} pixels data
-   * @param {Array} colormap - not used
-   * @param {number} width
-   * @param {number} y_start - start at y pixel.
-   * @param {number} x_start - start at x pixel.
-   * @param {number} y_step  - increment y pixel each time.
-   * @param {number} y_end   - stop at pixel y.
-   * @param {number} x_step  - increment x pixel each time.
-   * @param {number} x_end   - stop at pixel x.
-   * @returns {Array} imageData
-   */
-  function getImageDataGrey8bits(imageData, pixels, colormap, width, y_start, y_step, y_end, x_start, x_step, x_end) {
-    var color, offset, i, x, y;
-
-    for (i = 0, y = y_start; y !== y_end; y += y_step) {
-      for (x = x_start; x !== x_end; x += x_step, i++) {
-        color = pixels[i];
-        offset = (x + width * y) * 4;
-        imageData[offset    ] = color; // red
-        imageData[offset + 1] = color; // green
-        imageData[offset + 2] = color; // blue
-        imageData[offset + 3] = 255;   // alpha
-      }
-    }
-
-    return imageData;
-  }
-
-
-  /**
-   * Return a ImageData object from a TGA file (16bits grey) 8 Bit RGB and 8 Bit Alpha
-   *
-   * @param {Array} imageData - ImageData to bind
-   * @param {Array} pixels data
-   * @param {Array} colormap - not used
-   * @param {number} width
-   * @param {number} y_start - start at y pixel.
-   * @param {number} x_start - start at x pixel.
-   * @param {number} y_step  - increment y pixel each time.
-   * @param {number} y_end   - stop at pixel y.
-   * @param {number} x_step  - increment x pixel each time.
-   * @param {number} x_end   - stop at pixel x.
-   * @returns {Array} imageData
-   */
-  function getImageDataGrey16bits(imageData, pixels, colormap, width, y_start, y_step, y_end, x_start, x_step, x_end) {
-    var color, offset, i, x, y;
-
-    for (i = 0, y = y_start; y !== y_end; y += y_step) {
-      for (x = x_start; x !== x_end; x += x_step, i += 2) {
-        color = pixels[i];
-        offset = (x + width * y) * 4;
-        imageData[offset] = color;
-        imageData[offset + 1] = color;
-        imageData[offset + 2] = color;
-        imageData[offset + 3] = pixels[i + 1];
-      }
-    }
-
-    return imageData;
-  }
-
-
-  /**
-   * Open a targa file using XHR, be aware with Cross Domain files...
-   *
-   * @param {string} path - Path of the filename to load
-   * @param {function} callback - callback to trigger when the file is loaded
-   */
-  Targa.prototype.open = function targaOpen(path, callback) {
-    var req, tga = this;
-    req = new XMLHttpRequest();
-    req.open('GET', path, true);
-    req.responseType = 'arraybuffer';
-    req.onload = function () {
-      if (this.status === 200) {
-        tga.arrayBuffer = req.response;
-        tga.load(tga.arrayBuffer);
-        if (callback) {
-          callback.call(tga);
-        }
-      }
-    };
-    req.send(null);
-  };
-
-
-  function readFooter(view) {
-    var offset = view.byteLength - Targa.FOOTER_SIZE;
-    var signature = Targa.SIGNATURE;
-
-    var footer = {};
-
-    var signatureArray = new Uint8Array(view.buffer, offset + 0x08, signature.length);
-    var str = String.fromCharCode.apply(null, signatureArray);
-
-    if (!isSignatureValid(str)) {
-      footer.hasFooter = false;
-      return footer;
-    }
-
-    footer.hasFooter = true;
-    footer.extensionOffset = view.getUint32(offset, Targa.LITTLE_ENDIAN);
-    footer.developerOffset = view.getUint32(offset + 0x04, Targa.LITTLE_ENDIAN);
-    footer.hasExtensionArea = footer.extensionOffset !== 0;
-    footer.hasDeveloperArea = footer.developerOffset !== 0;
-
-    if (footer.extensionOffset) {
-      footer.attributeType = view.getUint8(footer.extensionOffset + 494);
-    }
-
-    return footer;
-  }
-
-  function isSignatureValid(str) {
-    var signature = Targa.SIGNATURE;
-
-    for (var i = 0; i < signature.length; i++) {
-      if (str.charCodeAt(i) !== signature.charCodeAt(i)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  /**
-   * Load and parse a TGA file
-   *
-   * @param {ArrayBuffer} data - TGA file buffer array
-   */
-  Targa.prototype.load = function targaLoad(data) {
-    var dataView = new DataView(data);
-
-    this.headerData = new Uint8Array(data, 0, Targa.HEADER_SIZE);
-
-    this.header = readHeader(dataView); // Parse Header
-    setHeaderBooleans(this.header);
-    checkHeader(this.header); // Check if a valid TGA file (or if we can load it)
-
-    var offset = Targa.HEADER_SIZE;
-    // Move to data
-    offset += this.header.idLength;
-    if (offset >= data.byteLength) {
-      throw new Error('Targa::load() - No data');
-    }
-
-    // Read palette
-    if (this.header.hasColorMap) {
-      var colorMapSize = this.header.colorMapLength * (this.header.colorMapDepth >> 3);
-      this.palette = new Uint8Array(data, offset, colorMapSize);
-      offset += colorMapSize;
-    }
-
-    var bytesPerPixel = this.header.pixelDepth >> 3;
-    var imageSize = this.header.width * this.header.height;
-    var pixelTotal = imageSize * bytesPerPixel;
-
-    if (this.header.hasEncoding) { // RLE encoded
-      var RLELength = data.byteLength - offset - Targa.FOOTER_SIZE;
-      var RLEData = new Uint8Array(data, offset, RLELength);
-      this.imageData = decodeRLE(RLEData, bytesPerPixel, pixelTotal);
-    } else { // RAW pixels
-      this.imageData = new Uint8Array(data, offset, this.header.hasColorMap ? imageSize : pixelTotal);
-    }
-    
-    this.footer = readFooter(dataView);
-
-    if (this.header.alphaBits !== 0  || this.footer.hasExtensionArea && (this.footer.attributeType === 3 || this.footer.attributeType === 4)) {
-      this.footer.usesAlpha = true;
-    }
-  };
-
-
-  /**
-   * Return a ImageData object from a TGA file
-   *
-   * @param {object} imageData - Optional ImageData to work with
-   * @returns {object} imageData
-   */
-  Targa.prototype.getImageData = function targaGetImageData(imageData) {
-    var width = this.header.width;
-    var height = this.header.height;
-    var origin = (this.header.flags & Targa.Origin.MASK) >> Targa.Origin.SHIFT;
-    var x_start, x_step, x_end, y_start, y_step, y_end;
-    var getImageData;
-
-    // Create an imageData
-    if (!imageData) {
-      if (document) {
-        imageData = document.createElement('canvas').getContext('2d').createImageData(width, height);
-      }
-      // In Thread context ?
-      else {
-        imageData = {
-          width: width,
-          height: height,
-          data: new Uint8ClampedArray(width * height * 4)
-        };
-      }
-    }
-
-    if (origin === Targa.Origin.TOP_LEFT || origin === Targa.Origin.TOP_RIGHT) {
-      y_start = 0;
-      y_step = 1;
-      y_end = height;
-    }
-    else {
-      y_start = height - 1;
-      y_step = -1;
-      y_end = -1;
-    }
-
-    if (origin === Targa.Origin.TOP_LEFT || origin === Targa.Origin.BOTTOM_LEFT) {
-      x_start = 0;
-      x_step = 1;
-      x_end = width;
-    }
-    else {
-      x_start = width - 1;
-      x_step = -1;
-      x_end = -1;
-    }
-
-    // TODO: use this.header.offsetX and this.header.offsetY ?
-
-    switch (this.header.pixelDepth) {
-      case 8:
-        getImageData = this.header.isGreyColor ? getImageDataGrey8bits : getImageData8bits;
-        break;
-
-      case 16:
-        getImageData = this.header.isGreyColor ? getImageDataGrey16bits : getImageData16bits;
-        break;
-
-      case 24:
-        getImageData = getImageData24bits;
-        break;
-
-      case 32:
-        if (this.footer.hasExtensionArea) {
-          if (this.footer.attributeType === 3) { // straight alpha
-            getImageData = getImageData32bits;
-          } else if (this.footer.attributeType === 4) { // pre multiplied alpha
-            getImageData = getImageData32bitsPre;
-          } else { // ignore alpha values if attributeType set to 0, 1, 2
-            getImageData = getImageData24bits;
-          }
-        } else {
-          if (this.header.alphaBits !== 0) {
-            getImageData = getImageData32bits;
-          } else { // 32 bits Depth, but alpha Bits set to 0
-            getImageData = getImageData24bits;
-          }
-        }
-
-        break;
-    }
-
-    getImageData.call(this, imageData.data, this.imageData, this.palette, width, y_start, y_step, y_end, x_start, x_step, x_end);
-    return imageData;
-  };
-
-  /** (Experimental)
-   *  Encodes imageData into TGA format
-   *  Only TGA True Color 32 bit with optional RLE encoding is supported for now
-   * @param imageData
-   */
-  Targa.prototype.setImageData = function targaSetImageData(imageData) {
-
-    if (!imageData) {
-      throw new Error('Targa::setImageData() - imageData argument missing');
-    }
-
-    var width = this.header.width;
-    var height = this.header.height;
-    var expectedLength = width * height * (this.header.pixelDepth  >> 3);
-    var origin = (this.header.flags & Targa.Origin.MASK) >> Targa.Origin.SHIFT;
-    var x_start, x_step, x_end, y_start, y_step, y_end;
-
-    if (origin === Targa.Origin.TOP_LEFT || origin === Targa.Origin.TOP_RIGHT) {
-      y_start = 0; // start bottom, step upward
-      y_step = 1;
-      y_end = height;
-    } else {
-      y_start = height - 1; // start at top, step downward
-      y_step = -1;
-      y_end = -1;
-    }
-
-    if (origin === Targa.Origin.TOP_LEFT || origin === Targa.Origin.BOTTOM_LEFT) {
-      x_start = 0; // start left, step right
-      x_step = 1;
-      x_end = width;
-    } else {
-      x_start = width - 1; // start right, step left
-      x_step = -1;
-      x_end = -1;
-    }
-
-    if (!this.imageData) {
-      this.imageData = new Uint8Array(expectedLength);
-    }
-
-    // start top left if origin is bottom left
-    // swapping order of first two arguments does the trick for writing
-    // this converts canvas data to internal tga representation
-    // this.imageData contains tga data
-    getImageData32bits(this.imageData, imageData.data, this.palette, width, y_start, y_step, y_end, x_start, x_step, x_end);
-
-    var data = this.imageData;
-
-    if (this.header.hasEncoding) {
-      data = encodeRLE(this.header, data);
-    }
-
-    var bufferSize = Targa.HEADER_SIZE + data.length + Targa.FOOTER_SIZE;
-    var buffer = new ArrayBuffer(bufferSize);
-
-    this.arrayBuffer = buffer;
-    // create array, useful for inspecting data while debugging
-    this.headerData = new Uint8Array(buffer, 0, Targa.HEADER_SIZE);
-    this.RLEData = new Uint8Array(buffer, Targa.HEADER_SIZE, data.length);
-    this.footerData = new Uint8Array(buffer, Targa.HEADER_SIZE + data.length, Targa.FOOTER_SIZE);
-
-    var headerView = new DataView(this.headerData.buffer);
-    writeHeader(this.header, headerView);
-    this.RLEData.set(data);
-    writeFooter(this.footerData);
-  };
-
-  /**
-   * Return a canvas with the TGA render on it
-   *
-   * @returns {object} CanvasElement
-   */
-  Targa.prototype.getCanvas = function targaGetCanvas() {
-    var canvas, ctx, imageData;
-
-    canvas = document.createElement('canvas');
-    ctx = canvas.getContext('2d');
-    imageData = ctx.createImageData(this.header.width, this.header.height);
-
-    canvas.width = this.header.width;
-    canvas.height = this.header.height;
-
-    ctx.putImageData(this.getImageData(imageData), 0, 0);
-
-    return canvas;
-  };
-
-
-  /**
-   * Return a dataURI of the TGA file
-   *
-   * @param {string} type - Optional image content-type to output (default: image/png)
-   * @returns {string} url
-   */
-  Targa.prototype.getDataURL = function targaGetDatURL(type) {
-    return this.getCanvas().toDataURL(type || 'image/png');
-  };
-
-  /**
-   * Return a objectURL of the TGA file
-   * The url can be used in the download attribute of a link
-   * @returns {string} url
-   */
-  Targa.prototype.getBlobURL = function targetGetBlobURL() {
-    if (!this.arrayBuffer) {
-      throw new Error('Targa::getBlobURL() - No data available for blob');
-    }
-    var blob = new Blob([this.arrayBuffer], { type: "image/x-tga" });
-    return URL.createObjectURL(blob);
-  };
-
-
-  // Find Context
-  var shim = {};
-  if (typeof(exports) === 'undefined') {
-    if (typeof(define) === 'function' && typeof(define.amd) === 'object' && define.amd) {
-      define(function () {
-        return Targa;
-      });
-    } else {
-      // Browser
-      shim.exports = typeof(window) !== 'undefined' ? window : _global;
-    }
-  }
-  else {
-    // Commonjs
-    shim.exports = exports;
-  }
-
-
-  // Export
-  if (shim.exports) {
-    shim.exports.TGA = Targa;
-  }
-
-})(this);
-
-},{}],25:[function(require,module,exports){
-const clientOpcodes = require('./opcodes/client');
+},{}],54:[function(require,module,exports){
 const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -7044,15 +15094,17 @@ const GameData = require('./game-data');
 const GameModel = require('./game-model');
 const Long = require('long');
 const Panel = require('./panel');
-const serverOpcodes = require('./opcodes/server');
 const Scene = require('./scene');
 const StreamAudioPlayer = require('./stream-audio-player');
 const Surface = require('./surface');
-const SurfaceSprite = require('./surface-sprite');
+//const SurfaceSprite = require('./surface-sprite');
 const Utility = require('./utility');
-const VERSION = require('./version');
 const WordFilter = require('./word-filter');
 const World = require('./world');
+const applyUIComponents = require('./ui');
+const clientOpcodes = require('./opcodes/client');
+const serverOpcodes = require('./opcodes/server');
+const version = require('./version');
 
 const ZOOM_MIN = 450;
 const ZOOM_MAX = 1250;
@@ -7080,6 +15132,8 @@ class mudclient extends GameConnection {
     constructor(canvas) {
         super(canvas);
 
+        applyUIComponents(this);
+
         this.localRegionX = 0;
         this.localRegionY = 0;
         this.controlTextListChat = 0;
@@ -7093,18 +15147,15 @@ class mudclient extends GameConnection {
         this.uiTabSocialSubTab = 0;
         this.privateMessageTarget = new Long(0);
         this.controlListQuest = 0;
-        this.uiTabPlayerInfoSubTab = 0;
         this.controlListMagic = 0;
         this.tabMagicPrayer = 0;
         this.packetErrorCount = 0;
         this.mouseButtonDownTime = 0;
         this.mouseButtonItemCountIncrement = 0;
-        this.anInt659 = 0;
-        this.anInt660 = 0;
+        this.animationIndex = 0;
         this.cameraRotationX = 0;
         this.scene = null;
         this.loginScreen = 0;
-        this.showDialogReportAbuseStep = 0;
         this.tradeConfirmAccepted = false;
         this.audioPlayer = null;
         this.appearanceHeadType = 0;
@@ -7113,7 +15164,6 @@ class mudclient extends GameConnection {
         this.anInt707 = 0;
         this.deathScreenTimeout = 0;
         this.cameraRotationY = 0;
-        this.combatStyle = 0;
         this.welcomeUnreadMessages = 0;
         this.controlButtonAppearanceHead1 = 0;
         this.controlButtonAppearanceHead2 = 0;
@@ -7138,13 +15188,6 @@ class mudclient extends GameConnection {
         this.regionY = 0;
         this.welcomScreenAlreadyShown = false;
         this.mouseButtonClick = 0;
-        this.questName = [
-            'Black knight\'s fortress', 'Cook\'s assistant', 'Demon slayer', 'Doric\'s quest', 'The restless ghost', 'Goblin diplomacy', 'Ernest the chicken', 'Imp catcher', 'Pirate\'s treasure', 'Prince Ali rescue',
-            'Romeo & Juliet', 'Sheep shearer', 'Shield of Arrav', 'The knight\'s sword', 'Vampire slayer', 'Witch\'s potion', 'Dragon slayer', 'Witch\'s house (members)', 'Lost city (members)', 'Hero\'s quest (members)',
-            'Druidic ritual (members)', 'Merlin\'s crystal (members)', 'Scorpion catcher (members)', 'Family crest (members)', 'Tribal totem (members)', 'Fishing contest (members)', 'Monk\'s friend (members)', 'Temple of Ikov (members)', 'Clock tower (members)', 'The Holy Grail (members)',
-            'Fight Arena (members)', 'Tree Gnome Village (members)', 'The Hazeel Cult (members)', 'Sheep Herder (members)', 'Plague City (members)', 'Sea Slug (members)', 'Waterfall quest (members)', 'Biohazard (members)', 'Jungle potion (members)', 'Grand tree (members)',
-            'Shilo village (members)', 'Underground pass (members)', 'Observatory quest (members)', 'Tourist trap (members)', 'Watchtower (members)', 'Dwarf Cannon (members)', 'Murder Mystery (members)', 'Digsite (members)', 'Gertrude\'s Cat (members)', 'Legend\'s Quest (members)'
-        ];
         this.healthBarCount = 0;
         this.spriteMedia = 0;
         this.spriteUtil = 0;
@@ -7201,7 +15244,6 @@ class mudclient extends GameConnection {
         this.combatTimeout = 0;
         this.optionMenuCount = 0;
         this.errorLoadingCodebase = false;
-        this.reportAbuseOffence = 0;
         this.cameraRotationTime = 0;
         this.duelOpponentItemsCount = 0;
         this.duelItemsCount = 0;
@@ -7212,14 +15254,13 @@ class mudclient extends GameConnection {
             0xe000e0, 0x303030, 0x604000, 0x805000, 0xffffff
         ]);
         this.itemsAboveHeadCount = 0;
-        this.showUiWildWarn = 0;
         this.selectedItemInventoryIndex = 0;
         this.soundData = null;
         this.statFatigue = 0;
         this.fatigueSleeping = 0;
         this.tradeRecipientConfirmItemsCount = 0;
         this.tradeRecipientItemsCount = 0;
-        this.showDialogServermessage = false;
+        this.showDialogServerMessage = false;
         this.menuX = 0;
         this.menuY = 0;
         this.menuWidth = 0;
@@ -7236,15 +15277,10 @@ class mudclient extends GameConnection {
         ]);
         this.bankActivePage = 0;
         this.welcomeLastLoggedInDays = 0;
-        this.equipmentStatNames = ['Armour', 'WeaponAim', 'WeaponPower', 'Magic', 'Prayer'];
         this.inventoryItemsCount = 0;
-        this.skillNameShort = [
-            'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic', 'Cooking', 'Woodcut', 'Fletching',
-            'Fishing', 'Firemaking', 'Crafting', 'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
-        ];
         this.duelOpponentNameHash = new Long(0);
-        this.minimapRandom_1 = 0;
-        this.minimapRandom_2 = 0;
+        this.minimapRandom1 = 0;
+        this.minimapRandom2 = 0;
         this.objectCount = 0;
         this.duelOfferItemCount = 0;
         this.objectCount = 0;
@@ -7252,10 +15288,6 @@ class mudclient extends GameConnection {
         this.cameraAutoRotatePlayerX = 0;
         this.cameraAutoRotatePlayerY = 0;
         this.npcCombatModelArray1 = new Int32Array([0, 1, 2, 1, 0, 0, 0, 0]);
-        this.skillNamesLong = [
-            'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic', 'Cooking', 'Woodcutting', 'Fletching',
-            'Fishing', 'Firemaking', 'Crafting', 'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
-        ];
         this.playerCount = 0;
         this.knownPlayerCount = 0;
         this.spriteCount = 0;
@@ -7398,7 +15430,7 @@ class mudclient extends GameConnection {
         this.tradeRecipientConfirmItemCount = new Int32Array(14);
         this.tradeRecipientItems = new Int32Array(14);
         this.tradeRecipientItemCount = new Int32Array(14);
-        this.showDialogServermessage = false;
+        this.showDialogServerMessage = false;
         this.menuItemID = new Int32Array(MENU_MAX_SIZE);
         this.questComplete = new Int8Array(QUEST_COUNT);
         this.wallObjectModel = [];
@@ -7427,7 +15459,6 @@ class mudclient extends GameConnection {
         this.messageHistory = [];
         this.messageHistory.length = 5;
         this.messageHistory.fill(null);
-        this.reportAbuseMute = false;
         this.duelOfferItemId = new Int32Array(8);
         this.duelOfferItemStack = new Int32Array(8);
         this.actionBubbleScale = new Int32Array(50);
@@ -7487,188 +15518,6 @@ class mudclient extends GameConnection {
         if (!this.optionSoundDisabled) {
             this.audioPlayer.writeStream(this.soundData, Utility.getDataFileOffset(s + '.pcm', this.soundData), Utility.getDataFileLength(s + '.pcm', this.soundData));
         }
-    }
-
-    drawDialogReportAbuse() {
-        this.reportAbuseOffence = 0;
-        let y = 135;
-
-        for (let i = 0; i < 12; i++) {
-            if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 12 && this.mouseY < y + 3) {
-                this.reportAbuseOffence = i + 1;
-            }
-
-            y += 14;
-        }
-
-        if (this.mouseButtonClick !== 0 && this.reportAbuseOffence !== 0) {
-            this.mouseButtonClick = 0;
-            this.showDialogReportAbuseStep = 2;
-            this.inputTextCurrent = '';
-            this.inputTextFinal = '';
-            return;
-        }
-
-        y += 15;
-
-        if (this.mouseButtonClick !== 0) {
-            this.mouseButtonClick = 0;
-
-            if (this.mouseX < 56 || this.mouseY < 35 || this.mouseX > 456 || this.mouseY > 325) {
-                this.showDialogReportAbuseStep = 0;
-                return;
-            }
-
-            if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 15 && this.mouseY < y + 5) {
-                this.showDialogReportAbuseStep = 0;
-                return;
-            }
-        }
-
-        this.surface.drawBox(56, 35, 400, 290, 0);
-        this.surface.drawBoxEdge(56, 35, 400, 290, 0xffffff);
-        y = 50;
-        this.surface.drawStringCenter('This form is for reporting players who are breaking our rules', 256, y, 1, 0xffffff);
-        y += 15;
-        this.surface.drawStringCenter('Using it sends a snapshot of the last 60 secs of activity to us', 256, y, 1, 0xffffff);
-        y += 15;
-        this.surface.drawStringCenter('If you misuse this form, you will be banned.', 256, y, 1, 0xff8000);
-        y += 15;
-        y += 10;
-        this.surface.drawStringCenter('First indicate which of our 12 rules is being broken. For a detailed', 256, y, 1, 0xffff00);
-        y += 15;
-        this.surface.drawStringCenter('explanation of each rule please read the manual on our website.', 256, y, 1, 0xffff00);
-        y += 15;
-
-        let textColour = 0;
-
-        if (this.reportAbuseOffence === 1) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('1: Offensive language', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 2) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('2: Item scamming', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 3) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('3: Password scamming', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 4) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('4: Bug abuse', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 5) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('5: Jagex Staff impersonation', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 6) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('6: Account sharing/trading', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 7) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('7: Macroing', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 8) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('8: Mutiple logging in', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 9) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('9: Encouraging others to break rules', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 10) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('10: Misuse of customer support', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 11) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('11: Advertising / website', 256, y, 1, textColour);
-        y += 14;
-
-        if (this.reportAbuseOffence === 12) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, 0xffffff);
-            textColour = 0xff8000;
-        } else {
-            textColour = 0xffffff;
-        }
-
-        this.surface.drawStringCenter('12: Real world item trading', 256, y, 1, textColour);
-        y += 14;
-        y += 15;
-        textColour = 0xffffff;
-
-        if (this.mouseX > 196 && this.mouseX < 316 && this.mouseY > y - 15 && this.mouseY < y + 5) {
-            textColour = 0xffff00;
-        }
-
-        this.surface.drawStringCenter('Click here to cancel', 256, y, 1, textColour);
     }
 
     _walkToActionSource_from8(startX, startY, x1, y1, x2, y2, checkObjects, walkToAction) {
@@ -7755,12 +15604,12 @@ class mudclient extends GameConnection {
         return true;
     }
 
-    drawMinimapEntity(x, y, c) {
-        this.surface.setPixel(x, y, c);
-        this.surface.setPixel(x - 1, y, c);
-        this.surface.setPixel(x + 1, y, c);
-        this.surface.setPixel(x, y - 1, c);
-        this.surface.setPixel(x, y + 1, c);
+    drawMinimapEntity(x, y, colour) {
+        this.surface.setPixel(x, y, colour);
+        this.surface.setPixel(x - 1, y, colour);
+        this.surface.setPixel(x + 1, y, colour);
+        this.surface.setPixel(x, y - 1, colour);
+        this.surface.setPixel(x, y + 1, colour);
     }
 
     updateBankItems() {
@@ -7793,49 +15642,6 @@ class mudclient extends GameConnection {
                 this.bankItemsCount[this.bankItemCount] = 0;
                 this.bankItemCount++;
             }
-        }
-    }
-
-    drawDialogWildWarn() {
-        let y = 97;
-
-        this.surface.drawBox(86, 77, 340, 180, 0);
-        this.surface.drawBoxEdge(86, 77, 340, 180, 0xffffff);
-        this.surface.drawStringCenter('Warning! Proceed with caution', 256, y, 4, 0xff0000);
-        y += 26;
-        this.surface.drawStringCenter('If you go much further north you will enter the', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('wilderness. This a very dangerous area where', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('other players can attack you!', 256, y, 1, 0xffffff);
-        y += 22;
-        this.surface.drawStringCenter('The further north you go the more dangerous it', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('becomes, but the more treasure you will find.', 256, y, 1, 0xffffff);
-        y += 22;
-        this.surface.drawStringCenter('In the wilderness an indicator at the bottom-right', 256, y, 1, 0xffffff);
-        y += 13;
-        this.surface.drawStringCenter('of the screen will show the current level of danger', 256, y, 1, 0xffffff);
-        y += 22;
-
-        let j = 0xffffff;
-
-        if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 && this.mouseX < 331) {
-            j = 0xff0000;
-        }
-
-        this.surface.drawStringCenter('Click here to close window', 256, y, 1, j);
-
-        if (this.mouseButtonClick !== 0) {
-            if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 && this.mouseX < 331) {
-                this.showUiWildWarn = 2;
-            }
-
-            if (this.mouseX < 86 || this.mouseX > 426 || this.mouseY < 77 || this.mouseY > 257) {
-                this.showUiWildWarn = 2;
-            }
-
-            this.mouseButtonClick = 0;
         }
     }
 
@@ -7937,8 +15743,8 @@ class mudclient extends GameConnection {
             this.drawDialogLogout();
         } else if (this.showDialogWelcome) {
             this.drawDialogWelcome();
-        } else if (this.showDialogServermessage) {
-            this.drawDialogServermessage();
+        } else if (this.showDialogServerMessage) {
+            this.drawDialogServerMessage();
         } else if (this.showUiWildWarn === 1) {
             this.drawDialogWildWarn();
         } else if (this.showDialogBank && this.combatTimeout === 0) {
@@ -7970,38 +15776,38 @@ class mudclient extends GameConnection {
 
             this.setActiveUiTab();
 
-            let nomenus = !this.showOptionMenu && !this.showRightClickMenu;
+            const noMenus = !this.showOptionMenu && !this.showRightClickMenu;
 
-            if (nomenus) {
+            if (noMenus) {
                 this.menuItemsCount = 0;
             }
 
-            if (this.showUiTab === 0 && nomenus) {
+            if (this.showUiTab === 0 && noMenus) {
                 this.createRightClickMenu();
             }
 
             if (this.showUiTab === 1) {
-                this.drawUiTabInventory(nomenus);
+                this.drawUiTabInventory(noMenus);
             }
 
             if (this.showUiTab === 2) {
-                this.drawUiTabMinimap(nomenus);
+                this.drawUiTabMinimap(noMenus);
             }
 
             if (this.showUiTab === 3) {
-                this.drawUiTabPlayerInfo(nomenus);
+                this.drawUiTabPlayerInfo(noMenus);
             }
 
             if (this.showUiTab === 4) {
-                this.drawUiTabMagic(nomenus);
+                this.drawUiTabMagic(noMenus);
             }
 
             if (this.showUiTab === 5) {
-                this.drawUiTabSocial(nomenus);
+                this.drawUiTabSocial(noMenus);
             }
 
             if (this.showUiTab === 6) {
-                this.drawUiTabOptions(nomenus);
+                this.drawUiTabOptions(noMenus);
             }
 
             if (!this.showRightClickMenu && !this.showOptionMenu) {
@@ -8334,17 +16140,17 @@ class mudclient extends GameConnection {
 
         if (this.uiTabSocialSubTab === 0) {
             for (let i1 = 0; i1 < this.friendListCount; i1++) {
-                let s = null;
+                let colour = null;
 
                 if (this.friendListOnline[i1] === 255) {
-                    s = '@gre@';
+                    colour = '@gre@';
                 } else if (this.friendListOnline[i1] > 0) {
-                    s = '@yel@';
+                    colour = '@yel@';
                 } else {
-                    s = '@red@';
+                    colour = '@red@';
                 }
 
-                this.panelSocialList.addListEntry(this.controlListSocialPlayers, i1, s + Utility.hashToUsername(this.friendListHashes[i1]) + '~439~@whi@Remove         WWWWWWWWWW');
+                this.panelSocialList.addListEntry(this.controlListSocialPlayers, i1, colour + Utility.hashToUsername(this.friendListHashes[i1]) + '~439~@whi@Remove         WWWWWWWWWW');
             }
 
         }
@@ -9848,8 +17654,8 @@ class mudclient extends GameConnection {
         this.surface.drawBox(uiX, 36, uiWidth, uiHeight, 0);
         this.surface.setBounds(uiX, 36, uiX + uiWidth, 36 + uiHeight);
 
-        let k = 192 + this.minimapRandom_2;
-        let i1 = this.cameraRotation + this.minimapRandom_1 & 0xff;
+        let k = 192 + this.minimapRandom2;
+        let i1 = this.cameraRotation + this.minimapRandom1 & 0xff;
         let k1 = (((this.localPlayer.currentX - 6040) * 3 * k) / 2048) | 0;
         let i3 = (((this.localPlayer.currentY - 6040) * 3 * k) / 2048) | 0;
         let k4 = Scene.sin2048Cache[1024 - i1 * 4 & 0x3ff];
@@ -9942,8 +17748,8 @@ class mudclient extends GameConnection {
         if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
             let c1 = 156;
             let c3 = 152;
-            let l = 192 + this.minimapRandom_2;
-            let j1 = this.cameraRotation + this.minimapRandom_1 & 0xff;
+            let l = 192 + this.minimapRandom2;
+            let j1 = this.cameraRotation + this.minimapRandom1 & 0xff;
             let j = this.surface.width2 - 199;
 
             j += 40;
@@ -10047,8 +17853,8 @@ class mudclient extends GameConnection {
 
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 35) {
             this.showUiTab = 2;
-            this.minimapRandom_1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom_2 = ((Math.random() * 23) | 0) - 11;
+            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
+            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
         }
 
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 35) {
@@ -10073,8 +17879,8 @@ class mudclient extends GameConnection {
 
         if (this.showUiTab !== 0 && this.showUiTab !== 2 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 26) {
             this.showUiTab = 2;
-            this.minimapRandom_1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom_2 = ((Math.random() * 23) | 0) - 11;
+            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
+            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
         }
 
         if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 26) {
@@ -10275,7 +18081,7 @@ class mudclient extends GameConnection {
     }
 
     async loadGameConfig() {
-        let buff = await this.readDataFile('config' + VERSION.CONFIG + '.jag', 'Configuration', 10);
+        let buff = await this.readDataFile('config' + version.CONFIG + '.jag', 'Configuration', 10);
 
         if (buff === null) {
             this.errorLoadingData = true;
@@ -10284,7 +18090,7 @@ class mudclient extends GameConnection {
 
         GameData.loadData(buff, this.members);
 
-        let abyte1 = await this.readDataFile('filter' + VERSION.FILTER + '.jag', 'Chat system', 15);
+        let abyte1 = await this.readDataFile('filter' + version.FILTER + '.jag', 'Chat system', 15);
 
         if (abyte1 === null) {
             this.errorLoadingData = true;
@@ -11374,7 +19180,7 @@ class mudclient extends GameConnection {
     }
 
     async loadMedia() {
-        let media = await this.readDataFile('media' + VERSION.MEDIA + '.jag', '2d graphics', 20);
+        let media = await this.readDataFile('media' + version.MEDIA + '.jag', '2d graphics', 20);
 
         if (media === null) {
             this.errorLoadingData = true;
@@ -11478,18 +19284,9 @@ class mudclient extends GameConnection {
     }
 
     async startGame() {
-        let totalExp = 0;
-
-        for (let level = 0; level < 99; level++) {
-            let level_1 = level + 1;
-            let exp = (level_1 + 300 * Math.pow(2, level_1 / 7)) | 0;
-            totalExp += exp;
-            this.experienceArray[level] = totalExp & 0xffffffc;
-        }
-
         this.port = this.port || 43595;
         this.maxReadTries = 1000;
-        GameConnection.clientVersion = VERSION.CLIENT;
+        GameConnection.clientVersion = version.CLIENT;
 
         await this.loadGameConfig();
 
@@ -11509,7 +19306,8 @@ class mudclient extends GameConnection {
 
         this.setTargetFps(50);
 
-        this.surface = new SurfaceSprite(this.gameWidth, this.gameHeight + 12, 4000, this);
+        this.surface = new Surface(this.gameWidth, this.gameHeight + 12, 4000,
+            this);
         this.surface.mudclientref = this;
         this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
@@ -12351,10 +20149,9 @@ class mudclient extends GameConnection {
 
     async loadSounds() {
         try {
-            this.soundData = await this.readDataFile('sounds' + VERSION.SOUNDS + '.mem', 'Sound effects', 90);
+            this.soundData = await this.readDataFile('sounds' + version.SOUNDS + '.mem', 'Sound effects', 90);
             this.audioPlayer = new StreamAudioPlayer();
         } catch (e) {
-            console.log('Unable to init sounds:' + e.message);
             console.error(e);
         }
     }
@@ -12373,7 +20170,7 @@ class mudclient extends GameConnection {
         let entityBuff = null;
         let indexDat = null;
 
-        entityBuff = await this.readDataFile('entity' + VERSION.ENTITY + '.jag', 'people and monsters', 30);
+        entityBuff = await this.readDataFile('entity' + version.ENTITY + '.jag', 'people and monsters', 30);
 
         if (entityBuff === null) {
             this.errorLoadingData = true;
@@ -12386,7 +20183,7 @@ class mudclient extends GameConnection {
         let indexDatMem = null;
 
         if (this.members) {
-            entityBuffMem = await this.readDataFile('entity' + VERSION.ENTITY + '.mem', 'member graphics', 45);
+            entityBuffMem = await this.readDataFile('entity' + version.ENTITY + '.mem', 'member graphics', 45);
 
             if (entityBuffMem === null) {
                 this.errorLoadingData = true;
@@ -12398,15 +20195,14 @@ class mudclient extends GameConnection {
 
         let frameCount = 0;
 
-        this.anInt659 = 0;
-        this.anInt660 = this.anInt659;
+        this.animationIndex = 0;
 
         label0:
         for (let j = 0; j < GameData.animationCount; j++) {
-            let s = GameData.animationName[j];
+            let animationName = GameData.animationName[j];
 
             for (let k = 0; k < j; k++) {
-                if (GameData.animationName[k].toLowerCase() !== s.toLowerCase()) {
+                if (GameData.animationName[k].toLowerCase() !== animationName.toLowerCase()) {
                     continue;
                 }
 
@@ -12414,54 +20210,54 @@ class mudclient extends GameConnection {
                 continue label0;
             }
 
-            let abyte7 = Utility.loadData(s + '.dat', 0, entityBuff);
-            let abyte4 = indexDat;
+            let animationDat = Utility.loadData(animationName + '.dat', 0, entityBuff);
+            let animationIndex = indexDat;
 
-            if (abyte7 === null && this.members) {
-                abyte7 = Utility.loadData(s + '.dat', 0, entityBuffMem);
-                abyte4 = indexDatMem;
+            if (animationDat === null && this.members) {
+                animationDat = Utility.loadData(animationName + '.dat', 0, entityBuffMem);
+                animationIndex = indexDatMem;
             }
 
-            if (abyte7 !== null) {
-                this.surface.parseSprite(this.anInt660, abyte7, abyte4, 15);
+            if (animationDat !== null) {
+                this.surface.parseSprite(this.animationIndex, animationDat, animationIndex, 15);
 
                 frameCount += 15;
 
                 if (GameData.animationHasA[j] === 1) {
-                    let aDat = Utility.loadData(s + 'a.dat', 0, entityBuff);
-                    let aIndexDat = indexDat;
+                    let aDat = Utility.loadData(animationName + 'a.dat', 0, entityBuff);
+                    let aIndex = indexDat;
 
                     if (aDat === null && this.members) {
-                        aDat = Utility.loadData(s + 'a.dat', 0, entityBuffMem);
-                        aIndexDat = indexDatMem;
+                        aDat = Utility.loadData(animationName + 'a.dat', 0, entityBuffMem);
+                        aIndex = indexDatMem;
                     }
 
-                    this.surface.parseSprite(this.anInt660 + 15, aDat, aIndexDat, 3);
+                    this.surface.parseSprite(this.animationIndex + 15, aDat, aIndex, 3);
                     frameCount += 3;
                 }
 
                 if (GameData.animationHasF[j] === 1) {
-                    let fDat = Utility.loadData(s + 'f.dat', 0, entityBuff);
-                    let fDatIndex = indexDat;
+                    let fDat = Utility.loadData(animationName + 'f.dat', 0, entityBuff);
+                    let fIndex = indexDat;
 
                     if (fDat === null && this.members) {
-                        fDat = Utility.loadData(s + 'f.dat', 0, entityBuffMem);
-                        fDatIndex = indexDatMem;
+                        fDat = Utility.loadData(animationName + 'f.dat', 0, entityBuffMem);
+                        fIndex = indexDatMem;
                     }
 
-                    this.surface.parseSprite(this.anInt660 + 18, fDat, fDatIndex, 9);
+                    this.surface.parseSprite(this.animationIndex + 18, fDat, fIndex, 9);
                     frameCount += 9;
                 }
 
                 if (GameData.animationSomething[j] !== 0) {
-                    for (let l = this.anInt660; l < this.anInt660 + 27; l++) {
+                    for (let l = this.animationIndex; l < this.animationIndex + 27; l++) {
                         this.surface.loadSprite(l);
                     }
                 }
             }
 
-            GameData.animationNumber[j] = this.anInt660;
-            this.anInt660 += 27;
+            GameData.animationNumber[j] = this.animationIndex;
+            this.animationIndex += 27;
         }
 
         console.log('Loaded: ' + frameCount + ' frames of animation');
@@ -12605,13 +20401,9 @@ class mudclient extends GameConnection {
             if (this.loggedIn === 0) {
                 this.surface.loggedIn = false;
                 this.drawLoginScreens();
-            }
-
-            if (this.loggedIn === 1) {
+            } else if (this.loggedIn === 1) {
                 this.surface.loggedIn = true;
                 this.drawGame();
-
-                return;
             }
         } catch (e) {
             // OutOfMemory
@@ -12756,7 +20548,7 @@ class mudclient extends GameConnection {
         GameData.getModelIndex('spellcharge2');
         GameData.getModelIndex('spellcharge3');
 
-        let abyte0 = await this.readDataFile('models' + VERSION.MODELS + '.jag', '3d models', 60);
+        let abyte0 = await this.readDataFile('models' + version.MODELS + '.jag', '3d models', 60);
 
         if (abyte0 === null) {
             this.errorLoadingData = true;
@@ -12778,7 +20570,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogServermessage() {
+    drawDialogServerMessage() {
         let width = 400;
         let height = 100;
 
@@ -12802,11 +20594,11 @@ class mudclient extends GameConnection {
 
         if (this.mouseButtonClick === 1) {
             if (j === 0xff0000) {
-                this.showDialogServermessage = false;
+                this.showDialogServerMessage = false;
             }
 
             if ((this.mouseX < 256 - ((width / 2) | 0) || this.mouseX > 256 + ((width / 2) | 0)) && (this.mouseY < 167 - ((height / 2) | 0) || this.mouseY > 167 + ((height / 2) | 0))) {
-                this.showDialogServermessage = false;
+                this.showDialogServerMessage = false;
             }
         }
 
@@ -13276,7 +21068,7 @@ class mudclient extends GameConnection {
     }
 
     async loadTextures() {
-        let buffTextures = await this.readDataFile('textures' + VERSION.TEXTURES + '.jag', 'Textures', 50);
+        let buffTextures = await this.readDataFile('textures' + version.TEXTURES + '.jag', 'Textures', 50);
 
         if (buffTextures === null) {
             this.errorLoadingData = true;
@@ -13522,45 +21314,6 @@ class mudclient extends GameConnection {
         this.surface.drawBox(126, 137, 260, 60, 0);
         this.surface.drawBoxEdge(126, 137, 260, 60, 0xffffff);
         this.surface.drawStringCenter('Logging out...', 256, 173, 5, 0xffffff);
-    }
-
-    drawDialogCombatStyle() {
-        let byte0 = 7;
-        let byte1 = 15;
-        let width = 175;
-
-        if (this.mouseButtonClick !== 0) {
-            for (let i = 0; i < 5; i++) {
-
-                if (i <= 0 || this.mouseX <= byte0 || this.mouseX >= byte0 + width || this.mouseY <= byte1 + i * 20 || this.mouseY >= byte1 + i * 20 + 20) {
-                    continue;
-                }
-
-                this.combatStyle = i - 1;
-                this.mouseButtonClick = 0;
-                this.clientStream.newPacket(clientOpcodes.COMBAT_STYLE);
-                this.clientStream.putByte(this.combatStyle);
-                this.clientStream.sendPacket();
-                break;
-            }
-        }
-
-        for (let j = 0; j < 5; j++) {
-            if (j === this.combatStyle + 1) {
-                this.surface.drawBoxAlpha(byte0, byte1 + j * 20, width, 20, Surface.rgbToLong(255, 0, 0), 128);
-            } else {
-                this.surface.drawBoxAlpha(byte0, byte1 + j * 20, width, 20, Surface.rgbToLong(190, 190, 190), 128);
-            }
-
-            this.surface.drawLineHoriz(byte0, byte1 + j * 20, width, 0);
-            this.surface.drawLineHoriz(byte0, byte1 + j * 20 + 20, width, 0);
-        }
-
-        this.surface.drawStringCenter('Select combat style', byte0 + ((width / 2) | 0), byte1 + 16, 3, 0xffffff);
-        this.surface.drawStringCenter('Controlled (+1 of each)', byte0 + ((width / 2) | 0), byte1 + 36, 3, 0);
-        this.surface.drawStringCenter('Aggressive (+3 strength)', byte0 + ((width / 2) | 0), byte1 + 56, 3, 0);
-        this.surface.drawStringCenter('Accurate   (+3 attack)', byte0 + ((width / 2) | 0), byte1 + 76, 3, 0);
-        this.surface.drawStringCenter('Defensive  (+3 defense)', byte0 + ((width / 2) | 0), byte1 + 96, 3, 0);
     }
 
     menuItemClick(i) {
@@ -14399,7 +22152,7 @@ class mudclient extends GameConnection {
                                 this.playerStatCurrent[3] = current;
                                 this.playerStatBase[3] = max;
                                 this.showDialogWelcome = false;
-                                this.showDialogServermessage = false;
+                                this.showDialogServerMessage = false;
                             }
                         }
                     } else if (updateType === 3) { // new incoming projectile from npc?
@@ -15380,7 +23133,7 @@ class mudclient extends GameConnection {
 
             if (opcode === serverOpcodes.SERVER_MESSAGE) {
                 this.serverMessage = fromCharArray(pdata.slice(1, psize));
-                this.showDialogServermessage = true;
+                this.showDialogServerMessage = true;
                 this.serverMessageBoxTop = false;
 
                 return;
@@ -15388,7 +23141,7 @@ class mudclient extends GameConnection {
 
             if (opcode === serverOpcodes.SERVER_MESSAGE_ONTOP) {
                 this.serverMessage = fromCharArray(pdata.slice(1, psize));
-                this.showDialogServermessage = true;
+                this.showDialogServerMessage = true;
                 this.serverMessageBoxTop = true;
 
                 return;
@@ -15461,146 +23214,6 @@ class mudclient extends GameConnection {
 
             this.clientStream.closeStream();
             this.resetLoginVars();
-        }
-    }
-
-    drawUiTabPlayerInfo(nomenus) {
-        let uiX = this.surface.width2 - 199;
-        let uiY = 36;
-
-        this.surface._drawSprite_from3(uiX - 49, 3, this.spriteMedia + 3);
-
-        let uiWidth = 196;
-        let uiHeight = 275;
-        let l = 0;
-        let k = l = Surface.rgbToLong(160, 160, 160);
-
-        if (this.uiTabPlayerInfoSubTab === 0) {
-            k = Surface.rgbToLong(220, 220, 220);
-        } else {
-            l = Surface.rgbToLong(220, 220, 220);
-        }
-
-        this.surface.drawBoxAlpha(uiX, uiY, (uiWidth / 2) | 0, 24, k, 128);
-        this.surface.drawBoxAlpha(uiX + ((uiWidth / 2) | 0), uiY, (uiWidth / 2) | 0, 24, l, 128);
-        this.surface.drawBoxAlpha(uiX, uiY + 24, uiWidth, uiHeight - 24, Surface.rgbToLong(220, 220, 220), 128);
-        this.surface.drawLineHoriz(uiX, uiY + 24, uiWidth, 0);
-        this.surface.drawLineVert(uiX + ((uiWidth / 2) | 0), uiY, 24, 0);
-        this.surface.drawStringCenter('Stats', uiX + ((uiWidth / 4) | 0), uiY + 16, 4, 0);
-        this.surface.drawStringCenter('Quests', uiX + ((uiWidth / 4) | 0) + ((uiWidth / 2) | 0), uiY + 16, 4, 0);
-
-        if (this.uiTabPlayerInfoSubTab === 0) {
-            let i1 = 72;
-            let k1 = -1;
-
-            this.surface.drawString('Skills', uiX + 5, i1, 3, 0xffff00);
-
-            i1 += 13;
-
-            for (let l1 = 0; l1 < 9; l1++) {
-                let i2 = 0xffffff;
-
-                if (this.mouseX > uiX + 3 && this.mouseY >= i1 - 11 && this.mouseY < i1 + 2 && this.mouseX < uiX + 90) {
-                    i2 = 0xff0000;
-                    k1 = l1;
-                }
-
-                this.surface.drawString(this.skillNameShort[l1] + ':@yel@' + this.playerStatCurrent[l1] + '/' + this.playerStatBase[l1], uiX + 5, i1, 1, i2);
-                i2 = 0xffffff;
-
-                if (this.mouseX >= uiX + 90 && this.mouseY >= i1 - 13 - 11 && this.mouseY < (i1 - 13) + 2 && this.mouseX < uiX + 196) {
-                    i2 = 0xff0000;
-                    k1 = l1 + 9;
-                }
-
-                this.surface.drawString(this.skillNameShort[l1 + 9] + ':@yel@' + this.playerStatCurrent[l1 + 9] + '/' + this.playerStatBase[l1 + 9], (uiX + ((uiWidth / 2) | 0)) - 5, i1 - 13, 1, i2);
-                i1 += 13;
-            }
-
-            this.surface.drawString('Quest Points:@yel@' + this.playerQuestPoints, (uiX + ((uiWidth / 2) | 0)) - 5, i1 - 13, 1, 0xffffff);
-            i1 += 12;
-            this.surface.drawString('Fatigue: @yel@' + (((this.statFatigue * 100) / 750) | 0) + '%', uiX + 5, i1 - 13, 1, 0xffffff);
-            i1 += 8;
-            this.surface.drawString('Equipment Status', uiX + 5, i1, 3, 0xffff00);
-            i1 += 12;
-
-            for (let j2 = 0; j2 < 3; j2++) {
-                this.surface.drawString(this.equipmentStatNames[j2] + ':@yel@' + this.playerStatEquipment[j2], uiX + 5, i1, 1, 0xffffff);
-
-                if (j2 < 2) {
-                    this.surface.drawString(this.equipmentStatNames[j2 + 3] + ':@yel@' + this.playerStatEquipment[j2 + 3], uiX + ((uiWidth / 2) | 0) + 25, i1, 1, 0xffffff);
-                }
-
-                i1 += 13;
-            }
-
-            i1 += 6;
-            this.surface.drawLineHoriz(uiX, i1 - 15, uiWidth, 0);
-
-            if (k1 !== -1) {
-                this.surface.drawString(this.skillNamesLong[k1] + ' skill', uiX + 5, i1, 1, 0xffff00);
-                i1 += 12;
-
-                let k2 = this.experienceArray[0];
-
-                for (let i3 = 0; i3 < 98; i3++) {
-                    if (this.playerExperience[k1] >= this.experienceArray[i3]) {
-                        k2 = this.experienceArray[i3 + 1];
-                    }
-                }
-
-                this.surface.drawString('Total xp: ' + ((this.playerExperience[k1] / 4) | 0), uiX + 5, i1, 1, 0xffffff);
-                i1 += 12;
-                this.surface.drawString('Next level at: ' + ((k2 / 4) | 0), uiX + 5, i1, 1, 0xffffff);
-            } else {
-                this.surface.drawString('Overall levels', uiX + 5, i1, 1, 0xffff00);
-                i1 += 12;
-                let l2 = 0;
-
-                for (let j3 = 0; j3 < PLAYER_STAT_COUNT; j3++) {
-                    l2 += this.playerStatBase[j3];
-                }
-
-                this.surface.drawString('Skill total: ' + l2, uiX + 5, i1, 1, 0xffffff);
-                i1 += 12;
-                this.surface.drawString('Combat level: ' + this.localPlayer.level, uiX + 5, i1, 1, 0xffffff);
-                i1 += 12;
-            }
-        }
-
-        if (this.uiTabPlayerInfoSubTab === 1) {
-            this.panelQuestList.clearList(this.controlListQuest);
-            this.panelQuestList.addListEntry(this.controlListQuest, 0, '@whi@Quest-list (green=completed)');
-
-            for (let j1 = 0; j1 < QUEST_COUNT; j1++) {
-                this.panelQuestList.addListEntry(this.controlListQuest, j1 + 1, (this.questComplete[j1] ? '@gre@' : '@red@') + this.questName[j1]);
-            }
-
-            this.panelQuestList.drawPanel();
-        }
-
-        if (!nomenus) {
-            return;
-        }
-
-        let mouseX = this.mouseX - (this.surface.width2 - 199);
-        let mouseY = this.mouseY - 36;
-
-        if (mouseX >= 0 && mouseY >= 0 && mouseX < uiWidth && mouseY < uiHeight) {
-            if (this.uiTabPlayerInfoSubTab === 1) {
-                this.panelQuestList.handleMouse(mouseX + (this.surface.width2 - 199), mouseY + 36, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
-            }
-
-            if (mouseY <= 24 && this.mouseButtonClick === 1) {
-                if (mouseX < 98) {
-                    this.uiTabPlayerInfoSubTab = 0;
-                    return;
-                }
-
-                if (mouseX > 98) {
-                    this.uiTabPlayerInfoSubTab = 1;
-                }
-            }
         }
     }
 
@@ -16168,16 +23781,16 @@ class mudclient extends GameConnection {
     }
 
     async loadMaps() {
-        this.world.mapPack = await this.readDataFile('maps' + VERSION.MAPS + '.jag', 'map', 70);
+        this.world.mapPack = await this.readDataFile('maps' + version.MAPS + '.jag', 'map', 70);
 
         if (this.members) {
-            this.world.memberMapPack = await this.readDataFile('maps' + VERSION.MAPS + '.mem', 'members map', 75);
+            this.world.memberMapPack = await this.readDataFile('maps' + version.MAPS + '.mem', 'members map', 75);
         }
 
-        this.world.landscapePack = await this.readDataFile('land' + VERSION.MAPS + '.jag', 'landscape', 80);
+        this.world.landscapePack = await this.readDataFile('land' + version.MAPS + '.jag', 'landscape', 80);
 
         if (this.members) {
-            this.world.memberLandscapePack = await this.readDataFile('land' + VERSION.MAPS + '.mem', 'members landscape', 85);
+            this.world.memberLandscapePack = await this.readDataFile('land' + version.MAPS + '.mem', 'members landscape', 85);
         }
     }
 
@@ -16235,7 +23848,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":9,"./game-buffer":11,"./game-character":12,"./game-connection":13,"./game-data":14,"./game-model":15,"./lib/graphics/color":17,"./lib/graphics/font":18,"./opcodes/client":26,"./opcodes/server":27,"./panel":29,"./scene":32,"./stream-audio-player":33,"./surface":35,"./surface-sprite":34,"./utility":36,"./version":37,"./word-filter":38,"./world":39,"long":5}],26:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":42,"./game-character":43,"./game-connection":44,"./game-data":45,"./game-model":46,"./lib/graphics/color":48,"./lib/graphics/font":49,"./opcodes/client":55,"./opcodes/server":56,"./panel":58,"./scene":61,"./stream-audio-player":62,"./surface":63,"./ui":65,"./utility":69,"./version":70,"./word-filter":71,"./world":72,"long":33}],55:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -16308,7 +23921,7 @@ module.exports={
     "WALL_OBJECT_COMMAND1": 14,
     "WALL_OBJECT_COMMAND2": 127
 }
-},{}],27:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 59,
     "BANK_CLOSE": 203,
@@ -16371,7 +23984,7 @@ module.exports={
     "WELCOME": 182,
     "WORLD_INFO": 25
 }
-},{}],28:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 const Long = require('long');
 
 function toCharArray(s) {
@@ -16607,10 +24220,10 @@ Packet.anIntArray541 = new Int32Array(256);
 
 module.exports = Packet;
 
-},{"long":5}],29:[function(require,module,exports){
+},{"long":33}],58:[function(require,module,exports){
 const Surface = require('./surface');
 
-const CONTROL_TYPES = {
+const controlTypes = {
     TEXT: 0,
     CENTRE_TEXT: 1,
     GRADIENT_BG: 2,
@@ -16647,7 +24260,7 @@ class Panel {
         this.controlMaskText = new Int8Array(max);
         this.controlClicked = new Int8Array(max);
         this.controlUseAlternativeColour = new Int8Array(max);
-        this.controlFlashText = new Int32Array(max);// not so sure
+        this.controlFlashText = new Int32Array(max);
         this.controlListEntryCount = new Int32Array(max);
         this.controlListEntryMouseButtonDown = new Int32Array(max);
         this.controlListEntryMouseOver = new Int32Array(max);
@@ -16698,11 +24311,11 @@ class Panel {
 
         if (lastMb === 1) {
             for (let i1 = 0; i1 < this.controlCount; i1++) {
-                if (this.controlShown[i1] && this.controlType[i1] === CONTROL_TYPES.BUTTON && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
+                if (this.controlShown[i1] && this.controlType[i1] === controlTypes.BUTTON && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
                     this.controlClicked[i1] = true;
                 }
 
-                if (this.controlShown[i1] && this.controlType[i1] === CONTROL_TYPES.CHECKBOX && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
+                if (this.controlShown[i1] && this.controlType[i1] === controlTypes.CHECKBOX && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
                     this.controlListEntryMouseButtonDown[i1] = 1 - this.controlListEntryMouseButtonDown[i1];
                 }
             }
@@ -16771,29 +24384,29 @@ class Panel {
     drawPanel() {
         for (let i = 0; i < this.controlCount; i++) {
             if (this.controlShown[i]) {
-                if (this.controlType[i] === CONTROL_TYPES.TEXT) {
+                if (this.controlType[i] === controlTypes.TEXT) {
                     this.drawText(i, this.controlX[i], this.controlY[i], this.controlText[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.CENTRE_TEXT) {
+                } else if (this.controlType[i] === controlTypes.CENTRE_TEXT) {
                     this.drawText(i, this.controlX[i] - ((this.surface.textWidth(this.controlText[i], this.controlTextSize[i]) / 2) | 0), this.controlY[i], this.controlText[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.GRADIENT_BG) {
+                } else if (this.controlType[i] === controlTypes.GRADIENT_BG) {
                     this.drawBox(this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.HORIZ_LINE) {
+                } else if (this.controlType[i] === controlTypes.HORIZ_LINE) {
                     this.drawLineHoriz(this.controlX[i], this.controlY[i], this.controlWidth[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.TEXT_LIST) {
+                } else if (this.controlType[i] === controlTypes.TEXT_LIST) {
                     this.drawTextList(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlTextSize[i], this.controlListEntries[i], this.controlListEntryCount[i], this.controlFlashText[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.LIST_INPUT || this.controlType[i] === CONTROL_TYPES.TEXT_INPUT) {
+                } else if (this.controlType[i] === controlTypes.LIST_INPUT || this.controlType[i] === controlTypes.TEXT_INPUT) {
                     this.drawTextInput(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlText[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.HORIZ_OPTION) {
+                } else if (this.controlType[i] === controlTypes.HORIZ_OPTION) {
                     this.drawOptionListHoriz(i, this.controlX[i], this.controlY[i], this.controlTextSize[i], this.controlListEntries[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.VERT_OPTION) {
+                } else if (this.controlType[i] === controlTypes.VERT_OPTION) {
                     this.drawOptionListVert(i, this.controlX[i], this.controlY[i], this.controlTextSize[i], this.controlListEntries[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.I_TEXT_LIST) {
+                } else if (this.controlType[i] === controlTypes.I_TEXT_LIST) {
                     this.drawTextListInteractive(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlTextSize[i], this.controlListEntries[i], this.controlListEntryCount[i], this.controlFlashText[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.ROUND_BOX) {
+                } else if (this.controlType[i] === controlTypes.ROUND_BOX) {
                     this.drawRoundedBox(this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.IMAGE) {
+                } else if (this.controlType[i] === controlTypes.IMAGE) {
                     this.drawPicture(this.controlX[i], this.controlY[i], this.controlTextSize[i]);
-                } else if (this.controlType[i] === CONTROL_TYPES.CHECKBOX) {
+                } else if (this.controlType[i] === controlTypes.CHECKBOX) {
                     this.drawCheckbox(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
                 }
             }
@@ -16845,11 +24458,11 @@ class Panel {
             }
         }
 
-        if (this.controlType[control] === CONTROL_TYPES.LIST_INPUT) {
+        if (this.controlType[control] === controlTypes.LIST_INPUT) {
             if (this.mouseLastButtonDown === 1 && this.mouseX >= x && this.mouseY >= y - ((height / 2) | 0) && this.mouseX <= x + width && this.mouseY <= y + ((height / 2) | 0)) {
                 this.focusControlIndex = control;
             }
-        } else if (this.controlType[control] === CONTROL_TYPES.TEXT_INPUT) {
+        } else if (this.controlType[control] === controlTypes.TEXT_INPUT) {
             if (this.mouseLastButtonDown === 1 && this.mouseX >= x - ((width / 2) | 0) && this.mouseY >= y - ((height / 2) | 0) && this.mouseX <= x + width / 2 && this.mouseY <= y + ((height / 2) |0)) {
                 this.focusControlIndex = control;
             }
@@ -16984,7 +24597,7 @@ class Panel {
             j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / (listEntryCount - displayedEntryCount)) | 0;
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
-        
+
         let entryListStartY = height - displayedEntryCount * this.surface.textHeight(textSize);
         let y2 = y + ((this.surface.textHeight(textSize) * 5) / 6 + entryListStartY / 2) | 0;
 
@@ -17129,7 +24742,7 @@ class Panel {
             }
 
             // the up and down arrow buttons on the scrollbar
-            if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) { 
+            if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) {
                 if (this.mouseY > y && this.mouseY < y + 12 && listEntryPosition > 0) {
                     listEntryPosition--;
                 }
@@ -17252,7 +24865,7 @@ class Panel {
         let imgWidth = this.surface.spriteWidth[spriteId];
         let imgHeight = this.surface.spriteHeight[spriteId];
 
-        this.controlType[this.controlCount] = CONTROL_TYPES.IMAGE;
+        this.controlType[this.controlCount] = controlTypes.IMAGE;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x - ((imgWidth / 2) | 0);
@@ -17265,7 +24878,7 @@ class Panel {
     }
 
     addTextList(x, y, width, height, size, maxLength, flag) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.TEXT_LIST;
+        this.controlType[this.controlCount] = controlTypes.TEXT_LIST;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x;
@@ -17280,12 +24893,12 @@ class Panel {
         this.controlListEntries[this.controlCount] = [];
         this.controlListEntries[this.controlCount].length = maxLength;
         this.controlListEntries[this.controlCount].fill(null);
-        
+
         return this.controlCount++;
     }
 
     addTextListInput(x, y, width, height, size, maxLength, flag, flag1) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.LIST_INPUT;
+        this.controlType[this.controlCount] = controlTypes.LIST_INPUT;
         this.controlShown[this.controlCount] = true;
         this.controlMaskText[this.controlCount] = flag;
         this.controlClicked[this.controlCount] = false;
@@ -17297,12 +24910,12 @@ class Panel {
         this.controlHeight[this.controlCount] = height;
         this.controlInputMaxLen[this.controlCount] = maxLength;
         this.controlText[this.controlCount] = '';
-        
+
         return this.controlCount++;
     }
 
     addTextInput(x, y, width, height, size, maxLength, flag, flag1) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.TEXT_INPUT;
+        this.controlType[this.controlCount] = controlTypes.TEXT_INPUT;
         this.controlShown[this.controlCount] = true;
         this.controlMaskText[this.controlCount] = flag;
         this.controlClicked[this.controlCount] = false;
@@ -17319,7 +24932,7 @@ class Panel {
     }
 
     addTextListInteractive(x, y, width, height, textSize, maxLength, flag) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.I_TEXT_LIST;
+        this.controlType[this.controlCount] = controlTypes.I_TEXT_LIST;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlTextSize[this.controlCount] = textSize;
@@ -17341,7 +24954,7 @@ class Panel {
     }
 
     addButton(x, y, width, height) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.BUTTON;
+        this.controlType[this.controlCount] = controlTypes.BUTTON;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x - ((width / 2) | 0);
@@ -17353,7 +24966,7 @@ class Panel {
     }
 
     addLineHoriz(x, y, width) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.HORIZ_LINE;
+        this.controlType[this.controlCount] = controlTypes.HORIZ_LINE;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -17363,7 +24976,7 @@ class Panel {
     }
 
     addOptionListHoriz(x, y, textSize, maxListCount, useAltColour) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.HORIZ_OPTION;
+        this.controlType[this.controlCount] = controlTypes.HORIZ_OPTION;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -17379,7 +24992,7 @@ class Panel {
     }
 
     addOptionListVert(x, y, textSize, maxListCount, useAltColour) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.VERT_OPTION;
+        this.controlType[this.controlCount] = controlTypes.VERT_OPTION;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -17395,7 +25008,7 @@ class Panel {
     }
 
     addCheckbox(x, y, width, height) {
-        this.controlType[this.controlCount] = CONTROL_TYPES.CHECKBOX;
+        this.controlType[this.controlCount] = controlTypes.CHECKBOX;
         this.controlShown[this.controlCount] = true;
         this.controlX[this.controlCount] = x;
         this.controlY[this.controlCount] = y;
@@ -17472,15 +25085,16 @@ class Panel {
     }
 }
 
-Panel.drawBackgroundArrow = true;
 Panel.baseSpriteStart = 0;
+Panel.drawBackgroundArrow = true;
 Panel.redMod = 114;
 Panel.greenMod = 114;
 Panel.blueMod = 176;
 Panel.textListEntryHeightMod = 0;
 
 module.exports = Panel;
-},{"./surface":35}],30:[function(require,module,exports){
+
+},{"./surface":63}],59:[function(require,module,exports){
 class Polygon {
     constructor() {
         this.minPlaneX = 0;
@@ -17504,7 +25118,7 @@ class Polygon {
 }
 
 module.exports = Polygon;
-},{}],31:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 class Scanline {
     constructor() {
         this.startX = 0;
@@ -17515,7 +25129,7 @@ class Scanline {
 }
 
 module.exports = Scanline;
-},{}],32:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 const Long = require('long');
 const Polygon = require('./polygon');
 const Scanline = require('./scanline');
@@ -21347,8 +28961,8 @@ Scene.aByteArray434 = null;
 
 module.exports = Scene;
 
-},{"./polygon":30,"./scanline":31,"long":5}],33:[function(require,module,exports){
-const PCMPlayer = require('./lib/pcm-player');
+},{"./polygon":59,"./scanline":60,"long":33}],62:[function(require,module,exports){
+const PCMPlayer = require('pcm-player');
 const { mulaw } = require('alawmulaw');
 
 class StreamAudioPlayer {
@@ -21371,43 +28985,8 @@ class StreamAudioPlayer {
 }
 
 module.exports = StreamAudioPlayer;
-},{"./lib/pcm-player":23,"alawmulaw":2}],34:[function(require,module,exports){
-const Surface = require('./surface');
 
-class SurfaceSprite extends Surface {
-    constructor(width, height, limit, component) {
-        super(width, height, limit, component);
-        this.mudclientref = null;
-    }
-
-    _spriteClipping_from7(x, y, w, h, id, tx, ty) {
-        if (id >= 50000) {
-            this.mudclientref.drawTeleportBubble(x, y, w, h, id - 50000, tx, ty);
-            return;
-        }
-
-        if (id >= 40000) {
-            this.mudclientref.drawItem(x, y, w, h, id - 40000, tx, ty);
-            return;
-        }
-
-        if (id >= 20000) {
-            this.mudclientref.drawNpc(x, y, w, h, id - 20000, tx, ty);
-            return;
-        }
-
-        if (id >= 5000) {
-            this.mudclientref.drawPlayer(x, y, w, h, id - 5000, tx, ty);
-            return;
-        } else {
-            super._spriteClipping_from5(x, y, w, h, id);
-            return;
-        }
-    }
-}
-
-module.exports = SurfaceSprite;
-},{"./surface":35}],35:[function(require,module,exports){
+},{"alawmulaw":26,"pcm-player":35}],63:[function(require,module,exports){
 const Utility = require('./utility');
 
 const C_0 = '0'.charCodeAt(0);
@@ -21425,6 +29004,8 @@ function fixPixel(pixel) {
 
 class Surface {
     constructor(width, height, limit, component) {
+        this.mudclientref = null;
+
         this.image = null;
         this.landscapeColours = null;
         this.anIntArray340 = null;
@@ -22241,6 +29822,31 @@ class Surface {
             this._plotScale_from13(this.pixels, this.surfacePixels[spriteId], 0, l1, i2, i3, k3, width, height, j2, k2, spriteWidth, yInc);
         } catch (e) {
             console.log('error in sprite clipping routine');
+        }
+    }
+
+    _spriteClipping_from7(x, y, w, h, id, tx, ty) {
+        if (id >= 50000) {
+            this.mudclientref.drawTeleportBubble(x, y, w, h, id - 50000, tx, ty);
+            return;
+        }
+
+        if (id >= 40000) {
+            this.mudclientref.drawItem(x, y, w, h, id - 40000, tx, ty);
+            return;
+        }
+
+        if (id >= 20000) {
+            this.mudclientref.drawNpc(x, y, w, h, id - 20000, tx, ty);
+            return;
+        }
+
+        if (id >= 5000) {
+            this.mudclientref.drawPlayer(x, y, w, h, id - 5000, tx, ty);
+            return;
+        } else {
+            super._spriteClipping_from5(x, y, w, h, id);
+            return;
         }
     }
 
@@ -23649,11 +31255,8 @@ class Surface {
                 k += j1;
                 j += k1;
             }
-
-            return;
         } catch (e) {
             console.error(e);
-            return;
         }
     }
 
@@ -23766,7 +31369,518 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":36}],36:[function(require,module,exports){
+},{"./utility":69}],64:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client');
+
+const BLACK = 0;
+const GREY = 0xbebebe;
+const RED = 0xff0000;
+const WHITE = 0xffffff;
+
+const BUTTON_HEIGHT = 20;
+const DIALOG_X = 7;
+const DIALOG_Y = 15;
+const WIDTH = 175;
+
+const COMBAT_STYLES = [
+    'Controlled (+1 of each)',
+    'Aggressive (+3 strength)',
+    'Accurate (+3 attack)',
+    'Defensive (+3 defense)'
+];
+
+function drawDialogCombatStyle() {
+    if (this.mouseButtonClick !== 0) {
+        for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
+            if (i <= 0 || this.mouseX <= DIALOG_X ||
+                this.mouseX >= DIALOG_X + WIDTH ||
+                this.mouseY <= DIALOG_Y + i * BUTTON_HEIGHT ||
+                this.mouseY >= DIALOG_Y + (i * BUTTON_HEIGHT) + BUTTON_HEIGHT) {
+                continue;
+            }
+
+            this.combatStyle = i - 1;
+            this.mouseButtonClick = 0;
+
+            this.clientStream.newPacket(clientOpcodes.COMBAT_STYLE);
+            this.clientStream.putByte(this.combatStyle);
+            this.clientStream.sendPacket();
+            break;
+        }
+    }
+
+    for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
+        const boxColour = i === this.combatStyle + 1 ? RED : GREY;
+        this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + i * BUTTON_HEIGHT,
+            WIDTH, BUTTON_HEIGHT, boxColour, 128);
+        this.surface.drawLineHoriz(DIALOG_X, DIALOG_Y + i * BUTTON_HEIGHT,
+            WIDTH, 0);
+        this.surface.drawLineHoriz(DIALOG_X, DIALOG_Y + (i * BUTTON_HEIGHT) +
+            BUTTON_HEIGHT, WIDTH, 0);
+    }
+
+    let y = 16;
+
+    this.surface.drawStringCenter('Select combat style',
+        DIALOG_X + ((WIDTH / 2) | 0), DIALOG_Y + y, 3, WHITE);
+
+    y += BUTTON_HEIGHT;
+
+    for (const combatStyle of COMBAT_STYLES) {
+        this.surface.drawStringCenter(combatStyle, DIALOG_X + ((WIDTH / 2) | 0),
+            DIALOG_Y + y, 3, BLACK);
+        y += BUTTON_HEIGHT;
+    }
+}
+
+module.exports.combatStyle = 0;
+module.exports.drawDialogCombatStyle = drawDialogCombatStyle;
+
+},{"../opcodes/client":55}],65:[function(require,module,exports){
+const components = [
+    require('./combat-style'),
+    require('./report-abuse'),
+    require('./wilderness-warning'),
+    require('./player-info-tab'),
+];
+
+function applyUI(mudclient) {
+    for (const component of components) {
+        for (const propertyName of Object.keys(component)) {
+            let member = component[propertyName];
+
+            if (typeof member === 'function') {
+                member = member.bind(mudclient);
+            }
+
+            mudclient[propertyName] = member;
+        }
+    }
+}
+
+module.exports = applyUI;
+
+},{"./combat-style":64,"./player-info-tab":66,"./report-abuse":67,"./wilderness-warning":68}],66:[function(require,module,exports){
+const DARK_GREY = 0xa0a0a0;
+const LIGHT_GREY = 0xdcdcdc;
+const RED = 0xff0000;
+const WHITE = 0xffffff;
+const YELLOW = 0xffff00;
+
+const UI_HEIGHT = 275;
+const UI_WIDTH = 196;
+const UI_X = 313;
+const UI_Y = 36;
+
+const TAB_HEIGHT = 24;
+const TAB_WIDTH = (UI_WIDTH / 2) | 0;
+
+const SHORT_SKILL_NAMES = [
+    'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic',
+    'Cooking', 'Woodcut', 'Fletching', 'Fishing', 'Firemaking', 'Crafting',
+    'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
+];
+
+const SKILL_NAMES = [
+    'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic',
+    'Cooking', 'Woodcutting', 'Fletching', 'Fishing', 'Firemaking', 'Crafting',
+    'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
+];
+
+const EQUIPMENT_STAT_NAMES = [
+    'Armour', 'WeaponAim', 'WeaponPower', 'Magic', 'Prayer'
+];
+
+const EXPERIENCE_ARRAY = [];
+
+let totalExp = 0;
+
+for (let i = 0; i < 99; i++) {
+    let level = i + 1;
+    let exp = (level + 300 * Math.pow(2, level / 7)) | 0;
+    totalExp += exp;
+    EXPERIENCE_ARRAY[i] = totalExp & 0xffffffc;
+}
+
+const FREE_QUESTS = [
+    'Black knight\'s fortress', 'Cook\'s assistant', 'Demon slayer',
+    'Doric\'s quest', 'The restless ghost', 'Goblin diplomacy',
+    'Ernest the chicken', 'Imp catcher', 'Pirate\'s treasure',
+    'Prince Ali rescue', 'Romeo & Juliet', 'Sheep shearer', 'Shield of Arrav',
+    'The knight\'s sword', 'Vampire slayer', 'Witch\'s potion',
+    'Dragon slayer'
+];
+
+const MEMBERS_QUESTS = [
+    'Witch\'s house', 'Lost city', 'Hero\'s quest', 'Druidic ritual',
+    'Merlin\'s crystal', 'Scorpion catcher', 'Family crest', 'Tribal totem',
+    'Fishing contest', 'Monk\'s friend', 'Temple of Ikov', 'Clock tower',
+    'The Holy Grail', 'Fight Arena', 'Tree Gnome Village', 'The Hazeel Cult',
+    'Sheep Herder', 'Plague City', 'Sea Slug', 'Waterfall quest', 'Biohazard',
+    'Jungle potion', 'Grand tree', 'Shilo village', 'Underground pass',
+    'Observatory quest', 'Tourist trap', 'Watchtower', 'Dwarf Cannon',
+    'Murder Mystery', 'Digsite', 'Gertrude\'s Cat', 'Legend\'s Quest'
+].map(questName => `${questName} (members)`);
+
+const QUEST_NAMES = FREE_QUESTS.concat(MEMBERS_QUESTS);
+
+function drawUiTabPlayerInfo(noMenus) {
+    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 3);
+
+    // draw Stats and Quests buttons, and shade currently selected
+    let questsTabColour = 0;
+    let statsTabColour = questsTabColour = DARK_GREY;
+
+    if (this.uiTabPlayerInfoSubTab === 0) {
+        statsTabColour = LIGHT_GREY;
+    } else {
+        questsTabColour = LIGHT_GREY;
+    }
+
+    this.surface.drawBoxAlpha(UI_X, UI_Y, TAB_WIDTH, TAB_HEIGHT, statsTabColour,
+        128);
+    this.surface.drawBoxAlpha(UI_X + TAB_WIDTH, UI_Y, TAB_WIDTH, TAB_HEIGHT,
+        questsTabColour, 128);
+    this.surface.drawBoxAlpha(UI_X, UI_Y + TAB_HEIGHT, UI_WIDTH, UI_HEIGHT -
+        TAB_HEIGHT, LIGHT_GREY, 128);
+    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, UI_WIDTH, 0);
+    this.surface.drawLineVert(UI_X + TAB_WIDTH, UI_Y, TAB_HEIGHT, 0);
+    this.surface.drawStringCenter('Stats', UI_X + ((UI_WIDTH / 4) | 0),
+        UI_Y + 16, 4, 0);
+    this.surface.drawStringCenter('Quests', UI_X + ((UI_WIDTH / 4) | 0) +
+        TAB_WIDTH, UI_Y + 16, 4, 0);
+
+    // the handler for the Stats tab
+    if (this.uiTabPlayerInfoSubTab === 0) {
+        let y = 72;
+        let selectedSkill = -1;
+
+        this.surface.drawString('Skills', UI_X + 5, y, 3, YELLOW);
+
+        y += 13;
+
+        // draw two columns with each skill name and current/base levels
+        for (let i = 0; i < 9; i++) {
+            // left column
+            let textColour = WHITE;
+
+            if (this.mouseX > UI_X + 3 && this.mouseY >= y - 11 &&
+                this.mouseY < y + 2 && this.mouseX < UI_X + 90) {
+                textColour = RED;
+                selectedSkill = i;
+            }
+
+            this.surface.drawString(
+                `${SHORT_SKILL_NAMES[i]}:@yel@${this.playerStatCurrent[i]}/` +
+                this.playerStatBase[i], UI_X + 5, y, 1, textColour);
+
+            // right column
+            textColour = WHITE;
+
+            if (this.mouseX >= UI_X + 90 && this.mouseY >= y - 13 - 11 &&
+                this.mouseY < (y - 13) + 2 && this.mouseX < UI_X + 196) {
+                textColour = RED;
+                selectedSkill = i + 9;
+            }
+
+            this.surface.drawString(
+                `${SHORT_SKILL_NAMES[i + 9]}:@yel@` +
+                `${this.playerStatCurrent[i + 9]}/` +
+                this.playerStatBase[i + 9],
+                (UI_X + ((UI_WIDTH / 2) | 0)) - 5, y - 13, 1, textColour);
+
+            y += 13;
+        }
+
+        this.surface.drawString(`Quest Points:@yel@${this.playerQuestPoints}`,
+            (UI_X + TAB_WIDTH) - 5, y - 13, 1, WHITE);
+        y += 12;
+        this.surface.drawString(
+            `Fatigue: @yel@${(((this.statFatigue * 100) / 750) | 0)}%`,
+            UI_X + 5, y - 13, 1, WHITE);
+        y += 8;
+
+        this.surface.drawString('Equipment Status', UI_X + 5, y, 3, YELLOW);
+        y += 12;
+
+        for (let i = 0; i < 3; i++) {
+            this.surface.drawString(
+                `${EQUIPMENT_STAT_NAMES[i]}:@yel@` +
+                this.playerStatEquipment[i],
+                UI_X + 5, y, 1, WHITE);
+
+            if (i < 2) {
+                this.surface.drawString(
+                    `${EQUIPMENT_STAT_NAMES[i + 3]}:@yel@` +
+                    this.playerStatEquipment[i + 3],
+                    UI_X + ((UI_WIDTH / 2) | 0) + 25, y, 1, WHITE);
+            }
+
+            y += 13;
+        }
+
+        y += 6;
+        this.surface.drawLineHoriz(UI_X, y - 15, UI_WIDTH, 0);
+
+        if (selectedSkill !== -1) {
+            this.surface.drawString(`${SKILL_NAMES[selectedSkill]} skill`,
+                UI_X + 5, y, 1, YELLOW);
+            y += 12;
+
+            let nextLevelAt = EXPERIENCE_ARRAY[0];
+
+            for (let i = 0; i < 98; i++) {
+                if (this.playerExperience[selectedSkill] >=
+                    EXPERIENCE_ARRAY[i]) {
+                    nextLevelAt = EXPERIENCE_ARRAY[i + 1];
+                    // TODO ? break;
+                }
+            }
+
+            this.surface.drawString(
+                'Total xp: ' + ((this.playerExperience[selectedSkill] / 4) | 0),
+                UI_X + 5, y, 1, WHITE);
+            y += 12;
+            this.surface.drawString('Next level at: ' +
+                ((nextLevelAt / 4) | 0), UI_X + 5, y, 1, WHITE);
+        } else {
+            this.surface.drawString('Overall levels', UI_X + 5, y, 1, YELLOW);
+            y += 12;
+
+            let totalLevel = 0;
+
+            for (let i = 0; i < SKILL_NAMES.length; i++) {
+                totalLevel += this.playerStatBase[i];
+            }
+
+            this.surface.drawString(`Skill total: ${totalLevel}`,
+                UI_X + 5, y, 1, WHITE);
+            y += 12;
+            this.surface.drawString(`Combat level: ${this.localPlayer.level}`,
+                UI_X + 5, y, 1, WHITE);
+            y += 12;
+        }
+    // the handler for the Quests tab
+    } else if (this.uiTabPlayerInfoSubTab === 1) {
+        this.panelQuestList.clearList(this.controlListQuest);
+        this.panelQuestList.addListEntry(this.controlListQuest, 0,
+            '@whi@Quest-list (green=completed)');
+
+        for (let i = 0; i < QUEST_NAMES.length; i++) {
+            this.panelQuestList.addListEntry(this.controlListQuest, i + 1,
+                (this.questComplete[i] ? '@gre@' : '@red@') + QUEST_NAMES[i]);
+        }
+
+        this.panelQuestList.drawPanel();
+    }
+
+    if (!noMenus) {
+        return;
+    }
+
+    const mouseX = this.mouseX - UI_X;
+    const mouseY = this.mouseY - UI_Y;
+
+    // handle clicking of Stats and Quest tab, and the scroll wheel for the
+    // quest list
+    if (mouseX >= 0 && mouseY >= 0 && mouseX < UI_WIDTH && mouseY < UI_HEIGHT) {
+        if (this.uiTabPlayerInfoSubTab === 1) {
+            this.panelQuestList.handleMouse(mouseX + UI_X, mouseY + UI_Y,
+                this.lastMouseButtonDown, this.mouseButtonDown,
+                this.mouseScrollDelta);
+        }
+
+        if (mouseY <= TAB_HEIGHT && this.mouseButtonClick === 1) {
+            if (mouseX < TAB_WIDTH) {
+                this.uiTabPlayerInfoSubTab = 0;
+            } else if (mouseX > TAB_WIDTH) {
+                this.uiTabPlayerInfoSubTab = 1;
+            }
+        }
+    }
+}
+
+module.exports.drawUiTabPlayerInfo = drawUiTabPlayerInfo;
+module.exports.uiTabPlayerInfoSubTab = 0;
+
+},{}],67:[function(require,module,exports){
+const ORANGE = 0xff8000;
+const WHITE = 0xffffff;
+const YELLOW = 0xffff00;
+
+const RULES = [
+    'Offensive language',
+    'Item scamming',
+    'Password scamming',
+    'Bug abuse',
+    'Jagex Staff impersonation',
+    'Account sharing/trading',
+    'Macroing',
+    'Mutiple logging in',
+    'Encouraging others to break rules',
+    'Misuse of customer support',
+    'Advertising / website',
+    'Real world item trading'
+];
+
+function drawDialogReportAbuse() {
+    this.reportAbuseOffence = 0;
+    let y = 135;
+
+    for (let i = 0; i < 12; i++) {
+        if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 12 &&
+            this.mouseY < y + 3) {
+            this.reportAbuseOffence = i + 1;
+        }
+
+        y += 14;
+    }
+
+    if (this.mouseButtonClick !== 0 && this.reportAbuseOffence !== 0) {
+        this.mouseButtonClick = 0;
+        this.showDialogReportAbuseStep = 2;
+        this.inputTextCurrent = '';
+        this.inputTextFinal = '';
+        return;
+    }
+
+    y += 15;
+
+    if (this.mouseButtonClick !== 0) {
+        this.mouseButtonClick = 0;
+
+        if (this.mouseX < 56 || this.mouseY < 35 || this.mouseX > 456 ||
+            this.mouseY > 325) {
+            this.showDialogReportAbuseStep = 0;
+            return;
+        }
+
+        if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 15 &&
+            this.mouseY < y + 5) {
+            this.showDialogReportAbuseStep = 0;
+            return;
+        }
+    }
+
+    this.surface.drawBox(56, 35, 400, 290, 0);
+    this.surface.drawBoxEdge(56, 35, 400, 290, WHITE);
+
+    y = 50;
+
+    this.surface.drawStringCenter('This form is for reporting players ' +
+        'who are breaking our rules', 256, y, 1, WHITE);
+    y += 15;
+    this.surface.drawStringCenter('Using it sends a snapshot of the last 60 ' +
+        'secs of activity to us' , 256, y, 1, WHITE);
+    y += 15;
+    this.surface.drawStringCenter('If you misuse this form you will be banned',
+        256, y, 1, ORANGE);
+    y += 25;
+    this.surface.drawStringCenter('First indicate which of our 12 rules is ' +
+        'being broken. For a detailed', 256, y, 1, YELLOW);
+    y += 15;
+    this.surface.drawStringCenter('explanation of each rule please read the ' +
+        'manual on our website.', 256, y, 1, YELLOW);
+    y += 15;
+
+    for (let i = 1; i < RULES.length + 1; i += 1) {
+        let textColour = 0;
+
+        // draw the box that highlights the string
+        if (this.reportAbuseOffence === i) {
+            this.surface.drawBoxEdge(66, y - 12, 380, 15, WHITE);
+            textColour = ORANGE;
+        } else {
+            textColour = WHITE;
+        }
+
+        const rule = RULES[i - 1];
+        this.surface.drawStringCenter(`${i}: ${rule}`, 256, y, 1, textColour);
+        y += 14;
+    }
+
+    y += 15;
+    let textColour = WHITE;
+
+    if (this.mouseX > 196 && this.mouseX < 316 && this.mouseY > y - 15 &&
+        this.mouseY < y + 5) {
+        textColour = YELLOW;
+    }
+
+    this.surface.drawStringCenter('Click here to cancel', 256, y, 1,
+        textColour);
+}
+
+module.exports.drawDialogReportAbuse = drawDialogReportAbuse;
+module.exports.reportAbuseMute = false;
+module.exports.reportAbuseOffence = 0;
+module.exports.showDialogReportAbuseStep = 0;
+
+},{}],68:[function(require,module,exports){
+const BLACK = 0;
+const RED = 0xff0000;
+const WHITE = 0xffffff;
+
+function drawDialogWildWarn() {
+    let y = 97;
+
+    this.surface.drawBox(86, 77, 340, 180, BLACK);
+    this.surface.drawBoxEdge(86, 77, 340, 180, WHITE);
+
+    this.surface.drawStringCenter('Warning! Proceed with caution',
+        256, y, 4, RED);
+    y += 26;
+    this.surface.drawStringCenter('If you go much further north you will ' +
+        'enter the', 256, y, 1, WHITE);
+    y += 13;
+    this.surface.drawStringCenter('wilderness. This a very dangerous area ' +
+        'where', 256, y, 1, WHITE);
+    y += 13;
+    this.surface.drawStringCenter('other players can attack you!',
+        256, y, 1, WHITE);
+    y += 22;
+    this.surface.drawStringCenter('The further north you go the more ' +
+        'dangerous it', 256, y, 1, WHITE);
+    y += 13;
+    this.surface.drawStringCenter('becomes, but the more treasure you will ' +
+        'find.', 256, y, 1, WHITE);
+    y += 22;
+    this.surface.drawStringCenter('In the wilderness an indicator at the ' +
+        'bottom-right', 256, y, 1, WHITE);
+    y += 13;
+    this.surface.drawStringCenter('of the screen will show the current level ' +
+        'of danger', 256, y, 1, WHITE);
+    y += 22;
+
+    let textColour = WHITE;
+
+    if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 &&
+        this.mouseX < 331) {
+        textColour = RED;
+    }
+
+    this.surface.drawStringCenter('Click here to close window',
+        256, y, 1, textColour);
+
+    if (this.mouseButtonClick !== 0) {
+        if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 &&
+            this.mouseX < 331) {
+            this.showUiWildWarn = 2;
+        }
+
+        if (this.mouseX < 86 || this.mouseX > 426 || this.mouseY < 77 ||
+            this.mouseY > 257) {
+            this.showUiWildWarn = 2;
+        }
+
+        this.mouseButtonClick = 0;
+    }
+}
+
+module.exports.showUiWildWarn = 0;
+module.exports.drawDialogWildWarn = drawDialogWildWarn;
+
+},{}],69:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -24034,7 +32148,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":8,"./lib/net/file-download-stream":21,"long":5}],37:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":52,"long":33}],70:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -24047,7 +32161,7 @@ module.exports={
     "SOUNDS": 1,
     "TEXTURES": 17
 }
-},{}],38:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -25056,7 +33170,7 @@ WordFilter.forceLowerCase = true;
 WordFilter.ignoreList = [ 'cook', 'cook\'s', 'cooks', 'seeks', 'sheet' ];
 
 module.exports = WordFilter;
-},{}],39:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -25694,7 +33808,7 @@ class World {
     }
 
     _getTileDecoration_from4(x, y, unused, def) {
-        let deco = this._getTileDecoration_from3(x, y, unused);
+        let deco = this._getTileDecoration_from3(x, y);
 
         if (deco === 0) {
             return def;
@@ -26921,4 +35035,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":14,"./game-model":15,"./scene":32,"./utility":36,"ndarray":6}]},{},[1]);
+},{"./game-data":45,"./game-model":46,"./scene":61,"./utility":69,"ndarray":34}]},{},[1]);

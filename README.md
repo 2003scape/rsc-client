@@ -16,14 +16,14 @@ this client is designed to work with
 ## usage
 the `dist/` directory contains everything you need to use the client.
 run `npm start` to start a simple HTTP server http://localhost:1337.
-you may put optional arguments into the hash of the URL as such:
+you may put optional arguments into the hash of the URL:
 
     http://localhost:1337/index.html#members,127.0.0.1,43595
 
-alternatively, you can manually invoke `mudclient` on your own canvas as such:
+alternatively, you can manually invoke `mudclient` on your own canvas:
 
 ```javascript
-const mudclient = require('rsc-client');
+const mudclient = require('@2003scape/rsc-client');
 
 const mc = new mudclient(document.getElementById('mudclient-canvas'));
 mc.members = false;
@@ -45,6 +45,8 @@ mc.options.middleClickCamera = true;
 mc.options.mouseWheel = true;
 // click the compas to face north
 mc.options.resetCompass = true;
+// show roofs unless inside buildings
+mc.options.showRoofs = false;
 // use arrow keys (and mouse wheel if enabled) to zoom in and out
 mc.options.zoomCamera = true;
 ```

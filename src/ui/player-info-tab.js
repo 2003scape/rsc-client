@@ -1,16 +1,17 @@
-const DARK_GREY = 0xa0a0a0;
+const BLACK = 0;
 const LIGHT_GREY = 0xdcdcdc;
 const RED = 0xff0000;
 const WHITE = 0xffffff;
 const YELLOW = 0xffff00;
 
-const UI_HEIGHT = 275;
-const UI_WIDTH = 196;
+const HEIGHT = 275;
 const UI_X = 313;
 const UI_Y = 36;
+const WIDTH = 196;
 
+const HALF_WIDTH = (WIDTH / 2) | 0;
+const TABS = [ 'Stats', 'Quests' ];
 const TAB_HEIGHT = 24;
-const TAB_WIDTH = (UI_WIDTH / 2) | 0;
 
 const SHORT_SKILL_NAMES = [
     'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic',
@@ -33,8 +34,8 @@ const EXPERIENCE_ARRAY = [];
 let totalExp = 0;
 
 for (let i = 0; i < 99; i++) {
-    let level = i + 1;
-    let exp = (level + 300 * Math.pow(2, level / 7)) | 0;
+    const level = i + 1;
+    const exp = (level + 300 * Math.pow(2, level / 7)) | 0;
     totalExp += exp;
     EXPERIENCE_ARRAY[i] = totalExp & 0xffffffc;
 }
@@ -64,28 +65,11 @@ const QUEST_NAMES = FREE_QUESTS.concat(MEMBERS_QUESTS);
 function drawUiTabPlayerInfo(noMenus) {
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 3);
 
-    // draw Stats and Quests buttons, and shade currently selected
-    let questsTabColour = 0;
-    let statsTabColour = questsTabColour = DARK_GREY;
-
-    if (this.uiTabPlayerInfoSubTab === 0) {
-        statsTabColour = LIGHT_GREY;
-    } else {
-        questsTabColour = LIGHT_GREY;
-    }
-
-    this.surface.drawBoxAlpha(UI_X, UI_Y, TAB_WIDTH, TAB_HEIGHT, statsTabColour,
-        128);
-    this.surface.drawBoxAlpha(UI_X + TAB_WIDTH, UI_Y, TAB_WIDTH, TAB_HEIGHT,
-        questsTabColour, 128);
-    this.surface.drawBoxAlpha(UI_X, UI_Y + TAB_HEIGHT, UI_WIDTH, UI_HEIGHT -
+    this.surface.drawBoxAlpha(UI_X, UI_Y + TAB_HEIGHT, WIDTH, HEIGHT -
         TAB_HEIGHT, LIGHT_GREY, 128);
-    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, UI_WIDTH, 0);
-    this.surface.drawLineVert(UI_X + TAB_WIDTH, UI_Y, TAB_HEIGHT, 0);
-    this.surface.drawStringCenter('Stats', UI_X + ((UI_WIDTH / 4) | 0),
-        UI_Y + 16, 4, 0);
-    this.surface.drawStringCenter('Quests', UI_X + ((UI_WIDTH / 4) | 0) +
-        TAB_WIDTH, UI_Y + 16, 4, 0);
+    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, BLACK);
+    this.surface.drawTabs(UI_X, UI_Y, WIDTH, TAB_HEIGHT, TABS,
+        this.uiTabPlayerInfoSubTab);
 
     // the handler for the Stats tab
     if (this.uiTabPlayerInfoSubTab === 0) {
@@ -124,13 +108,13 @@ function drawUiTabPlayerInfo(noMenus) {
                 `${SHORT_SKILL_NAMES[i + 9]}:@yel@` +
                 `${this.playerStatCurrent[i + 9]}/` +
                 this.playerStatBase[i + 9],
-                (UI_X + ((UI_WIDTH / 2) | 0)) - 5, y - 13, 1, textColour);
+                (UI_X + HALF_WIDTH) - 5, y - 13, 1, textColour);
 
             y += 13;
         }
 
         this.surface.drawString(`Quest Points:@yel@${this.playerQuestPoints}`,
-            (UI_X + TAB_WIDTH) - 5, y - 13, 1, WHITE);
+            (UI_X + HALF_WIDTH) - 5, y - 13, 1, WHITE);
         y += 12;
         this.surface.drawString(
             `Fatigue: @yel@${(((this.statFatigue * 100) / 750) | 0)}%`,
@@ -150,14 +134,14 @@ function drawUiTabPlayerInfo(noMenus) {
                 this.surface.drawString(
                     `${EQUIPMENT_STAT_NAMES[i + 3]}:@yel@` +
                     this.playerStatEquipment[i + 3],
-                    UI_X + ((UI_WIDTH / 2) | 0) + 25, y, 1, WHITE);
+                    UI_X + HALF_WIDTH + 25, y, 1, WHITE);
             }
 
             y += 13;
         }
 
         y += 6;
-        this.surface.drawLineHoriz(UI_X, y - 15, UI_WIDTH, 0);
+        this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, BLACK);
 
         if (selectedSkill !== -1) {
             this.surface.drawString(`${SKILL_NAMES[selectedSkill]} skill`,
@@ -170,7 +154,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 if (this.playerExperience[selectedSkill] >=
                     EXPERIENCE_ARRAY[i]) {
                     nextLevelAt = EXPERIENCE_ARRAY[i + 1];
-                    // TODO ? break;
+                    break;
                 }
             }
 
@@ -220,7 +204,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
     // handle clicking of Stats and Quest tab, and the scroll wheel for the
     // quest list
-    if (mouseX >= 0 && mouseY >= 0 && mouseX < UI_WIDTH && mouseY < UI_HEIGHT) {
+    if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < HEIGHT) {
         if (this.uiTabPlayerInfoSubTab === 1) {
             this.panelQuestList.handleMouse(mouseX + UI_X, mouseY + UI_Y,
                 this.lastMouseButtonDown, this.mouseButtonDown,
@@ -228,9 +212,9 @@ function drawUiTabPlayerInfo(noMenus) {
         }
 
         if (mouseY <= TAB_HEIGHT && this.mouseButtonClick === 1) {
-            if (mouseX < TAB_WIDTH) {
+            if (mouseX < HALF_WIDTH) {
                 this.uiTabPlayerInfoSubTab = 0;
-            } else if (mouseX > TAB_WIDTH) {
+            } else if (mouseX > HALF_WIDTH) {
                 this.uiTabPlayerInfoSubTab = 1;
             }
         }

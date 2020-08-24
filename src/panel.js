@@ -72,8 +72,8 @@ class Panel {
         this.colourBoxLeftNRight = this.rgbToLongMod(84, 93, 120);
     }
 
-    rgbToLongMod(i, j, k) {
-        return Surface.rgbToLong(((Panel.redMod * i) / 114) | 0, ((Panel.greenMod * j) / 114) | 0, ((Panel.blueMod * k) / 176) | 0);
+    rgbToLongMod(r, g, b) {
+        return Surface.rgbToLong(((Panel.redMod * r) / 114) | 0, ((Panel.greenMod * g) / 114) | 0, ((Panel.blueMod * b) / 176) | 0);
     }
 
     handleMouse(mx, my, lastMb, mbDown, mScrollDelta = 0) {

@@ -1,5 +1,9 @@
 const Utility = require('./utility');
 
+const BLACK = 0;
+const DARK_GREY = 0xa0a0a0;
+const LIGHT_GREY = 0xdcdcdc;
+
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 
@@ -15,8 +19,6 @@ function fixPixel(pixel) {
 
 class Surface {
     constructor(width, height, limit, component) {
-        this.mudclientref = null;
-
         this.image = null;
         this.landscapeColours = null;
         this.anIntArray340 = null;
@@ -1856,7 +1858,7 @@ class Surface {
 
             return;
         } catch (e) {
-            console.log('error in transparent sprite plot routine');
+            console.error('error in transparent sprite plot routine');
         }
     }
 
@@ -2058,7 +2060,7 @@ class Surface {
         this.drawString(text, x - ((this.textWidth(text, font) / 2) | 0), y, font, colour);
     }
 
-    centrepara(text, x, y, font, colour, max) {
+    drawParagraph(text, x, y, font, colour, max) {
         try {
             let width = 0;
             let fontData = Surface.gameFonts[font];
@@ -2108,59 +2110,59 @@ class Surface {
         try {
             let fontData = Surface.gameFonts[font];
 
-            for (let idx = 0; idx < text.length; idx++)
-                if (text[idx] === '@' && idx + 4 < text.length && text[idx + 4] === '@') {
-                    if (text.slice(idx + 1, idx + 4).toLowerCase() === 'red') {
+            for (let i = 0; i < text.length; i++) {
+                if (text[i] === '@' && i + 4 < text.length && text[i + 4] === '@') {
+                    if (text.slice(i + 1, i + 4).toLowerCase() === 'red') {
                         colour = 0xff0000;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'lre') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'lre') {
                         colour = 0xff9040;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'yel') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'yel') {
                         colour = 0xffff00;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'gre') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gre') {
                         colour = 65280;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'blu') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'blu') {
                         colour = 255;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'cya') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'cya') {
                         colour = 65535;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'mag') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'mag') {
                         colour = 0xff00ff;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'whi') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'whi') {
                         colour = 0xffffff;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'bla') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'bla') {
                         colour = 0;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'dre') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'dre') {
                         colour = 0xc00000;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'ora') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'ora') {
                         colour = 0xff9040;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'ran') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'ran') {
                         colour = (Math.random() * 16777215) | 0;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'or1') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or1') {
                         colour = 0xffb000;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'or2') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or2') {
                         colour = 0xff7000;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'or3') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or3') {
                         colour = 0xff3000;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'gr1') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr1') {
                         colour = 0xc0ff00;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'gr2') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr2') {
                         colour = 0x80ff00;
-                    } else if (text.slice(idx + 1, idx + 4).toLowerCase() === 'gr3') {
+                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr3') {
                         colour = 0x40ff00;
                     }
 
-                    idx += 4;
-                } else if (text[idx] === '~' && idx + 4 < text.length && text[idx + 4] === '~') {
-                    let c = text.charCodeAt(idx + 1);
-                    let c1 = text.charCodeAt(idx + 2);
-                    let c2 = text.charCodeAt(idx + 3);
+                    i += 4;
+                } else if (text[i] === '~' && i + 4 < text.length && text[i + 4] === '~') {
+                    let c = text.charCodeAt(i + 1);
+                    let c1 = text.charCodeAt(i + 2);
+                    let c2 = text.charCodeAt(i + 3);
 
                     if (c >= C_0 && c <= C_9 && c1 >= C_0 && c1 <= C_9 && c2 >= C_0 && c2 <= C_9) {
-                        x = Number(text.substring(idx + 1, idx + 4)) | 0;
+                        x = Number(text.substring(i + 1, i + 4)) | 0;
                     }
 
-                    idx += 4;
+                    i += 4;
                 } else {
-                    let width = Surface.characterWidth[text.charCodeAt(idx)];
+                    let width = Surface.characterWidth[text.charCodeAt(i)];
 
                     if (this.loggedIn && colour !== 0) {
                         this.drawCharacter(width, x + 1, y, 0, fontData);
@@ -2170,8 +2172,7 @@ class Surface {
                     this.drawCharacter(width, x, y, colour, fontData);
                     x += fontData[width + 7];
                 }
-
-            return;
+            }
         } catch (e) {
             console.error(e);
             return;
@@ -2353,6 +2354,27 @@ class Surface {
         }
 
         return total;
+    }
+
+    drawTabs(x, y, width, height, tabs, selected) {
+        const tabWidth = (width / tabs.length) | 0;
+        let xOffset = 0;
+
+        for (let i = 0; i < tabs.length; i += 1) {
+            const tabColour = selected === i ? LIGHT_GREY : DARK_GREY;
+
+            this.drawBoxAlpha(x + xOffset, y, tabWidth, height, tabColour, 128);
+            this.drawStringCenter(tabs[i], x + xOffset + ((tabWidth / 2) | 0),
+                y + 16, 4, BLACK);
+
+            if (i > 0) {
+                this.drawLineVert(x + xOffset, y, height, BLACK);
+            }
+
+            xOffset += tabWidth;
+        }
+
+        this.drawLineHoriz(x, y + height, width, BLACK);
     }
 }
 

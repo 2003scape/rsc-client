@@ -30,9 +30,9 @@ function drawDialogCombatStyle() {
             this.combatStyle = i - 1;
             this.mouseButtonClick = 0;
 
-            this.clientStream.newPacket(clientOpcodes.COMBAT_STYLE);
-            this.clientStream.putByte(this.combatStyle);
-            this.clientStream.sendPacket();
+            this.packetStream.newPacket(clientOpcodes.COMBAT_STYLE);
+            this.packetStream.putByte(this.combatStyle);
+            this.packetStream.sendPacket();
             break;
         }
     }
@@ -42,9 +42,9 @@ function drawDialogCombatStyle() {
         this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + i * BUTTON_HEIGHT,
             WIDTH, BUTTON_HEIGHT, boxColour, 128);
         this.surface.drawLineHoriz(DIALOG_X, DIALOG_Y + i * BUTTON_HEIGHT,
-            WIDTH, 0);
+            WIDTH, BLACK);
         this.surface.drawLineHoriz(DIALOG_X, DIALOG_Y + (i * BUTTON_HEIGHT) +
-            BUTTON_HEIGHT, WIDTH, 0);
+            BUTTON_HEIGHT, WIDTH, BLACK);
     }
 
     let y = 16;

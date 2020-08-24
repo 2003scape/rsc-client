@@ -48,8 +48,6 @@ class Scene {
         this.fogZFalloff = 20;
         this.fogZDistance = 10;
         this.wideBand = false;
-        this.aDouble387 = 1.1000000000000001;
-        this.anInt388 = 1;
         this.mousePickingActive = false;
         this.mousePickedMax = 100;
         this.mousePickedModels = [];
@@ -114,8 +112,8 @@ class Scene {
         }
 
         for (let j1 = 0; j1 < 1024; j1++) {
-            Scene.sin2048Cache[j1] = (Math.sin(j1 * 0.00613592315) * 32768) | 0;
-            Scene.sin2048Cache[j1 + 1024] = (Math.cos(j1 * 0.00613592315) * 32768) | 0;
+            Scene.sinCosCache[j1] = (Math.sin(j1 * 0.00613592315) * 32768) | 0;
+            Scene.sinCosCache[j1 + 1024] = (Math.cos(j1 * 0.00613592315) * 32768) | 0;
         }
     }
 
@@ -1407,24 +1405,24 @@ class Scene {
         let j1 = -this.cameraRoll + 1024 & 0x3ff;
 
         if (j1 !== 0) {
-            let k1 = Scene.sin2048Cache[j1];
-            let j2 = Scene.sin2048Cache[j1 + 1024];
+            let k1 = Scene.sinCosCache[j1];
+            let j2 = Scene.sinCosCache[j1 + 1024];
             let i3 = j * k1 + i * j2 >> 15;
             j = j * j2 - i * k1 >> 15;
             i = i3;
         }
 
         if (l !== 0) {
-            let l1 = Scene.sin2048Cache[l];
-            let k2 = Scene.sin2048Cache[l + 1024];
+            let l1 = Scene.sinCosCache[l];
+            let k2 = Scene.sinCosCache[l + 1024];
             let j3 = j * k2 - k * l1 >> 15;
             k = j * l1 + k * k2 >> 15;
             j = j3;
         }
 
         if (i1 !== 0) {
-            let i2 = Scene.sin2048Cache[i1];
-            let l2 = Scene.sin2048Cache[i1 + 1024];
+            let i2 = Scene.sinCosCache[i1];
+            let l2 = Scene.sinCosCache[i1 + 1024];
             let k3 = k * i2 + i * l2 >> 15;
             k = k * l2 - i * i2 >> 15;
             i = k3;
@@ -2827,24 +2825,24 @@ class Scene {
         let j2 = distance;
 
         if (pitch !== 0) {
-            let k2 = Scene.sin2048Cache[pitch];
-            let j3 = Scene.sin2048Cache[pitch + 1024];
+            let k2 = Scene.sinCosCache[pitch];
+            let j3 = Scene.sinCosCache[pitch + 1024];
             let i4 = i2 * j3 - j2 * k2 >> 15;
             j2 = i2 * k2 + j2 * j3 >> 15;
             i2 = i4;
         }
 
         if (yaw !== 0) {
-            let l2 = Scene.sin2048Cache[yaw];
-            let k3 = Scene.sin2048Cache[yaw + 1024];
+            let l2 = Scene.sinCosCache[yaw];
+            let k3 = Scene.sinCosCache[yaw + 1024];
             let j4 = j2 * l2 + l1 * k3 >> 15;
             j2 = j2 * k3 - l1 * l2 >> 15;
             l1 = j4;
         }
 
         if (roll !== 0) {
-            let i3 = Scene.sin2048Cache[roll];
-            let l3 = Scene.sin2048Cache[roll + 1024];
+            let i3 = Scene.sinCosCache[roll];
+            let l3 = Scene.sinCosCache[roll + 1024];
             let k4 = i2 * i3 + l1 * l3 >> 15;
             i2 = i2 * l3 - l1 * i3 >> 15;
             l1 = k4;
@@ -3816,7 +3814,7 @@ class Scene {
     }
 }
 
-Scene.sin2048Cache = new Int32Array(2048);
+Scene.sinCosCache = new Int32Array(2048);
 Scene.frustumMaxX = 0;
 Scene.frustumMinX = 0;
 Scene.frustumMaxY = 0;

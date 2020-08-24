@@ -21,7 +21,8 @@ class GameShell {
             resetCompass: false,
             zoomCamera: false,
             showRoofs: true,
-            remainingXp: false
+            remainingXp: false,
+            wordFilter: true
         };
 
         this.middleButtonDown = false;
@@ -65,8 +66,8 @@ class GameShell {
         this.interlace = false;
         this.inputTextCurrent = '';
         this.inputTextFinal = '';
-        this.inputPmCurrent = '';
-        this.inputPmFinal = '';
+        this.inputPMCurrent = '';
+        this.inputPMFinal = '';
     }
 
     async startApplication(width, height, title) {
@@ -151,14 +152,14 @@ class GameShell {
                 this.inputTextCurrent += String.fromCharCode(chr);
             }
 
-            if (this.inputPmCurrent.length < 80) {
-                this.inputPmCurrent += String.fromCharCode(chr);
+            if (this.inputPMCurrent.length < 80) {
+                this.inputPMCurrent += String.fromCharCode(chr);
             }
         }
 
         if (code === keycodes.ENTER) {
             this.inputTextFinal = this.inputTextCurrent;
-            this.inputPmFinal = this.inputPmCurrent;
+            this.inputPMFinal = this.inputPMCurrent;
         }
 
         if (code === keycodes.BACKSPACE) {
@@ -166,8 +167,8 @@ class GameShell {
                 this.inputTextCurrent = this.inputTextCurrent.substring(0, this.inputTextCurrent.length - 1);
             }
 
-            if (this.inputPmCurrent.length > 0) {
-                this.inputPmCurrent = this.inputPmCurrent.substring(0, this.inputPmCurrent.length - 1);
+            if (this.inputPMCurrent.length > 0) {
+                this.inputPMCurrent = this.inputPMCurrent.substring(0, this.inputPMCurrent.length - 1);
             }
         }
 
@@ -553,7 +554,6 @@ class GameShell {
     }
 
     getGraphics() {
-        //return new Graphics(this.canvas);
         return this._graphics;
     }
 

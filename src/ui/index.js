@@ -1,8 +1,14 @@
 const components = [
     require('./combat-style'),
-    require('./report-abuse'),
-    require('./wilderness-warning'),
+    require('./inventory-tab'),
+    require('./magic-tab'),
+    require('./minimap-tab'),
+    require('./options-tab'),
     require('./player-info-tab'),
+    require('./report-dialog'),
+    require('./social-dialog'),
+    require('./social-tab'),
+    require('./wilderness-dialog')
 ];
 
 function applyUI(mudclient) {

@@ -1,13 +1,13 @@
-const clientOpcodes = require('./opcodes/client');
 const ChatMessage = require('./chat-message');
-const ClientStream = require('./client-stream');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameShell = require('./game-shell');
 const Long = require('long');
-const serverOpcodes = require('./opcodes/server');
+const PacketStream = require('./packet-stream');
 const Utility = require('./utility');
 const WordFilter = require('./word-filter');
+const clientOpcodes = require('./opcodes/client');
+const serverOpcodes = require('./opcodes/server');
 const sleep = require('sleep-promise');
 
 function fromCharArray(a) {
@@ -18,7 +18,7 @@ class GameConnection extends GameShell {
     constructor(canvas) {
         super(canvas);
 
-        this.clientStream = null;
+        this.packetStream = null;
         this.friendListCount = 0;
         this.ignoreListCount = 0;
         this.settingsBlockChat = 0;
@@ -81,17 +81,16 @@ class GameConnection extends GameShell {
                 this.showLoginScreenStatus('Please wait...', 'Connecting to server');
             }
 
-
-            this.clientStream = new ClientStream(await this.createSocket(this.server, this.port), this);
-            this.clientStream.maxReadTries = GameConnection.maxReadTries;
+            this.packetStream = new PacketStream(await this.createSocket(this.server, this.port), this);
+            this.packetStream.maxReadTries = GameConnection.maxReadTries;
 
             let l = Utility.usernameToHash(u);
 
-            this.clientStream.newPacket(clientOpcodes.SESSION);
-            this.clientStream.putByte(l.shiftRight(16).and(31).toInt());
-            this.clientStream.flushPacket();
+            this.packetStream.newPacket(clientOpcodes.SESSION);
+            this.packetStream.putByte(l.shiftRight(16).and(31).toInt());
+            this.packetStream.flushPacket();
 
-            let sessId = await this.clientStream.getLong();
+            let sessId = await this.packetStream.getLong();
             this.sessionID = sessId;
 
             if (sessId.equals(0)) {
@@ -107,30 +106,30 @@ class GameConnection extends GameShell {
             ai[2] = sessId.shiftRight(32).toInt();
             ai[3] = sessId.toInt();
 
-            this.clientStream.newPacket(clientOpcodes.LOGIN);
+            this.packetStream.newPacket(clientOpcodes.LOGIN);
 
             if (reconnecting) {
-                this.clientStream.putByte(1);
+                this.packetStream.putByte(1);
             } else {
-                this.clientStream.putByte(0);
+                this.packetStream.putByte(0);
             }
 
-            this.clientStream.putShort(GameConnection.clientVersion);
-            this.clientStream.putByte(0); // limit30
+            this.packetStream.putShort(GameConnection.clientVersion);
+            this.packetStream.putByte(0); // limit30
 
-            this.clientStream.putByte(10);
-            this.clientStream.putInt(ai[0]);
-            this.clientStream.putInt(ai[1]);
-            this.clientStream.putInt(ai[2]);
-            this.clientStream.putInt(ai[3]);
-            this.clientStream.putInt(0); // uuid
-            this.clientStream.putString(u);
-            this.clientStream.putString(p);
+            this.packetStream.putByte(10);
+            this.packetStream.putInt(ai[0]);
+            this.packetStream.putInt(ai[1]);
+            this.packetStream.putInt(ai[2]);
+            this.packetStream.putInt(ai[3]);
+            this.packetStream.putInt(0); // uuid
+            this.packetStream.putString(u);
+            this.packetStream.putString(p);
 
-            this.clientStream.flushPacket();
-            //this.clientStream.seedIsaac(ai);
+            this.packetStream.flushPacket();
+            //this.packetStream.seedIsaac(ai);
 
-            let resp = await this.clientStream.readStream();
+            let resp = await this.packetStream.readStream();
             console.log('login response:' + resp);
 
             if (resp === 25) {
@@ -277,10 +276,10 @@ class GameConnection extends GameShell {
     }
 
     closeConnection() {
-        if (this.clientStream !== null) {
+        if (this.packetStream !== null) {
             try {
-                this.clientStream.newPacket(clientOpcodes.CLOSE_CONNECTION);
-                this.clientStream.flushPacket();
+                this.packetStream.newPacket(clientOpcodes.CLOSE_CONNECTION);
+                this.packetStream.flushPacket();
             } catch (e) {
                 console.error(e);
             }
@@ -321,27 +320,27 @@ class GameConnection extends GameShell {
     async checkConnection() {
         let l = Date.now();
 
-        if (this.clientStream.hasPacket()) {
+        if (this.packetStream.hasPacket()) {
             this.packetLastRead = l;
         }
 
         if (l - this.packetLastRead > 5000) {
             this.packetLastRead = l;
-            this.clientStream.newPacket(clientOpcodes.PING);
-            this.clientStream.sendPacket();
+            this.packetStream.newPacket(clientOpcodes.PING);
+            this.packetStream.sendPacket();
         }
 
         try {
-            this.clientStream.writePacket(20);
+            this.packetStream.writePacket(20);
         } catch (e) {
             await this.lostConnection();
             return;
         }
 
-        let psize = await this.clientStream.readPacket(this.incomingPacket);
+        let psize = await this.packetStream.readPacket(this.incomingPacket);
 
         if (psize > 0) {
-            let ptype = this.clientStream.isaacCommand(this.incomingPacket[0] & 0xff);
+            let ptype = this.packetStream.isaacCommand(this.incomingPacket[0] & 0xff);
             this.handlePacket(ptype, ptype, psize);
         }
     }
@@ -465,20 +464,20 @@ class GameConnection extends GameShell {
     }
 
     sendPrivacySettings(chat, priv, trade, duel) {
-        this.clientStream.newPacket(clientOpcodes.SETTINGS_PRIVACY);
-        this.clientStream.putByte(chat);
-        this.clientStream.putByte(priv);
-        this.clientStream.putByte(trade);
-        this.clientStream.putByte(duel);
-        this.clientStream.sendPacket();
+        this.packetStream.newPacket(clientOpcodes.SETTINGS_PRIVACY);
+        this.packetStream.putByte(chat);
+        this.packetStream.putByte(priv);
+        this.packetStream.putByte(trade);
+        this.packetStream.putByte(duel);
+        this.packetStream.sendPacket();
     }
 
     ignoreAdd(s) {
         let l = Utility.usernameToHash(s);
 
-        this.clientStream.newPacket(clientOpcodes.IGNORE_ADD);
-        this.clientStream.putLong(l);
-        this.clientStream.sendPacket();
+        this.packetStream.newPacket(clientOpcodes.IGNORE_ADD);
+        this.packetStream.putLong(l);
+        this.packetStream.sendPacket();
 
         for (let i = 0; i < this.ignoreListCount; i++) {
             if (this.ignoreList[i].equals(l)) {
@@ -495,9 +494,9 @@ class GameConnection extends GameShell {
     }
 
     ignoreRemove(l) {
-        this.clientStream.newPacket(clientOpcodes.IGNORE_REMOVE);
-        this.clientStream.putLong(l);
-        this.clientStream.sendPacket();
+        this.packetStream.newPacket(clientOpcodes.IGNORE_REMOVE);
+        this.packetStream.putLong(l);
+        this.packetStream.sendPacket();
 
         for (let i = 0; i < this.ignoreListCount; i++) {
             if (this.ignoreList[i].equals(l)) {
@@ -513,9 +512,9 @@ class GameConnection extends GameShell {
     }
 
     friendAdd(s) {
-        this.clientStream.newPacket(clientOpcodes.FRIEND_ADD);
-        this.clientStream.putLong(Utility.usernameToHash(s));
-        this.clientStream.sendPacket();
+        this.packetStream.newPacket(clientOpcodes.FRIEND_ADD);
+        this.packetStream.putLong(Utility.usernameToHash(s));
+        this.packetStream.sendPacket();
 
         let l = Utility.usernameToHash(s);
 
@@ -536,9 +535,9 @@ class GameConnection extends GameShell {
     }
 
     friendRemove(l) {
-        this.clientStream.newPacket(clientOpcodes.FRIEND_REMOVE);
-        this.clientStream.putLong(l);
-        this.clientStream.sendPacket();
+        this.packetStream.newPacket(clientOpcodes.FRIEND_REMOVE);
+        this.packetStream.putLong(l);
+        this.packetStream.sendPacket();
 
         for (let i = 0; i < this.friendListCount; i++) {
             if (!this.friendListHashes[i].equals(l)) {
@@ -559,26 +558,22 @@ class GameConnection extends GameShell {
     }
 
     sendPrivateMessage(u, buff, len) {
-        this.clientStream.newPacket(clientOpcodes.PM);
-        this.clientStream.putLong(u);
-        this.clientStream.putBytes(buff, 0, len);
-        this.clientStream.sendPacket();
+        this.packetStream.newPacket(clientOpcodes.PM);
+        this.packetStream.putLong(u);
+        this.packetStream.putBytes(buff, 0, len);
+        this.packetStream.sendPacket();
     }
 
     sendChatMessage(buff, len) {
-        this.clientStream.newPacket(clientOpcodes.CHAT);
-        this.clientStream.putBytes(buff, 0, len);
-        this.clientStream.sendPacket();
+        this.packetStream.newPacket(clientOpcodes.CHAT);
+        this.packetStream.putBytes(buff, 0, len);
+        this.packetStream.sendPacket();
     }
 
     sendCommandString(s) {
-        this.clientStream.newPacket(clientOpcodes.COMMAND);
-        this.clientStream.putString(s);
-        this.clientStream.sendPacket();
-    }
-
-    method43() {
-        return true;
+        this.packetStream.newPacket(clientOpcodes.COMMAND);
+        this.packetStream.putString(s);
+        this.packetStream.sendPacket();
     }
 }
 

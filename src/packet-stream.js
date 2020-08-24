@@ -10,8 +10,8 @@ function toCharArray(s) {
     return a;
 }
 
-class Packet {
-    constructor() {
+class PacketStream {
+    constructor(socket) {
         this.readTries = 0;
         this.maxReadTries = 0;
         this.packetStart = 0;
@@ -26,6 +26,10 @@ class Packet {
         this.packet8Check = 8;
         this.packetMaxLength = 5000;
         this.socketExceptionMessage = '';
+
+        this.closing = false;
+        this.closed = false;
+        this.socket = socket;
     }
 
     // TODO toggle ISAAC
@@ -138,8 +142,8 @@ class Packet {
         if (this.packetMaxLength <= 10000) {
             let k = this.packetData[this.packetStart + 2] & 0xff;
 
-            Packet.anIntArray537[k]++;
-            Packet.anIntArray541[k] += this.packetEnd - this.packetStart;
+            PacketStream.anIntArray537[k]++;
+            PacketStream.anIntArray541[k] += this.packetEnd - this.packetStart;
         }
 
         this.packetStart = this.packetEnd;
@@ -226,9 +230,47 @@ class Packet {
         this.sendPacket();
         this.writePacket(0);
     }
+
+    closeStream() {
+        this.closing = true;
+        this.socket.close();
+        this.closed = true;
+    }
+
+    async readStream() {
+        if (this.closing) {
+            return 0;
+        }
+
+        return await this.socket.read();
+    }
+
+    availableStream() {
+        if (this.closing) {
+            return 0;
+        }
+
+        return this.socket.available();
+    }
+
+    async readStreamBytes(len, off, buff) {
+        if (this.closing) {
+            return;
+        }
+
+        await this.socket.readBytes(buff, off, len);
+    }
+
+    writeStreamBytes(buff, off, len) {
+        if (this.closing) {
+            return;
+        }
+
+        this.socket.write(buff, off, len);
+    }
 }
 
-Packet.anIntArray537 = new Int32Array(256);
-Packet.anIntArray541 = new Int32Array(256);
+PacketStream.anIntArray537 = new Int32Array(256);
+PacketStream.anIntArray541 = new Int32Array(256);
 
-module.exports = Packet;
+module.exports = PacketStream;

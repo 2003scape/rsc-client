@@ -15,7 +15,10 @@ class StreamAudioPlayer {
     }
 
     writeStream(buffer, offset, length) {
-        const decoded = mulaw.decode(new Uint8Array(buffer.slice(offset, offset + length)));
+        const decoded = mulaw.decode(
+            new Uint8Array(buffer.slice(offset, offset + length))
+        );
+
         this.player.feed(decoded);
     }
 }

@@ -71,7 +71,6 @@ class mudclient extends GameConnection {
         this.mouseButtonItemCountIncrement = 0;
         this.animationIndex = 0;
         this.cameraRotationX = 0;
-        this.loginScreen = 0;
         this.tradeConfirmAccepted = false;
         this.appearanceHeadType = 0;
         this.appearanceSkinColour = 0;
@@ -111,11 +110,6 @@ class mudclient extends GameConnection {
         this.spriteTexture = 0;
         this.spriteTextureWorld = 0;
         this.spriteLogo = 0;
-        this.controlLoginStatus = 0;
-        this.controlLoginUser = 0;
-        this.controlLoginPass = 0;
-        this.controlLoginOk = 0;
-        this.controlLoginCancel = 0;
         this.teleportBubbleCount = 0;
         this.mouseClickCount = 0;
         this.shopSellPriceMod = 0;
@@ -151,12 +145,9 @@ class mudclient extends GameConnection {
             new Int32Array([4, 3, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]),
             new Int32Array([11, 4, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3]),
             new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 4, 3])];
-        this.controlWelcomeNewUser = 0;
-        this.controlWelcomeExistingUser = 0;
         this.npcWalkModel = new Int32Array([0, 1, 2, 1]);
         this.referID = 0;
         this.controlRegisterStatus = 0;
-        this.controlLoginNewOk = 0;
         this.combatTimeout = 0;
         this.optionMenuCount = 0;
         this.errorLoadingCodebase = false;
@@ -231,7 +222,6 @@ class mudclient extends GameConnection {
         this.newBankItems = new Int32Array(256);
         this.newBankItemsCount = new Int32Array(256);
         this.teleportBubbleTime = new Int32Array(50);
-        this.showDialogTradeConfirm = false;
         this.tradeConfirmAccepted = false;
         this.receivedMessageX = new Int32Array(50);
         this.receivedMessageY = new Int32Array(50);
@@ -241,7 +231,6 @@ class mudclient extends GameConnection {
         this.localPlayerServerIndex = -1;
         this.menuItemX = new Int32Array(MENU_MAX_SIZE);
         this.menuItemY = new Int32Array(MENU_MAX_SIZE);
-        this.showDialogTrade = false;
         this.bankItems = new Int32Array(256);
         this.bankItemsCount = new Int32Array(256);
         this.appearanceBodyGender = 1;
@@ -276,7 +265,6 @@ class mudclient extends GameConnection {
         this.tradeAccepted = false;
         this.mouseClickXHistory = new Int32Array(8192);
         this.mouseClickYHistory = new Int32Array(8192);
-        this.showDialogWelcome = false;
         this.playerServerIndexes = new Int32Array(PLAYERS_MAX);
         this.teleportBubbleY = new Int32Array(50);
         this.receivedMessages = [];
@@ -411,30 +399,15 @@ class mudclient extends GameConnection {
         this.objectModel.fill(null);
     }
 
-    static formatNumber(i) {
-        let s = i.toString();
-
-        for (let j = s.length - 3; j > 0; j -= 3) {
-            s = s.substring(0, j) + ',' + s.substring(j);
-        }
-
-        if (s.length > 8) {
-            s = '@gre@' + s.substring(0, s.length - 8) + ' million @whi@(' + s + ')';
-        } else if (s.length > 4) {
-            s = '@cya@' + s.substring(0, s.length - 4) + 'K @whi@(' + s + ')';
-        }
-
-        return s;
-    }
-
-    playSoundFile(s) {
-        if (!this.audioPlayer) {
+    playSoundFile(soundName) {
+        if (!this.audioPlayer || this.optionSoundDisabled) {
             return;
         }
 
-        if (!this.optionSoundDisabled) {
-            this.audioPlayer.writeStream(this.soundData, Utility.getDataFileOffset(s + '.pcm', this.soundData), Utility.getDataFileLength(s + '.pcm', this.soundData));
-        }
+        const fileName = `${soundName}.pcm`;
+        this.audioPlayer.writeStream(this.soundData,
+            Utility.getDataFileOffset(fileName, this.soundData),
+            Utility.getDataFileLength(fileName, this.soundData));
     }
 
     _walkToActionSource_from8(startX, startY, x1, y1, x2, y2, checkObjects, walkToAction) {
@@ -519,14 +492,6 @@ class mudclient extends GameConnection {
         this.mouseClickXY = this.mouseY;
 
         return true;
-    }
-
-    drawMinimapEntity(x, y, colour) {
-        this.surface.setPixel(x, y, colour);
-        this.surface.setPixel(x - 1, y, colour);
-        this.surface.setPixel(x + 1, y, colour);
-        this.surface.setPixel(x, y - 1, colour);
-        this.surface.setPixel(x, y + 1, colour);
     }
 
     updateBankItems() {
@@ -688,7 +653,8 @@ class mudclient extends GameConnection {
                 this.drawOptionMenu();
             }
 
-            if (this.localPlayer.animationCurrent === 8 || this.localPlayer.animationCurrent === 9) {
+            if (this.localPlayer.animationCurrent === 8 ||
+                this.localPlayer.animationCurrent === 9) {
                 this.drawDialogCombatStyle();
             }
 
@@ -728,237 +694,6 @@ class mudclient extends GameConnection {
         }
 
         this.mouseButtonClick = 0;
-    }
-
-    drawDialogTrade() {
-        if (this.mouseButtonClick !== 0 && this.mouseButtonItemCountIncrement === 0) {
-            this.mouseButtonItemCountIncrement = 1;
-        }
-
-        if (this.mouseButtonItemCountIncrement > 0) {
-            let mouseX = this.mouseX - 22;
-            let mouseY = this.mouseY - 36;
-
-            if (mouseX >= 0 && mouseY >= 0 && mouseX < 468 && mouseY < 262) {
-                if (mouseX > 216 && mouseY > 30 && mouseX < 462 && mouseY < 235) {
-                    let slot = (((mouseX - 217) / 49) | 0) + (((mouseY - 31) / 34) | 0) * 5;
-
-                    if (slot >= 0 && slot < this.inventoryItemsCount) {
-                        let sendUpdate = false;
-                        let itemCountAdd = 0;
-                        let itemType = this.inventoryItemId[slot];
-
-                        for (let itemIndex = 0; itemIndex < this.tradeItemsCount; itemIndex++) {
-                            if (this.tradeItems[itemIndex] === itemType) {
-                                if (GameData.itemStackable[itemType] === 0) {
-                                    for (let i4 = 0; i4 < this.mouseButtonItemCountIncrement; i4++) {
-                                        if (this.tradeItemCount[itemIndex] < this.inventoryItemStackCount[slot]) {
-                                            this.tradeItemCount[itemIndex]++;
-                                        }
-
-                                        sendUpdate = true;
-                                    }
-
-                                } else {
-                                    itemCountAdd++;
-                                }
-                            }
-                        }
-
-                        if (this.getInventoryCount(itemType) <= itemCountAdd) {
-                            sendUpdate = true;
-                        }
-
-                        // quest items? or just tagged as 'special'
-                        if (GameData.itemSpecial[itemType] === 1) {
-                            this.showMessage('This object cannot be traded with other players', 3);
-                            sendUpdate = true;
-                        }
-
-                        if (!sendUpdate && this.tradeItemsCount < 12) {
-                            this.tradeItems[this.tradeItemsCount] = itemType;
-                            this.tradeItemCount[this.tradeItemsCount] = 1;
-                            this.tradeItemsCount++;
-                            sendUpdate = true;
-                        }
-
-                        if (sendUpdate) {
-                            this.packetStream.newPacket(clientOpcodes.TRADE_ITEM_UPDATE);
-                            this.packetStream.putByte(this.tradeItemsCount);
-
-                            for (let j4 = 0; j4 < this.tradeItemsCount; j4++) {
-                                this.packetStream.putShort(this.tradeItems[j4]);
-                                this.packetStream.putInt(this.tradeItemCount[j4]);
-                            }
-
-                            this.packetStream.sendPacket();
-                            this.tradeRecipientAccepted = false;
-                            this.tradeAccepted = false;
-                        }
-                    }
-                }
-
-                if (mouseX > 8 && mouseY > 30 && mouseX < 205 && mouseY < 133) {
-                    let itemIndex = (((mouseX - 9) / 49) | 0) + (((mouseY - 31) / 34) | 0) * 4;
-
-                    if (itemIndex >= 0 && itemIndex < this.tradeItemsCount) {
-                        let itemType = this.tradeItems[itemIndex];
-
-                        for (let i2 = 0; i2 < this.mouseButtonItemCountIncrement; i2++) {
-                            if (GameData.itemStackable[itemType] === 0 && this.tradeItemCount[itemIndex] > 1) {
-                                this.tradeItemCount[itemIndex]--;
-                                continue;
-                            }
-                            this.tradeItemsCount--;
-                            this.mouseButtonDownTime = 0;
-
-                            for (let l2 = itemIndex; l2 < this.tradeItemsCount; l2++) {
-                                this.tradeItems[l2] = this.tradeItems[l2 + 1];
-                                this.tradeItemCount[l2] = this.tradeItemCount[l2 + 1];
-                            }
-
-                            break;
-                        }
-
-                        this.packetStream.newPacket(clientOpcodes.TRADE_ITEM_UPDATE);
-                        this.packetStream.putByte(this.tradeItemsCount);
-
-                        for (let i3 = 0; i3 < this.tradeItemsCount; i3++) {
-                            this.packetStream.putShort(this.tradeItems[i3]);
-                            this.packetStream.putInt(this.tradeItemCount[i3]);
-                        }
-
-                        this.packetStream.sendPacket();
-                        this.tradeRecipientAccepted = false;
-                        this.tradeAccepted = false;
-                    }
-                }
-
-                if (mouseX >= 217 && mouseY >= 238 && mouseX <= 286 && mouseY <= 259) {
-                    this.tradeAccepted = true;
-                    this.packetStream.newPacket(clientOpcodes.TRADE_ACCEPT);
-                    this.packetStream.sendPacket();
-                }
-
-                if (mouseX >= 394 && mouseY >= 238 && mouseX < 463 && mouseY < 259) {
-                    this.showDialogTrade = false;
-                    this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                    this.packetStream.sendPacket();
-                }
-            } else if (this.mouseButtonClick !== 0) {
-                this.showDialogTrade = false;
-                this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                this.packetStream.sendPacket();
-            }
-
-            this.mouseButtonClick = 0;
-            this.mouseButtonItemCountIncrement = 0;
-        }
-
-        if (!this.showDialogTrade) {
-            return;
-        }
-
-        let dialogX = 22;
-        let dialogY = 36;
-
-        this.surface.drawBox(dialogX, dialogY, 468, 12, 192);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 12, 468, 18, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 30, 8, 248, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 205, dialogY + 30, 11, 248, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 462, dialogY + 30, 6, 248, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 133, 197, 22, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 258, 197, 20, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 216, dialogY + 235, 246, 43, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 30, 197, 103, 0xd0d0d0, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 155, 197, 103, 0xd0d0d0, 160);
-        this.surface.drawBoxAlpha(dialogX + 216, dialogY + 30, 246, 205, 0xd0d0d0, 160);
-
-        for (let j2 = 0; j2 < 4; j2++) {
-            this.surface.drawLineHoriz(dialogX + 8, dialogY + 30 + j2 * 34, 197, 0);
-        }
-
-        for (let j3 = 0; j3 < 4; j3++) {
-            this.surface.drawLineHoriz(dialogX + 8, dialogY + 155 + j3 * 34, 197, 0);
-        }
-
-        for (let l3 = 0; l3 < 7; l3++) {
-            this.surface.drawLineHoriz(dialogX + 216, dialogY + 30 + l3 * 34, 246, 0);
-        }
-
-        for (let k4 = 0; k4 < 6; k4++) {
-            if (k4 < 5) {
-                this.surface.drawLineVert(dialogX + 8 + k4 * 49, dialogY + 30, 103, 0);
-            }
-
-            if (k4 < 5) {
-                this.surface.drawLineVert(dialogX + 8 + k4 * 49, dialogY + 155, 103, 0);
-            }
-
-            this.surface.drawLineVert(dialogX + 216 + k4 * 49, dialogY + 30, 205, 0);
-        }
-
-        this.surface.drawString('Trading with: ' + this.tradeRecipientName, dialogX + 1, dialogY + 10, 1, 0xffffff);
-        this.surface.drawString('Your Offer', dialogX + 9, dialogY + 27, 4, 0xffffff);
-        this.surface.drawString('Opponent\'s Offer', dialogX + 9, dialogY + 152, 4, 0xffffff);
-        this.surface.drawString('Your Inventory', dialogX + 216, dialogY + 27, 4, 0xffffff);
-
-        if (!this.tradeAccepted) {
-            this.surface._drawSprite_from3(dialogX + 217, dialogY + 238, this.spriteMedia + 25);
-        }
-
-        this.surface._drawSprite_from3(dialogX + 394, dialogY + 238, this.spriteMedia + 26);
-
-        if (this.tradeRecipientAccepted) {
-            this.surface.drawStringCenter('Other player', dialogX + 341, dialogY + 246, 1, 0xffffff);
-            this.surface.drawStringCenter('has accepted', dialogX + 341, dialogY + 256, 1, 0xffffff);
-        }
-
-        if (this.tradeAccepted) {
-            this.surface.drawStringCenter('Waiting for', dialogX + 217 + 35, dialogY + 246, 1, 0xffffff);
-            this.surface.drawStringCenter('other player', dialogX + 217 + 35, dialogY + 256, 1, 0xffffff);
-        }
-
-        for (let itemIndex = 0; itemIndex < this.inventoryItemsCount; itemIndex++) {
-            let slotX = 217 + dialogX + (itemIndex % 5) * 49;
-            let slotY = 31 + dialogY + ((itemIndex / 5) | 0) * 34;
-
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.inventoryItemId[itemIndex]], GameData.itemMask[this.inventoryItemId[itemIndex]], 0, 0, false);
-
-            if (GameData.itemStackable[this.inventoryItemId[itemIndex]] === 0) {
-                this.surface.drawString(this.inventoryItemStackCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
-            }
-        }
-
-        for (let itemIndex = 0; itemIndex < this.tradeItemsCount; itemIndex++) {
-            let slotX = 9 + dialogX + (itemIndex % 4) * 49;
-            let slotY = 31 + dialogY + ((itemIndex / 4) | 0) * 34;
-
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.tradeItems[itemIndex]], GameData.itemMask[this.tradeItems[itemIndex]], 0, 0, false);
-
-            if (GameData.itemStackable[this.tradeItems[itemIndex]] === 0) {
-                this.surface.drawString(this.tradeItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
-            }
-
-            if (this.mouseX > slotX && this.mouseX < slotX + 48 && this.mouseY > slotY && this.mouseY < slotY + 32) {
-                this.surface.drawString(GameData.itemName[this.tradeItems[itemIndex]] + ': @whi@' + GameData.itemDescription[this.tradeItems[itemIndex]], dialogX + 8, dialogY + 273, 1, 0xffff00);
-            }
-        }
-
-        for (let itemIndex = 0; itemIndex < this.tradeRecipientItemsCount; itemIndex++) {
-            let slotX = 9 + dialogX + (itemIndex % 4) * 49;
-            let slotY = 156 + dialogY + ((itemIndex / 4) | 0) * 34;
-
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.tradeRecipientItems[itemIndex]], GameData.itemMask[this.tradeRecipientItems[itemIndex]], 0, 0, false);
-
-            if (GameData.itemStackable[this.tradeRecipientItems[itemIndex]] === 0) {
-                this.surface.drawString(this.tradeRecipientItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
-            }
-
-            if (this.mouseX > slotX && this.mouseX < slotX + 48 && this.mouseY > slotY && this.mouseY < slotY + 32) {
-                this.surface.drawString(GameData.itemName[this.tradeRecipientItems[itemIndex]] + ': @whi@' + GameData.itemDescription[this.tradeRecipientItems[itemIndex]], dialogX + 8, dialogY + 273, 1, 0xffff00);
-            }
-        }
     }
 
     resetGame() {
@@ -1175,122 +910,6 @@ class mudclient extends GameConnection {
         this.panelAppearance.addButtonBackground(x, y, 200, 30);
         this.panelAppearance.addText(x, y, 'Accept', 4, false);
         this.controlButtonAppearanceAccept = this.panelAppearance.addButton(x, y, 200, 30);
-    }
-
-    drawDialogWelcome() {
-        let i = 65;
-
-        if (this.welcomeRecoverySetDays !== 201) {
-            i += 60;
-        }
-
-        if (this.welcomeUnreadMessages > 0) {
-            i += 60;
-        }
-
-        if (this.welcomeLastLoggedInIP !== 0) {
-            i += 45;
-        }
-
-        let y = 167 - ((i / 2) | 0);
-
-        this.surface.drawBox(56, 167 - ((i / 2) | 0), 400, i, 0);
-        this.surface.drawBoxEdge(56, 167 - ((i / 2) | 0), 400, i, 0xffffff);
-        y += 20;
-        this.surface.drawStringCenter('Welcome to RuneScape ' + this.loginUser, 256, y, 4, 0xffff00);
-        y += 30;
-
-        let s = null;
-
-        if (this.welcomeLastLoggedInDays === 0) {
-            s = 'earlier today';
-        } else if (this.welcomeLastLoggedInDays === 1) {
-            s = 'yesterday';
-        } else {
-            s = this.welcomeLastLoggedInDays + ' days ago';
-        }
-
-        if (this.welcomeLastLoggedInIP !== 0) {
-            this.surface.drawStringCenter('You last logged in ' + s, 256, y, 1, 0xffffff);
-            y += 15;
-
-            if (this.welcomeLastLoggedInHost === null) {
-                this.welcomeLastLoggedInHost = this.getHostnameIP(this.welcomeLastLoggedInIP);
-            }
-
-            this.surface.drawStringCenter('from: ' + this.welcomeLastLoggedInHost, 256, y, 1, 0xffffff);
-            y += 15;
-            y += 15;
-        }
-
-        if (this.welcomeUnreadMessages > 0) {
-            let k = 0xffffff;
-
-            this.surface.drawStringCenter('Jagex staff will NEVER email you. We use the', 256, y, 1, k);
-            y += 15;
-            this.surface.drawStringCenter('message-centre on this website instead.', 256, y, 1, k);
-            y += 15;
-
-            if (this.welcomeUnreadMessages === 1) {
-                this.surface.drawStringCenter('You have @yel@0@whi@ unread messages in your message-centre', 256, y, 1, 0xffffff);
-            } else {
-                this.surface.drawStringCenter('You have @gre@' + (this.welcomeUnreadMessages - 1) + ' unread messages @whi@in your message-centre', 256, y, 1, 0xffffff);
-            }
-
-            y += 15;
-            y += 15;
-        }
-
-        if (this.welcomeRecoverySetDays !== 201) {
-            // and this
-            if (this.welcomeRecoverySetDays === 200) {
-                this.surface.drawStringCenter('You have not yet set any password recovery questions.', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('We strongly recommend you do so now to secure your account.', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('Do this from the \'account management\' area on our front webpage', 256, y, 1, 0xff8000);
-                y += 15;
-            } else {
-                let s1 = null;
-
-                if (this.welcomeRecoverySetDays === 0) {
-                    s1 = 'Earlier today';
-                } else if (this.welcomeRecoverySetDays === 1) {
-                    s1 = 'Yesterday';
-                } else {
-                    s1 = this.welcomeRecoverySetDays + ' days ago';
-                }
-
-                this.surface.drawStringCenter(s1 + ' you changed your recovery questions', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('If you do not remember making this change then cancel it immediately', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('Do this from the \'account management\' area on our front webpage', 256, y, 1, 0xff8000);
-                y += 15;
-            }
-
-            y += 15;
-        }
-
-        let l = 0xffffff;
-
-        if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 106 && this.mouseX < 406) {
-            l = 0xff0000;
-        }
-
-        this.surface.drawStringCenter('Click here to close window', 256, y, 1, l);
-
-        if (this.mouseButtonClick === 1) {
-            if (l === 0xff0000) {
-                this.showDialogWelcome = false;
-            }
-
-            if ((this.mouseX < 86 || this.mouseX > 426) && (this.mouseY < 167 - ((i / 2) | 0) || this.mouseY > 167 + ((i / 2) | 0))) {
-                this.showDialogWelcome = false;
-            }
-        }
-
-        this.mouseButtonClick = 0;
     }
 
     drawAppearancePanelCharacterSprites() {
@@ -1911,182 +1530,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    renderLoginScreenViewports() {
-        let rh = 0;
-        let rx = 50; //49;
-        let ry = 50; //47;
-
-        this.world._loadSection_from3(rx * 48 + 23, ry * 48 + 23, rh);
-        this.world.addModels(this.gameModels);
-
-        let x = 9728;
-        let y = 6400;
-        let zoom = 1100;
-        let rotation = 888;
-
-        this.scene.clipFar3d = 4100;
-        this.scene.clipFar2d = 4100;
-        this.scene.fogZFalloff = 1;
-        this.scene.fogZDistance = 4000;
-        this.surface.blackScreen();
-        this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, rotation, 0, zoom * 2);
-        this.scene.render();
-        this.surface.fadeToBlack();
-        this.surface.fadeToBlack();
-        this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
-
-        for (let j = 6; j >= 1; j--) {
-            this.surface.drawLineAlpha(0, j, 0, j, this.gameWidth, 8);
-        }
-
-        this.surface.drawBox(0, 194, 512, 20, 0);
-
-        for (let k = 6; k >= 1; k--) {
-            this.surface.drawLineAlpha(0, k, 0, 194 - k, this.gameWidth, 8);
-        }
-
-        // runescape logo
-        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
-        this.surface._drawSprite_from5(this.spriteLogo, 0, 0, this.gameWidth, 200);
-        this.surface.drawWorld(this.spriteLogo);
-
-        x = 9216;
-        y = 9216;
-        zoom = 1100;
-        rotation = 888;
-
-        this.scene.clipFar3d = 4100;
-        this.scene.clipFar2d = 4100;
-        this.scene.fogZFalloff = 1;
-        this.scene.fogZDistance = 4000;
-
-        this.surface.blackScreen();
-        this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, rotation, 0, zoom * 2);
-        this.scene.render();
-        this.surface.fadeToBlack();
-        this.surface.fadeToBlack();
-        this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
-
-        for (let l = 6; l >= 1; l--) {
-            this.surface.drawLineAlpha(0, l, 0, l, this.gameWidth, 8);
-        }
-
-        this.surface.drawBox(0, 194, this.gameWidth, 20, 0);
-
-        for (let i1 = 6; i1 >= 1; i1--) {
-            this.surface.drawLineAlpha(0, i1, 0, 194 - i1, this.gameWidth, 8);
-        }
-
-        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
-        this.surface._drawSprite_from5(this.spriteLogo + 1, 0, 0, this.gameWidth, 200);
-        this.surface.drawWorld(this.spriteLogo + 1);
-
-        for (let j1 = 0; j1 < 64; j1++) {
-            this.scene.removeModel(this.world.roofModels[0][j1]);
-            this.scene.removeModel(this.world.wallModels[1][j1]);
-            this.scene.removeModel(this.world.roofModels[1][j1]);
-            this.scene.removeModel(this.world.wallModels[2][j1]);
-            this.scene.removeModel(this.world.roofModels[2][j1]);
-        }
-
-        x = 11136;
-        y = 10368;
-        zoom = 500;
-        rotation = 376;
-
-        this.scene.clipFar3d = 4100;
-        this.scene.clipFar2d = 4100;
-        this.scene.fogZFalloff = 1;
-        this.scene.fogZDistance = 4000;
-        this.surface.blackScreen();
-        this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, rotation, 0, zoom * 2);
-        this.scene.render();
-        this.surface.fadeToBlack();
-        this.surface.fadeToBlack();
-        this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
-
-        for (let k1 = 6; k1 >= 1; k1--) {
-            this.surface.drawLineAlpha(0, k1, 0, k1, this.gameWidth, 8);
-        }
-
-        this.surface.drawBox(0, 194, this.gameWidth, 20, 0);
-
-        for (let l1 = 6; l1 >= 1; l1--) {
-            this.surface.drawLineAlpha(0, l1, 0, 194, this.gameWidth, 8);
-        }
-
-        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
-        this.surface._drawSprite_from5(this.spriteMedia + 10, 0, 0, this.gameWidth, 200);
-        this.surface.drawWorld(this.spriteMedia + 10);
-    }
-
-    createLoginPanels() {
-        this.panelLoginWelcome = new Panel(this.surface, 50);
-
-        let y = 40;
-        let x = (this.gameWidth / 2) | 0;
-
-        if (!this.members) {
-            this.panelLoginWelcome.addText(x, 200 + y, 'Click on an option', 5, true);
-            this.panelLoginWelcome.addButtonBackground(x - 100, 240 + y, 120, 35);
-            this.panelLoginWelcome.addButtonBackground(x + 100, 240 + y, 120, 35);
-            this.panelLoginWelcome.addText(x - 100, 240 + y, 'New User', 5, false);
-            this.panelLoginWelcome.addText(x + 100, 240 + y, 'Existing User', 5, false);
-            this.controlWelcomeNewUser = this.panelLoginWelcome.addButton(x - 100, 240 + y, 120, 35);
-            this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(x + 100, 240 + y, 120, 35);
-        } else {
-            this.panelLoginWelcome.addText(x, 200 + y, 'Welcome to RuneScape', 4, true);
-            this.panelLoginWelcome.addText(x, 215 + y, 'You need a member account to use this server', 4, true);
-            this.panelLoginWelcome.addButtonBackground(x, 250 + y, 200, 35);
-            this.panelLoginWelcome.addText(x, 250 + y, 'Click here to login', 5, false);
-            this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(x, 250 + y, 200, 35);
-        }
-
-        this.panelLoginNewUser = new Panel(this.surface, 50);
-        y = 230;
-
-        if (this.referID === 0) {
-            this.panelLoginNewUser.addText(x, y + 8, 'To create an account please go back to the', 4, true);
-            y += 20;
-            this.panelLoginNewUser.addText(x, y + 8, 'www.runescape.com front page, and choose \'create account\'', 4, true);
-        } else if (this.referID === 1) {
-            this.panelLoginNewUser.addText(x, y + 8, 'To create an account please click on the', 4, true);
-            y += 20;
-            this.panelLoginNewUser.addText(x, y + 8, '\'create account\' link below the game window', 4, true);
-        } else {
-            this.panelLoginNewUser.addText(x, y + 8, 'To create an account please go back to the', 4, true);
-            y += 20;
-            this.panelLoginNewUser.addText(x, y + 8, 'runescape front webpage and choose \'create account\'', 4, true);
-        }
-
-        y += 30;
-        this.panelLoginNewUser.addButtonBackground(x, y + 17, 150, 34);
-        this.panelLoginNewUser.addText(x, y + 17, 'Ok', 5, false);
-        this.controlLoginNewOk = this.panelLoginNewUser.addButton(x, y + 17, 150, 34);
-        this.panelLoginExistingUser = new Panel(this.surface, 50);
-        y = 230;
-        this.controlLoginStatus = this.panelLoginExistingUser.addText(x, y - 10, 'Please enter your username and password', 4, true);
-        y += 28;
-        this.panelLoginExistingUser.addButtonBackground(x - 116, y, 200, 40);
-        this.panelLoginExistingUser.addText(x - 116, y - 10, 'Username:', 4, false);
-        this.controlLoginUser = this.panelLoginExistingUser.addTextInput(x - 116, y + 10, 200, 40, 4, 12, false, false);
-        y += 47;
-        this.panelLoginExistingUser.addButtonBackground(x - 66, y, 200, 40);
-        this.panelLoginExistingUser.addText(x - 66, y - 10, 'Password:', 4, false);
-        this.controlLoginPass = this.panelLoginExistingUser.addTextInput(x - 66, y + 10, 200, 40, 4, 20, true, false);
-        y -= 55;
-        this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
-        this.panelLoginExistingUser.addText(x + 154, y, 'Ok', 4, false);
-        this.controlLoginOk = this.panelLoginExistingUser.addButton(x + 154, y, 120, 25);
-        y += 30;
-        this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
-        this.panelLoginExistingUser.addText(x + 154, y, 'Cancel', 4, false);
-        this.controlLoginCancel = this.panelLoginExistingUser.addButton(x + 154, y, 120, 25);
-        y += 30;
-        this.panelLoginExistingUser.setFocus(this.controlLoginUser);
-    }
-
-    autorotateCamera() {
+    autoRotateCamera() {
         if ((this.cameraAngle & 1) === 1 && this.isValidCameraAngle(this.cameraAngle)) {
             return;
         }
@@ -2167,79 +1611,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogTradeConfirm() {
-        let dialogX = 22;
-        let dialogY = 36;
-
-        this.surface.drawBox(dialogX, dialogY, 468, 16, 192);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 16, 468, 246, 0x989898, 160);
-        this.surface.drawStringCenter('Please confirm your trade with @yel@' + Utility.hashToUsername(this.tradeRecipientConfirmHash), dialogX + 234, dialogY + 12, 1, 0xffffff);
-        this.surface.drawStringCenter('You are about to give:', dialogX + 117, dialogY + 30, 1, 0xffff00);
-
-        for (let j = 0; j < this.tradeConfirmItemsCount; j++) {
-            let s = GameData.itemName[this.tradeConfirmItems[j]];
-
-            if (GameData.itemStackable[this.tradeConfirmItems[j]] === 0) {
-                s = s + ' x ' + mudclient.formatNumber(this.tradeConfirmItemCount[j]);
-            }
-
-            this.surface.drawStringCenter(s, dialogX + 117, dialogY + 42 + j * 12, 1, 0xffffff);
-        }
-
-        if (this.tradeConfirmItemsCount === 0) {
-            this.surface.drawStringCenter('Nothing!', dialogX + 117, dialogY + 42, 1, 0xffffff);
-        }
-
-        this.surface.drawStringCenter('In return you will receive:', dialogX + 351, dialogY + 30, 1, 0xffff00);
-
-        for (let k = 0; k < this.tradeRecipientConfirmItemsCount; k++) {
-            let s1 = GameData.itemName[this.tradeRecipientConfirmItems[k]];
-
-            if (GameData.itemStackable[this.tradeRecipientConfirmItems[k]] === 0) {
-                s1 = s1 + ' x ' + mudclient.formatNumber(this.tradeRecipientConfirmItemCount[k]);
-            }
-
-            this.surface.drawStringCenter(s1, dialogX + 351, dialogY + 42 + k * 12, 1, 0xffffff);
-        }
-
-        if (this.tradeRecipientConfirmItemsCount === 0) {
-            this.surface.drawStringCenter('Nothing!', dialogX + 351, dialogY + 42, 1, 0xffffff);
-        }
-
-        this.surface.drawStringCenter('Are you sure you want to do this?', dialogX + 234, dialogY + 200, 4, 65535);
-        this.surface.drawStringCenter('There is NO WAY to reverse a trade if you change your mind.', dialogX + 234, dialogY + 215, 1, 0xffffff);
-        this.surface.drawStringCenter('Remember that not all players are trustworthy', dialogX + 234, dialogY + 230, 1, 0xffffff);
-
-        if (!this.tradeConfirmAccepted) {
-            this.surface._drawSprite_from3((dialogX + 118) - 35, dialogY + 238, this.spriteMedia + 25);
-            this.surface._drawSprite_from3((dialogX + 352) - 35, dialogY + 238, this.spriteMedia + 26);
-        } else {
-            this.surface.drawStringCenter('Waiting for other player...', dialogX + 234, dialogY + 250, 1, 0xffff00);
-        }
-
-        if (this.mouseButtonClick === 1) {
-            if (this.mouseX < dialogX || this.mouseY < dialogY || this.mouseX > dialogX + 468 || this.mouseY > dialogY + 262) {
-                this.showDialogTradeConfirm = false;
-                this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                this.packetStream.sendPacket();
-            }
-
-            if (this.mouseX >= (dialogX + 118) - 35 && this.mouseX <= dialogX + 118 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
-                this.tradeConfirmAccepted = true;
-                this.packetStream.newPacket(clientOpcodes.TRADE_CONFIRM_ACCEPT);
-                this.packetStream.sendPacket();
-            }
-
-            if (this.mouseX >= (dialogX + 352) - 35 && this.mouseX <= dialogX + 353 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
-                this.showDialogTradeConfirm = false;
-                this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                this.packetStream.sendPacket();
-            }
-
-            this.mouseButtonClick = 0;
-        }
-    }
-
     setActiveUiTab() {
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 35) {
             this.showUiTab = 1;
@@ -2307,35 +1678,6 @@ class mudclient extends GameConnection {
 
         if (this.showUiTab === 6 && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 311)) {
             this.showUiTab = 0;
-        }
-    }
-
-    drawOptionMenu() {
-        if (this.mouseButtonClick !== 0) {
-            for (let i = 0; i < this.optionMenuCount; i++) {
-                if (this.mouseX >= this.surface.textWidth(this.optionMenuEntry[i], 1) || this.mouseY <= i * 12 || this.mouseY >= 12 + i * 12) {
-                    continue;
-                }
-
-                this.packetStream.newPacket(clientOpcodes.CHOOSE_OPTION);
-                this.packetStream.putByte(i);
-                this.packetStream.sendPacket();
-                break;
-            }
-
-            this.mouseButtonClick = 0;
-            this.showOptionMenu = false;
-            return;
-        }
-
-        for (let j = 0; j < this.optionMenuCount; j++) {
-            let k = 65535;
-
-            if (this.mouseX < this.surface.textWidth(this.optionMenuEntry[j], 1) && this.mouseY > j * 12 && this.mouseY < 12 + j * 12) {
-                k = 0xff0000;
-            }
-
-            this.surface.drawString(this.optionMenuEntry[j], 6, 12 + j * 12, 1, k);
         }
     }
 
@@ -2462,41 +1804,34 @@ class mudclient extends GameConnection {
     walkToWallObject(i, j, k) {
         if (k === 0) {
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, i, j - 1, i, j, false, true);
-            return;
-        }
-
-        if (k === 1) {
+        } else if (k === 1) {
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, i - 1, j, i, j, false, true);
-            return;
         } else {
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, i, j, i, j, true, true);
-            return;
         }
     }
 
     async loadGameConfig() {
-        let configJag = await this.readDataFile('config' + version.CONFIG + '.jag', 'Configuration', 10);
+        const configJag = await this.readDataFile('config' + version.CONFIG + '.jag', 'Configuration', 10);
 
-        if (configJag === null) {
+        if (!configJag) {
             this.errorLoadingData = true;
             return;
         }
 
         GameData.loadData(configJag, this.members);
 
-        let abyte1 = await this.readDataFile('filter' + version.FILTER + '.jag', 'Chat system', 15);
+        const filterJag = await this.readDataFile('filter' + version.FILTER + '.jag', 'Chat system', 15);
 
-        if (abyte1 === null) {
+        if (!filterJag) {
             this.errorLoadingData = true;
-            return;
         } else {
-            let buffragments = Utility.loadData('fragmentsenc.txt', 0, abyte1);
-            let buffbandenc = Utility.loadData('badenc.txt', 0, abyte1);
-            let buffhostenc = Utility.loadData('hostenc.txt', 0, abyte1);
-            let bufftldlist = Utility.loadData('tldlist.txt', 0, abyte1);
+            let buffragments = Utility.loadData('fragmentsenc.txt', 0, filterJag);
+            let buffbandenc = Utility.loadData('badenc.txt', 0, filterJag);
+            let buffhostenc = Utility.loadData('hostenc.txt', 0, filterJag);
+            let bufftldlist = Utility.loadData('tldlist.txt', 0, filterJag);
 
             WordFilter.loadFilters(new GameBuffer(buffragments), new GameBuffer(buffbandenc), new GameBuffer(buffhostenc), new GameBuffer(bufftldlist));
-            return;
         }
     }
 
@@ -2580,8 +1915,6 @@ class mudclient extends GameConnection {
 
             let mouseX = this.mouseX - (((this.gameWidth / 2) | 0) - ((dialogWidth / 2) | 0));
             let mouseY = this.mouseY - (((this.gameHeight / 2) | 0) - ((dialogHeight / 2) | 0));
-            //let mouseX = this.mouseX - (256 - dialogWidth / 2);
-            //let mouseY = this.mouseY - (170 - dialogHeight / 2);
 
             if (mouseX >= 0 && mouseY >= 12 && mouseX < 408 && mouseY < 280) {
                 let i1 = this.bankActivePage * 48;
@@ -2731,8 +2064,6 @@ class mudclient extends GameConnection {
 
         let x = ((this.gameWidth / 2) | 0) - ((dialogWidth / 2) | 0);
         let y = ((this.gameHeight / 2) | 0) - ((dialogHeight / 2) | 0);
-        //let x = 256 - dialogWidth / 2;
-        //let y = 170 - dialogHeight / 2;
 
         this.surface.drawBox(x, y, 408, 12, 192);
         this.surface.drawBoxAlpha(x, y + 12, 408, 17, 0x989898, 160);
@@ -3779,174 +3110,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogShop() {
-        if (this.mouseButtonClick !== 0) {
-            this.mouseButtonClick = 0;
-
-            let mouseX = this.mouseX - 52;
-            let mouseY = this.mouseY - 44;
-
-            if (mouseX >= 0 && mouseY >= 12 && mouseX < 408 && mouseY < 246) {
-                let itemIndex = 0;
-
-                for (let row = 0; row < 5; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        let slotX = 7 + col * 49;
-                        let slotY = 28 + row * 34;
-
-                        if (mouseX > slotX && mouseX < slotX + 49 && mouseY > slotY && mouseY < slotY + 34 && this.shopItem[itemIndex] !== -1) {
-                            this.shopSelectedItemIndex = itemIndex;
-                            this.shopSelectedItemType = this.shopItem[itemIndex];
-                        }
-
-                        itemIndex++;
-                    }
-
-                }
-
-                if (this.shopSelectedItemIndex >= 0) {
-                    let itemType = this.shopItem[this.shopSelectedItemIndex];
-
-                    if (itemType !== -1) {
-                        if (this.shopItemCount[this.shopSelectedItemIndex] > 0 && mouseX > 298 && mouseY >= 204 && mouseX < 408 && mouseY <= 215) {
-                            let priceMod = this.shopBuyPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                            if (priceMod < 10) {
-                                priceMod = 10;
-                            }
-
-                            let itemPrice = ((priceMod * GameData.itemBasePrice[itemType]) / 100) | 0;
-
-                            this.packetStream.newPacket(clientOpcodes.SHOP_BUY);
-                            this.packetStream.putShort(this.shopItem[this.shopSelectedItemIndex]);
-                            this.packetStream.putInt(itemPrice);
-                            this.packetStream.sendPacket();
-                        }
-
-                        if (this.getInventoryCount(itemType) > 0 && mouseX > 2 && mouseY >= 229 && mouseX < 112 && mouseY <= 240) {
-                            let priceMod = this.shopSellPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                            if (priceMod < 10) {
-                                priceMod = 10;
-                            }
-
-                            let itemPrice = ((priceMod * GameData.itemBasePrice[itemType]) / 100) | 0;
-
-                            this.packetStream.newPacket(clientOpcodes.SHOP_SELL);
-                            this.packetStream.putShort(this.shopItem[this.shopSelectedItemIndex]);
-                            this.packetStream.putInt(itemPrice);
-                            this.packetStream.sendPacket();
-                        }
-                    }
-                }
-            } else {
-                this.packetStream.newPacket(clientOpcodes.SHOP_CLOSE);
-                this.packetStream.sendPacket();
-                this.showDialogShop = false;
-                return;
-            }
-        }
-
-        let dialogX = 52;
-        let dialogY = 44;
-
-        this.surface.drawBox(dialogX, dialogY, 408, 12, 192);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 12, 408, 17, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 29, 8, 170, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 399, dialogY + 29, 9, 170, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 199, 408, 47, 0x989898, 160);
-        this.surface.drawString('Buying and selling items', dialogX + 1, dialogY + 10, 1, 0xffffff);
-        let colour = 0xffffff;
-
-        if (this.mouseX > dialogX + 320 && this.mouseY >= dialogY && this.mouseX < dialogX + 408 && this.mouseY < dialogY + 12) {
-            colour = 0xff0000;
-        }
-
-        this.surface.drawStringRight('Close window', dialogX + 406, dialogY + 10, 1, colour);
-        this.surface.drawString('Shops stock in green', dialogX + 2, dialogY + 24, 1, 65280);
-        this.surface.drawString('Number you own in blue', dialogX + 135, dialogY + 24, 1, 65535);
-        this.surface.drawString('Your money: ' + this.getInventoryCount(10) + 'gp', dialogX + 280, dialogY + 24, 1, 0xffff00);
-        let itemIndex = 0;
-
-        for (let row = 0; row < 5; row++) {
-            for (let col = 0; col < 8; col++) {
-                let slotX = dialogX + 7 + col * 49;
-                let slotY = dialogY + 28 + row * 34;
-
-                if (this.shopSelectedItemIndex === itemIndex) {
-                    this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xff0000, 160);
-                } else {
-                    this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xd0d0d0, 160);
-                }
-
-                this.surface.drawBoxEdge(slotX, slotY, 50, 35, 0);
-
-                if (this.shopItem[itemIndex] !== -1) {
-                    this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.shopItem[itemIndex]], GameData.itemMask[this.shopItem[itemIndex]], 0, 0, false);
-                    this.surface.drawString(this.shopItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 65280);
-                    this.surface.drawStringRight(this.getInventoryCount(this.shopItem[itemIndex]).toString(), slotX + 47, slotY + 10, 1, 65535);
-                }
-
-                itemIndex++;
-            }
-
-        }
-
-        this.surface.drawLineHoriz(dialogX + 5, dialogY + 222, 398, 0);
-
-        if (this.shopSelectedItemIndex === -1) {
-            this.surface.drawStringCenter('Select an object to buy or sell', dialogX + 204, dialogY + 214, 3, 0xffff00);
-            return;
-        }
-
-        let selectedItemType = this.shopItem[this.shopSelectedItemIndex];
-
-        if (selectedItemType !== -1) {
-            if (this.shopItemCount[this.shopSelectedItemIndex] > 0) {
-                let priceMod = this.shopBuyPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                if (priceMod < 10) {
-                    priceMod = 10;
-                }
-
-                let itemPrice = ((priceMod * GameData.itemBasePrice[selectedItemType]) / 100) | 0;
-                this.surface.drawString('Buy a new ' + GameData.itemName[selectedItemType] + ' for ' + itemPrice + 'gp', dialogX + 2, dialogY + 214, 1, 0xffff00);
-
-                colour = 0xffffff;
-                if (this.mouseX > dialogX + 298 && this.mouseY >= dialogY + 204 && this.mouseX < dialogX + 408 && this.mouseY <= dialogY + 215) {
-                    colour = 0xff0000;
-                }
-
-                this.surface.drawStringRight('Click here to buy', dialogX + 405, dialogY + 214, 3, colour);
-            } else {
-                this.surface.drawStringCenter('This item is not currently available to buy', dialogX + 204, dialogY + 214, 3, 0xffff00);
-            }
-
-            if (this.getInventoryCount(selectedItemType) > 0) {
-                let priceMod = this.shopSellPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                if (priceMod < 10) {
-                    priceMod = 10;
-                }
-
-                let itemPrice = ((priceMod * GameData.itemBasePrice[selectedItemType]) / 100) | 0;
-
-                this.surface.drawStringRight('Sell your ' + GameData.itemName[selectedItemType] + ' for ' + itemPrice + 'gp', dialogX + 405, dialogY + 239, 1, 0xffff00);
-
-                colour = 0xffffff;
-
-                if (this.mouseX > dialogX + 2 && this.mouseY >= dialogY + 229 && this.mouseX < dialogX + 112 && this.mouseY <= dialogY + 240) {
-                    colour = 0xff0000;
-                }
-
-                this.surface.drawString('Click here to sell', dialogX + 2, dialogY + 239, 3, colour);
-                return;
-            }
-
-            this.surface.drawStringCenter('You do not have any of this item to sell', dialogX + 204, dialogY + 239, 3, 0xffff00);
-        }
-    }
-
     hasInventoryItems(id, mincount) {
         if (id === 31 && (this.isItemEquipped(197) || this.isItemEquipped(615) || this.isItemEquipped(682))) {
             return true;
@@ -4225,7 +3388,7 @@ class mudclient extends GameConnection {
             if (this.optionCameraModeAuto && !this.fogOfWar) {
                 let j5 = this.cameraAngle;
 
-                this.autorotateCamera();
+                this.autoRotateCamera();
 
                 if (this.cameraAngle !== j5) {
                     this.cameraAutoRotatePlayerX = this.localPlayer.currentX;
@@ -4245,7 +3408,7 @@ class mudclient extends GameConnection {
             this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, this.cameraRotation * 4, 0, 2000);
         } else {
             if (this.optionCameraModeAuto && !this.fogOfWar) {
-                this.autorotateCamera();
+                this.autoRotateCamera();
             }
 
             if (!this.interlace) {
@@ -4635,7 +3798,7 @@ class mudclient extends GameConnection {
             let s = GameData.itemName[this.duelItems[itemIndex]];
 
             if (GameData.itemStackable[this.duelItems[itemIndex]] === 0) {
-                s = s + ' x ' + mudclient.formatNumber(this.duelItemCount[itemIndex]);
+                s = s + ' x ' + Utility.formatConfirmAmount(this.duelItemCount[itemIndex]);
             }
 
             this.surface.drawStringCenter(s, dialogX + 117, dialogY + 42 + itemIndex * 12, 1, 0xffffff);
@@ -4651,7 +3814,7 @@ class mudclient extends GameConnection {
             let s1 = GameData.itemName[this.duelOpponentItems[itemIndex]];
 
             if (GameData.itemStackable[this.duelOpponentItems[itemIndex]] === 0) {
-                s1 = s1 + ' x ' + mudclient.formatNumber(this.duelOpponentItemCount[itemIndex]);
+                s1 = s1 + ' x ' + Utility.formatConfirmAmount(this.duelOpponentItemCount[itemIndex]);
             }
 
             this.surface.drawStringCenter(s1, dialogX + 351, dialogY + 42 + itemIndex * 12, 1, 0xffffff);
@@ -4753,41 +3916,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogServerMessage() {
-        let width = 400;
-        let height = 100;
-
-        if (this.serverMessageBoxTop) {
-            height = 450;
-            height = 300;
-        }
-
-        this.surface.drawBox(256 - ((width / 2) | 0), 167 - ((height / 2) | 0), width, height, 0);
-        this.surface.drawBoxEdge(256 - ((width / 2) | 0), 167 - ((height / 2) | 0), width, height, 0xffffff);
-        this.surface.drawParagraph(this.serverMessage, 256, (167 - ((height / 2) | 0)) + 20, 1, 0xffffff, width - 40);
-
-        let i = 157 + ((height / 2) | 0);
-        let j = 0xffffff;
-
-        if (this.mouseY > i - 12 && this.mouseY <= i && this.mouseX > 106 && this.mouseX < 406) {
-            j = 0xff0000;
-        }
-
-        this.surface.drawStringCenter('Click here to close window', 256, i, 1, j);
-
-        if (this.mouseButtonClick === 1) {
-            if (j === 0xff0000) {
-                this.showDialogServerMessage = false;
-            }
-
-            if ((this.mouseX < 256 - ((width / 2) | 0) || this.mouseX > 256 + ((width / 2) | 0)) && (this.mouseY < 167 - ((height / 2) | 0) || this.mouseY > 167 + ((height / 2) | 0))) {
-                this.showDialogServerMessage = false;
-            }
-        }
-
-        this.mouseButtonClick = 0;
-    }
-
     showMessage(message, type) {
         if (type === 2 || type === 4 || type === 6) {
             for (; message.length > 5 && message[0] === '@' && message[4] === '@'; message = message.substring(5)) ;
@@ -4886,17 +4014,11 @@ class mudclient extends GameConnection {
             if (id === 0) {
                 x--;
                 w++;
-            }
-
-            if (id === 2) {
+            } else if (id === 2) {
                 h++;
-            }
-
-            if (id === 4) {
+            } else if (id === 4) {
                 w++;
-            }
-
-            if (id === 6) {
+            } else if (id === 6) {
                 y--;
                 h++;
             }
@@ -4925,70 +4047,23 @@ class mudclient extends GameConnection {
         return count;
     }
 
-    drawLoginScreens() {
-        this.welcomScreenAlreadyShown = false;
-        this.surface.interlace = false;
-
-        this.surface.blackScreen();
-
-        if (this.loginScreen === 0 || this.loginScreen === 1 || this.loginScreen === 2 || this.loginScreen === 3) {
-            let i = (this.loginTimer * 2) % 3072;
-
-            if (i < 1024) {
-                this.surface._drawSprite_from3(0, 10, this.spriteLogo);
-
-                if (i > 768) {
-                    this.surface._drawSpriteAlpha_from4(0, 10, this.spriteLogo + 1, i - 768);
-                }
-            } else if (i < 2048) {
-                this.surface._drawSprite_from3(0, 10, this.spriteLogo + 1);
-
-                if (i > 1792) {
-                    this.surface._drawSpriteAlpha_from4(0, 10, this.spriteMedia + 10, i - 1792);
-                }
-            } else {
-                this.surface._drawSprite_from3(0, 10, this.spriteMedia + 10);
-
-                if (i > 2816) {
-                    this.surface._drawSpriteAlpha_from4(0, 10, this.spriteLogo, i - 2816);
-                }
-            }
-        }
-
-        if (this.loginScreen === 0) {
-            this.panelLoginWelcome.drawPanel();
-        }
-
-        if (this.loginScreen === 1) {
-            this.panelLoginNewUser.drawPanel();
-        }
-
-        if (this.loginScreen === 2) {
-            this.panelLoginExistingUser.drawPanel();
-        }
-
-        // blue bar
-        this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 22);
-        this.surface.draw(this.graphics, 0, 0);
-    }
-
     async loadTextures() {
-        let buffTextures = await this.readDataFile('textures' + version.TEXTURES + '.jag', 'Textures', 50);
+        const texturesJag = await this.readDataFile('textures' + version.TEXTURES + '.jag', 'Textures', 50);
 
-        if (buffTextures === null) {
+        if (!texturesJag) {
             this.errorLoadingData = true;
             return;
         }
 
-        let buffIndex = Utility.loadData('index.dat', 0, buffTextures);
+        const indexDat = Utility.loadData('index.dat', 0, texturesJag);
         this.scene.allocateTextures(GameData.textureCount, 7, 11);
 
         for (let i = 0; i < GameData.textureCount; i++) {
             let name = GameData.textureName[i];
 
-            let buff1 = Utility.loadData(name + '.dat', 0, buffTextures);
+            let buff1 = Utility.loadData(name + '.dat', 0, texturesJag);
 
-            this.surface.parseSprite(this.spriteTexture, buff1, buffIndex, 1);
+            this.surface.parseSprite(this.spriteTexture, buff1, indexDat, 1);
             this.surface.drawBox(0, 0, 128, 128, 0xff00ff);
             this.surface._drawSprite_from3(0, 0, this.spriteTexture);
 
@@ -4996,9 +4071,9 @@ class mudclient extends GameConnection {
             let nameSub = GameData.textureSubtypeName[i];
 
             if (nameSub !== null && nameSub.length > 0) {
-                let buff2 = Utility.loadData(nameSub + '.dat', 0, buffTextures);
+                let buff2 = Utility.loadData(nameSub + '.dat', 0, texturesJag);
 
-                this.surface.parseSprite(this.spriteTexture, buff2, buffIndex, 1);
+                this.surface.parseSprite(this.spriteTexture, buff2, indexDat, 1);
                 this.surface._drawSprite_from3(0, 0, this.spriteTexture);
             }
 
@@ -5017,22 +4092,22 @@ class mudclient extends GameConnection {
         }
     }
 
-    handleMouseDown(i, j, k) {
-        this.mouseClickXHistory[this.mouseClickCount] = j;
-        this.mouseClickYHistory[this.mouseClickCount] = k;
+    handleMouseDown(i, x, y) {
+        this.mouseClickXHistory[this.mouseClickCount] = x;
+        this.mouseClickYHistory[this.mouseClickCount] = y;
         this.mouseClickCount = this.mouseClickCount + 1 & 8191;
 
         for (let l = 10; l < 4000; l++) {
             let i1 = this.mouseClickCount - l & 8191;
 
-            if (this.mouseClickXHistory[i1] === j && this.mouseClickYHistory[i1] === k) {
+            if (this.mouseClickXHistory[i1] === x && this.mouseClickYHistory[i1] === y) {
                 let flag = false;
 
                 for (let j1 = 1; j1 < l; j1++) {
                     let k1 = this.mouseClickCount - j1 & 8191;
                     let l1 = i1 - j1 & 8191;
 
-                    if (this.mouseClickXHistory[l1] !== j || this.mouseClickYHistory[l1] !== k) {
+                    if (this.mouseClickXHistory[l1] !== x || this.mouseClickYHistory[l1] !== y) {
                         flag = true;
                     }
 
@@ -5216,12 +4291,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogLogout() {
-        this.surface.drawBox(126, 137, 260, 60, 0);
-        this.surface.drawBoxEdge(126, 137, 260, 60, 0xffffff);
-        this.surface.drawStringCenter('Logging out...', 256, 173, 5, 0xffffff);
-    }
-
     menuItemClick(i) {
         const menuX = this.menuItemX[i];
         const menuY = this.menuItemY[i];
@@ -5231,307 +4300,307 @@ class mudclient extends GameConnection {
         const menuType = this.menuType[i];
 
         switch (menuType) {
-        case 200:
-            this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
-                menuY, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_GROUNDITEM);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 210:
-            this.walkToGroundItem(this.localRegionX, this.localRegionY,
-                menuX, menuY, true);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_GROUNDITEM);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 220:
-            this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
-                menuY, true);
-            this.packetStream.newPacket(clientOpcodes.GROUNDITEM_TAKE);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 3200:
-            this.showMessage(GameData.itemDescription[menuIndex], 3);
-            break;
-        case 300:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.CAST_WALLOBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 310:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_WALLOBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 320:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND1);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 2300:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND2);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 3300:
-            this.showMessage(GameData.wallObjectDescription[menuIndex], 3);
-            break;
-        case 400:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.CAST_OBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuTargetIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 410:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_OBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuTargetIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 420:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.OBJECT_CMD1);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.sendPacket();
-            break;
-        case 2400:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.OBJECT_CMD2);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.sendPacket();
-            break;
-        case 3400:
-            this.showMessage(GameData.objectDescription[menuIndex], 3);
-            break;
-        case 600:
-            this.packetStream.newPacket(clientOpcodes.CAST_INVITEM);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 610:
-            this.packetStream.newPacket(clientOpcodes.USEWITH_INVITEM);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 620:
-            this.packetStream.newPacket(clientOpcodes.INV_UNEQUIP);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 630:
-            this.packetStream.newPacket(clientOpcodes.INV_WEAR);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 640:
-            this.packetStream.newPacket(clientOpcodes.INV_CMD);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 650:
-            this.selectedItemInventoryIndex = menuIndex;
-            this.showUiTab = 0;
-            this.selectedItemName =
-                    GameData.itemName[this.inventoryItemId[
-                        this.selectedItemInventoryIndex]];
-            break;
-        case 660:
-            this.packetStream.newPacket(clientOpcodes.INV_DROP);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            this.showUiTab = 0;
-            this.showMessage('Dropping ' +
-                GameData.itemName[this.inventoryItemId[menuIndex]], 4);
-            break;
-        case 3600:
-            this.showMessage(GameData.itemDescription[menuIndex], 3);
-            break;
-        case 700: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
+            case 200:
+                this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
+                    menuY, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_GROUNDITEM);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 210:
+                this.walkToGroundItem(this.localRegionX, this.localRegionY,
+                    menuX, menuY, true);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_GROUNDITEM);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 220:
+                this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
+                    menuY, true);
+                this.packetStream.newPacket(clientOpcodes.GROUNDITEM_TAKE);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 3200:
+                this.showMessage(GameData.itemDescription[menuIndex], 3);
+                break;
+            case 300:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.CAST_WALLOBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 310:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_WALLOBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 320:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND1);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 2300:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND2);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 3300:
+                this.showMessage(GameData.wallObjectDescription[menuIndex], 3);
+                break;
+            case 400:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.CAST_OBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuTargetIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 410:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_OBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuTargetIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 420:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.OBJECT_CMD1);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.sendPacket();
+                break;
+            case 2400:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.OBJECT_CMD2);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.sendPacket();
+                break;
+            case 3400:
+                this.showMessage(GameData.objectDescription[menuIndex], 3);
+                break;
+            case 600:
+                this.packetStream.newPacket(clientOpcodes.CAST_INVITEM);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 610:
+                this.packetStream.newPacket(clientOpcodes.USEWITH_INVITEM);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 620:
+                this.packetStream.newPacket(clientOpcodes.INV_UNEQUIP);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 630:
+                this.packetStream.newPacket(clientOpcodes.INV_WEAR);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 640:
+                this.packetStream.newPacket(clientOpcodes.INV_CMD);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 650:
+                this.selectedItemInventoryIndex = menuIndex;
+                this.showUiTab = 0;
+                this.selectedItemName =
+                        GameData.itemName[this.inventoryItemId[
+                            this.selectedItemInventoryIndex]];
+                break;
+            case 660:
+                this.packetStream.newPacket(clientOpcodes.INV_DROP);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                this.showUiTab = 0;
+                this.showMessage('Dropping ' +
+                    GameData.itemName[this.inventoryItemId[menuIndex]], 4);
+                break;
+            case 3600:
+                this.showMessage(GameData.itemDescription[menuIndex], 3);
+                break;
+            case 700: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
 
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_NPC);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        }
-        case 710: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_NPC);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        }
-        case 720: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.NPC_TALK);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 725: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.NPC_CMD);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 715:
-        case 2715: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.NPC_ATTACK);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 3700:
-            this.showMessage(GameData.npcDescription[menuIndex], 3);
-            break;
-        case 800: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_PLAYER);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        }
-        case 810: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_PLAYER);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        }
-        case 805:
-        case 2805: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.PLAYER_ATTACK);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 2806:
-            this.packetStream.newPacket(clientOpcodes.PLAYER_DUEL);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 2810:
-            this.packetStream.newPacket(clientOpcodes.PLAYER_TRADE);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 2820:
-            this.packetStream.newPacket(clientOpcodes.PLAYER_FOLLOW);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 900:
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                menuX, menuY, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_GROUND);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 920:
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                menuX, menuY, false);
-
-            if (this.mouseClickXStep === -24) {
-                this.mouseClickXStep = 24;
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_NPC);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
             }
-            break;
-        case 1000:
-            this.packetStream.newPacket(clientOpcodes.CAST_SELF);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 4000:
-            this.selectedItemInventoryIndex = -1;
-            this.selectedSpell = -1;
-            break;
+            case 710: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_NPC);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            }
+            case 720: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.NPC_TALK);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 725: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.NPC_CMD);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 715:
+            case 2715: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.NPC_ATTACK);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 3700:
+                this.showMessage(GameData.npcDescription[menuIndex], 3);
+                break;
+            case 800: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_PLAYER);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            }
+            case 810: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_PLAYER);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            }
+            case 805:
+            case 2805: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.PLAYER_ATTACK);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 2806:
+                this.packetStream.newPacket(clientOpcodes.PLAYER_DUEL);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 2810:
+                this.packetStream.newPacket(clientOpcodes.PLAYER_TRADE);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 2820:
+                this.packetStream.newPacket(clientOpcodes.PLAYER_FOLLOW);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 900:
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    menuX, menuY, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_GROUND);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 920:
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    menuX, menuY, false);
+
+                if (this.mouseClickXStep === -24) {
+                    this.mouseClickXStep = 24;
+                }
+                break;
+            case 1000:
+                this.packetStream.newPacket(clientOpcodes.CAST_SELF);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 4000:
+                this.selectedItemInventoryIndex = -1;
+                this.selectedSpell = -1;
+                break;
         }
     }
 
@@ -5552,10 +4621,8 @@ class mudclient extends GameConnection {
 
         if (this.logoutTimeout !== 0) {
             this.resetLoginVars();
-            return;
         } else {
             await super.lostConnection();
-            return;
         }
     }
 
@@ -7581,17 +6648,13 @@ class mudclient extends GameConnection {
 
             if (this.cameraRotationX < -50) {
                 this.cameraRotationXIncrement = 2;
-            }
-
-            if (this.cameraRotationX > 50) {
+            } else if (this.cameraRotationX > 50) {
                 this.cameraRotationXIncrement = -2;
             }
 
             if (this.cameraRotationY < -50) {
                 this.cameraRotationYIncrement = 2;
-            }
-
-            if (this.cameraRotationY > 50) {
+            } else if (this.cameraRotationY > 50) {
                 this.cameraRotationYIncrement = -2;
             }
 
@@ -7616,52 +6679,6 @@ class mudclient extends GameConnection {
             console.error(e);
             this.disposeAndCollect();
             this.errorLoadingMemory = true;
-        }
-    }
-
-    async handleLoginScreenInput() {
-        if (this.worldFullTimeout > 0) {
-            this.worldFullTimeout--;
-        }
-
-        if (this.loginScreen === 0) {
-            this.panelLoginWelcome.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
-
-            if (this.panelLoginWelcome.isClicked(this.controlWelcomeNewUser)) {
-                this.loginScreen = 1;
-            }
-
-            if (this.panelLoginWelcome.isClicked(this.controlWelcomeExistingUser)) {
-                this.loginScreen = 2;
-                this.panelLoginExistingUser.updateText(this.controlLoginStatus, 'Please enter your username and password');
-                this.panelLoginExistingUser.updateText(this.controlLoginUser, '');
-                this.panelLoginExistingUser.updateText(this.controlLoginPass, '');
-                this.panelLoginExistingUser.setFocus(this.controlLoginUser);
-                return;
-            }
-        } else if (this.loginScreen === 1) {
-            this.panelLoginNewUser.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
-
-            if (this.panelLoginNewUser.isClicked(this.controlLoginNewOk)) {
-                this.loginScreen = 0;
-                return;
-            }
-        } else if (this.loginScreen === 2) {
-            this.panelLoginExistingUser.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
-
-            if (this.panelLoginExistingUser.isClicked(this.controlLoginCancel)) {
-                this.loginScreen = 0;
-            }
-
-            if (this.panelLoginExistingUser.isClicked(this.controlLoginUser)) {
-                this.panelLoginExistingUser.setFocus(this.controlLoginPass);
-            }
-
-            if (this.panelLoginExistingUser.isClicked(this.controlLoginPass) || this.panelLoginExistingUser.isClicked(this.controlLoginOk)) {
-                this.loginUser = this.panelLoginExistingUser.getText(this.controlLoginUser);
-                this.loginPass = this.panelLoginExistingUser.getText(this.controlLoginPass);
-                await this.login(this.loginUser, this.loginPass, false);
-            }
         }
     }
 

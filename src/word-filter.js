@@ -9,7 +9,7 @@ const C_COMMA = ','.charCodeAt(0);
 const C_DOT = '.'.charCodeAt(0);
 const C_J = 'j'.charCodeAt(0);
 const C_Q = 'q'.charCodeAt(0);
-const C_SINGLE_QUOTE = '\''.charCodeAt(0);
+const C_SINGLE_QUOTE = "'".charCodeAt(0);
 const C_SLASH = '/'.charCodeAt(0);
 const C_SPACE = ' '.charCodeAt(0);
 const C_V = 'v'.charCodeAt(0);
@@ -27,7 +27,9 @@ function toCharArray(s) {
 }
 
 function fromCharArray(a) {
-    return Array.from(a).map(c => String.fromCharCode(c)).join('');
+    return Array.from(a)
+        .map((c) => String.fromCharCode(c))
+        .join('');
 }
 
 class WordFilter {
@@ -67,7 +69,11 @@ class WordFilter {
         WordFilter.badCharIds.length = wordCount;
         WordFilter.badCharIds.fill(null);
 
-        WordFilter.readBuffer(buffer, WordFilter.badList, WordFilter.badCharIds);
+        WordFilter.readBuffer(
+            buffer,
+            WordFilter.badList,
+            WordFilter.badCharIds
+        );
     }
 
     static loadHost(buffer) {
@@ -80,7 +86,11 @@ class WordFilter {
         WordFilter.hostCharIds.length = wordCount;
         WordFilter.hostCharIds.fill(null);
 
-        WordFilter.readBuffer(buffer, WordFilter.hostList, WordFilter.hostCharIds);
+        WordFilter.readBuffer(
+            buffer,
+            WordFilter.hostList,
+            WordFilter.hostCharIds
+        );
     }
 
     static loadFragments(buffer) {
@@ -105,8 +115,10 @@ class WordFilter {
             ids.length = buffer.getUnsignedInt();
 
             for (let j = 0; j < ids.length; j++) {
-                ids[j] = [ (buffer.getUnsignedByte() & 0xff), 
-                    (buffer.getUnsignedByte() & 0xff) ];
+                ids[j] = [
+                    buffer.getUnsignedByte() & 0xff,
+                    buffer.getUnsignedByte() & 0xff
+                ];
             }
 
             if (ids.length > 0) {
@@ -123,12 +135,30 @@ class WordFilter {
         WordFilter.applyHostFilter(inputChars);
         WordFilter.heywhathteufck(inputChars);
 
-        for (let ignoreIdx = 0; ignoreIdx < WordFilter.ignoreList.length; ignoreIdx++) {
-            for (let inputIgnoreIdx = -1; (inputIgnoreIdx = input.indexOf(WordFilter.ignoreList[ignoreIdx], inputIgnoreIdx + 1)) !== -1;) {
-                let ignoreWordChars = toCharArray(WordFilter.ignoreList[ignoreIdx]);
+        for (
+            let ignoreIdx = 0;
+            ignoreIdx < WordFilter.ignoreList.length;
+            ignoreIdx++
+        ) {
+            for (
+                let inputIgnoreIdx = -1;
+                (inputIgnoreIdx = input.indexOf(
+                    WordFilter.ignoreList[ignoreIdx],
+                    inputIgnoreIdx + 1
+                )) !== -1;
 
-                for (let ignorewordIdx = 0; ignorewordIdx < ignoreWordChars.length; ignorewordIdx++) {
-                    inputChars[ignorewordIdx + inputIgnoreIdx] = ignoreWordChars[ignorewordIdx];
+            ) {
+                let ignoreWordChars = toCharArray(
+                    WordFilter.ignoreList[ignoreIdx]
+                );
+
+                for (
+                    let ignorewordIdx = 0;
+                    ignorewordIdx < ignoreWordChars.length;
+                    ignorewordIdx++
+                ) {
+                    inputChars[ignorewordIdx + inputIgnoreIdx] =
+                        ignoreWordChars[ignorewordIdx];
                 }
             }
         }
@@ -161,7 +191,7 @@ class WordFilter {
                         isUpperCase = false;
                     }
                 } else if (WordFilter.isUpperCase(current)) {
-                    input[i] = ((current + 97) - 65);
+                    input[i] = current + 97 - 65;
                 }
             } else {
                 isUpperCase = true;
@@ -172,14 +202,22 @@ class WordFilter {
     static applyBadwordFilter(input) {
         for (let i = 0; i < 2; i++) {
             for (let j = WordFilter.badList.length - 1; j >= 0; j--) {
-                WordFilter.applyWordFilter(input, WordFilter.badList[j], WordFilter.badCharIds[j]);
+                WordFilter.applyWordFilter(
+                    input,
+                    WordFilter.badList[j],
+                    WordFilter.badCharIds[j]
+                );
             }
         }
     }
 
     static applyHostFilter(input) {
         for (let i = WordFilter.hostList.length - 1; i >= 0; i--) {
-            WordFilter.applyWordFilter(input, WordFilter.hostList[i], WordFilter.hostCharIds[i]);
+            WordFilter.applyWordFilter(
+                input,
+                WordFilter.hostList[i],
+                WordFilter.hostCharIds[i]
+            );
         }
     }
 
@@ -193,7 +231,13 @@ class WordFilter {
         WordFilter.applyWordFilter(input2, slash, null);
 
         for (let i = 0; i < WordFilter.tldList.length; i++) {
-            WordFilter.applyTldFilter(input, input1, input2, WordFilter.tldList[i], WordFilter.tldType[i]);
+            WordFilter.applyTldFilter(
+                input,
+                input1,
+                input2,
+                WordFilter.tldList[i],
+                WordFilter.tldType[i]
+            );
         }
     }
 
@@ -202,7 +246,11 @@ class WordFilter {
             return;
         }
 
-        for (let charIndex = 0; charIndex <= input.length - tld.length; charIndex++) {
+        for (
+            let charIndex = 0;
+            charIndex <= input.length - tld.length;
+            charIndex++
+        ) {
             let inputCharCount = charIndex;
             let l = 0;
 
@@ -215,7 +263,14 @@ class WordFilter {
                     next = input[inputCharCount + 1];
                 }
 
-                if (l < tld.length && (i1 = WordFilter.compareLettersNumbers(tld[l], current, next)) > 0) {
+                if (
+                    l < tld.length &&
+                    (i1 = WordFilter.compareLettersNumbers(
+                        tld[l],
+                        current,
+                        next
+                    )) > 0
+                ) {
                     inputCharCount += i1;
                     l++;
                     continue;
@@ -225,7 +280,13 @@ class WordFilter {
                     break;
                 }
 
-                if ((i1 = WordFilter.compareLettersNumbers(tld[l - 1], current, next)) > 0) {
+                if (
+                    (i1 = WordFilter.compareLettersNumbers(
+                        tld[l - 1],
+                        current,
+                        next
+                    )) > 0
+                ) {
                     inputCharCount += i1;
                     continue;
                 }
@@ -239,18 +300,34 @@ class WordFilter {
 
             if (l >= tld.length) {
                 let flag = false;
-                let startMatch = WordFilter.getAsteriskCount(input, input1, charIndex);
-                let endMatch = WordFilter.getAsteriskCount2(input, input2, inputCharCount - 1);
+                let startMatch = WordFilter.getAsteriskCount(
+                    input,
+                    input1,
+                    charIndex
+                );
+                let endMatch = WordFilter.getAsteriskCount2(
+                    input,
+                    input2,
+                    inputCharCount - 1
+                );
 
                 if (WordFilter.DEBUGTLD) {
-                    console.log(`Potential tld: ${tld} at char ${charIndex} (type="${type}, startmatch="${startMatch}, endmatch=${endMatch})`);
+                    console.log(
+                        `Potential tld: ${tld} at char ${charIndex} ` +
+                            `(type="${type}, startmatch="${startMatch}, ` +
+                            `endmatch=${endMatch})`
+                    );
                 }
 
                 if (type === 1 && startMatch > 0 && endMatch > 0) {
                     flag = true;
                 }
 
-                if (type === 2 && (startMatch > 2 && endMatch > 0 || startMatch > 0 && endMatch > 2)) {
+                if (
+                    type === 2 &&
+                    ((startMatch > 2 && endMatch > 0) ||
+                        (startMatch > 0 && endMatch > 2))
+                ) {
                     flag = true;
                 }
 
@@ -260,7 +337,9 @@ class WordFilter {
 
                 if (flag) {
                     if (WordFilter.DEBUGTLD) {
-                        console.log(`Filtered tld: ${tld} at char ${charIndex}`);
+                        console.log(
+                            `Filtered tld: ${tld} at char ${charIndex}`
+                        );
                     }
 
                     let l1 = charIndex;
@@ -377,7 +456,7 @@ class WordFilter {
     }
 
     static getAsteriskCount2(input, input1, len) {
-        if ((len + 1) === input.length) {
+        if (len + 1 === input.length) {
             return 2;
         }
 
@@ -415,7 +494,11 @@ class WordFilter {
             return;
         }
 
-        for (let charIndex = 0; charIndex <= input.length - wordList.length; charIndex++) {
+        for (
+            let charIndex = 0;
+            charIndex <= input.length - wordList.length;
+            charIndex++
+        ) {
             let inputCharCount = charIndex;
             let k = 0;
             let specialChar = false;
@@ -425,11 +508,18 @@ class WordFilter {
                 let inputChar = input[inputCharCount];
                 let nextChar = 0;
 
-                if ((inputCharCount + 1) < input.length) {
+                if (inputCharCount + 1 < input.length) {
                     nextChar = input[inputCharCount + 1];
                 }
 
-                if (k < wordList.length && (l = WordFilter.compareLettersSymbols(wordList[k], inputChar, nextChar)) > 0) {
+                if (
+                    k < wordList.length &&
+                    (l = WordFilter.compareLettersSymbols(
+                        wordList[k],
+                        inputChar,
+                        nextChar
+                    )) > 0
+                ) {
                     inputCharCount += l;
                     k++;
                     continue;
@@ -439,16 +529,28 @@ class WordFilter {
                     break;
                 }
 
-                if ((l = WordFilter.compareLettersSymbols(wordList[k - 1], inputChar, nextChar)) > 0) {
+                if (
+                    (l = WordFilter.compareLettersSymbols(
+                        wordList[k - 1],
+                        inputChar,
+                        nextChar
+                    )) > 0
+                ) {
                     inputCharCount += l;
                     continue;
                 }
 
-                if (k >= wordList.length || !WordFilter.isNotLowerCase(inputChar)) {
+                if (
+                    k >= wordList.length ||
+                    !WordFilter.isNotLowerCase(inputChar)
+                ) {
                     break;
                 }
 
-                if (WordFilter.isSpecial(inputChar) && inputChar !== C_SINGLE_QUOTE) {
+                if (
+                    WordFilter.isSpecial(inputChar) &&
+                    inputChar !== C_SINGLE_QUOTE
+                ) {
                     specialChar = true;
                 }
 
@@ -459,13 +561,15 @@ class WordFilter {
                 let filter = true;
 
                 if (WordFilter.DEBUGTLD) {
-                    console.log(`Potential word: ${wordList} at char ${charIndex}`);
+                    console.log(
+                        `Potential word: ${wordList} at char ${charIndex}`
+                    );
                 }
 
                 if (!specialChar) {
                     let prevChar = C_SPACE;
 
-                    if ((charIndex - 1) >= 0) {
+                    if (charIndex - 1 >= 0) {
                         prevChar = input[charIndex - 1];
                     }
 
@@ -478,18 +582,29 @@ class WordFilter {
                     let prevId = WordFilter.getCharId(prevChar);
                     let curId = WordFilter.getCharId(curChar);
 
-                    if (charIds && WordFilter.compareCharIds(charIds, prevId, curId)) { 
+                    if (
+                        charIds &&
+                        WordFilter.compareCharIds(charIds, prevId, curId)
+                    ) {
                         filter = false;
                     }
                 } else {
                     let flag2 = false;
                     let flag3 = false;
 
-                    if ((charIndex - 1) < 0 || WordFilter.isSpecial(input[charIndex - 1]) && input[charIndex - 1] !== C_SINGLE_QUOTE) {
+                    if (
+                        charIndex - 1 < 0 ||
+                        (WordFilter.isSpecial(input[charIndex - 1]) &&
+                            input[charIndex - 1] !== C_SINGLE_QUOTE)
+                    ) {
                         flag2 = true;
                     }
 
-                    if (inputCharCount >= input.length || WordFilter.isSpecial(input[inputCharCount]) && input[inputCharCount] !== C_SINGLE_QUOTE) {
+                    if (
+                        inputCharCount >= input.length ||
+                        (WordFilter.isSpecial(input[inputCharCount]) &&
+                            input[inputCharCount] !== C_SINGLE_QUOTE)
+                    ) {
                         flag3 = true;
                     }
 
@@ -502,12 +617,20 @@ class WordFilter {
                         }
 
                         for (; !flag4 && j1 < inputCharCount; j1++) {
-                            if (j1 >= 0 && (!WordFilter.isSpecial(input[j1]) || input[j1] === C_SINGLE_QUOTE)) {
+                            if (
+                                j1 >= 0 &&
+                                (!WordFilter.isSpecial(input[j1]) ||
+                                    input[j1] === C_SINGLE_QUOTE)
+                            ) {
                                 let ac2 = new Uint16Array(3);
                                 let k1;
 
                                 for (k1 = 0; k1 < 3; k1++) {
-                                    if ((j1 + k1) >= input.length || WordFilter.isSpecial(input[j1 + k1]) && input[j1 + k1] !== C_SINGLE_QUOTE) {
+                                    if (
+                                        j1 + k1 >= input.length ||
+                                        (WordFilter.isSpecial(input[j1 + k1]) &&
+                                            input[j1 + k1] !== C_SINGLE_QUOTE)
+                                    ) {
                                         break;
                                     }
 
@@ -520,11 +643,19 @@ class WordFilter {
                                     flag5 = false;
                                 }
 
-                                if (k1 < 3 && j1 - 1 >= 0 && (!WordFilter.isSpecial(input[j1 - 1]) || input[j1 - 1] === C_SINGLE_QUOTE)) {
+                                if (
+                                    k1 < 3 &&
+                                    j1 - 1 >= 0 &&
+                                    (!WordFilter.isSpecial(input[j1 - 1]) ||
+                                        input[j1 - 1] === C_SINGLE_QUOTE)
+                                ) {
                                     flag5 = false;
                                 }
 
-                                if (flag5 && !WordFilter.containsFragmentHashes(ac2)) {
+                                if (
+                                    flag5 &&
+                                    !WordFilter.containsFragmentHashes(ac2)
+                                ) {
                                     flag4 = true;
                                 }
                             }
@@ -538,7 +669,9 @@ class WordFilter {
 
                 if (filter) {
                     if (WordFilter.DEBUGWORD) {
-                        console.log(`Filtered word: ${wordList} at char ${charIndex}`);
+                        console.log(
+                            `Filtered word: ${wordList} at char ${charIndex}`
+                        );
                     }
 
                     for (let i1 = charIndex; i1 < inputCharCount; i1++) {
@@ -552,24 +685,37 @@ class WordFilter {
     static compareCharIds(charIdData, prevCharId, curCharId) {
         let first = 0;
 
-        if (charIdData[first][0] === prevCharId && charIdData[first][1] === curCharId) {
+        if (
+            charIdData[first][0] === prevCharId &&
+            charIdData[first][1] === curCharId
+        ) {
             return true;
         }
 
         let last = charIdData.length - 1;
 
-        if (charIdData[last][0] === prevCharId && charIdData[last][1] === curCharId) {
+        if (
+            charIdData[last][0] === prevCharId &&
+            charIdData[last][1] === curCharId
+        ) {
             return true;
         }
 
-        while (first !== last && (first + 1) !== last) {
+        while (first !== last && first + 1 !== last) {
             let middle = ((first + last) / 2) | 0;
 
-            if (charIdData[middle][0] === prevCharId && charIdData[middle][1] === curCharId) {
+            if (
+                charIdData[middle][0] === prevCharId &&
+                charIdData[middle][1] === curCharId
+            ) {
                 return true;
             }
 
-            if (prevCharId < charIdData[middle][0] || prevCharId === charIdData[middle][0] && curCharId < charIdData[middle][1]) {
+            if (
+                prevCharId < charIdData[middle][0] ||
+                (prevCharId === charIdData[middle][0] &&
+                    curCharId < charIdData[middle][1])
+            ) {
                 last = middle;
             } else {
                 first = middle;
@@ -592,11 +738,17 @@ class WordFilter {
             return 1;
         }
 
-        if (filterChar === 't' && (currentChar === '7' || currentChar === '+')) {
+        if (
+            filterChar === 't' &&
+            (currentChar === '7' || currentChar === '+')
+        ) {
             return 1;
         }
 
-        if (filterChar === 'a' && (currentChar === '4' || currentChar === '@')) {
+        if (
+            filterChar === 'a' &&
+            (currentChar === '4' || currentChar === '@')
+        ) {
             return 1;
         }
 
@@ -654,7 +806,15 @@ class WordFilter {
             }
 
             if (filterChar === 'i') {
-                return currentChar === 'y' || currentChar === 'l' || currentChar === 'j' || currentChar === 'l' || currentChar === '!' || currentChar === ':' || currentChar === ';' ? 1 : 0;
+                return currentChar === 'y' ||
+                    currentChar === 'l' ||
+                    currentChar === 'j' ||
+                    currentChar === 'l' ||
+                    currentChar === '!' ||
+                    currentChar === ':' ||
+                    currentChar === ';'
+                    ? 1
+                    : 0;
             }
 
             if (filterChar === 'n') {
@@ -662,7 +822,11 @@ class WordFilter {
             }
 
             if (filterChar === 's') {
-                return currentChar === '5' || currentChar === 'z' || currentChar === '$' ? 1 : 0;
+                return currentChar === '5' ||
+                    currentChar === 'z' ||
+                    currentChar === '$'
+                    ? 1
+                    : 0;
             }
 
             if (filterChar === 'r') {
@@ -811,7 +975,7 @@ class WordFilter {
             return currentChar === 'i' ? 1 : 0;
         }
 
-        if (filterChar === '\'') {
+        if (filterChar === "'") {
             return 0;
         }
 
@@ -848,7 +1012,10 @@ class WordFilter {
             let flag = false;
 
             for (let i = fromIndex; i >= 0 && i < digitIndex && !flag; i++) {
-                if (!WordFilter.isSpecial(input[i]) && !WordFilter.isNotLowerCase(input[i])) {
+                if (
+                    !WordFilter.isSpecial(input[i]) &&
+                    !WordFilter.isNotLowerCase(input[i])
+                ) {
                     flag = true;
                 }
             }
@@ -866,7 +1033,7 @@ class WordFilter {
             let j1 = 0;
 
             for (let k1 = digitIndex; k1 < fromIndex; k1++) {
-                j1 = (j1 * 10 + input[k1]) - 48;
+                j1 = j1 * 10 + input[k1] - 48;
             }
 
             if (j1 > 255 || fromIndex - digitIndex > 8) {
@@ -918,7 +1085,7 @@ class WordFilter {
     }
 
     static isLetter(c) {
-        return c >= C_A && c <= C_Z || c >= C_BIG_A && c <= C_BIG_Z;
+        return (c >= C_A && c <= C_Z) || (c >= C_BIG_A && c <= C_BIG_Z);
     }
 
     static isDigit(c) {
@@ -950,7 +1117,10 @@ class WordFilter {
         let first = 0;
         let last = WordFilter.hashFragments.length - 1;
 
-        if (inputHash === WordFilter.hashFragments[first] || inputHash === WordFilter.hashFragments[last]) {
+        if (
+            inputHash === WordFilter.hashFragments[first] ||
+            inputHash === WordFilter.hashFragments[last]
+        ) {
             return true;
         }
 
@@ -978,7 +1148,7 @@ class WordFilter {
 
         let hash = 0;
 
-        for (let i = 0; i < word.length; i++) { 
+        for (let i = 0; i < word.length; i++) {
             let c = word[word.length - i - 1];
 
             if (c >= C_A && c <= C_Z) {
@@ -1003,6 +1173,7 @@ class WordFilter {
 WordFilter.DEBUGTLD = false;
 WordFilter.DEBUGWORD = false;
 WordFilter.forceLowerCase = true;
-WordFilter.ignoreList = [ 'cook', 'cook\'s', 'cooks', 'seeks', 'sheet' ];
+WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
+

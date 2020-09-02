@@ -7,7 +7,8 @@ module.exports = {
     'extends': 'eslint:recommended',
     'globals': {
         'Atomics': 'readonly',
-        'SharedArrayBuffer': 'readonly'
+        'SharedArrayBuffer': 'readonly',
+        '__dirname': 'readonly'
     },
     'parserOptions': {
         'ecmaVersion': 2018
@@ -15,15 +16,14 @@ module.exports = {
     'rules': {
         'indent': [
             'error',
-            4
+            4,
+            {
+                'SwitchCase': 1
+            }
         ],
         'linebreak-style': [
             'error',
             'unix'
-        ],
-        'quotes': [
-            'error',
-            'single'
         ],
         'semi': [
             'error',

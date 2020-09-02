@@ -4,8 +4,8 @@
   "description": "runescape classic web client",
   "main": "./src/mudclient.js",
   "scripts": {
-    "build-dev": "browserify index.js > dist/index.bundle.js",
-    "build": "browserify -p tinyify index.js > dist/index.bundle.min.js",
+    "build-dev": "browserify -t bulkify index.js > dist/index.bundle.js",
+    "build": "browserify -t bulkify -p tinyify index.js > dist/index.bundle.min.js",
     "start": "st -p 1337 -d dist"
   },
   "repository": {
@@ -31,6 +31,8 @@
     "alawmulaw": "^6.0.0",
     "browserify": "^16.5.2",
     "buffer": "^5.6.0",
+    "bulk-require": "^1.0.1",
+    "bulkify": "1.4.0",
     "eslint": "^7.7.0",
     "long": "^4.0.0",
     "ndarray": "^1.0.19",

@@ -2,6 +2,7 @@ const GameData = require('../game-data');
 
 const BLACK = 0;
 const DARK_GREY = 0xb5b5b5;
+const RED = 0xff0000;
 const YELLOW = 0xffff00;
 
 const UI_X = 512 - 248;
@@ -15,7 +16,7 @@ function drawUiTabInventory(noMenus) {
         const slotY = 36 + ((i / 5) | 0) * 34;
 
         if (i < this.inventoryItemsCount && this.inventoryEquipped[i] === 1) {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xff0000, 128);
+            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, RED, 128);
         } else {
             this.surface.drawBoxAlpha(slotX, slotY, 49, 34, DARK_GREY, 128);
         }
@@ -25,21 +26,38 @@ function drawUiTabInventory(noMenus) {
                 this.spriteItem + GameData.itemPicture[this.inventoryItemId[i]];
             const spriteMask = GameData.itemMask[this.inventoryItemId[i]];
 
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, spriteId,
-                spriteMask, 0, 0, false);
+            this.surface._spriteClipping_from9(
+                slotX,
+                slotY,
+                48,
+                32,
+                spriteId,
+                spriteMask,
+                0,
+                0,
+                false
+            );
 
             if (GameData.itemStackable[this.inventoryItemId[i]] === 0) {
                 this.surface.drawString(
                     this.inventoryItemStackCount[i].toString(),
-                    slotX + 1, slotY + 10, 1, YELLOW);
+                    slotX + 1,
+                    slotY + 10,
+                    1,
+                    YELLOW
+                );
             }
         }
     }
 
     // rows and columns
     for (let i = 1; i <= 4; i++) {
-        this.surface.drawLineVert(UI_X + i * 49, 36,
-            ((this.inventoryMaxItemCount / 5) | 0) * 34, BLACK);
+        this.surface.drawLineVert(
+            UI_X + i * 49,
+            36,
+            ((this.inventoryMaxItemCount / 5) | 0) * 34,
+            BLACK
+        );
     }
 
     for (let i = 1; i <= ((this.inventoryMaxItemCount / 5) | 0) - 1; i++) {
@@ -53,8 +71,12 @@ function drawUiTabInventory(noMenus) {
     const mouseX = this.mouseX - UI_X;
     const mouseY = this.mouseY - UI_Y;
 
-    if (mouseX >= 0 && mouseY >= 0 && mouseX < 248 && mouseY <
-        ((this.inventoryMaxItemCount / 5) | 0) * 34) {
+    if (
+        mouseX >= 0 &&
+        mouseY >= 0 &&
+        mouseX < 248 &&
+        mouseY < ((this.inventoryMaxItemCount / 5) | 0) * 34
+    ) {
         const itemIndex = ((mouseX / 49) | 0) + ((mouseY / 34) | 0) * 5;
 
         if (itemIndex < this.inventoryItemsCount) {
@@ -63,25 +85,29 @@ function drawUiTabInventory(noMenus) {
 
             if (this.selectedSpell >= 0) {
                 if (GameData.spellType[this.selectedSpell] === 3) {
-                    this.menuItemText1[this.menuItemsCount] =
-                        `Cast ${GameData.spellName[this.selectedSpell]} on`;
+                    this.menuItemText1[this.menuItemsCount] = `Cast ${
+                        GameData.spellName[this.selectedSpell]
+                    } on`;
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 600;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
-                    this.menuSourceIndex[this.menuItemsCount] =
-                        this.selectedSpell;
+                    this.menuSourceIndex[
+                        this.menuItemsCount
+                    ] = this.selectedSpell;
                     this.menuItemsCount++;
                     return;
                 }
             } else {
                 if (this.selectedItemInventoryIndex >= 0) {
-                    this.menuItemText1[this.menuItemsCount] =
-                        `Use ${this.selectedItemName} with:`;
+                    this.menuItemText1[
+                        this.menuItemsCount
+                    ] = `Use ${this.selectedItemName} with:`;
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 610;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
-                    this.menuSourceIndex[this.menuItemsCount] =
-                        this.selectedItemInventoryIndex;
+                    this.menuSourceIndex[
+                        this.menuItemsCount
+                    ] = this.selectedItemInventoryIndex;
                     this.menuItemsCount++;
                     return;
                 }
@@ -136,4 +162,4 @@ function drawUiTabInventory(noMenus) {
     }
 }
 
-module.exports.drawUiTabInventory = drawUiTabInventory;
+module.exports = { drawUiTabInventory };

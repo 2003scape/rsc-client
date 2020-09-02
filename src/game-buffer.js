@@ -10,9 +10,9 @@ class GameBuffer {
     }
 
     putInt(i) {
-        this.buffer[this.offset++] = (i >> 24);
-        this.buffer[this.offset++] = (i >> 16);
-        this.buffer[this.offset++] = (i >> 8);
+        this.buffer[this.offset++] = i >> 24;
+        this.buffer[this.offset++] = i >> 16;
+        this.buffer[this.offset++] = i >> 8;
         this.buffer[this.offset++] = i;
     }
 
@@ -20,7 +20,7 @@ class GameBuffer {
         for (let i = 0; i < s.length; i++) {
             this.buffer[this.offset++] = s.charCodeAt(i);
         }
-        
+
         // null terminate
         this.buffer[this.offset++] = 10;
     }
@@ -38,17 +38,21 @@ class GameBuffer {
     getUnsignedShort() {
         this.offset += 2;
 
-        return ((this.buffer[this.offset - 2] & 0xff) << 8) + 
-            (this.buffer[this.offset - 1] & 0xff);
+        return (
+            ((this.buffer[this.offset - 2] & 0xff) << 8) +
+            (this.buffer[this.offset - 1] & 0xff)
+        );
     }
 
     getUnsignedInt() {
-        this.offset +=4;
+        this.offset += 4;
 
-        return ((this.buffer[this.offset - 4] & 0xff) << 24) + 
-            ((this.buffer[this.offset - 3] & 0xff) << 16) + 
-            ((this.buffer[this.offset - 2] & 0xff) << 8) + 
-            (this.buffer[this.offset - 1] & 0xff);
+        return (
+            ((this.buffer[this.offset - 4] & 0xff) << 24) +
+            ((this.buffer[this.offset - 3] & 0xff) << 16) +
+            ((this.buffer[this.offset - 2] & 0xff) << 8) +
+            (this.buffer[this.offset - 1] & 0xff)
+        );
     }
 
     getBytes(dest, destPos, len) {

@@ -56,7 +56,12 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
-        this.imageData = component._graphics.ctx.getImageData(0, 0, width, height);
+        this.imageData = component._graphics.ctx.getImageData(
+            0,
+            0,
+            width,
+            height
+        );
         this.bufferedPixels = new Int32Array(width * height);
         this.pixelBytes = new Uint8ClampedArray(this.bufferedPixels.buffer);
 
@@ -139,8 +144,8 @@ class Surface {
 
     drawCircle(x, y, radius, colour, alpha) {
         let bgAlpha = 256 - alpha;
-        let red = (colour >> 16 & 0xff) * alpha;
-        let green = (colour >> 8 & 0xff) * alpha;
+        let red = ((colour >> 16) & 0xff) * alpha;
+        let green = ((colour >> 8) & 0xff) * alpha;
         let blue = (colour & 0xff) * alpha;
         let top = y - radius;
 
@@ -182,10 +187,13 @@ class Surface {
             let pixelIdx = j4 + yy * this.width2;
 
             for (let i5 = j4; i5 <= k4; i5++) {
-                let bgRed = (this.pixels[pixelIdx] >> 16 & 0xff) * bgAlpha;
-                let bgGreen = (this.pixels[pixelIdx] >> 8 & 0xff) * bgAlpha;
+                let bgRed = ((this.pixels[pixelIdx] >> 16) & 0xff) * bgAlpha;
+                let bgGreen = ((this.pixels[pixelIdx] >> 8) & 0xff) * bgAlpha;
                 let bgBlue = (this.pixels[pixelIdx] & 0xff) * bgAlpha;
-                let newColour = ((red + bgRed >> 8) << 16) + ((green + bgGreen >> 8) << 8) + (blue + bgBlue >> 8);
+                let newColour =
+                    (((red + bgRed) >> 8) << 16) +
+                    (((green + bgGreen) >> 8) << 8) +
+                    ((blue + bgBlue) >> 8);
                 this.pixels[pixelIdx++] = newColour;
             }
         }
@@ -211,8 +219,8 @@ class Surface {
         }
 
         let bgAlpha = 256 - alpha;
-        let red = (colour >> 16 & 0xff) * alpha;
-        let green = (colour >> 8 & 0xff) * alpha;
+        let red = ((colour >> 16) & 0xff) * alpha;
+        let green = ((colour >> 8) & 0xff) * alpha;
         let blue = (colour & 0xff) * alpha;
         let j3 = this.width2 - width; // wat
         let vertInc = 1;
@@ -231,16 +239,18 @@ class Surface {
 
         for (let l3 = 0; l3 < height; l3 += vertInc) {
             for (let i4 = -width; i4 < 0; i4++) {
-                let bgRed = (this.pixels[pixelIdx] >> 16 & 0xff) * bgAlpha;
-                let bgGreen = (this.pixels[pixelIdx] >> 8 & 0xff) * bgAlpha;
+                let bgRed = ((this.pixels[pixelIdx] >> 16) & 0xff) * bgAlpha;
+                let bgGreen = ((this.pixels[pixelIdx] >> 8) & 0xff) * bgAlpha;
                 let bgBlue = (this.pixels[pixelIdx] & 0xff) * bgAlpha;
-                let newColour = ((red + bgRed >> 8) << 16) + ((green + bgGreen >> 8) << 8) + (blue + bgBlue >> 8);
+                let newColour =
+                    (((red + bgRed) >> 8) << 16) +
+                    (((green + bgGreen) >> 8) << 8) +
+                    ((blue + bgBlue) >> 8);
                 this.pixels[pixelIdx++] = newColour;
             }
 
             pixelIdx += j3;
         }
-
     }
 
     drawGradient(x, y, width, height, colourTop, colourBottom) {
@@ -253,11 +263,11 @@ class Surface {
             width = this.boundsBottomX - x;
         }
 
-        let btmRed = colourBottom >> 16 & 0xff;
-        let btmGreen = colourBottom >> 8 & 0xff;
+        let btmRed = (colourBottom >> 16) & 0xff;
+        let btmGreen = (colourBottom >> 8) & 0xff;
         let btmBlue = colourBottom & 0xff;
-        let topRed = colourTop >> 16 & 0xff;
-        let topGreen = colourTop >> 8 & 0xff;
+        let topRed = (colourTop >> 16) & 0xff;
+        let topGreen = (colourTop >> 8) & 0xff;
         let topBlue = colourTop & 0xff;
         let i3 = this.width2 - width; // wat
         let vertInc = 1;
@@ -276,7 +286,11 @@ class Surface {
 
         for (let k3 = 0; k3 < height; k3 += vertInc) {
             if (k3 + y >= this.boundsTopY && k3 + y < this.boundsBottomY) {
-                let newColour = ((btmRed * k3 + topRed * (height - k3)) / height << 16) + ((btmGreen * k3 + topGreen * (height - k3)) / height << 8) + (((btmBlue * k3 + topBlue * (height - k3)) / height) | 0);
+                let newColour =
+                    (((btmRed * k3 + topRed * (height - k3)) / height) << 16) +
+                    (((btmGreen * k3 + topGreen * (height - k3)) / height) <<
+                        8) +
+                    (((btmBlue * k3 + topBlue * (height - k3)) / height) | 0);
 
                 for (let i4 = -width; i4 < 0; i4++) {
                     this.pixels[pixelIdx++] = newColour;
@@ -334,9 +348,9 @@ class Surface {
 
     drawBoxEdge(x, y, width, height, colour) {
         this.drawLineHoriz(x, y, width, colour);
-        this.drawLineHoriz(x, (y + height) - 1, width, colour);
+        this.drawLineHoriz(x, y + height - 1, width, colour);
         this.drawLineVert(x, y, height, colour);
-        this.drawLineVert((x + width) - 1, y, height, colour);
+        this.drawLineVert(x + width - 1, y, height, colour);
     }
 
     drawLineHoriz(x, y, width, colour) {
@@ -379,11 +393,15 @@ class Surface {
         for (let j1 = 0; j1 < height; j1++) {
             this.pixels[i1 + j1 * this.width2] = colour;
         }
-
     }
 
     setPixel(x, y, colour) {
-        if (x < this.boundsTopX || y < this.boundsTopY || x >= this.boundsBottomX || y >= this.boundsBottomY) {
+        if (
+            x < this.boundsTopX ||
+            y < this.boundsTopY ||
+            x >= this.boundsBottomX ||
+            y >= this.boundsBottomY
+        ) {
             return;
         } else {
             this.pixels[x + y * this.width2] = colour;
@@ -397,7 +415,11 @@ class Surface {
 
         for (let j = 0; j < k; j++) {
             let i = this.pixels[j] & 0xffffff;
-            this.pixels[j] = (i >>> 1 & 0x7f7f7f) + (i >>> 2 & 0x3f3f3f) + (i >>> 3 & 0x1f1f1f) + (i >>> 4 & 0xf0f0f);
+            this.pixels[j] =
+                ((i >>> 1) & 0x7f7f7f) +
+                ((i >>> 2) & 0x3f3f3f) +
+                ((i >>> 3) & 0x1f1f1f) +
+                ((i >>> 4) & 0xf0f0f);
         }
     }
 
@@ -414,15 +436,16 @@ class Surface {
                         for (let j3 = yy - j; j3 <= yy + j; j3++) {
                             if (j3 >= 0 && j3 < this.height2) {
                                 let k3 = this.pixels[i3 + this.width2 * j3];
-                                i2 += k3 >> 16 & 0xff;
-                                j2 += k3 >> 8 & 0xff;
+                                i2 += (k3 >> 16) & 0xff;
+                                j2 += (k3 >> 8) & 0xff;
                                 k2 += k3 & 0xff;
                                 l2++;
                             }
                         }
                     }
 
-                this.pixels[xx + this.width2 * yy] = (i2 / l2 << 16) + (j2 / l2 << 8) + ((k2 / l2) | 0);
+                this.pixels[xx + this.width2 * yy] =
+                    ((i2 / l2) << 16) + ((j2 / l2) << 8) + ((k2 / l2) | 0);
             }
         }
     }
@@ -450,7 +473,10 @@ class Surface {
         colours[0] = 0xff00ff;
 
         for (let i = 0; i < colourCount - 1; i++) {
-            colours[i + 1] = ((indexData[indexOff] & 0xff) << 16) + ((indexData[indexOff + 1] & 0xff) << 8) + (indexData[indexOff + 2] & 0xff);
+            colours[i + 1] =
+                ((indexData[indexOff] & 0xff) << 16) +
+                ((indexData[indexOff + 1] & 0xff) << 8) +
+                (indexData[indexOff + 2] & 0xff);
             indexOff += 3;
         }
 
@@ -459,10 +485,16 @@ class Surface {
         for (let id = spriteId; id < spriteId + frameCount; id++) {
             this.spriteTranslateX[id] = indexData[indexOff++] & 0xff;
             this.spriteTranslateY[id] = indexData[indexOff++] & 0xff;
-            this.spriteWidth[id] = Utility.getUnsignedShort(indexData, indexOff);
+            this.spriteWidth[id] = Utility.getUnsignedShort(
+                indexData,
+                indexOff
+            );
             indexOff += 2;
 
-            this.spriteHeight[id] = Utility.getUnsignedShort(indexData, indexOff);
+            this.spriteHeight[id] = Utility.getUnsignedShort(
+                indexData,
+                indexOff
+            );
             indexOff += 2;
 
             let unknown = indexData[indexOff++] & 0xff;
@@ -475,7 +507,10 @@ class Surface {
             this.surfacePixels[id] = null;
             this.spriteTranslate[id] = false;
 
-            if (this.spriteTranslateX[id] !== 0 || this.spriteTranslateY[id] !== 0) {
+            if (
+                this.spriteTranslateX[id] !== 0 ||
+                this.spriteTranslateY[id] !== 0
+            ) {
                 this.spriteTranslate[id] = true;
             }
 
@@ -490,9 +525,15 @@ class Surface {
             } else if (unknown === 1) {
                 for (let x = 0; x < this.spriteWidth[id]; x++) {
                     for (let y = 0; y < this.spriteHeight[id]; y++) {
-                        this.spriteColoursUsed[id][x + y * this.spriteWidth[id]] = spriteData[spriteOff++];
+                        this.spriteColoursUsed[id][
+                            x + y * this.spriteWidth[id]
+                        ] = spriteData[spriteOff++];
 
-                        if (this.spriteColoursUsed[id][x + y * this.spriteWidth[id]] === 0) {
+                        if (
+                            this.spriteColoursUsed[id][
+                                x + y * this.spriteWidth[id]
+                            ] === 0
+                        ) {
                             this.spriteTranslate[id] = true;
                         }
                     }
@@ -502,7 +543,7 @@ class Surface {
     }
 
     readSleepWord(spriteId, spriteData) {
-        let pixels = this.surfacePixels[spriteId] = new Int32Array(10200);
+        let pixels = (this.surfacePixels[spriteId] = new Int32Array(10200));
 
         this.spriteWidth[spriteId] = 255;
         this.spriteHeight[spriteId] = 40;
@@ -546,13 +587,16 @@ class Surface {
     }
 
     drawWorld(spriteId) {
-        let spriteSize = this.spriteWidth[spriteId] * this.spriteHeight[spriteId];
+        let spriteSize =
+            this.spriteWidth[spriteId] * this.spriteHeight[spriteId];
         let spritePixels = this.surfacePixels[spriteId];
         let ai1 = new Int32Array(32768);
 
         for (let k = 0; k < spriteSize; k++) {
             let l = spritePixels[k];
-            ai1[((l & 0xf80000) >> 9) + ((l & 0xf800) >> 6) + ((l & 0xf8) >> 3)]++;
+            ai1[
+                ((l & 0xf80000) >> 9) + ((l & 0xf800) >> 6) + ((l & 0xf8) >> 3)
+            ]++;
         }
 
         let ai2 = new Int32Array(256);
@@ -574,7 +618,11 @@ class Surface {
                         ai3[i2] = ai3[i2 - 1];
                     }
 
-                    ai2[k1] = ((i1 & 0x7c00) << 9) + ((i1 & 0x3e0) << 6) + ((i1 & 0x1f) << 3) + 0x40404;
+                    ai2[k1] =
+                        ((i1 & 0x7c00) << 9) +
+                        ((i1 & 0x3e0) << 6) +
+                        ((i1 & 0x1f) << 3) +
+                        0x40404;
                     ai3[k1] = j1;
                     break;
                 }
@@ -587,21 +635,27 @@ class Surface {
 
         for (let l1 = 0; l1 < spriteSize; l1++) {
             let j2 = spritePixels[l1];
-            let k2 = ((j2 & 0xf80000) >> 9) + ((j2 & 0xf800) >> 6) + ((j2 & 0xf8) >> 3);
+            let k2 =
+                ((j2 & 0xf80000) >> 9) +
+                ((j2 & 0xf800) >> 6) +
+                ((j2 & 0xf8) >> 3);
             let l2 = ai1[k2];
 
             if (l2 === -1) {
                 let i3 = 999999999;
-                let j3 = j2 >> 16 & 0xff;
-                let k3 = j2 >> 8 & 0xff;
+                let j3 = (j2 >> 16) & 0xff;
+                let k3 = (j2 >> 8) & 0xff;
                 let l3 = j2 & 0xff;
 
                 for (let i4 = 0; i4 < 256; i4++) {
                     let j4 = ai2[i4];
-                    let k4 = j4 >> 16 & 0xff;
-                    let l4 = j4 >> 8 & 0xff;
+                    let k4 = (j4 >> 16) & 0xff;
+                    let l4 = (j4 >> 8) & 0xff;
                     let i5 = j4 & 0xff;
-                    let j5 = (j3 - k4) * (j3 - k4) + (k3 - l4) * (k3 - l4) + (l3 - i5) * (l3 - i5);
+                    let j5 =
+                        (j3 - k4) * (j3 - k4) +
+                        (k3 - l4) * (k3 - l4) +
+                        (l3 - i5) * (l3 - i5);
 
                     if (j5 < i3) {
                         i3 = j5;
@@ -664,7 +718,9 @@ class Surface {
 
         for (let xx = x; xx < x + width; xx++) {
             for (let yy = y; yy < y + height; yy++) {
-                this.surfacePixels[sprite][pixel++] = this.pixels[xx + yy * this.width2];
+                this.surfacePixels[sprite][pixel++] = this.pixels[
+                    xx + yy * this.width2
+                ];
             }
         }
     }
@@ -686,7 +742,9 @@ class Surface {
 
         for (let yy = y; yy < y + height; yy++) {
             for (let xx = x; xx < x + width; xx++) {
-                this.surfacePixels[sprite][pixel++] = this.pixels[xx + yy * this.width2];
+                this.surfacePixels[sprite][pixel++] = this.pixels[
+                    xx + yy * this.width2
+                ];
             }
         }
     }
@@ -713,7 +771,7 @@ class Surface {
         }
 
         if (y + height >= this.boundsBottomY) {
-            height -= ((y + height) - this.boundsBottomY) + 1;
+            height -= y + height - this.boundsBottomY + 1;
         }
 
         if (x < this.boundsTopX) {
@@ -727,7 +785,7 @@ class Surface {
         }
 
         if (x + width >= this.boundsBottomX) {
-            let l2 = ((x + width) - this.boundsBottomX) + 1;
+            let l2 = x + width - this.boundsBottomX + 1;
             width -= l2;
             h2 += l2;
             w2 += l2;
@@ -751,10 +809,32 @@ class Surface {
         }
 
         if (this.surfacePixels[id] === null) {
-            this._drawSprite_from10A(this.pixels, this.spriteColoursUsed[id], this.spriteColourList[id], rX, rY, width, height, w2, h2, inc);
+            this._drawSprite_from10A(
+                this.pixels,
+                this.spriteColoursUsed[id],
+                this.spriteColourList[id],
+                rX,
+                rY,
+                width,
+                height,
+                w2,
+                h2,
+                inc
+            );
             return;
         } else {
-            this._drawSprite_from10(this.pixels, this.surfacePixels[id], 0, rX, rY, width, height, w2, h2, inc);
+            this._drawSprite_from10(
+                this.pixels,
+                this.surfacePixels[id],
+                0,
+                rX,
+                rY,
+                width,
+                height,
+                w2,
+                h2,
+                inc
+            );
             return;
         }
     }
@@ -774,19 +854,39 @@ class Surface {
                 j2 = ((l2 << 16) / width) | 0;
                 k2 = ((j3 << 16) / height) | 0;
 
-                x += (((this.spriteTranslateX[spriteId] * width + l2) - 1) / l2) | 0;
-                y += (((this.spriteTranslateY[spriteId] * height + j3) - 1) / j3) | 0;
+                x +=
+                    ((this.spriteTranslateX[spriteId] * width + l2 - 1) / l2) |
+                    0;
+                y +=
+                    ((this.spriteTranslateY[spriteId] * height + j3 - 1) / j3) |
+                    0;
 
                 if ((this.spriteTranslateX[spriteId] * width) % l2 !== 0) {
-                    l1 = ((l2 - (this.spriteTranslateX[spriteId] * width) % l2 << 16) / width) | 0;
+                    l1 =
+                        (((l2 -
+                            ((this.spriteTranslateX[spriteId] * width) % l2)) <<
+                            16) /
+                            width) |
+                        0;
                 }
 
                 if ((this.spriteTranslateY[spriteId] * height) % j3 !== 0) {
-                    i2 = ((j3 - (this.spriteTranslateY[spriteId] * height) % j3 << 16) / height) | 0;
+                    i2 =
+                        (((j3 -
+                            ((this.spriteTranslateY[spriteId] * height) %
+                                j3)) <<
+                            16) /
+                            height) |
+                        0;
                 }
 
-                width = ((width * (this.spriteWidth[spriteId] - (l1 >> 16))) / l2) | 0;
-                height = ((height * (this.spriteHeight[spriteId] - (i2 >> 16))) / j3) | 0;
+                width =
+                    ((width * (this.spriteWidth[spriteId] - (l1 >> 16))) / l2) |
+                    0;
+                height =
+                    ((height * (this.spriteHeight[spriteId] - (i2 >> 16))) /
+                        j3) |
+                    0;
             }
 
             let i3 = x + y * this.width2;
@@ -801,7 +901,7 @@ class Surface {
             }
 
             if (y + height >= this.boundsBottomY) {
-                height -= ((y + height) - this.boundsBottomY) + 1;
+                height -= y + height - this.boundsBottomY + 1;
             }
 
             if (x < this.boundsTopX) {
@@ -814,7 +914,7 @@ class Surface {
             }
 
             if (x + width >= this.boundsBottomX) {
-                let j4 = ((x + width) - this.boundsBottomX) + 1;
+                let j4 = x + width - this.boundsBottomX + 1;
                 width -= j4;
                 k3 += j4;
             }
@@ -832,7 +932,21 @@ class Surface {
                 }
             }
 
-            this._plotScale_from13(this.pixels, this.surfacePixels[spriteId], 0, l1, i2, i3, k3, width, height, j2, k2, spriteWidth, yInc);
+            this._plotScale_from13(
+                this.pixels,
+                this.surfacePixels[spriteId],
+                0,
+                l1,
+                i2,
+                i3,
+                k3,
+                width,
+                height,
+                j2,
+                k2,
+                spriteWidth,
+                yInc
+            );
         } catch (e) {
             console.log('error in sprite clipping routine');
         }
@@ -840,7 +954,15 @@ class Surface {
 
     _spriteClipping_from7(x, y, w, h, id, tx, ty) {
         if (id >= 50000) {
-            this.mudclientref.drawTeleportBubble(x, y, w, h, id - 50000, tx, ty);
+            this.mudclientref.drawTeleportBubble(
+                x,
+                y,
+                w,
+                h,
+                id - 50000,
+                tx,
+                ty
+            );
             return;
         }
 
@@ -885,7 +1007,7 @@ class Surface {
         }
 
         if (y + height >= this.boundsBottomY) {
-            height -= ((y + height) - this.boundsBottomY) + 1;
+            height -= y + height - this.boundsBottomY + 1;
         }
 
         if (x < this.boundsTopX) {
@@ -899,7 +1021,7 @@ class Surface {
         }
 
         if (x + width >= this.boundsBottomX) {
-            let i3 = ((x + width) - this.boundsBottomX) + 1;
+            let i3 = x + width - this.boundsBottomX + 1;
             width -= i3;
             j2 += i3;
             extraXSpace += i3;
@@ -923,10 +1045,34 @@ class Surface {
         }
 
         if (this.surfacePixels[spriteId] === null) {
-            this._drawSpriteAlpha_from11A(this.pixels, this.spriteColoursUsed[spriteId], this.spriteColourList[spriteId], j1, size, width, height, extraXSpace, j2, yInc, alpha);
+            this._drawSpriteAlpha_from11A(
+                this.pixels,
+                this.spriteColoursUsed[spriteId],
+                this.spriteColourList[spriteId],
+                j1,
+                size,
+                width,
+                height,
+                extraXSpace,
+                j2,
+                yInc,
+                alpha
+            );
             return;
         } else {
-            this._drawSpriteAlpha_from11(this.pixels, this.surfacePixels[spriteId], 0, j1, size, width, height, extraXSpace, j2, yInc, alpha);
+            this._drawSpriteAlpha_from11(
+                this.pixels,
+                this.surfacePixels[spriteId],
+                0,
+                j1,
+                size,
+                width,
+                height,
+                extraXSpace,
+                j2,
+                yInc,
+                alpha
+            );
             return;
         }
     }
@@ -946,19 +1092,37 @@ class Surface {
                 k2 = ((i3 << 16) / scaleX) | 0;
                 l2 = ((k3 << 16) / scaleY) | 0;
 
-                x += (((this.spriteTranslateX[sprite] * scaleX + i3) - 1) / i3) | 0;
-                y += (((this.spriteTranslateY[sprite] * scaleY + k3) - 1) / k3) | 0;
+                x +=
+                    ((this.spriteTranslateX[sprite] * scaleX + i3 - 1) / i3) |
+                    0;
+                y +=
+                    ((this.spriteTranslateY[sprite] * scaleY + k3 - 1) / k3) |
+                    0;
 
                 if ((this.spriteTranslateX[sprite] * scaleX) % i3 !== 0) {
-                    i2 = ((i3 - (this.spriteTranslateX[sprite] * scaleX) % i3 << 16) / scaleX) | 0;
+                    i2 =
+                        (((i3 -
+                            ((this.spriteTranslateX[sprite] * scaleX) % i3)) <<
+                            16) /
+                            scaleX) |
+                        0;
                 }
 
                 if ((this.spriteTranslateY[sprite] * scaleY) % k3 !== 0) {
-                    j2 = ((k3 - (this.spriteTranslateY[sprite] * scaleY) % k3 << 16) / scaleY) | 0;
+                    j2 =
+                        (((k3 -
+                            ((this.spriteTranslateY[sprite] * scaleY) % k3)) <<
+                            16) /
+                            scaleY) |
+                        0;
                 }
 
-                scaleX = ((scaleX * (this.spriteWidth[sprite] - (i2 >> 16))) / i3) | 0;
-                scaleY = ((scaleY * (this.spriteHeight[sprite] - (j2 >> 16))) / k3) | 0;
+                scaleX =
+                    ((scaleX * (this.spriteWidth[sprite] - (i2 >> 16))) / i3) |
+                    0;
+                scaleY =
+                    ((scaleY * (this.spriteHeight[sprite] - (j2 >> 16))) / k3) |
+                    0;
             }
 
             let j3 = x + y * this.width2;
@@ -973,7 +1137,7 @@ class Surface {
             }
 
             if (y + scaleY >= this.boundsBottomY)
-                scaleY -= ((y + scaleY) - this.boundsBottomY) + 1;
+                scaleY -= y + scaleY - this.boundsBottomY + 1;
 
             if (x < this.boundsTopX) {
                 let j4 = this.boundsTopX - x;
@@ -985,7 +1149,7 @@ class Surface {
             }
 
             if (x + scaleX >= this.boundsBottomX) {
-                let k4 = ((x + scaleX) - this.boundsBottomX) + 1;
+                let k4 = x + scaleX - this.boundsBottomX + 1;
                 scaleX -= k4;
                 l3 += k4;
             }
@@ -1003,7 +1167,22 @@ class Surface {
                 }
             }
 
-            this.transparentScale(this.pixels, this.surfacePixels[sprite], 0, i2, j2, j3, l3, scaleX, scaleY, k2, l2, spriteWidth, yInc, alpha);
+            this.transparentScale(
+                this.pixels,
+                this.surfacePixels[sprite],
+                0,
+                i2,
+                j2,
+                j3,
+                l3,
+                scaleX,
+                scaleY,
+                k2,
+                l2,
+                spriteWidth,
+                yInc,
+                alpha
+            );
             return;
         } catch (e) {
             console.log('error in sprite clipping routine');
@@ -1024,19 +1203,39 @@ class Surface {
                 let k3 = this.spriteHeightFull[spriteId];
                 k2 = ((i3 << 16) / width) | 0;
                 l2 = ((k3 << 16) / height) | 0;
-                x += (((this.spriteTranslateX[spriteId] * width + i3) - 1) / i3) | 0;
-                y += (((this.spriteTranslateY[spriteId] * height + k3) - 1) / k3) | 0;
+                x +=
+                    ((this.spriteTranslateX[spriteId] * width + i3 - 1) / i3) |
+                    0;
+                y +=
+                    ((this.spriteTranslateY[spriteId] * height + k3 - 1) / k3) |
+                    0;
 
                 if ((this.spriteTranslateX[spriteId] * width) % i3 !== 0) {
-                    i2 = ((i3 - (this.spriteTranslateX[spriteId] * width) % i3 << 16) / width) | 0;
+                    i2 =
+                        (((i3 -
+                            ((this.spriteTranslateX[spriteId] * width) % i3)) <<
+                            16) /
+                            width) |
+                        0;
                 }
 
                 if ((this.spriteTranslateY[spriteId] * height) % k3 !== 0) {
-                    j2 = ((k3 - (this.spriteTranslateY[spriteId] * height) % k3 << 16) / height) | 0;
+                    j2 =
+                        (((k3 -
+                            ((this.spriteTranslateY[spriteId] * height) %
+                                k3)) <<
+                            16) /
+                            height) |
+                        0;
                 }
 
-                width = ((width * (this.spriteWidth[spriteId] - (i2 >> 16))) / i3) | 0;
-                height = ((height * (this.spriteHeight[spriteId] - (j2 >> 16))) / k3) | 0;
+                width =
+                    ((width * (this.spriteWidth[spriteId] - (i2 >> 16))) / i3) |
+                    0;
+                height =
+                    ((height * (this.spriteHeight[spriteId] - (j2 >> 16))) /
+                        k3) |
+                    0;
             }
 
             let j3 = x + y * this.width2;
@@ -1051,7 +1250,7 @@ class Surface {
             }
 
             if (y + height >= this.boundsBottomY) {
-                height -= ((y + height) - this.boundsBottomY) + 1;
+                height -= y + height - this.boundsBottomY + 1;
             }
 
             if (x < this.boundsTopX) {
@@ -1064,7 +1263,7 @@ class Surface {
             }
 
             if (x + width >= this.boundsBottomX) {
-                let k4 = ((x + width) - this.boundsBottomX) + 1;
+                let k4 = x + width - this.boundsBottomX + 1;
                 width -= k4;
                 l3 += k4;
             }
@@ -1082,7 +1281,22 @@ class Surface {
                 }
             }
 
-            this._plotScale_from14(this.pixels, this.surfacePixels[spriteId], 0, i2, j2, j3, l3, width, height, k2, l2, k1, yInc, colour);
+            this._plotScale_from14(
+                this.pixels,
+                this.surfacePixels[spriteId],
+                0,
+                i2,
+                j2,
+                j3,
+                l3,
+                width,
+                height,
+                k2,
+                l2,
+                k1,
+                yInc,
+                colour
+            );
             return;
         } catch (e) {
             console.log('error in sprite clipping routine');
@@ -1090,7 +1304,18 @@ class Surface {
         }
     }
 
-    _drawSprite_from10(dest, src, i, srcPos, destPos, width, height, j1, k1, yInc) {
+    _drawSprite_from10(
+        dest,
+        src,
+        i,
+        srcPos,
+        destPos,
+        width,
+        height,
+        j1,
+        k1,
+        yInc
+    ) {
         let i2 = -(width >> 2);
         width = -(width & 3);
 
@@ -1144,7 +1369,18 @@ class Surface {
         }
     }
 
-    _drawSprite_from10A(target, colourIdx, colours, srcPos, destPos, width, height, w2, h2, rowInc) {
+    _drawSprite_from10A(
+        target,
+        colourIdx,
+        colours,
+        srcPos,
+        destPos,
+        width,
+        height,
+        w2,
+        h2,
+        rowInc
+    ) {
         let l1 = -(width >> 2);
         width = -(width & 3);
 
@@ -1228,7 +1464,19 @@ class Surface {
         }
     }
 
-    _drawSpriteAlpha_from11(dest, src, i, srcPos, size, width, height, extraXSpace, k1, yInc, alpha) {
+    _drawSpriteAlpha_from11(
+        dest,
+        src,
+        i,
+        srcPos,
+        size,
+        width,
+        height,
+        extraXSpace,
+        k1,
+        yInc,
+        alpha
+    ) {
         let j2 = 256 - alpha;
 
         for (let k2 = -height; k2 < 0; k2 += yInc) {
@@ -1237,7 +1485,12 @@ class Surface {
 
                 if (i !== 0) {
                     let i3 = dest[size];
-                    dest[size++] = ((i & 0xff00ff) * alpha + (i3 & 0xff00ff) * j2 & -16711936) + ((i & 0xff00) * alpha + (i3 & 0xff00) * j2 & 0xff0000) >> 8;
+                    dest[size++] =
+                        ((((i & 0xff00ff) * alpha + (i3 & 0xff00ff) * j2) &
+                            -16711936) +
+                            (((i & 0xff00) * alpha + (i3 & 0xff00) * j2) &
+                                0xff0000)) >>
+                        8;
                 } else {
                     size++;
                 }
@@ -1248,7 +1501,19 @@ class Surface {
         }
     }
 
-    _drawSpriteAlpha_from11A(dest, coloursUsed, colourList, listPos, size, width, height, extraXSpace, j1, yInc, alpha) {
+    _drawSpriteAlpha_from11A(
+        dest,
+        coloursUsed,
+        colourList,
+        listPos,
+        size,
+        width,
+        height,
+        extraXSpace,
+        j1,
+        yInc,
+        alpha
+    ) {
         let i2 = 256 - alpha;
 
         for (let j2 = -height; j2 < 0; j2 += yInc) {
@@ -1258,7 +1523,12 @@ class Surface {
                 if (l2 !== 0) {
                     l2 = colourList[l2 & 0xff];
                     let i3 = dest[size];
-                    dest[size++] = ((l2 & 0xff00ff) * alpha + (i3 & 0xff00ff) * i2 & -16711936) + ((l2 & 0xff00) * alpha + (i3 & 0xff00) * i2 & 0xff0000) >> 8;
+                    dest[size++] =
+                        ((((l2 & 0xff00ff) * alpha + (i3 & 0xff00ff) * i2) &
+                            -16711936) +
+                            (((l2 & 0xff00) * alpha + (i3 & 0xff00) * i2) &
+                                0xff0000)) >>
+                        8;
                 } else {
                     size++;
                 }
@@ -1269,7 +1539,22 @@ class Surface {
         }
     }
 
-    transparentScale(dest, src, i, j, k, destPos, i1, j1, k1, l1, i2, j2, yInc, alpha) {
+    transparentScale(
+        dest,
+        src,
+        i,
+        j,
+        k,
+        destPos,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        yInc,
+        alpha
+    ) {
         let i3 = 256 - alpha;
 
         try {
@@ -1283,7 +1568,12 @@ class Surface {
 
                     if (i !== 0) {
                         let j4 = dest[destPos];
-                        dest[destPos++] = ((i & 0xff00ff) * alpha + (j4 & 0xff00ff) * i3 & -16711936) + ((i & 0xff00) * alpha + (j4 & 0xff00) * i3 & 0xff0000) >> 8;
+                        dest[destPos++] =
+                            ((((i & 0xff00ff) * alpha + (j4 & 0xff00ff) * i3) &
+                                -16711936) +
+                                (((i & 0xff00) * alpha + (j4 & 0xff00) * i3) &
+                                    0xff0000)) >>
+                            8;
                     } else {
                         destPos++;
                     }
@@ -1302,9 +1592,24 @@ class Surface {
         }
     }
 
-    _plotScale_from14(target, pixels, i, j, k, l, i1, width, height, l1, i2, j2, yInc, colour) {
-        let i3 = colour >> 16 & 0xff;
-        let j3 = colour >> 8 & 0xff;
+    _plotScale_from14(
+        target,
+        pixels,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        width,
+        height,
+        l1,
+        i2,
+        j2,
+        yInc,
+        colour
+    ) {
+        let i3 = (colour >> 16) & 0xff;
+        let j3 = (colour >> 8) & 0xff;
         let k3 = colour & 0xff;
 
         try {
@@ -1316,12 +1621,15 @@ class Surface {
                     i = pixels[(j >> 16) + j4];
 
                     if (i !== 0) {
-                        let l4 = i >> 16 & 0xff;
-                        let i5 = i >> 8 & 0xff;
+                        let l4 = (i >> 16) & 0xff;
+                        let i5 = (i >> 8) & 0xff;
                         let j5 = i & 0xff;
 
                         if (l4 === i5 && i5 === j5) {
-                            target[l++] = ((l4 * i3 >> 8) << 16) + ((i5 * j3 >> 8) << 8) + (j5 * k3 >> 8);
+                            target[l++] =
+                                (((l4 * i3) >> 8) << 16) +
+                                (((i5 * j3) >> 8) << 8) +
+                                ((j5 * k3) >> 8);
                         } else {
                             target[l++] = i;
                         }
@@ -1352,8 +1660,10 @@ class Surface {
             this.landscapeColours = new Int32Array(512);
 
             for (let l1 = 0; l1 < 256; l1++) {
-                this.landscapeColours[l1] = (Math.sin(l1 * 0.02454369) * 32768) | 0;
-                this.landscapeColours[l1 + 256] = (Math.cos(l1 * 0.02454369) * 32768) | 0;
+                this.landscapeColours[l1] =
+                    (Math.sin(l1 * 0.02454369) * 32768) | 0;
+                this.landscapeColours[l1 + 256] =
+                    (Math.cos(l1 * 0.02454369) * 32768) | 0;
             }
         }
 
@@ -1374,14 +1684,14 @@ class Surface {
         rotation &= 0xff;
         let i4 = this.landscapeColours[rotation] * scale;
         let j4 = this.landscapeColours[rotation + 256] * scale;
-        let k4 = x + (j2 * i4 + i2 * j4 >> 22);
-        let l4 = y + (j2 * j4 - i2 * i4 >> 22);
-        let i5 = x + (j3 * i4 + i3 * j4 >> 22);
-        let j5 = y + (j3 * j4 - i3 * i4 >> 22);
-        let k5 = x + (l2 * i4 + k2 * j4 >> 22);
-        let l5 = y + (l2 * j4 - k2 * i4 >> 22);
-        let i6 = x + (l3 * i4 + k3 * j4 >> 22);
-        let j6 = y + (l3 * j4 - k3 * i4 >> 22);
+        let k4 = x + ((j2 * i4 + i2 * j4) >> 22);
+        let l4 = y + ((j2 * j4 - i2 * i4) >> 22);
+        let i5 = x + ((j3 * i4 + i3 * j4) >> 22);
+        let j5 = y + ((j3 * j4 - i3 * i4) >> 22);
+        let k5 = x + ((l2 * i4 + k2 * j4) >> 22);
+        let l5 = y + ((l2 * j4 - k2 * i4) >> 22);
+        let i6 = x + ((l3 * i4 + k3 * j4) >> 22);
+        let j6 = y + ((l3 * j4 - k3 * i4) >> 22);
 
         if (scale === 192 && (rotation & 0x3f) === (Surface.anInt348 & 0x3f)) {
             Surface.anInt346++;
@@ -1420,7 +1730,10 @@ class Surface {
             l6 = this.boundsBottomY;
         }
 
-        if (this.anIntArray340 === null || this.anIntArray340.length !== k1 + 1) {
+        if (
+            this.anIntArray340 === null ||
+            this.anIntArray340.length !== k1 + 1
+        ) {
             this.anIntArray340 = new Int32Array(k1 + 1);
             this.anIntArray341 = new Int32Array(k1 + 1);
             this.anIntArray342 = new Int32Array(k1 + 1);
@@ -1450,8 +1763,8 @@ class Surface {
         l3 = k9 - 1;
 
         if (j6 !== l4) {
-            i8 = ((i6 - k4 << 8) / (j6 - l4)) | 0;
-            i9 = ((l3 - j2 << 8) / (j6 - l4)) | 0;
+            i8 = (((i6 - k4) << 8) / (j6 - l4)) | 0;
+            i9 = (((l3 - j2) << 8) / (j6 - l4)) | 0;
         }
 
         let j7 = 0;
@@ -1490,8 +1803,8 @@ class Surface {
         }
 
         if (j5 !== l4) {
-            i8 = ((i5 - k4 << 8) / (j5 - l4)) | 0;
-            k8 = ((i3 - i2 << 8) / (j5 - l4)) | 0;
+            i8 = (((i5 - k4) << 8) / (j5 - l4)) | 0;
+            k8 = (((i3 - i2) << 8) / (j5 - l4)) | 0;
         }
 
         let j8 = 0;
@@ -1536,8 +1849,8 @@ class Surface {
         }
 
         if (l5 !== j5) {
-            i8 = ((k5 - i5 << 8) / (l5 - j5)) | 0;
-            i9 = ((l2 - j3 << 8) / (l5 - j5)) | 0;
+            i8 = (((k5 - i5) << 8) / (l5 - j5)) | 0;
+            i9 = (((l2 - j3) << 8) / (l5 - j5)) | 0;
         }
 
         if (j5 > l5) {
@@ -1582,8 +1895,8 @@ class Surface {
         }
 
         if (j6 !== l5) {
-            i8 = ((i6 - k5 << 8) / (j6 - l5)) | 0;
-            k8 = ((k3 - k2 << 8) / (j6 - l5)) | 0;
+            i8 = (((i6 - k5) << 8) / (j6 - l5)) | 0;
+            k8 = (((k3 - k2) << 8) / (j6 - l5)) | 0;
         }
 
         if (l5 > j6) {
@@ -1638,9 +1951,11 @@ class Surface {
                 l10 += j1;
             } else {
                 let l11 = this.anIntArray342[i11] << 9;
-                let i12 = (((this.anIntArray343[i11] << 9) - l11) / (k11 - j11)) | 0;
+                let i12 =
+                    (((this.anIntArray343[i11] << 9) - l11) / (k11 - j11)) | 0;
                 let j12 = this.anIntArray344[i11] << 9;
-                let k12 = (((this.anIntArray345[i11] << 9) - j12) / (k11 - j11)) | 0;
+                let k12 =
+                    (((this.anIntArray345[i11] << 9) - j12) / (k11 - j11)) | 0;
 
                 if (j11 < this.boundsTopX) {
                     l11 += (this.boundsTopX - j11) * i12;
@@ -1654,9 +1969,31 @@ class Surface {
 
                 if (!this.interlace || (i11 & 1) === 0) {
                     if (!this.spriteTranslate[sprite]) {
-                        this.drawMinimap(this.pixels, ai, 0, l10 + j11, l11, j12, i12, k12, j11 - k11, j9);
+                        this.drawMinimap(
+                            this.pixels,
+                            ai,
+                            0,
+                            l10 + j11,
+                            l11,
+                            j12,
+                            i12,
+                            k12,
+                            j11 - k11,
+                            j9
+                        );
                     } else {
-                        this.drawMinimapTranslate(this.pixels, ai, 0, l10 + j11, l11, j12, i12, k12, j11 - k11, j9);
+                        this.drawMinimapTranslate(
+                            this.pixels,
+                            ai,
+                            0,
+                            l10 + j11,
+                            l11,
+                            j12,
+                            i12,
+                            k12,
+                            j11 - k11,
+                            j9
+                        );
                     }
                 }
 
@@ -1719,21 +2056,25 @@ class Surface {
                     j5 = fullWidth - this.spriteWidth[sprite] - j5;
                 }
 
-                x += (((j5 * w + fullWidth) - 1) / fullWidth) | 0;
-                let l5 = (((k5 * h + fullHeight) - 1) / fullHeight) | 0;
+                x += ((j5 * w + fullWidth - 1) / fullWidth) | 0;
+                let l5 = ((k5 * h + fullHeight - 1) / fullHeight) | 0;
                 y += l5;
                 i3 += l5 * l3;
 
                 if ((j5 * w) % fullWidth !== 0) {
-                    k2 = ((fullWidth - (j5 * w) % fullWidth << 16) / w) | 0;
+                    k2 = (((fullWidth - ((j5 * w) % fullWidth)) << 16) / w) | 0;
                 }
 
                 if ((k5 * h) % fullHeight !== 0) {
-                    l2 = ((fullHeight - (k5 * h) % fullHeight << 16) / h) | 0;
+                    l2 =
+                        (((fullHeight - ((k5 * h) % fullHeight)) << 16) / h) |
+                        0;
                 }
 
-                w = (((((this.spriteWidth[sprite] << 16) - k2) + j3) - 1) / j3) | 0;
-                h = (((((this.spriteHeight[sprite] << 16) - l2) + k3) - 1) / k3) | 0;
+                w = (((this.spriteWidth[sprite] << 16) - k2 + j3 - 1) / j3) | 0;
+                h =
+                    (((this.spriteHeight[sprite] << 16) - l2 + k3 - 1) / k3) |
+                    0;
             }
 
             let j4 = y * this.width2;
@@ -1749,10 +2090,10 @@ class Surface {
             }
 
             if (y + h >= this.boundsBottomY) {
-                h -= ((y + h) - this.boundsBottomY) + 1;
+                h -= y + h - this.boundsBottomY + 1;
             }
 
-            let i5 = j4 / this.width2 & 1;
+            let i5 = (j4 / this.width2) & 1;
 
             if (!this.interlace) {
                 i5 = 2;
@@ -1761,38 +2102,174 @@ class Surface {
             if (colour2 === 0xffffff) {
                 if (this.surfacePixels[sprite] !== null) {
                     if (!flag) {
-                        this._transparentSpritePlot_from15(this.pixels, this.surfacePixels[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, i3, l3, i5);
+                        this._transparentSpritePlot_from15(
+                            this.pixels,
+                            this.surfacePixels[sprite],
+                            0,
+                            k2,
+                            l2,
+                            j4,
+                            w,
+                            h,
+                            j3,
+                            k3,
+                            width,
+                            colour1,
+                            i3,
+                            l3,
+                            i5
+                        );
                         return;
                     } else {
-                        this._transparentSpritePlot_from15(this.pixels, this.surfacePixels[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, i3, l3, i5);
+                        this._transparentSpritePlot_from15(
+                            this.pixels,
+                            this.surfacePixels[sprite],
+                            0,
+                            (this.spriteWidth[sprite] << 16) - k2 - 1,
+                            l2,
+                            j4,
+                            w,
+                            h,
+                            -j3,
+                            k3,
+                            width,
+                            colour1,
+                            i3,
+                            l3,
+                            i5
+                        );
                         return;
                     }
                 }
 
                 if (!flag) {
-                    this._transparentSpritePlot_from16A(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, i3, l3, i5);
+                    this._transparentSpritePlot_from16A(
+                        this.pixels,
+                        this.spriteColoursUsed[sprite],
+                        this.spriteColourList[sprite],
+                        0,
+                        k2,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        j3,
+                        k3,
+                        width,
+                        colour1,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 } else {
-                    this._transparentSpritePlot_from16A(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, i3, l3, i5);
+                    this._transparentSpritePlot_from16A(
+                        this.pixels,
+                        this.spriteColoursUsed[sprite],
+                        this.spriteColourList[sprite],
+                        0,
+                        (this.spriteWidth[sprite] << 16) - k2 - 1,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        -j3,
+                        k3,
+                        width,
+                        colour1,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 }
             }
 
             if (this.surfacePixels[sprite] !== null) {
                 if (!flag) {
-                    this._transparentSpritePlot_from16(this.pixels, this.surfacePixels[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, colour2, i3, l3, i5);
+                    this._transparentSpritePlot_from16(
+                        this.pixels,
+                        this.surfacePixels[sprite],
+                        0,
+                        k2,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        j3,
+                        k3,
+                        width,
+                        colour1,
+                        colour2,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 } else {
-                    this._transparentSpritePlot_from16(this.pixels, this.surfacePixels[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, colour2, i3, l3, i5);
+                    this._transparentSpritePlot_from16(
+                        this.pixels,
+                        this.surfacePixels[sprite],
+                        0,
+                        (this.spriteWidth[sprite] << 16) - k2 - 1,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        -j3,
+                        k3,
+                        width,
+                        colour1,
+                        colour2,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 }
             }
 
             if (!flag) {
-                this._transparentSpritePlot_from17(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, colour2, i3, l3, i5);
+                this._transparentSpritePlot_from17(
+                    this.pixels,
+                    this.spriteColoursUsed[sprite],
+                    this.spriteColourList[sprite],
+                    0,
+                    k2,
+                    l2,
+                    j4,
+                    w,
+                    h,
+                    j3,
+                    k3,
+                    width,
+                    colour1,
+                    colour2,
+                    i3,
+                    l3,
+                    i5
+                );
                 return;
             } else {
-                this._transparentSpritePlot_from17(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, colour2, i3, l3, i5);
+                this._transparentSpritePlot_from17(
+                    this.pixels,
+                    this.spriteColoursUsed[sprite],
+                    this.spriteColourList[sprite],
+                    0,
+                    (this.spriteWidth[sprite] << 16) - k2 - 1,
+                    l2,
+                    j4,
+                    w,
+                    h,
+                    -j3,
+                    k3,
+                    width,
+                    colour1,
+                    colour2,
+                    i3,
+                    l3,
+                    i5
+                );
                 return;
             }
         } catch (e) {
@@ -1801,9 +2278,25 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from15(dest, src, i, j, k, destPos, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
-        let i4 = j2 >> 16 & 0xff;
-        let j4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from15(
+        dest,
+        src,
+        i,
+        j,
+        k,
+        destPos,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
+        let i4 = (j2 >> 16) & 0xff;
+        let j4 = (j2 >> 8) & 0xff;
         let k4 = j2 & 0xff;
 
         try {
@@ -1823,7 +2316,7 @@ class Surface {
                 }
 
                 if (k5 + l5 >= this.boundsBottomX) {
-                    let j6 = (k5 + l5) - this.boundsBottomX;
+                    let j6 = k5 + l5 - this.boundsBottomX;
 
                     l5 -= j6;
                 }
@@ -1835,12 +2328,15 @@ class Surface {
                         i = src[(j >> 16) + j5];
 
                         if (i !== 0) {
-                            let j3 = i >> 16 & 0xff;
-                            let k3 = i >> 8 & 0xff;
+                            let j3 = (i >> 16) & 0xff;
+                            let k3 = (i >> 8) & 0xff;
                             let l3 = i & 0xff;
 
                             if (j3 === k3 && k3 === l3) {
-                                dest[k6 + destPos] = ((j3 * i4 >> 8) << 16) + ((k3 * j4 >> 8) << 8) + (l3 * k4 >> 8);
+                                dest[k6 + destPos] =
+                                    (((j3 * i4) >> 8) << 16) +
+                                    (((k3 * j4) >> 8) << 8) +
+                                    ((l3 * k4) >> 8);
                             } else {
                                 dest[k6 + destPos] = i;
                             }
@@ -1862,12 +2358,29 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from16(dest, src, i, j, k, destPos, i1, j1, k1, l1, i2, j2, k2, l2, i3, j3) {
-        let j4 = j2 >> 16 & 0xff;
-        let k4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from16(
+        dest,
+        src,
+        i,
+        j,
+        k,
+        destPos,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3,
+        j3
+    ) {
+        let j4 = (j2 >> 16) & 0xff;
+        let k4 = (j2 >> 8) & 0xff;
         let l4 = j2 & 0xff;
-        let i5 = k2 >> 16 & 0xff;
-        let j5 = k2 >> 8 & 0xff;
+        let i5 = (k2 >> 16) & 0xff;
+        let j5 = (k2 >> 8) & 0xff;
         let k5 = k2 & 0xff;
 
         try {
@@ -1886,7 +2399,7 @@ class Surface {
                 }
 
                 if (k6 + l6 >= this.boundsBottomX) {
-                    let j7 = (k6 + l6) - this.boundsBottomX;
+                    let j7 = k6 + l6 - this.boundsBottomX;
                     l6 -= j7;
                 }
 
@@ -1897,14 +2410,20 @@ class Surface {
                         i = src[(j >> 16) + j6];
 
                         if (i !== 0) {
-                            let k3 = i >> 16 & 0xff;
-                            let l3 = i >> 8 & 0xff;
+                            let k3 = (i >> 16) & 0xff;
+                            let l3 = (i >> 8) & 0xff;
                             let i4 = i & 0xff;
 
                             if (k3 === l3 && l3 === i4) {
-                                dest[k7 + destPos] = ((k3 * j4 >> 8) << 16) + ((l3 * k4 >> 8) << 8) + (i4 * l4 >> 8);
+                                dest[k7 + destPos] =
+                                    (((k3 * j4) >> 8) << 16) +
+                                    (((l3 * k4) >> 8) << 8) +
+                                    ((i4 * l4) >> 8);
                             } else if (k3 === 255 && l3 === i4) {
-                                dest[k7 + destPos] = ((k3 * i5 >> 8) << 16) + ((l3 * j5 >> 8) << 8) + (i4 * k5 >> 8);
+                                dest[k7 + destPos] =
+                                    (((k3 * i5) >> 8) << 16) +
+                                    (((l3 * j5) >> 8) << 8) +
+                                    ((i4 * k5) >> 8);
                             } else {
                                 dest[k7 + destPos] = i;
                             }
@@ -1926,9 +2445,26 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from16A(dest, colourIdx, colours, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
-        let i4 = j2 >> 16 & 0xff;
-        let j4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from16A(
+        dest,
+        colourIdx,
+        colours,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
+        let i4 = (j2 >> 16) & 0xff;
+        let j4 = (j2 >> 8) & 0xff;
         let k4 = j2 & 0xff;
 
         try {
@@ -1947,7 +2483,7 @@ class Surface {
                 }
 
                 if (k5 + l5 >= this.boundsBottomX) {
-                    let j6 = (k5 + l5) - this.boundsBottomX;
+                    let j6 = k5 + l5 - this.boundsBottomX;
                     l5 -= j6;
                 }
 
@@ -1960,12 +2496,15 @@ class Surface {
                         if (i !== 0) {
                             i = colours[i];
 
-                            let j3 = i >> 16 & 0xff;
-                            let k3 = i >> 8 & 0xff;
+                            let j3 = (i >> 16) & 0xff;
+                            let k3 = (i >> 8) & 0xff;
                             let l3 = i & 0xff;
 
                             if (j3 === k3 && k3 === l3) {
-                                dest[k6 + l] = ((j3 * i4 >> 8) << 16) + ((k3 * j4 >> 8) << 8) + (l3 * k4 >> 8);
+                                dest[k6 + l] =
+                                    (((j3 * i4) >> 8) << 16) +
+                                    (((k3 * j4) >> 8) << 8) +
+                                    ((l3 * k4) >> 8);
                             } else {
                                 dest[k6 + l] = i;
                             }
@@ -1987,12 +2526,30 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from17(dest, coloursUsed, colourList, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2, i3, j3) {
-        let j4 = j2 >> 16 & 0xff;
-        let k4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from17(
+        dest,
+        coloursUsed,
+        colourList,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3,
+        j3
+    ) {
+        let j4 = (j2 >> 16) & 0xff;
+        let k4 = (j2 >> 8) & 0xff;
         let l4 = j2 & 0xff;
-        let i5 = k2 >> 16 & 0xff;
-        let j5 = k2 >> 8 & 0xff;
+        let i5 = (k2 >> 16) & 0xff;
+        let j5 = (k2 >> 8) & 0xff;
         let k5 = k2 & 0xff;
 
         try {
@@ -2011,7 +2568,7 @@ class Surface {
                 }
 
                 if (k6 + l6 >= this.boundsBottomX) {
-                    let j7 = (k6 + l6) - this.boundsBottomX;
+                    let j7 = k6 + l6 - this.boundsBottomX;
                     l6 -= j7;
                 }
 
@@ -2023,14 +2580,20 @@ class Surface {
 
                         if (i !== 0) {
                             i = colourList[i];
-                            let k3 = i >> 16 & 0xff;
-                            let l3 = i >> 8 & 0xff;
+                            let k3 = (i >> 16) & 0xff;
+                            let l3 = (i >> 8) & 0xff;
                             let i4 = i & 0xff;
 
                             if (k3 === l3 && l3 === i4) {
-                                dest[k7 + l] = ((k3 * j4 >> 8) << 16) + ((l3 * k4 >> 8) << 8) + (i4 * l4 >> 8);
+                                dest[k7 + l] =
+                                    (((k3 * j4) >> 8) << 16) +
+                                    (((l3 * k4) >> 8) << 8) +
+                                    ((i4 * l4) >> 8);
                             } else if (k3 === 255 && l3 === i4) {
-                                dest[k7 + l] = ((k3 * i5 >> 8) << 16) + ((l3 * j5 >> 8) << 8) + (i4 * k5 >> 8);
+                                dest[k7 + l] =
+                                    (((k3 * i5) >> 8) << 16) +
+                                    (((l3 * j5) >> 8) << 8) +
+                                    ((i4 * k5) >> 8);
                             } else {
                                 dest[k7 + l] = i;
                             }
@@ -2057,7 +2620,13 @@ class Surface {
     }
 
     drawStringCenter(text, x, y, font, colour) {
-        this.drawString(text, x - ((this.textWidth(text, font) / 2) | 0), y, font, colour);
+        this.drawString(
+            text,
+            x - ((this.textWidth(text, font) / 2) | 0),
+            y,
+            font,
+            colour
+        );
     }
 
     drawParagraph(text, x, y, font, colour, max) {
@@ -2068,12 +2637,23 @@ class Surface {
             let end = 0;
 
             for (let index = 0; index < text.length; index++) {
-                if (text[index] === '@' && index + 4 < text.length && text[index + 4] === '@') {
+                if (
+                    text[index] === '@' &&
+                    index + 4 < text.length &&
+                    text[index + 4] === '@'
+                ) {
                     index += 4;
-                } else if (text[index] === '~' && index + 4 < text.length && text[index + 4] === '~') {
+                } else if (
+                    text[index] === '~' &&
+                    index + 4 < text.length &&
+                    text[index + 4] === '~'
+                ) {
                     index += 4;
                 } else {
-                    width += fontData[Surface.characterWidth[text.charCodeAt(index)] + 7];
+                    width +=
+                        fontData[
+                            Surface.characterWidth[text.charCodeAt(index)] + 7
+                        ];
                 }
 
                 if (text[index] === ' ') {
@@ -2090,7 +2670,13 @@ class Surface {
                         end = index;
                     }
 
-                    this.drawStringCenter(text.slice(start, end), x, y, font, colour);
+                    this.drawStringCenter(
+                        text.slice(start, end),
+                        x,
+                        y,
+                        font,
+                        colour
+                    );
                     width = 0;
                     start = index = end + 1;
                     y += this.textHeight(font);
@@ -2111,52 +2697,101 @@ class Surface {
             let fontData = Surface.gameFonts[font];
 
             for (let i = 0; i < text.length; i++) {
-                if (text[i] === '@' && i + 4 < text.length && text[i + 4] === '@') {
+                if (
+                    text[i] === '@' &&
+                    i + 4 < text.length &&
+                    text[i + 4] === '@'
+                ) {
                     if (text.slice(i + 1, i + 4).toLowerCase() === 'red') {
                         colour = 0xff0000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'lre') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'lre'
+                    ) {
                         colour = 0xff9040;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'yel') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'yel'
+                    ) {
                         colour = 0xffff00;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gre') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gre'
+                    ) {
                         colour = 65280;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'blu') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'blu'
+                    ) {
                         colour = 255;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'cya') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'cya'
+                    ) {
                         colour = 65535;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'mag') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'mag'
+                    ) {
                         colour = 0xff00ff;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'whi') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'whi'
+                    ) {
                         colour = 0xffffff;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'bla') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'bla'
+                    ) {
                         colour = 0;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'dre') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'dre'
+                    ) {
                         colour = 0xc00000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'ora') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'ora'
+                    ) {
                         colour = 0xff9040;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'ran') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'ran'
+                    ) {
                         colour = (Math.random() * 16777215) | 0;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or1') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'or1'
+                    ) {
                         colour = 0xffb000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or2') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'or2'
+                    ) {
                         colour = 0xff7000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or3') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'or3'
+                    ) {
                         colour = 0xff3000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr1') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gr1'
+                    ) {
                         colour = 0xc0ff00;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr2') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gr2'
+                    ) {
                         colour = 0x80ff00;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr3') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gr3'
+                    ) {
                         colour = 0x40ff00;
                     }
 
                     i += 4;
-                } else if (text[i] === '~' && i + 4 < text.length && text[i + 4] === '~') {
+                } else if (
+                    text[i] === '~' &&
+                    i + 4 < text.length &&
+                    text[i + 4] === '~'
+                ) {
                     let c = text.charCodeAt(i + 1);
                     let c1 = text.charCodeAt(i + 2);
                     let c2 = text.charCodeAt(i + 3);
 
-                    if (c >= C_0 && c <= C_9 && c1 >= C_0 && c1 <= C_9 && c2 >= C_0 && c2 <= C_9) {
+                    if (
+                        c >= C_0 &&
+                        c <= C_9 &&
+                        c1 >= C_0 &&
+                        c1 <= C_9 &&
+                        c2 >= C_0 &&
+                        c2 <= C_9
+                    ) {
                         x = Number(text.substring(i + 1, i + 4)) | 0;
                     }
 
@@ -2198,7 +2833,7 @@ class Surface {
         }
 
         if (j1 + l1 >= this.boundsBottomY) {
-            l1 -= ((j1 + l1) - this.boundsBottomY) + 1;
+            l1 -= j1 + l1 - this.boundsBottomY + 1;
         }
 
         if (i1 < this.boundsTopX) {
@@ -2212,7 +2847,7 @@ class Surface {
         }
 
         if (i1 + k1 >= this.boundsBottomX) {
-            let k3 = ((i1 + k1) - this.boundsBottomX) + 1;
+            let k3 = i1 + k1 - this.boundsBottomX + 1;
             k1 -= k3;
             l2 += k3;
             k2 += k3;
@@ -2283,7 +2918,14 @@ class Surface {
                         ai[k++] = i;
                     } else {
                         let k2 = ai[k];
-                        ai[k++] = ((i & 0xff00ff) * j2 + (k2 & 0xff00ff) * (256 - j2) & 0xff00ff00) + ((i & 0xff00) * j2 + (k2 & 0xff00) * (256 - j2) & 0xff0000) >> 8;
+                        ai[k++] =
+                            ((((i & 0xff00ff) * j2 +
+                                (k2 & 0xff00ff) * (256 - j2)) &
+                                0xff00ff00) +
+                                (((i & 0xff00) * j2 +
+                                    (k2 & 0xff00) * (256 - j2)) &
+                                    0xff0000)) >>
+                            8;
                     }
                 } else {
                     k++;
@@ -2344,9 +2986,17 @@ class Surface {
         let font = Surface.gameFonts[fontId];
 
         for (let idx = 0; idx < text.length; idx++) {
-            if (text[idx] === '@' && idx + 4 < text.length && text[idx + 4] === '@') {
+            if (
+                text[idx] === '@' &&
+                idx + 4 < text.length &&
+                text[idx + 4] === '@'
+            ) {
                 idx += 4;
-            } else if (text[idx] === '~' && idx + 4 < text.length && text[idx + 4] === '~') {
+            } else if (
+                text[idx] === '~' &&
+                idx + 4 < text.length &&
+                text[idx + 4] === '~'
+            ) {
                 idx += 4;
             } else {
                 total += font[Surface.characterWidth[text.charCodeAt(idx)] + 7];
@@ -2364,8 +3014,13 @@ class Surface {
             const tabColour = selected === i ? LIGHT_GREY : DARK_GREY;
 
             this.drawBoxAlpha(x + xOffset, y, tabWidth, height, tabColour, 128);
-            this.drawStringCenter(tabs[i], x + xOffset + ((tabWidth / 2) | 0),
-                y + 16, 4, BLACK);
+            this.drawStringCenter(
+                tabs[i],
+                x + xOffset + ((tabWidth / 2) | 0),
+                y + 16,
+                4,
+                BLACK
+            );
 
             if (i > 0) {
                 this.drawLineVert(x + xOffset, y, height, BLACK);
@@ -2388,7 +3043,8 @@ Surface.gameFonts.fill(null);
 
 Surface.characterWidth = new Int32Array(256);
 
-let s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
+let s =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
 
 for (let i = 0; i < 256; i++) {
     let j = s.indexOf(String.fromCharCode(i));

@@ -27,6 +27,7 @@ if (typeof window === 'undefined') {
 
     await mc.startApplication(512, 346, 'Runescape by Andrew Gower', false);
 })();
+
 },{"./src/mudclient":53}],2:[function(require,module,exports){
 /** Burrows-Wheeler transform, computed with the Induced Sorting Suffix Array
  *  construction mechanism (sais).  Code is a port of:
@@ -11418,7 +11419,9 @@ const C_Z = 'z'.charCodeAt(0);
 const C_CENT = '\uFFE0'.charCodeAt(0);
 
 function fromCharArray(a) {
-    return Array.from(a).map(c => String.fromCharCode(c)).join('');
+    return Array.from(a)
+        .map((c) => String.fromCharCode(c))
+        .join('');
 }
 
 class ChatMessage {
@@ -11429,7 +11432,7 @@ class ChatMessage {
 
             for (let idx = 0; idx < len; idx++) {
                 let current = buff[off++] & 0xff;
-                let k1 = current >> 4 & 0xf;
+                let k1 = (current >> 4) & 0xf;
 
                 if (l === -1) {
                     if (k1 < 13) {
@@ -11438,7 +11441,8 @@ class ChatMessage {
                         l = k1;
                     }
                 } else {
-                    ChatMessage.chars[newLen++] = ChatMessage.charMap[((l << 4) + k1) - 195];
+                    ChatMessage.chars[newLen++] =
+                        ChatMessage.charMap[(l << 4) + k1 - 195];
                     l = -1;
                 }
 
@@ -11451,7 +11455,8 @@ class ChatMessage {
                         l = k1;
                     }
                 } else {
-                    ChatMessage.chars[newLen++] = ChatMessage.charMap[((l << 4) + k1) - 195];
+                    ChatMessage.chars[newLen++] =
+                        ChatMessage.charMap[(l << 4) + k1 - 195];
                     l = -1;
                 }
             }
@@ -11519,10 +11524,12 @@ class ChatMessage {
                     ChatMessage.scrambledBytes[off++] = foundCharMapIdx & 0xff;
                 }
             } else if (foundCharMapIdx < 13) {
-                ChatMessage.scrambledBytes[off++] = ((lshift << 4) + foundCharMapIdx) & 0xff;
+                ChatMessage.scrambledBytes[off++] =
+                    ((lshift << 4) + foundCharMapIdx) & 0xff;
                 lshift = -1;
             } else {
-                ChatMessage.scrambledBytes[off++] = ((lshift << 4) + (foundCharMapIdx >> 4)) & 0xff;
+                ChatMessage.scrambledBytes[off++] =
+                    ((lshift << 4) + (foundCharMapIdx >> 4)) & 0xff;
                 lshift = foundCharMapIdx & 0xf;
             }
         }
@@ -11537,19 +11544,71 @@ class ChatMessage {
 
 ChatMessage.scrambledBytes = new Int8Array(100);
 ChatMessage.chars = new Uint16Array(100);
-ChatMessage.charMap = [
-    ' ', 'e', 't', 'a', 'o', 'i', 'h', 'n', 's', 'r',
-    'd', 'l', 'u', 'm', 'w', 'c', 'y', 'f', 'g', 'p',
-    'b', 'v', 'k', 'x', 'j', 'q', 'z', '0', '1', '2',
-    '3', '4', '5', '6', '7', '8', '9', ' ', '!', '?',
-    '.', ',', ':', ';', '(', ')', '-', '&', '*', '\\',
-    '\'', '@', '#', '+', '=', '\243', '$', '%', '"', '[',
-    ']'
-];
-
-ChatMessage.charMap = new Uint16Array(ChatMessage.charMap.map(c => {
-    return c.charCodeAt(0);
-}));
+ChatMessage.charMap = new Uint16Array(
+    [
+        ' ',
+        'e',
+        't',
+        'a',
+        'o',
+        'i',
+        'h',
+        'n',
+        's',
+        'r',
+        'd',
+        'l',
+        'u',
+        'm',
+        'w',
+        'c',
+        'y',
+        'f',
+        'g',
+        'p',
+        'b',
+        'v',
+        'k',
+        'x',
+        'j',
+        'q',
+        'z',
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        ' ',
+        '!',
+        '?',
+        '.',
+        ',',
+        ':',
+        ';',
+        '(',
+        ')',
+        '-',
+        '&',
+        '*',
+        '\\',
+        "'",
+        '@',
+        '#',
+        '+',
+        '=',
+        '\243',
+        '$',
+        '%',
+        '"',
+        '[',
+        ']'
+    ].map((c) => c.charCodeAt(0))
+);
 
 module.exports = ChatMessage;
 
@@ -11566,9 +11625,9 @@ class GameBuffer {
     }
 
     putInt(i) {
-        this.buffer[this.offset++] = (i >> 24);
-        this.buffer[this.offset++] = (i >> 16);
-        this.buffer[this.offset++] = (i >> 8);
+        this.buffer[this.offset++] = i >> 24;
+        this.buffer[this.offset++] = i >> 16;
+        this.buffer[this.offset++] = i >> 8;
         this.buffer[this.offset++] = i;
     }
 
@@ -11576,7 +11635,7 @@ class GameBuffer {
         for (let i = 0; i < s.length; i++) {
             this.buffer[this.offset++] = s.charCodeAt(i);
         }
-        
+
         // null terminate
         this.buffer[this.offset++] = 10;
     }
@@ -11594,17 +11653,21 @@ class GameBuffer {
     getUnsignedShort() {
         this.offset += 2;
 
-        return ((this.buffer[this.offset - 2] & 0xff) << 8) + 
-            (this.buffer[this.offset - 1] & 0xff);
+        return (
+            ((this.buffer[this.offset - 2] & 0xff) << 8) +
+            (this.buffer[this.offset - 1] & 0xff)
+        );
     }
 
     getUnsignedInt() {
-        this.offset +=4;
+        this.offset += 4;
 
-        return ((this.buffer[this.offset - 4] & 0xff) << 24) + 
-            ((this.buffer[this.offset - 3] & 0xff) << 16) + 
-            ((this.buffer[this.offset - 2] & 0xff) << 8) + 
-            (this.buffer[this.offset - 1] & 0xff);
+        return (
+            ((this.buffer[this.offset - 4] & 0xff) << 24) +
+            ((this.buffer[this.offset - 3] & 0xff) << 16) +
+            ((this.buffer[this.offset - 2] & 0xff) << 8) +
+            (this.buffer[this.offset - 1] & 0xff)
+        );
     }
 
     getBytes(dest, destPos, len) {
@@ -11615,6 +11678,7 @@ class GameBuffer {
 }
 
 module.exports = GameBuffer;
+
 },{}],42:[function(require,module,exports){
 const Long = require('long');
 
@@ -11658,6 +11722,8 @@ class GameCharacter {
 }
 
 module.exports = GameCharacter;
+
+
 },{"long":33}],43:[function(require,module,exports){
 const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
@@ -11716,56 +11782,64 @@ class GameConnection extends GameShell {
         this.anIntArray629 = new Int32Array(GameConnection.maxSocialListSize);
     }
 
-    async login(u, p, reconnecting) {
+    async login(username, password, reconnecting) {
         if (this.worldFullTimeout > 0) {
-            this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+            this.showLoginScreenStatus('Please wait...',
+                'Connecting to server');
             await sleep(2000);
-            this.showLoginScreenStatus('Sorry! The server is currently full.', 'Please try again later');
+            this.showLoginScreenStatus('Sorry! The server is currently full.',
+                'Please try again later');
             return;
         }
 
         try {
-            this.username = u;
-            u = Utility.formatAuthString(u, 20);
+            this.username = username;
+            username = Utility.formatAuthString(username, 20);
 
-            this.password = p;
-            p = Utility.formatAuthString(p, 20);
+            this.password = password;
+            password = Utility.formatAuthString(password, 20);
 
-            if (u.trim().length === 0) {
-                this.showLoginScreenStatus('You must enter both a username', 'and a password - Please try again');
+            if (username.trim().length === 0) {
+                this.showLoginScreenStatus('You must enter both a username',
+                    'and a password - Please try again');
                 return;
             }
 
             if (reconnecting) {
-                this.drawTextBox('Connection lost! Please wait...', 'Attempting to re-establish');
+                this.drawTextBox('Connection lost! Please wait...',
+                    'Attempting to re-establish');
             } else {
-                this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+                this.showLoginScreenStatus('Please wait...',
+                    'Connecting to server');
             }
 
-            this.packetStream = new PacketStream(await this.createSocket(this.server, this.port), this);
+            this.packetStream = new PacketStream(
+                await this.createSocket(this.server, this.port), this);
             this.packetStream.maxReadTries = GameConnection.maxReadTries;
 
-            let l = Utility.usernameToHash(u);
+            const encodedUsername = Utility.usernameToHash(username);
 
             this.packetStream.newPacket(clientOpcodes.SESSION);
-            this.packetStream.putByte(l.shiftRight(16).and(31).toInt());
+            this.packetStream.putByte(
+                encodedUsername.shiftRight(16).and(31).toInt());
             this.packetStream.flushPacket();
 
-            let sessId = await this.packetStream.getLong();
-            this.sessionID = sessId;
+            const sessionID = await this.packetStream.getLong();
+            this.sessionID = sessionID;
 
-            if (sessId.equals(0)) {
-                this.showLoginScreenStatus('Login server offline.', 'Please try again in a few mins');
+            if (sessionID.equals(0)) {
+                this.showLoginScreenStatus('Login server offline.',
+                    'Please try again in a few mins');
                 return;
             }
 
-            console.log('Verb: Session id: ' + sessId);
+            console.log('Verb: Session id: ' + sessionID);
 
-            let ai = new Int32Array(4);
-            ai[0] = (Math.random() * 99999999) | 0;
-            ai[1] = (Math.random() * 99999999) | 0;
-            ai[2] = sessId.shiftRight(32).toInt();
-            ai[3] = sessId.toInt();
+            let keys = new Int32Array(4);
+            keys[0] = (Math.random() * 99999999) | 0;
+            keys[1] = (Math.random() * 99999999) | 0;
+            keys[2] = sessionID.shiftRight(32).toInt();
+            keys[3] = sessionID.toInt();
 
             this.packetStream.newPacket(clientOpcodes.LOGIN);
 
@@ -11779,142 +11853,124 @@ class GameConnection extends GameShell {
             this.packetStream.putByte(0); // limit30
 
             this.packetStream.putByte(10);
-            this.packetStream.putInt(ai[0]);
-            this.packetStream.putInt(ai[1]);
-            this.packetStream.putInt(ai[2]);
-            this.packetStream.putInt(ai[3]);
+            this.packetStream.putInt(keys[0]);
+            this.packetStream.putInt(keys[1]);
+            this.packetStream.putInt(keys[2]);
+            this.packetStream.putInt(keys[3]);
             this.packetStream.putInt(0); // uuid
-            this.packetStream.putString(u);
-            this.packetStream.putString(p);
+            this.packetStream.putString(username);
+            this.packetStream.putString(password);
 
             this.packetStream.flushPacket();
             //this.packetStream.seedIsaac(ai);
 
-            let resp = await this.packetStream.readStream();
-            console.log('login response:' + resp);
+            const response = await this.packetStream.readStream();
+            console.log('login response:' + response);
 
-            if (resp === 25) {
+            if (response === 25) {
                 this.moderatorLevel = 1;
                 this.autoLoginTimeout = 0;
                 this.resetGame();
                 return;
-            }
-
-            if (resp === 0) {
+            } else if (response === 0) {
                 this.moderatorLevel = 0;
                 this.autoLoginTimeout = 0;
                 this.resetGame();
                 return;
-            }
-
-            if (resp === 1) {
+            } else if (response === 1) {
                 this.autoLoginTimeout = 0;
                 return;
             }
 
             if (reconnecting) {
-                u = '';
-                p = '';
+                username = '';
+                password = '';
                 this.resetLoginVars();
                 return;
             }
 
-            if (resp === -1) {
-                this.showLoginScreenStatus('Error unable to login.', 'Server timed out');
+            switch (response) {
+            case -1:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Server timed out');
                 return;
-            }
-
-            if (resp === 3) {
-                this.showLoginScreenStatus('Invalid username or password.', 'Try again, or create a new account');
+            case 3:
+                this.showLoginScreenStatus('Invalid username or password.',
+                    'Try again, or create a new account');
                 return;
-            }
-
-            if (resp === 4) {
-                this.showLoginScreenStatus('That username is already logged in.', 'Wait 60 seconds then retry');
+            case 4:
+                this.showLoginScreenStatus('That username is already logged ' +
+                    'in.', 'Wait 60 seconds then retry');
                 return;
-            }
-
-            if (resp === 5) {
-                this.showLoginScreenStatus('The client has been updated.', 'Please reload this page');
+            case 5:
+                this.showLoginScreenStatus('The client has been updated.',
+                    'Please reload this page');
                 return;
-            }
-
-            if (resp === 6) {
-                this.showLoginScreenStatus('You may only use 1 character at once.', 'Your ip-address is already in use');
+            case 6:
+                this.showLoginScreenStatus('You may only use 1 character at ' +
+                    'once.', 'Your ip-address is already in use');
                 return;
-            }
-
-            if (resp === 7) {
-                this.showLoginScreenStatus('Login attempts exceeded!', 'Please try again in 5 minutes');
+            case 7:
+                this.showLoginScreenStatus('Login attempts exceeded!',
+                    'Please try again in 5 minutes');
                 return;
-            }
-
-            if (resp === 8) {
-                this.showLoginScreenStatus('Error unable to login.', 'Server rejected session');
+            case 8:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Server rejected session');
                 return;
-            }
-
-            if (resp === 9) {
-                this.showLoginScreenStatus('Error unable to login.', 'Loginserver rejected session');
+            case 9:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Loginserver rejected session');
                 return;
-            }
-
-            if (resp === 10) {
-                this.showLoginScreenStatus('That username is already in use.', 'Wait 60 seconds then retry');
+            case 10:
+                this.showLoginScreenStatus('That username is already in use.',
+                    'Wait 60 seconds then retry');
                 return;
-            }
-
-            if (resp === 11) {
-                this.showLoginScreenStatus('Account temporarily disabled.', 'Check your message inbox for details');
+            case 11:
+                this.showLoginScreenStatus('Account temporarily disabled.',
+                    'Check your message inbox for details');
                 return;
-            }
-
-            if (resp === 12) {
-                this.showLoginScreenStatus('Account permanently disabled.', 'Check your message inbox for details');
+            case 12:
+                this.showLoginScreenStatus('Account permanently disabled.',
+                    'Check your message inbox for details');
                 return;
-            }
-
-            if (resp === 14) {
-                this.showLoginScreenStatus('Sorry! This world is currently full.', 'Please try a different world');
+            case 14:
+                this.showLoginScreenStatus('Sorry! This world is currently ' +
+                    'full.', 'Please try a different world');
                 this.worldFullTimeout = 1500;
                 return;
-            }
-
-            if (resp === 15) {
-                this.showLoginScreenStatus('You need a members account', 'to login to this world');
+            case 15:
+                this.showLoginScreenStatus('You need a members account',
+                    'to login to this world');
                 return;
-            }
-
-            if (resp === 16) {
-                this.showLoginScreenStatus('Error - no reply from loginserver.', 'Please try again');
+            case 16:
+                this.showLoginScreenStatus('Error - no reply from loginserver.',
+                    'Please try again');
                 return;
-            }
-
-            if (resp === 17) {
-                this.showLoginScreenStatus('Error - failed to decode profile.', 'Contact customer support');
+            case 17:
+                this.showLoginScreenStatus('Error - failed to decode profile.',
+                    'Contact customer support');
                 return;
-            }
-
-            if (resp === 18) {
-                this.showLoginScreenStatus('Account suspected stolen.', 'Press \'recover a locked account\' on front page.');
+            case 18:
+                this.showLoginScreenStatus('Account suspected stolen.',
+                    'Press \'recover a locked account\' on front page.');
                 return;
-            }
-
-            if (resp === 20) {
-                this.showLoginScreenStatus('Error - loginserver mismatch', 'Please try a different world');
+            case 20:
+                this.showLoginScreenStatus('Error - loginserver mismatch',
+                    'Please try a different world');
                 return;
-            }
-
-            if (resp === 21) {
-                this.showLoginScreenStatus('Unable to login.', 'That is not an RS-Classic account');
+            case 21:
+                this.showLoginScreenStatus('Unable to login.',
+                    'That is not an RS-Classic account');
                 return;
-            }
 
-            if (resp === 22) {
-                this.showLoginScreenStatus('Password suspected stolen.', 'Press \'change your password\' on front page.');
+            case 22:
+                this.showLoginScreenStatus('Password suspected stolen.',
+                    'Press \'change your password\' on front page.');
                 return;
-            } else {
-                this.showLoginScreenStatus('Error unable to login.', 'Unrecognised response code');
+            default:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Unrecognised response code');
                 return;
             }
         } catch (e) {
@@ -11932,7 +11988,8 @@ class GameConnection extends GameShell {
             this.password = '';
             this.resetLoginVars();
         } else {
-            this.showLoginScreenStatus('Sorry! Unable to connect.', 'Check internet settings or try another world');
+            this.showLoginScreenStatus('Sorry! Unable to connect.',
+                'Check internet settings or try another world');
         }
     }
 
@@ -11956,37 +12013,41 @@ class GameConnection extends GameShell {
         try {
             throw new Error('');
         } catch (e) {
-            console.log('loast connection: ');
             console.error(e);
         }
 
-        console.log('Lost connection');
         this.autoLoginTimeout = 10;
         await this.login(this.username, this.password, true);
     }
 
     drawTextBox(s, s1) {
-        let g = this.getGraphics();
-        let font = new Font('Helvetica', 1, 15);
-        let w = 512;
-        let h = 344;
-        g.setColor(Color.black);
-        g.fillRect(((w / 2) | 0) - 140, ((h / 2) | 0) - 25, 280, 50);
-        g.setColor(Color.white);
-        g.drawRect(((w / 2) | 0) - 140, ((h / 2) | 0) - 25, 280, 50);
-        this.drawString(g, s, font, (w / 2) | 0, ((h / 2) | 0) - 10);
-        this.drawString(g, s1, font, (w / 2) | 0, ((h / 2) | 0) + 10);
+        const graphics = this.getGraphics();
+        const font = new Font('Helvetica', 1, 15);
+        const width = 512;
+        const height = 344;
+
+        graphics.setColor(Color.black);
+        graphics.fillRect(((width / 2) | 0) - 140, ((height / 2) | 0) - 25, 280,
+            50);
+        graphics.setColor(Color.white);
+        graphics.drawRect(((width / 2) | 0) - 140, ((height / 2) | 0) - 25, 280,
+            50);
+
+        this.drawString(graphics, s, font, (width / 2) | 0,
+            ((height / 2) | 0) - 10);
+        this.drawString(graphics, s1, font, (width / 2) | 0,
+            ((height / 2) | 0) + 10);
     }
 
     async checkConnection() {
-        let l = Date.now();
+        const timestamp = Date.now();
 
         if (this.packetStream.hasPacket()) {
-            this.packetLastRead = l;
+            this.packetLastRead = timestamp;
         }
 
-        if (l - this.packetLastRead > 5000) {
-            this.packetLastRead = l;
+        if (timestamp - this.packetLastRead > 5000) {
+            this.packetLastRead = timestamp;
             this.packetStream.newPacket(clientOpcodes.PING);
             this.packetStream.sendPacket();
         }
@@ -12083,7 +12144,8 @@ class GameConnection extends GameShell {
 
         if (opcode === serverOpcodes.FRIEND_MESSAGE) {
             let from = Utility.getUnsignedLong(this.incomingPacket, 1);
-            let k1 = Utility.getUnsignedInt(this.incomingPacket, 9); // is this some sort of message id ?
+            // is this some sort of message id ?
+            let k1 = Utility.getUnsignedInt(this.incomingPacket, 9);
 
             for (let j2 = 0; j2 < this.maxSocialListSize; j2++) {
                 if (this.anIntArray629[j2] === k1) {
@@ -12109,7 +12171,10 @@ class GameConnection extends GameShell {
             flag = false;
 
             for (let i = 0; i < this.friendListCount - 1; i++) {
-                if (this.friendListOnline[i] !== 255 && this.friendListOnline[i + 1] === 255 || this.friendListOnline[i] === 0 && this.friendListOnline[i + 1] !== 0) {
+                if (this.friendListOnline[i] !== 255 &&
+                    this.friendListOnline[i + 1] === 255 ||
+                    this.friendListOnline[i] === 0 &&
+                    this.friendListOnline[i + 1] !== 0) {
                     let j = this.friendListOnline[i];
                     this.friendListOnline[i] = this.friendListOnline[i + 1];
                     this.friendListOnline[i + 1] = j;
@@ -12124,24 +12189,24 @@ class GameConnection extends GameShell {
         }
     }
 
-    sendPrivacySettings(chat, priv, trade, duel) {
+    sendPrivacySettings(chat, privateChat, trade, duel) {
         this.packetStream.newPacket(clientOpcodes.SETTINGS_PRIVACY);
         this.packetStream.putByte(chat);
-        this.packetStream.putByte(priv);
+        this.packetStream.putByte(privateChat);
         this.packetStream.putByte(trade);
         this.packetStream.putByte(duel);
         this.packetStream.sendPacket();
     }
 
-    ignoreAdd(s) {
-        let l = Utility.usernameToHash(s);
+    ignoreAdd(username) {
+        const encodedUsername = Utility.usernameToHash(username);
 
         this.packetStream.newPacket(clientOpcodes.IGNORE_ADD);
-        this.packetStream.putLong(l);
+        this.packetStream.putLong(encodedUsername);
         this.packetStream.sendPacket();
 
         for (let i = 0; i < this.ignoreListCount; i++) {
-            if (this.ignoreList[i].equals(l)) {
+            if (this.ignoreList[i].equals(encodedUsername)) {
                 return;
             }
         }
@@ -12149,18 +12214,18 @@ class GameConnection extends GameShell {
         if (this.ignoreListCount >= GameConnection.maxSocialListSize) {
             return;
         } else {
-            this.ignoreList[this.ignoreListCount++] = l;
+            this.ignoreList[this.ignoreListCount++] = encodedUsername;
             return;
         }
     }
 
-    ignoreRemove(l) {
+    ignoreRemove(encodedUsername) {
         this.packetStream.newPacket(clientOpcodes.IGNORE_REMOVE);
-        this.packetStream.putLong(l);
+        this.packetStream.putLong(encodedUsername);
         this.packetStream.sendPacket();
 
         for (let i = 0; i < this.ignoreListCount; i++) {
-            if (this.ignoreList[i].equals(l)) {
+            if (this.ignoreList[i].equals(encodedUsername)) {
                 this.ignoreListCount--;
 
                 for (let j = i; j < this.ignoreListCount; j++) {
@@ -12172,15 +12237,15 @@ class GameConnection extends GameShell {
         }
     }
 
-    friendAdd(s) {
+    friendAdd(username) {
         this.packetStream.newPacket(clientOpcodes.FRIEND_ADD);
-        this.packetStream.putLong(Utility.usernameToHash(s));
+        this.packetStream.putLong(Utility.usernameToHash(username));
         this.packetStream.sendPacket();
 
-        let l = Utility.usernameToHash(s);
+        const encodedUsername = Utility.usernameToHash(username);
 
         for (let i = 0; i < this.friendListCount; i++) {
-            if (this.friendListHashes[i].equals(l)) {
+            if (this.friendListHashes[i].equals(encodedUsername)) {
                 return;
             }
         }
@@ -12188,20 +12253,20 @@ class GameConnection extends GameShell {
         if (this.friendListCount >= GameConnection.maxSocialListSize) {
             return;
         } else {
-            this.friendListHashes[this.friendListCount] = l;
+            this.friendListHashes[this.friendListCount] = encodedUsername;
             this.friendListOnline[this.friendListCount] = 0;
             this.friendListCount++;
             return;
         }
     }
 
-    friendRemove(l) {
+    friendRemove(encodedUsername) {
         this.packetStream.newPacket(clientOpcodes.FRIEND_REMOVE);
-        this.packetStream.putLong(l);
+        this.packetStream.putLong(encodedUsername);
         this.packetStream.sendPacket();
 
         for (let i = 0; i < this.friendListCount; i++) {
-            if (!this.friendListHashes[i].equals(l)) {
+            if (!this.friendListHashes[i].equals(encodedUsername)) {
                 continue;
             }
 
@@ -12215,25 +12280,25 @@ class GameConnection extends GameShell {
             break;
         }
 
-        this.showServerMessage('@pri@' + Utility.hashToUsername(l) + ' has been removed from your friends list');
+        this.showServerMessage('@pri@' + Utility.hashToUsername(encodedUsername) + ' has been removed from your friends list');
     }
 
-    sendPrivateMessage(u, buff, len) {
+    sendPrivateMessage(username, message, length) {
         this.packetStream.newPacket(clientOpcodes.PM);
-        this.packetStream.putLong(u);
-        this.packetStream.putBytes(buff, 0, len);
+        this.packetStream.putLong(username);
+        this.packetStream.putBytes(message, 0, length);
         this.packetStream.sendPacket();
     }
 
-    sendChatMessage(buff, len) {
+    sendChatMessage(message, length) {
         this.packetStream.newPacket(clientOpcodes.CHAT);
-        this.packetStream.putBytes(buff, 0, len);
+        this.packetStream.putBytes(message, 0, length);
         this.packetStream.sendPacket();
     }
 
-    sendCommandString(s) {
+    sendCommandString(command) {
         this.packetStream.newPacket(clientOpcodes.COMMAND);
-        this.packetStream.putString(s);
+        this.packetStream.putString(command);
         this.packetStream.sendPacket();
     }
 }
@@ -12244,7 +12309,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":74,"./word-filter":76,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":82,"./word-filter":84,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -12813,7 +12878,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":74,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":82,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -13062,13 +13127,18 @@ class GameModel {
         }
 
         for (let l2 = 0; l2 < k; l2++) {
-            gameModel.faceVertices[l2] = new Int32Array(gameModel.faceNumVertices[l2]);
+            gameModel.faceVertices[l2] = new Int32Array(
+                gameModel.faceNumVertices[l2]
+            );
 
             for (let i3 = 0; i3 < gameModel.faceNumVertices[l2]; i3++) {
                 if (j < 256) {
                     gameModel.faceVertices[l2][i3] = data[offset++] & 0xff;
                 } else {
-                    gameModel.faceVertices[l2][i3] = Utility.getUnsignedShort(data, offset);
+                    gameModel.faceVertices[l2][i3] = Utility.getUnsignedShort(
+                        data,
+                        offset
+                    );
                     offset += 2;
                 }
             }
@@ -13107,7 +13177,15 @@ class GameModel {
         return gameModel;
     }
 
-    static _from7(numVertices, numFaces, autocommit, isolated, unlit, unpickable, projected) {
+    static _from7(
+        numVertices,
+        numFaces,
+        autocommit,
+        isolated,
+        unlit,
+        unpickable,
+        projected
+    ) {
         let gameModel = new GameModel();
 
         gameModel.transformState = 1;
@@ -13259,27 +13337,50 @@ class GameModel {
                 let srcVs = source.faceVertices[srcF];
 
                 for (let v = 0; v < source.faceNumVertices[srcF]; v++) {
-                    dstVs[v] = this.vertexAt(source.vertexX[srcVs[v]], source.vertexY[srcVs[v]], source.vertexZ[srcVs[v]]);
+                    dstVs[v] = this.vertexAt(
+                        source.vertexX[srcVs[v]],
+                        source.vertexY[srcVs[v]],
+                        source.vertexZ[srcVs[v]]
+                    );
                 }
 
-                let dstF = this.createFace(source.faceNumVertices[srcF], dstVs, source.faceFillFront[srcF], source.faceFillBack[srcF]);
+                let dstF = this.createFace(
+                    source.faceNumVertices[srcF],
+                    dstVs,
+                    source.faceFillFront[srcF],
+                    source.faceFillBack[srcF]
+                );
                 this.faceIntensity[dstF] = source.faceIntensity[srcF];
                 this.normalScale[dstF] = source.normalScale[srcF];
                 this.normalMagnitude[dstF] = source.normalMagnitude[srcF];
 
                 if (transState) {
                     if (count > 1) {
-                        this.faceTransStateThing[dstF] = new Int32Array(source.faceTransStateThing[srcF].length + 1);
+                        this.faceTransStateThing[dstF] = new Int32Array(
+                            source.faceTransStateThing[srcF].length + 1
+                        );
                         this.faceTransStateThing[dstF][0] = i;
 
-                        for (let i2 = 0; i2 < source.faceTransStateThing[srcF].length; i2++) {
-                            this.faceTransStateThing[dstF][i2 + 1] = source.faceTransStateThing[srcF][i2];
+                        for (
+                            let i2 = 0;
+                            i2 < source.faceTransStateThing[srcF].length;
+                            i2++
+                        ) {
+                            this.faceTransStateThing[dstF][i2 + 1] =
+                                source.faceTransStateThing[srcF][i2];
                         }
                     } else {
-                        this.faceTransStateThing[dstF] = new Int32Array(source.faceTransStateThing[srcF].length);
+                        this.faceTransStateThing[dstF] = new Int32Array(
+                            source.faceTransStateThing[srcF].length
+                        );
 
-                        for (let j2 = 0; j2 < source.faceTransStateThing[srcF].length; j2++) {
-                            this.faceTransStateThing[dstF][j2] = source.faceTransStateThing[srcF][j2];
+                        for (
+                            let j2 = 0;
+                            j2 < source.faceTransStateThing[srcF].length;
+                            j2++
+                        ) {
+                            this.faceTransStateThing[dstF][j2] =
+                                source.faceTransStateThing[srcF][j2];
                         }
                     }
                 }
@@ -13289,10 +13390,13 @@ class GameModel {
         this.transformState = 1;
     }
 
-
     vertexAt(x, y, z) {
         for (let l = 0; l < this.numVertices; l++) {
-            if (this.vertexX[l] === x && this.vertexY[l] === y && this.vertexZ[l] === z) {
+            if (
+                this.vertexX[l] === x &&
+                this.vertexY[l] === y &&
+                this.vertexZ[l] === z
+            ) {
                 return l;
             }
         }
@@ -13334,7 +13438,16 @@ class GameModel {
         }
     }
 
-    split(unused1, unused2, pieceDx, pieceDz, rows, count, pieceMaxVertices, pickable) {
+    split(
+        unused1,
+        unused2,
+        pieceDx,
+        pieceDz,
+        rows,
+        count,
+        pieceMaxVertices,
+        pickable
+    ) {
         this.commit();
 
         let pieceNV = new Int32Array(count);
@@ -13356,7 +13469,9 @@ class GameModel {
                 sumZ += this.vertexZ[vs[i]];
             }
 
-            let p = ((sumX / (n * pieceDx)) | 0) + ((sumZ / (n * pieceDz)) | 0) * rows;
+            let p =
+                ((sumX / (n * pieceDx)) | 0) +
+                ((sumZ / (n * pieceDz)) | 0) * rows;
             pieceNV[p] += n;
             pieceNF[p]++;
         }
@@ -13368,7 +13483,17 @@ class GameModel {
                 pieceNV[i] = pieceMaxVertices;
             }
 
-            pieces.push(GameModel._from7(pieceNV[i], pieceNF[i], true, true, true, pickable, true));
+            pieces.push(
+                GameModel._from7(
+                    pieceNV[i],
+                    pieceNF[i],
+                    true,
+                    true,
+                    true,
+                    pickable,
+                    true
+                )
+            );
             pieces[i].lightDiffuse = this.lightDiffuse;
             pieces[i].lightAmbience = this.lightAmbience;
         }
@@ -13384,7 +13509,9 @@ class GameModel {
                 sumZ += this.vertexZ[vs[i]];
             }
 
-            let p = ((sumX / (n * pieceDx)) | 0) + ((sumZ / (n * pieceDz)) | 0) * rows;
+            let p =
+                ((sumX / (n * pieceDx)) | 0) +
+                ((sumZ / (n * pieceDz)) | 0) * rows;
             this.copyLighting(pieces[p], vs, n, f);
         }
 
@@ -13399,12 +13526,21 @@ class GameModel {
         let dstVs = new Int32Array(nV);
 
         for (let inV = 0; inV < nV; inV++) {
-            let outV = dstVs[inV] = model.vertexAt(this.vertexX[srcVs[inV]], this.vertexY[srcVs[inV]], this.vertexZ[srcVs[inV]]);
+            let outV = (dstVs[inV] = model.vertexAt(
+                this.vertexX[srcVs[inV]],
+                this.vertexY[srcVs[inV]],
+                this.vertexZ[srcVs[inV]]
+            ));
             model.vertexIntensity[outV] = this.vertexIntensity[srcVs[inV]];
             model.vertexAmbience[outV] = this.vertexAmbience[srcVs[inV]];
         }
 
-        let outF = model.createFace(nV, dstVs, this.faceFillFront[inF], this.faceFillBack[inF]);
+        let outF = model.createFace(
+            nV,
+            dstVs,
+            this.faceFillFront[inF],
+            this.faceFillBack[inF]
+        );
 
         if (!model.unpickable && !this.unpickable) {
             model.faceTag[outF] = this.faceTag[inF];
@@ -13464,12 +13600,12 @@ class GameModel {
 
     setLight(...args) {
         switch (args.length) {
-        case 6:
-            return this._setLight_from6(...args);
-        case 5:
-            return this._setLight_from5(...args);
-        case 3:
-            return this._setLight_from3(...args);
+            case 6:
+                return this._setLight_from6(...args);
+            case 5:
+                return this._setLight_from5(...args);
+            case 3:
+                return this._setLight_from3(...args);
         }
     }
 
@@ -13478,9 +13614,9 @@ class GameModel {
     }
 
     rotate(yaw, pitch, roll) {
-        this.orientationYaw = this.orientationYaw + yaw & 0xff;
-        this.orientationPitch = this.orientationPitch + pitch & 0xff;
-        this.orientationRoll = this.orientationRoll + roll & 0xff;
+        this.orientationYaw = (this.orientationYaw + yaw) & 0xff;
+        this.orientationPitch = (this.orientationPitch + pitch) & 0xff;
+        this.orientationRoll = (this.orientationRoll + roll) & 0xff;
         this.determineTransformKind();
         this.transformState = 1;
     }
@@ -13510,11 +13646,26 @@ class GameModel {
     }
 
     determineTransformKind() {
-        if (this.shearXy !== 256 || this.shearXz !== 256 || this.shearYx !== 256 || this.shearYz !== 256 || this.shearZx !== 256 || this.shearZy !== 256) {
+        if (
+            this.shearXy !== 256 ||
+            this.shearXz !== 256 ||
+            this.shearYx !== 256 ||
+            this.shearYz !== 256 ||
+            this.shearZx !== 256 ||
+            this.shearZy !== 256
+        ) {
             this.transformKind = 4;
-        } else if (this.scaleFx !== 256 || this.scaleFy !== 256 || this.scaleFz !== 256) {
+        } else if (
+            this.scaleFx !== 256 ||
+            this.scaleFy !== 256 ||
+            this.scaleFz !== 256
+        ) {
             this.transformKind = 3;
-        } else if (this.orientationYaw !== 0 || this.orientationPitch !== 0 || this.orientationRoll !== 0) {
+        } else if (
+            this.orientationYaw !== 0 ||
+            this.orientationPitch !== 0 ||
+            this.orientationRoll !== 0
+        ) {
             this.transformKind = 2;
         } else if (this.baseX !== 0 || this.baseY !== 0 || this.baseZ !== 0) {
             this.transformKind = 1;
@@ -13536,27 +13687,45 @@ class GameModel {
             if (pitch !== 0) {
                 let sin = GameModel.sine9[pitch];
                 let cos = GameModel.sine9[pitch + 256];
-                let x = this.vertexTransformedY[v] * sin + this.vertexTransformedX[v] * cos >> 15;
+                let x =
+                    (this.vertexTransformedY[v] * sin +
+                        this.vertexTransformedX[v] * cos) >>
+                    15;
 
-                this.vertexTransformedY[v] = this.vertexTransformedY[v] * cos - this.vertexTransformedX[v] * sin >> 15;
+                this.vertexTransformedY[v] =
+                    (this.vertexTransformedY[v] * cos -
+                        this.vertexTransformedX[v] * sin) >>
+                    15;
                 this.vertexTransformedX[v] = x;
             }
 
             if (yaw !== 0) {
                 let sin = GameModel.sine9[yaw];
                 let cos = GameModel.sine9[yaw + 256];
-                let y = this.vertexTransformedY[v] * cos - this.vertexTransformedZ[v] * sin >> 15;
+                let y =
+                    (this.vertexTransformedY[v] * cos -
+                        this.vertexTransformedZ[v] * sin) >>
+                    15;
 
-                this.vertexTransformedZ[v] = this.vertexTransformedY[v] * sin + this.vertexTransformedZ[v] * cos >> 15;
+                this.vertexTransformedZ[v] =
+                    (this.vertexTransformedY[v] * sin +
+                        this.vertexTransformedZ[v] * cos) >>
+                    15;
                 this.vertexTransformedY[v] = y;
             }
 
             if (roll !== 0) {
                 let sin = GameModel.sine9[roll];
                 let cos = GameModel.sine9[roll + 256];
-                let x = this.vertexTransformedZ[v] * sin + this.vertexTransformedX[v] * cos >> 15;
+                let x =
+                    (this.vertexTransformedZ[v] * sin +
+                        this.vertexTransformedX[v] * cos) >>
+                    15;
 
-                this.vertexTransformedZ[v] = this.vertexTransformedZ[v] * cos - this.vertexTransformedX[v] * sin >> 15;
+                this.vertexTransformedZ[v] =
+                    (this.vertexTransformedZ[v] * cos -
+                        this.vertexTransformedX[v] * sin) >>
+                    15;
                 this.vertexTransformedX[v] = x;
             }
         }
@@ -13565,36 +13734,42 @@ class GameModel {
     applyShear(xy, xz, yx, yz, zx, zy) {
         for (let idx = 0; idx < this.numVertices; idx++) {
             if (xy !== 0) {
-                this.vertexTransformedX[idx] += this.vertexTransformedY[idx] * xy >> 8;
+                this.vertexTransformedX[idx] +=
+                    (this.vertexTransformedY[idx] * xy) >> 8;
             }
 
             if (xz !== 0) {
-                this.vertexTransformedZ[idx] += this.vertexTransformedY[idx] * xz >> 8;
+                this.vertexTransformedZ[idx] +=
+                    (this.vertexTransformedY[idx] * xz) >> 8;
             }
 
             if (yx !== 0) {
-                this.vertexTransformedX[idx] += this.vertexTransformedZ[idx] * yx >> 8;
+                this.vertexTransformedX[idx] +=
+                    (this.vertexTransformedZ[idx] * yx) >> 8;
             }
 
             if (yz !== 0) {
-                this.vertexTransformedY[idx] += this.vertexTransformedZ[idx] * yz >> 8;
+                this.vertexTransformedY[idx] +=
+                    (this.vertexTransformedZ[idx] * yz) >> 8;
             }
 
             if (zx !== 0) {
-                this.vertexTransformedZ[idx] += this.vertexTransformedX[idx] * zx >> 8;
+                this.vertexTransformedZ[idx] +=
+                    (this.vertexTransformedX[idx] * zx) >> 8;
             }
 
             if (zy !== 0) {
-                this.vertexTransformedY[idx] += this.vertexTransformedX[idx] * zy >> 8;
+                this.vertexTransformedY[idx] +=
+                    (this.vertexTransformedX[idx] * zy) >> 8;
             }
         }
     }
 
     applyScale(fx, fy, fz) {
         for (let v = 0; v < this.numVertices; v++) {
-            this.vertexTransformedX[v] = this.vertexTransformedX[v] * fx >> 8;
-            this.vertexTransformedY[v] = this.vertexTransformedY[v] * fy >> 8;
-            this.vertexTransformedZ[v] = this.vertexTransformedZ[v] * fz >> 8;
+            this.vertexTransformedX[v] = (this.vertexTransformedX[v] * fx) >> 8;
+            this.vertexTransformedY[v] = (this.vertexTransformedY[v] * fy) >> 8;
+            this.vertexTransformedZ[v] = (this.vertexTransformedZ[v] * fz) >> 8;
         }
     }
 
@@ -13607,11 +13782,11 @@ class GameModel {
             let v = vs[0];
             let n = this.faceNumVertices[face];
             let x1 = 0;
-            let x2 = x1 = this.vertexTransformedX[v];
+            let x2 = (x1 = this.vertexTransformedX[v]);
             let y1 = 0;
-            let y2 = y1 = this.vertexTransformedY[v];
+            let y2 = (y1 = this.vertexTransformedY[v]);
             let z1 = 0;
-            let z2 = z1 = this.vertexTransformedZ[v];
+            let z2 = (z1 = this.vertexTransformedZ[v]);
 
             for (let i = 0; i < n; i++) {
                 v = vs[i];
@@ -13687,11 +13862,16 @@ class GameModel {
             return;
         }
 
-        let divisor = this.lightDiffuse * this.lightDirectionMagnitude >> 8;
+        let divisor = (this.lightDiffuse * this.lightDirectionMagnitude) >> 8;
 
         for (let face = 0; face < this.numFaces; face++) {
             if (this.faceIntensity[this.face] !== this.magic) {
-                this.faceIntensity[this.face] = ((this.faceNormalX[face] * this.lightDirectionX + this.faceNormalY[face] * this.lightDirectionY + this.faceNormalZ[face] * this.lightDirectionZ) / divisor) | 0;
+                this.faceIntensity[this.face] =
+                    ((this.faceNormalX[face] * this.lightDirectionX +
+                        this.faceNormalY[face] * this.lightDirectionY +
+                        this.faceNormalZ[face] * this.lightDirectionZ) /
+                        divisor) |
+                    0;
             }
         }
 
@@ -13722,7 +13902,12 @@ class GameModel {
 
         for (let v = 0; v < this.numVertices; v++) {
             if (normalMagnitude[v] > 0) {
-                this.vertexIntensity[v] = ((normalX[v] * this.lightDirectionX + normalY[v] * this.lightDirectionY + normalZ[v] * this.lightDirectionZ) / (divisor * normalMagnitude[v])) | 0;
+                this.vertexIntensity[v] =
+                    ((normalX[v] * this.lightDirectionX +
+                        normalY[v] * this.lightDirectionY +
+                        normalZ[v] * this.lightDirectionZ) /
+                        (divisor * normalMagnitude[v])) |
+                    0;
             }
         }
     }
@@ -13749,12 +13934,24 @@ class GameModel {
             let normY = bZ * cX - cZ * bX;
             let normZ;
 
-            for (normZ = bX * cY - cX * bY; normX > 8192 || normY > 8192 || normZ > 8192 || normX < -8192 || normY < -8192 || normZ < -8192; normZ >>= 1) {
+            for (
+                normZ = bX * cY - cX * bY;
+                normX > 8192 ||
+                normY > 8192 ||
+                normZ > 8192 ||
+                normX < -8192 ||
+                normY < -8192 ||
+                normZ < -8192;
+                normZ >>= 1
+            ) {
                 normX >>= 1;
                 normY >>= 1;
             }
 
-            let normMag = (256 * Math.sqrt(normX * normX + normY * normY + normZ * normZ)) | 0;
+            let normMag =
+                (256 *
+                    Math.sqrt(normX * normX + normY * normY + normZ * normZ)) |
+                0;
 
             if (normMag <= 0) {
                 normMag = 1;
@@ -13795,7 +13992,11 @@ class GameModel {
             }
 
             if (this.transformKind >= 2) {
-                this.applyRotation(this.orientationYaw, this.orientationPitch, this.orientationRoll);
+                this.applyRotation(
+                    this.orientationYaw,
+                    this.orientationPitch,
+                    this.orientationRoll
+                );
             }
 
             if (this.transformKind >= 3) {
@@ -13803,7 +14004,14 @@ class GameModel {
             }
 
             if (this.transformKind >= 4) {
-                this.applyShear(this.shearXy, this.shearXz, this.shearYx, this.shearYz, this.shearZx, this.shearZy);
+                this.applyShear(
+                    this.shearXy,
+                    this.shearXz,
+                    this.shearYx,
+                    this.shearYz,
+                    this.shearZx,
+                    this.shearZy
+                );
             }
 
             if (this.transformKind >= 1) {
@@ -13815,10 +14023,26 @@ class GameModel {
         }
     }
 
-    project(cameraX, cameraY, cameraZ, cameraPitch, cameraRoll, cameraYaw, viewDist, clipNear) {
+    project(
+        cameraX,
+        cameraY,
+        cameraZ,
+        cameraPitch,
+        cameraRoll,
+        cameraYaw,
+        viewDist,
+        clipNear
+    ) {
         this.apply();
 
-        if (this.z1 > Scene.frustumNearZ || this.z2 < Scene.frustumFarZ || this.x1 > Scene.frustumMinX || this.x2 < Scene.frustumMaxX || this.y1 > Scene.frustumMinY || this.y2 < Scene.frustumMaxY) {
+        if (
+            this.z1 > Scene.frustumNearZ ||
+            this.z2 < Scene.frustumFarZ ||
+            this.x1 > Scene.frustumMinX ||
+            this.x2 < Scene.frustumMaxX ||
+            this.y1 > Scene.frustumMinY ||
+            this.y2 < Scene.frustumMaxY
+        ) {
             this.visible = false;
             return;
         }
@@ -13853,20 +14077,20 @@ class GameModel {
             let z = this.vertexTransformedZ[v] - cameraZ;
 
             if (cameraYaw !== 0) {
-                let X = y * yawSin + x * yawCos >> 15;
-                y = y * yawCos - x * yawSin >> 15;
+                let X = (y * yawSin + x * yawCos) >> 15;
+                y = (y * yawCos - x * yawSin) >> 15;
                 x = X;
             }
 
             if (cameraRoll !== 0) {
-                let X = z * rollSin + x * rollCos >> 15;
-                z = z * rollCos - x * rollSin >> 15;
+                let X = (z * rollSin + x * rollCos) >> 15;
+                z = (z * rollCos - x * rollSin) >> 15;
                 x = X;
             }
 
             if (cameraPitch !== 0) {
-                let Y = y * pitchCos - z * pitchSin >> 15;
-                z = y * pitchSin + z * pitchCos >> 15;
+                let Y = (y * pitchCos - z * pitchSin) >> 15;
+                z = (y * pitchSin + z * pitchCos) >> 15;
                 y = Y;
             }
 
@@ -13904,7 +14128,6 @@ class GameModel {
         this.transformKind = 0;
     }
 
-    // TODO see if we have to call .slice() anywhere here
     copy(...args) {
         if (!args || !args.length) {
             let pieces = [this];
@@ -13918,7 +14141,14 @@ class GameModel {
         const [autocommit, isolated, unlit, pickable] = args;
 
         let pieces = [this];
-        let gameModel = GameModel._from6(pieces, 1, autocommit, isolated, unlit, pickable);
+        let gameModel = GameModel._from6(
+            pieces,
+            1,
+            autocommit,
+            isolated,
+            unlit,
+            pickable
+        );
         gameModel.depth = this.depth;
 
         return gameModel;
@@ -13936,12 +14166,16 @@ class GameModel {
     }
 
     readBase64(buff) {
-        for (; buff[this.dataPtr] === 10 || buff[this.dataPtr] === 13; this.dataPtr++) ;
+        for (
+            ;
+            buff[this.dataPtr] === 10 || buff[this.dataPtr] === 13;
+            this.dataPtr++
+        );
 
         let hi = GameModel.base64Alphabet[buff[this.dataPtr++] & 0xff];
         let mid = GameModel.base64Alphabet[buff[this.dataPtr++] & 0xff];
         let lo = GameModel.base64Alphabet[buff[this.dataPtr++] & 0xff];
-        let val = ((hi * 4096 + mid * 64 + lo) - 0x20000) | 0;
+        let val = (hi * 4096 + mid * 64 + lo - 0x20000) | 0;
 
         if (val === 123456) {
             val = this.magic;
@@ -13983,7 +14217,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":60,"./utility":74}],46:[function(require,module,exports){
+},{"./scene":60,"./utility":82}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -13995,6 +14229,9 @@ const Utility = require('./utility');
 const keycodes = require('./lib/keycodes');
 const version = require('./version');
 const zzz = require('sleep-promise');
+
+const CHAR_MAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456' +
+    '789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
 
 class GameShell {
     constructor(canvas) {
@@ -14065,10 +14302,10 @@ class GameShell {
         this.appletWidth = width;
         this.appletHeight = height;
 
-        GameShell.gameFrame = this._canvas.getContext('2d');
-
-        this._canvas.addEventListener('mousedown', this.mousePressed.bind(this));
-        this._canvas.addEventListener('contextmenu', this.mousePressed.bind(this));
+        this._canvas.addEventListener('mousedown',
+            this.mousePressed.bind(this));
+        this._canvas.addEventListener('contextmenu',
+            this.mousePressed.bind(this));
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
         this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
         this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
@@ -14095,10 +14332,10 @@ class GameShell {
     keyPressed(e) {
         e.preventDefault();
 
-        let code = e.keyCode;
+        const code = e.keyCode;
         let chr = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
-        if ([8, 10, 13, 9].indexOf(code) > -1 ) {
+        if ([8, 10, 13, 9].indexOf(code) > -1) {
             chr = code;
         }
 
@@ -14126,8 +14363,8 @@ class GameShell {
 
         let foundText = false;
 
-        for (let i = 0; i < GameShell.charMap.length; i++) {
-            if (GameShell.charMap.charCodeAt(i) === chr) {
+        for (let i = 0; i < CHAR_MAP.length; i++) {
+            if (CHAR_MAP.charCodeAt(i) === chr) {
                 foundText = true;
                 break;
             }
@@ -14150,11 +14387,13 @@ class GameShell {
 
         if (code === keycodes.BACKSPACE) {
             if (this.inputTextCurrent.length > 0) {
-                this.inputTextCurrent = this.inputTextCurrent.substring(0, this.inputTextCurrent.length - 1);
+                this.inputTextCurrent = this.inputTextCurrent.substring(0,
+                    this.inputTextCurrent.length - 1);
             }
 
             if (this.inputPMCurrent.length > 0) {
-                this.inputPMCurrent = this.inputPMCurrent.substring(0, this.inputPMCurrent.length - 1);
+                this.inputPMCurrent = this.inputPMCurrent.substring(0,
+                    this.inputPMCurrent.length - 1);
             }
         }
 
@@ -14164,7 +14403,7 @@ class GameShell {
     keyReleased(e) {
         e.preventDefault();
 
-        let code = e.keyCode;
+        const code = e.keyCode;
 
         if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = false;
@@ -14366,13 +14605,14 @@ class GameShell {
         }
     }
 
-    update(g) {
-        this.paint(g);
+    update(graphics) {
+        this.paint(graphics);
     }
 
     paint() {
         if (this.loadingStep === 2 && this.imageLogo !== null) {
-            this.drawLoadingScreen(this.loadingProgressPercent, this.loadingProgessText);
+            this.drawLoadingScreen(this.loadingProgressPercent,
+                this.loadingProgessText);
         }
     }
 
@@ -14380,40 +14620,42 @@ class GameShell {
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);
 
-        let buff = await this.readDataFile('jagex.jag', 'Jagex library', 0);
+        const jagexJag = await this.readDataFile('jagex.jag', 'Jagex library',
+            0);
 
-        if (buff !== null) {
-            let logo = Utility.loadData('logo.tga', 0, buff);
-            this.imageLogo = this.createImage(logo);
+        if (jagexJag) {
+            const logoTga = Utility.loadData('logo.tga', 0, jagexJag);
+            this.imageLogo = this.createImage(logoTga);
         }
 
-        buff = await this.readDataFile(`fonts${version.FONTS}.jag`, 'Game fonts', 5);
+        const fontsJag = await this.readDataFile(`fonts${version.FONTS}.jag`,
+            'Game fonts', 5);
 
-        if (buff !== null) {
-            Surface.createFont(Utility.loadData('h11p.jf', 0, buff), 0);
-            Surface.createFont(Utility.loadData('h12b.jf', 0, buff), 1);
-            Surface.createFont(Utility.loadData('h12p.jf', 0, buff), 2);
-            Surface.createFont(Utility.loadData('h13b.jf', 0, buff), 3);
-            Surface.createFont(Utility.loadData('h14b.jf', 0, buff), 4);
-            Surface.createFont(Utility.loadData('h16b.jf', 0, buff), 5);
-            Surface.createFont(Utility.loadData('h20b.jf', 0, buff), 6);
-            Surface.createFont(Utility.loadData('h24b.jf', 0, buff), 7);
+        if (jagexJag !== null) {
+            Surface.createFont(Utility.loadData('h11p.jf', 0, fontsJag), 0);
+            Surface.createFont(Utility.loadData('h12b.jf', 0, fontsJag), 1);
+            Surface.createFont(Utility.loadData('h12p.jf', 0, fontsJag), 2);
+            Surface.createFont(Utility.loadData('h13b.jf', 0, fontsJag), 3);
+            Surface.createFont(Utility.loadData('h14b.jf', 0, fontsJag), 4);
+            Surface.createFont(Utility.loadData('h16b.jf', 0, fontsJag), 5);
+            Surface.createFont(Utility.loadData('h20b.jf', 0, fontsJag), 6);
+            Surface.createFont(Utility.loadData('h24b.jf', 0, fontsJag), 7);
         }
     }
 
     drawLoadingScreen(percent, text) {
-        let midX = ((this.appletWidth - 281) / 2) | 0;
-        let midY = ((this.appletHeight - 148) / 2) | 0;
+        let x = ((this.appletWidth - 281) / 2) | 0;
+        let y = ((this.appletHeight - 148) / 2) | 0;
 
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);
 
         if (!this.hasRefererLogoNotUsed) {
-            this.graphics.drawImage(this.imageLogo, midX, midY/*, this*/);
+            this.graphics.drawImage(this.imageLogo, x, y/*, this*/);
         }
 
-        midX += 2;
-        midY += 90;
+        x += 2;
+        y += 90;
 
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;
@@ -14423,69 +14665,77 @@ class GameShell {
             this.graphics.setColor(new Color(220, 0, 0));
         }
 
-        this.graphics.drawRect(midX - 2, midY - 2, 280, 23);
-        this.graphics.fillRect(midX, midY, ((277 * percent) / 100) | 0, 20);
+        this.graphics.drawRect(x - 2, y - 2, 280, 23);
+        this.graphics.fillRect(x, y, ((277 * percent) / 100) | 0, 20);
         this.graphics.setColor(new Color(198, 198, 198));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(255, 255, 255));
         }
 
-        this.drawString(this.graphics, text, this.fontTimesRoman15, midX + 138, midY + 10);
+        this.drawString(this.graphics, text, this.fontTimesRoman15, x + 138,
+            y + 10);
 
         if (!this.hasRefererLogoNotUsed) {
-            this.drawString(this.graphics, 'Created by JAGeX - visit www.jagex.com', this.fontHelvetica13b, midX + 138, midY + 30);
-            this.drawString(this.graphics, '\u00a92001-2002 Andrew Gower and Jagex Ltd', this.fontHelvetica13b, midX + 138, midY + 44);
+            this.drawString(this.graphics, 'Created by JAGeX - visit ' +
+                'www.jagex.com', this.fontHelvetica13b, x + 138, y + 30);
+            this.drawString(this.graphics, '\u00a92001-2002 Andrew Gower and ' +
+                'Jagex Ltd', this.fontHelvetica13b, x + 138, y + 44);
         } else {
             this.graphics.setColor(new Color(132, 132, 152));
-            this.drawString(this.graphics, '\u00a92001-2002 Andrew Gower and Jagex Ltd', this.fontHelvetica12, midX + 138, this.appletHeight - 20);
+            this.drawString(this.graphics,
+                '\u00a92001-2002 Andrew Gower and Jagex Ltd',
+                this.fontHelvetica12, x + 138, this.appletHeight - 20);
         }
 
-        // not sure where this would have been used. maybe to indicate a special client?
+        // not sure where this would have been used. maybe to indicate a
+        // special client?
         if (this.logoHeaderText !== null) {
             this.graphics.setColor(Color.white);
-            this.drawString(this.graphics, this.logoHeaderText, this.fontHelvetica13b, midX + 138, midY - 120);
+            this.drawString(this.graphics, this.logoHeaderText,
+                this.fontHelvetica13b, x + 138, y - 120);
         }
     }
 
-    showLoadingProgress(i, s) {
-        let j = ((this.appletWidth - 281) / 2) | 0;
-        let k = ((this.appletHeight - 148) / 2) | 0;
-        j += 2;
-        k += 90;
+    showLoadingProgress(percent, text) {
+        let x = ((this.appletWidth - 281) / 2) | 0;
+        let y = ((this.appletHeight - 148) / 2) | 0;
+        x += 2;
+        y += 90;
 
-        this.loadingProgressPercent = i;
-        this.loadingProgessText = s;
+        this.loadingProgressPercent = percent;
+        this.loadingProgessText = text;
 
-        let l = ((277 * i) / 100) | 0;
+        const progressWidth = ((277 * percent) / 100) | 0;
         this.graphics.setColor(new Color(132, 132, 132));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(220, 0, 0));
         }
 
-        this.graphics.fillRect(j, k, l, 20);
+        this.graphics.fillRect(x, y, progressWidth, 20);
         this.graphics.setColor(Color.black);
-        this.graphics.fillRect(j + l, k, 277 - l, 20);
+        this.graphics.fillRect(x + progressWidth, y, 277 - progressWidth, 20);
         this.graphics.setColor(new Color(198, 198, 198));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(255, 255, 255));
         }
 
-        this.drawString(this.graphics, s, this.fontTimesRoman15, j + 138, k + 10);
+        this.drawString(this.graphics, text, this.fontTimesRoman15,
+            x + 138, y + 10);
     }
 
-    drawString(g, s, font, i, j) {
-        g.setFont(font);
-        const { width, height } = g.ctx.measureText(s);
-        g.drawString(s, i - ((width / 2) | 0), j + ((height / 4) | 0));
+    drawString(graphics, string, font, x, y) {
+        graphics.setFont(font);
+        const { width, height } = graphics.ctx.measureText(string);
+        graphics.drawString(string, x - ((width / 2) | 0), y +
+            ((height / 4) | 0));
     }
 
-    createImage(buff) {
+    createImage(tgaBuffer) {
         const tgaImage = new TGA();
-
-        tgaImage.load(new Uint8Array(buff.buffer));
+        tgaImage.load(new Uint8Array(tgaBuffer.buffer));
 
         const canvas = tgaImage.getCanvas();
         const ctx = canvas.getContext('2d');
@@ -14497,24 +14747,22 @@ class GameShell {
     async readDataFile(file, description, percent) {
         file = './data204/' + file;
 
-        let archiveSize = 0;
-        let archiveSizeCompressed = 0;
-        let archiveData = null;
+        this.showLoadingProgress(percent, `Loading ${description} - 0%`);
 
-        this.showLoadingProgress(percent, 'Loading ' + description + ' - 0%');
+        const fileDownloadStream = Utility.openFile(file);
 
-        let fileDownloadStream = Utility.openFile(file);
-        let header = new Int8Array(6);
-
+        const header = new Int8Array(6);
         await fileDownloadStream.readFully(header, 0, 6);
 
-        archiveSize = ((header[0] & 0xff) << 16) + ((header[1] & 0xff) << 8) + (header[2] & 0xff);
-        archiveSizeCompressed = ((header[3] & 0xff) << 16) + ((header[4] & 0xff) << 8) + (header[5] & 0xff);
+        const archiveSize = ((header[0] & 0xff) << 16) +
+            ((header[1] & 0xff) << 8) + (header[2] & 0xff);
+        const archiveSizeCompressed = ((header[3] & 0xff) << 16) +
+            ((header[4] & 0xff) << 8) + (header[5] & 0xff);
 
-        this.showLoadingProgress(percent, 'Loading ' + description + ' - 5%');
+        this.showLoadingProgress(percent, `Loading ${description} - 5%`);
 
         let read = 0;
-        archiveData = new Int8Array(archiveSizeCompressed);
+        const archiveData = new Int8Array(archiveSizeCompressed);
 
         while (read < archiveSizeCompressed) {
             let length = archiveSizeCompressed - read;
@@ -14525,18 +14773,22 @@ class GameShell {
 
             await fileDownloadStream.readFully(archiveData, read, length);
             read += length;
-            this.showLoadingProgress(percent, 'Loading ' + description + ' - ' + ((5 + (read * 95) / archiveSizeCompressed) | 0) + '%');
+
+            this.showLoadingProgress(percent, `Loading ${description} - ` +
+                ((5 + (read * 95) / archiveSizeCompressed) | 0) + '%');
         }
 
-        this.showLoadingProgress(percent, 'Unpacking ' + description);
+        this.showLoadingProgress(percent, `Unpacking ${description}`);
 
         if (archiveSizeCompressed !== archiveSize) {
-            let decompressed = new Int8Array(archiveSize);
-            BZLib.decompress(decompressed, archiveSize, archiveData, archiveSizeCompressed, 0);
+            const decompressed = new Int8Array(archiveSize);
+            BZLib.decompress(decompressed, archiveSize, archiveData,
+                archiveSizeCompressed, 0);
+
             return decompressed;
-        } else {
-            return archiveData;
         }
+
+        return archiveData;
     }
 
     getGraphics() {
@@ -14550,12 +14802,9 @@ class GameShell {
     }
 }
 
-GameShell.gameFrame = null;
-GameShell.charMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
-
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":74,"./version":75,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":82,"./version":83,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -14638,7 +14887,10 @@ module.exports = Font;
 class Graphics {
     constructor(canvas) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
+        this.ctx = canvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
+        });
     }
 
     setColor(color) {
@@ -15101,7 +15353,6 @@ class mudclient extends GameConnection {
         this.mouseButtonItemCountIncrement = 0;
         this.animationIndex = 0;
         this.cameraRotationX = 0;
-        this.loginScreen = 0;
         this.tradeConfirmAccepted = false;
         this.appearanceHeadType = 0;
         this.appearanceSkinColour = 0;
@@ -15141,11 +15392,6 @@ class mudclient extends GameConnection {
         this.spriteTexture = 0;
         this.spriteTextureWorld = 0;
         this.spriteLogo = 0;
-        this.controlLoginStatus = 0;
-        this.controlLoginUser = 0;
-        this.controlLoginPass = 0;
-        this.controlLoginOk = 0;
-        this.controlLoginCancel = 0;
         this.teleportBubbleCount = 0;
         this.mouseClickCount = 0;
         this.shopSellPriceMod = 0;
@@ -15181,12 +15427,9 @@ class mudclient extends GameConnection {
             new Int32Array([4, 3, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]),
             new Int32Array([11, 4, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3]),
             new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 4, 3])];
-        this.controlWelcomeNewUser = 0;
-        this.controlWelcomeExistingUser = 0;
         this.npcWalkModel = new Int32Array([0, 1, 2, 1]);
         this.referID = 0;
         this.controlRegisterStatus = 0;
-        this.controlLoginNewOk = 0;
         this.combatTimeout = 0;
         this.optionMenuCount = 0;
         this.errorLoadingCodebase = false;
@@ -15261,7 +15504,6 @@ class mudclient extends GameConnection {
         this.newBankItems = new Int32Array(256);
         this.newBankItemsCount = new Int32Array(256);
         this.teleportBubbleTime = new Int32Array(50);
-        this.showDialogTradeConfirm = false;
         this.tradeConfirmAccepted = false;
         this.receivedMessageX = new Int32Array(50);
         this.receivedMessageY = new Int32Array(50);
@@ -15271,7 +15513,6 @@ class mudclient extends GameConnection {
         this.localPlayerServerIndex = -1;
         this.menuItemX = new Int32Array(MENU_MAX_SIZE);
         this.menuItemY = new Int32Array(MENU_MAX_SIZE);
-        this.showDialogTrade = false;
         this.bankItems = new Int32Array(256);
         this.bankItemsCount = new Int32Array(256);
         this.appearanceBodyGender = 1;
@@ -15306,7 +15547,6 @@ class mudclient extends GameConnection {
         this.tradeAccepted = false;
         this.mouseClickXHistory = new Int32Array(8192);
         this.mouseClickYHistory = new Int32Array(8192);
-        this.showDialogWelcome = false;
         this.playerServerIndexes = new Int32Array(PLAYERS_MAX);
         this.teleportBubbleY = new Int32Array(50);
         this.receivedMessages = [];
@@ -15441,30 +15681,15 @@ class mudclient extends GameConnection {
         this.objectModel.fill(null);
     }
 
-    static formatNumber(i) {
-        let s = i.toString();
-
-        for (let j = s.length - 3; j > 0; j -= 3) {
-            s = s.substring(0, j) + ',' + s.substring(j);
-        }
-
-        if (s.length > 8) {
-            s = '@gre@' + s.substring(0, s.length - 8) + ' million @whi@(' + s + ')';
-        } else if (s.length > 4) {
-            s = '@cya@' + s.substring(0, s.length - 4) + 'K @whi@(' + s + ')';
-        }
-
-        return s;
-    }
-
-    playSoundFile(s) {
-        if (!this.audioPlayer) {
+    playSoundFile(soundName) {
+        if (!this.audioPlayer || this.optionSoundDisabled) {
             return;
         }
 
-        if (!this.optionSoundDisabled) {
-            this.audioPlayer.writeStream(this.soundData, Utility.getDataFileOffset(s + '.pcm', this.soundData), Utility.getDataFileLength(s + '.pcm', this.soundData));
-        }
+        const fileName = `${soundName}.pcm`;
+        this.audioPlayer.writeStream(this.soundData,
+            Utility.getDataFileOffset(fileName, this.soundData),
+            Utility.getDataFileLength(fileName, this.soundData));
     }
 
     _walkToActionSource_from8(startX, startY, x1, y1, x2, y2, checkObjects, walkToAction) {
@@ -15549,14 +15774,6 @@ class mudclient extends GameConnection {
         this.mouseClickXY = this.mouseY;
 
         return true;
-    }
-
-    drawMinimapEntity(x, y, colour) {
-        this.surface.setPixel(x, y, colour);
-        this.surface.setPixel(x - 1, y, colour);
-        this.surface.setPixel(x + 1, y, colour);
-        this.surface.setPixel(x, y - 1, colour);
-        this.surface.setPixel(x, y + 1, colour);
     }
 
     updateBankItems() {
@@ -15718,7 +15935,8 @@ class mudclient extends GameConnection {
                 this.drawOptionMenu();
             }
 
-            if (this.localPlayer.animationCurrent === 8 || this.localPlayer.animationCurrent === 9) {
+            if (this.localPlayer.animationCurrent === 8 ||
+                this.localPlayer.animationCurrent === 9) {
                 this.drawDialogCombatStyle();
             }
 
@@ -15758,237 +15976,6 @@ class mudclient extends GameConnection {
         }
 
         this.mouseButtonClick = 0;
-    }
-
-    drawDialogTrade() {
-        if (this.mouseButtonClick !== 0 && this.mouseButtonItemCountIncrement === 0) {
-            this.mouseButtonItemCountIncrement = 1;
-        }
-
-        if (this.mouseButtonItemCountIncrement > 0) {
-            let mouseX = this.mouseX - 22;
-            let mouseY = this.mouseY - 36;
-
-            if (mouseX >= 0 && mouseY >= 0 && mouseX < 468 && mouseY < 262) {
-                if (mouseX > 216 && mouseY > 30 && mouseX < 462 && mouseY < 235) {
-                    let slot = (((mouseX - 217) / 49) | 0) + (((mouseY - 31) / 34) | 0) * 5;
-
-                    if (slot >= 0 && slot < this.inventoryItemsCount) {
-                        let sendUpdate = false;
-                        let itemCountAdd = 0;
-                        let itemType = this.inventoryItemId[slot];
-
-                        for (let itemIndex = 0; itemIndex < this.tradeItemsCount; itemIndex++) {
-                            if (this.tradeItems[itemIndex] === itemType) {
-                                if (GameData.itemStackable[itemType] === 0) {
-                                    for (let i4 = 0; i4 < this.mouseButtonItemCountIncrement; i4++) {
-                                        if (this.tradeItemCount[itemIndex] < this.inventoryItemStackCount[slot]) {
-                                            this.tradeItemCount[itemIndex]++;
-                                        }
-
-                                        sendUpdate = true;
-                                    }
-
-                                } else {
-                                    itemCountAdd++;
-                                }
-                            }
-                        }
-
-                        if (this.getInventoryCount(itemType) <= itemCountAdd) {
-                            sendUpdate = true;
-                        }
-
-                        // quest items? or just tagged as 'special'
-                        if (GameData.itemSpecial[itemType] === 1) {
-                            this.showMessage('This object cannot be traded with other players', 3);
-                            sendUpdate = true;
-                        }
-
-                        if (!sendUpdate && this.tradeItemsCount < 12) {
-                            this.tradeItems[this.tradeItemsCount] = itemType;
-                            this.tradeItemCount[this.tradeItemsCount] = 1;
-                            this.tradeItemsCount++;
-                            sendUpdate = true;
-                        }
-
-                        if (sendUpdate) {
-                            this.packetStream.newPacket(clientOpcodes.TRADE_ITEM_UPDATE);
-                            this.packetStream.putByte(this.tradeItemsCount);
-
-                            for (let j4 = 0; j4 < this.tradeItemsCount; j4++) {
-                                this.packetStream.putShort(this.tradeItems[j4]);
-                                this.packetStream.putInt(this.tradeItemCount[j4]);
-                            }
-
-                            this.packetStream.sendPacket();
-                            this.tradeRecipientAccepted = false;
-                            this.tradeAccepted = false;
-                        }
-                    }
-                }
-
-                if (mouseX > 8 && mouseY > 30 && mouseX < 205 && mouseY < 133) {
-                    let itemIndex = (((mouseX - 9) / 49) | 0) + (((mouseY - 31) / 34) | 0) * 4;
-
-                    if (itemIndex >= 0 && itemIndex < this.tradeItemsCount) {
-                        let itemType = this.tradeItems[itemIndex];
-
-                        for (let i2 = 0; i2 < this.mouseButtonItemCountIncrement; i2++) {
-                            if (GameData.itemStackable[itemType] === 0 && this.tradeItemCount[itemIndex] > 1) {
-                                this.tradeItemCount[itemIndex]--;
-                                continue;
-                            }
-                            this.tradeItemsCount--;
-                            this.mouseButtonDownTime = 0;
-
-                            for (let l2 = itemIndex; l2 < this.tradeItemsCount; l2++) {
-                                this.tradeItems[l2] = this.tradeItems[l2 + 1];
-                                this.tradeItemCount[l2] = this.tradeItemCount[l2 + 1];
-                            }
-
-                            break;
-                        }
-
-                        this.packetStream.newPacket(clientOpcodes.TRADE_ITEM_UPDATE);
-                        this.packetStream.putByte(this.tradeItemsCount);
-
-                        for (let i3 = 0; i3 < this.tradeItemsCount; i3++) {
-                            this.packetStream.putShort(this.tradeItems[i3]);
-                            this.packetStream.putInt(this.tradeItemCount[i3]);
-                        }
-
-                        this.packetStream.sendPacket();
-                        this.tradeRecipientAccepted = false;
-                        this.tradeAccepted = false;
-                    }
-                }
-
-                if (mouseX >= 217 && mouseY >= 238 && mouseX <= 286 && mouseY <= 259) {
-                    this.tradeAccepted = true;
-                    this.packetStream.newPacket(clientOpcodes.TRADE_ACCEPT);
-                    this.packetStream.sendPacket();
-                }
-
-                if (mouseX >= 394 && mouseY >= 238 && mouseX < 463 && mouseY < 259) {
-                    this.showDialogTrade = false;
-                    this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                    this.packetStream.sendPacket();
-                }
-            } else if (this.mouseButtonClick !== 0) {
-                this.showDialogTrade = false;
-                this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                this.packetStream.sendPacket();
-            }
-
-            this.mouseButtonClick = 0;
-            this.mouseButtonItemCountIncrement = 0;
-        }
-
-        if (!this.showDialogTrade) {
-            return;
-        }
-
-        let dialogX = 22;
-        let dialogY = 36;
-
-        this.surface.drawBox(dialogX, dialogY, 468, 12, 192);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 12, 468, 18, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 30, 8, 248, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 205, dialogY + 30, 11, 248, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 462, dialogY + 30, 6, 248, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 133, 197, 22, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 258, 197, 20, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 216, dialogY + 235, 246, 43, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 30, 197, 103, 0xd0d0d0, 160);
-        this.surface.drawBoxAlpha(dialogX + 8, dialogY + 155, 197, 103, 0xd0d0d0, 160);
-        this.surface.drawBoxAlpha(dialogX + 216, dialogY + 30, 246, 205, 0xd0d0d0, 160);
-
-        for (let j2 = 0; j2 < 4; j2++) {
-            this.surface.drawLineHoriz(dialogX + 8, dialogY + 30 + j2 * 34, 197, 0);
-        }
-
-        for (let j3 = 0; j3 < 4; j3++) {
-            this.surface.drawLineHoriz(dialogX + 8, dialogY + 155 + j3 * 34, 197, 0);
-        }
-
-        for (let l3 = 0; l3 < 7; l3++) {
-            this.surface.drawLineHoriz(dialogX + 216, dialogY + 30 + l3 * 34, 246, 0);
-        }
-
-        for (let k4 = 0; k4 < 6; k4++) {
-            if (k4 < 5) {
-                this.surface.drawLineVert(dialogX + 8 + k4 * 49, dialogY + 30, 103, 0);
-            }
-
-            if (k4 < 5) {
-                this.surface.drawLineVert(dialogX + 8 + k4 * 49, dialogY + 155, 103, 0);
-            }
-
-            this.surface.drawLineVert(dialogX + 216 + k4 * 49, dialogY + 30, 205, 0);
-        }
-
-        this.surface.drawString('Trading with: ' + this.tradeRecipientName, dialogX + 1, dialogY + 10, 1, 0xffffff);
-        this.surface.drawString('Your Offer', dialogX + 9, dialogY + 27, 4, 0xffffff);
-        this.surface.drawString('Opponent\'s Offer', dialogX + 9, dialogY + 152, 4, 0xffffff);
-        this.surface.drawString('Your Inventory', dialogX + 216, dialogY + 27, 4, 0xffffff);
-
-        if (!this.tradeAccepted) {
-            this.surface._drawSprite_from3(dialogX + 217, dialogY + 238, this.spriteMedia + 25);
-        }
-
-        this.surface._drawSprite_from3(dialogX + 394, dialogY + 238, this.spriteMedia + 26);
-
-        if (this.tradeRecipientAccepted) {
-            this.surface.drawStringCenter('Other player', dialogX + 341, dialogY + 246, 1, 0xffffff);
-            this.surface.drawStringCenter('has accepted', dialogX + 341, dialogY + 256, 1, 0xffffff);
-        }
-
-        if (this.tradeAccepted) {
-            this.surface.drawStringCenter('Waiting for', dialogX + 217 + 35, dialogY + 246, 1, 0xffffff);
-            this.surface.drawStringCenter('other player', dialogX + 217 + 35, dialogY + 256, 1, 0xffffff);
-        }
-
-        for (let itemIndex = 0; itemIndex < this.inventoryItemsCount; itemIndex++) {
-            let slotX = 217 + dialogX + (itemIndex % 5) * 49;
-            let slotY = 31 + dialogY + ((itemIndex / 5) | 0) * 34;
-
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.inventoryItemId[itemIndex]], GameData.itemMask[this.inventoryItemId[itemIndex]], 0, 0, false);
-
-            if (GameData.itemStackable[this.inventoryItemId[itemIndex]] === 0) {
-                this.surface.drawString(this.inventoryItemStackCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
-            }
-        }
-
-        for (let itemIndex = 0; itemIndex < this.tradeItemsCount; itemIndex++) {
-            let slotX = 9 + dialogX + (itemIndex % 4) * 49;
-            let slotY = 31 + dialogY + ((itemIndex / 4) | 0) * 34;
-
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.tradeItems[itemIndex]], GameData.itemMask[this.tradeItems[itemIndex]], 0, 0, false);
-
-            if (GameData.itemStackable[this.tradeItems[itemIndex]] === 0) {
-                this.surface.drawString(this.tradeItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
-            }
-
-            if (this.mouseX > slotX && this.mouseX < slotX + 48 && this.mouseY > slotY && this.mouseY < slotY + 32) {
-                this.surface.drawString(GameData.itemName[this.tradeItems[itemIndex]] + ': @whi@' + GameData.itemDescription[this.tradeItems[itemIndex]], dialogX + 8, dialogY + 273, 1, 0xffff00);
-            }
-        }
-
-        for (let itemIndex = 0; itemIndex < this.tradeRecipientItemsCount; itemIndex++) {
-            let slotX = 9 + dialogX + (itemIndex % 4) * 49;
-            let slotY = 156 + dialogY + ((itemIndex / 4) | 0) * 34;
-
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.tradeRecipientItems[itemIndex]], GameData.itemMask[this.tradeRecipientItems[itemIndex]], 0, 0, false);
-
-            if (GameData.itemStackable[this.tradeRecipientItems[itemIndex]] === 0) {
-                this.surface.drawString(this.tradeRecipientItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 0xffff00);
-            }
-
-            if (this.mouseX > slotX && this.mouseX < slotX + 48 && this.mouseY > slotY && this.mouseY < slotY + 32) {
-                this.surface.drawString(GameData.itemName[this.tradeRecipientItems[itemIndex]] + ': @whi@' + GameData.itemDescription[this.tradeRecipientItems[itemIndex]], dialogX + 8, dialogY + 273, 1, 0xffff00);
-            }
-        }
     }
 
     resetGame() {
@@ -16205,122 +16192,6 @@ class mudclient extends GameConnection {
         this.panelAppearance.addButtonBackground(x, y, 200, 30);
         this.panelAppearance.addText(x, y, 'Accept', 4, false);
         this.controlButtonAppearanceAccept = this.panelAppearance.addButton(x, y, 200, 30);
-    }
-
-    drawDialogWelcome() {
-        let i = 65;
-
-        if (this.welcomeRecoverySetDays !== 201) {
-            i += 60;
-        }
-
-        if (this.welcomeUnreadMessages > 0) {
-            i += 60;
-        }
-
-        if (this.welcomeLastLoggedInIP !== 0) {
-            i += 45;
-        }
-
-        let y = 167 - ((i / 2) | 0);
-
-        this.surface.drawBox(56, 167 - ((i / 2) | 0), 400, i, 0);
-        this.surface.drawBoxEdge(56, 167 - ((i / 2) | 0), 400, i, 0xffffff);
-        y += 20;
-        this.surface.drawStringCenter('Welcome to RuneScape ' + this.loginUser, 256, y, 4, 0xffff00);
-        y += 30;
-
-        let s = null;
-
-        if (this.welcomeLastLoggedInDays === 0) {
-            s = 'earlier today';
-        } else if (this.welcomeLastLoggedInDays === 1) {
-            s = 'yesterday';
-        } else {
-            s = this.welcomeLastLoggedInDays + ' days ago';
-        }
-
-        if (this.welcomeLastLoggedInIP !== 0) {
-            this.surface.drawStringCenter('You last logged in ' + s, 256, y, 1, 0xffffff);
-            y += 15;
-
-            if (this.welcomeLastLoggedInHost === null) {
-                this.welcomeLastLoggedInHost = this.getHostnameIP(this.welcomeLastLoggedInIP);
-            }
-
-            this.surface.drawStringCenter('from: ' + this.welcomeLastLoggedInHost, 256, y, 1, 0xffffff);
-            y += 15;
-            y += 15;
-        }
-
-        if (this.welcomeUnreadMessages > 0) {
-            let k = 0xffffff;
-
-            this.surface.drawStringCenter('Jagex staff will NEVER email you. We use the', 256, y, 1, k);
-            y += 15;
-            this.surface.drawStringCenter('message-centre on this website instead.', 256, y, 1, k);
-            y += 15;
-
-            if (this.welcomeUnreadMessages === 1) {
-                this.surface.drawStringCenter('You have @yel@0@whi@ unread messages in your message-centre', 256, y, 1, 0xffffff);
-            } else {
-                this.surface.drawStringCenter('You have @gre@' + (this.welcomeUnreadMessages - 1) + ' unread messages @whi@in your message-centre', 256, y, 1, 0xffffff);
-            }
-
-            y += 15;
-            y += 15;
-        }
-
-        if (this.welcomeRecoverySetDays !== 201) {
-            // and this
-            if (this.welcomeRecoverySetDays === 200) {
-                this.surface.drawStringCenter('You have not yet set any password recovery questions.', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('We strongly recommend you do so now to secure your account.', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('Do this from the \'account management\' area on our front webpage', 256, y, 1, 0xff8000);
-                y += 15;
-            } else {
-                let s1 = null;
-
-                if (this.welcomeRecoverySetDays === 0) {
-                    s1 = 'Earlier today';
-                } else if (this.welcomeRecoverySetDays === 1) {
-                    s1 = 'Yesterday';
-                } else {
-                    s1 = this.welcomeRecoverySetDays + ' days ago';
-                }
-
-                this.surface.drawStringCenter(s1 + ' you changed your recovery questions', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('If you do not remember making this change then cancel it immediately', 256, y, 1, 0xff8000);
-                y += 15;
-                this.surface.drawStringCenter('Do this from the \'account management\' area on our front webpage', 256, y, 1, 0xff8000);
-                y += 15;
-            }
-
-            y += 15;
-        }
-
-        let l = 0xffffff;
-
-        if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 106 && this.mouseX < 406) {
-            l = 0xff0000;
-        }
-
-        this.surface.drawStringCenter('Click here to close window', 256, y, 1, l);
-
-        if (this.mouseButtonClick === 1) {
-            if (l === 0xff0000) {
-                this.showDialogWelcome = false;
-            }
-
-            if ((this.mouseX < 86 || this.mouseX > 426) && (this.mouseY < 167 - ((i / 2) | 0) || this.mouseY > 167 + ((i / 2) | 0))) {
-                this.showDialogWelcome = false;
-            }
-        }
-
-        this.mouseButtonClick = 0;
     }
 
     drawAppearancePanelCharacterSprites() {
@@ -16941,182 +16812,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    renderLoginScreenViewports() {
-        let rh = 0;
-        let rx = 50; //49;
-        let ry = 50; //47;
-
-        this.world._loadSection_from3(rx * 48 + 23, ry * 48 + 23, rh);
-        this.world.addModels(this.gameModels);
-
-        let x = 9728;
-        let y = 6400;
-        let zoom = 1100;
-        let rotation = 888;
-
-        this.scene.clipFar3d = 4100;
-        this.scene.clipFar2d = 4100;
-        this.scene.fogZFalloff = 1;
-        this.scene.fogZDistance = 4000;
-        this.surface.blackScreen();
-        this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, rotation, 0, zoom * 2);
-        this.scene.render();
-        this.surface.fadeToBlack();
-        this.surface.fadeToBlack();
-        this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
-
-        for (let j = 6; j >= 1; j--) {
-            this.surface.drawLineAlpha(0, j, 0, j, this.gameWidth, 8);
-        }
-
-        this.surface.drawBox(0, 194, 512, 20, 0);
-
-        for (let k = 6; k >= 1; k--) {
-            this.surface.drawLineAlpha(0, k, 0, 194 - k, this.gameWidth, 8);
-        }
-
-        // runescape logo
-        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
-        this.surface._drawSprite_from5(this.spriteLogo, 0, 0, this.gameWidth, 200);
-        this.surface.drawWorld(this.spriteLogo);
-
-        x = 9216;
-        y = 9216;
-        zoom = 1100;
-        rotation = 888;
-
-        this.scene.clipFar3d = 4100;
-        this.scene.clipFar2d = 4100;
-        this.scene.fogZFalloff = 1;
-        this.scene.fogZDistance = 4000;
-
-        this.surface.blackScreen();
-        this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, rotation, 0, zoom * 2);
-        this.scene.render();
-        this.surface.fadeToBlack();
-        this.surface.fadeToBlack();
-        this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
-
-        for (let l = 6; l >= 1; l--) {
-            this.surface.drawLineAlpha(0, l, 0, l, this.gameWidth, 8);
-        }
-
-        this.surface.drawBox(0, 194, this.gameWidth, 20, 0);
-
-        for (let i1 = 6; i1 >= 1; i1--) {
-            this.surface.drawLineAlpha(0, i1, 0, 194 - i1, this.gameWidth, 8);
-        }
-
-        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
-        this.surface._drawSprite_from5(this.spriteLogo + 1, 0, 0, this.gameWidth, 200);
-        this.surface.drawWorld(this.spriteLogo + 1);
-
-        for (let j1 = 0; j1 < 64; j1++) {
-            this.scene.removeModel(this.world.roofModels[0][j1]);
-            this.scene.removeModel(this.world.wallModels[1][j1]);
-            this.scene.removeModel(this.world.roofModels[1][j1]);
-            this.scene.removeModel(this.world.wallModels[2][j1]);
-            this.scene.removeModel(this.world.roofModels[2][j1]);
-        }
-
-        x = 11136;
-        y = 10368;
-        zoom = 500;
-        rotation = 376;
-
-        this.scene.clipFar3d = 4100;
-        this.scene.clipFar2d = 4100;
-        this.scene.fogZFalloff = 1;
-        this.scene.fogZDistance = 4000;
-        this.surface.blackScreen();
-        this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, rotation, 0, zoom * 2);
-        this.scene.render();
-        this.surface.fadeToBlack();
-        this.surface.fadeToBlack();
-        this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
-
-        for (let k1 = 6; k1 >= 1; k1--) {
-            this.surface.drawLineAlpha(0, k1, 0, k1, this.gameWidth, 8);
-        }
-
-        this.surface.drawBox(0, 194, this.gameWidth, 20, 0);
-
-        for (let l1 = 6; l1 >= 1; l1--) {
-            this.surface.drawLineAlpha(0, l1, 0, 194, this.gameWidth, 8);
-        }
-
-        this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0), 15, this.spriteMedia + 10);
-        this.surface._drawSprite_from5(this.spriteMedia + 10, 0, 0, this.gameWidth, 200);
-        this.surface.drawWorld(this.spriteMedia + 10);
-    }
-
-    createLoginPanels() {
-        this.panelLoginWelcome = new Panel(this.surface, 50);
-
-        let y = 40;
-        let x = (this.gameWidth / 2) | 0;
-
-        if (!this.members) {
-            this.panelLoginWelcome.addText(x, 200 + y, 'Click on an option', 5, true);
-            this.panelLoginWelcome.addButtonBackground(x - 100, 240 + y, 120, 35);
-            this.panelLoginWelcome.addButtonBackground(x + 100, 240 + y, 120, 35);
-            this.panelLoginWelcome.addText(x - 100, 240 + y, 'New User', 5, false);
-            this.panelLoginWelcome.addText(x + 100, 240 + y, 'Existing User', 5, false);
-            this.controlWelcomeNewUser = this.panelLoginWelcome.addButton(x - 100, 240 + y, 120, 35);
-            this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(x + 100, 240 + y, 120, 35);
-        } else {
-            this.panelLoginWelcome.addText(x, 200 + y, 'Welcome to RuneScape', 4, true);
-            this.panelLoginWelcome.addText(x, 215 + y, 'You need a member account to use this server', 4, true);
-            this.panelLoginWelcome.addButtonBackground(x, 250 + y, 200, 35);
-            this.panelLoginWelcome.addText(x, 250 + y, 'Click here to login', 5, false);
-            this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(x, 250 + y, 200, 35);
-        }
-
-        this.panelLoginNewUser = new Panel(this.surface, 50);
-        y = 230;
-
-        if (this.referID === 0) {
-            this.panelLoginNewUser.addText(x, y + 8, 'To create an account please go back to the', 4, true);
-            y += 20;
-            this.panelLoginNewUser.addText(x, y + 8, 'www.runescape.com front page, and choose \'create account\'', 4, true);
-        } else if (this.referID === 1) {
-            this.panelLoginNewUser.addText(x, y + 8, 'To create an account please click on the', 4, true);
-            y += 20;
-            this.panelLoginNewUser.addText(x, y + 8, '\'create account\' link below the game window', 4, true);
-        } else {
-            this.panelLoginNewUser.addText(x, y + 8, 'To create an account please go back to the', 4, true);
-            y += 20;
-            this.panelLoginNewUser.addText(x, y + 8, 'runescape front webpage and choose \'create account\'', 4, true);
-        }
-
-        y += 30;
-        this.panelLoginNewUser.addButtonBackground(x, y + 17, 150, 34);
-        this.panelLoginNewUser.addText(x, y + 17, 'Ok', 5, false);
-        this.controlLoginNewOk = this.panelLoginNewUser.addButton(x, y + 17, 150, 34);
-        this.panelLoginExistingUser = new Panel(this.surface, 50);
-        y = 230;
-        this.controlLoginStatus = this.panelLoginExistingUser.addText(x, y - 10, 'Please enter your username and password', 4, true);
-        y += 28;
-        this.panelLoginExistingUser.addButtonBackground(x - 116, y, 200, 40);
-        this.panelLoginExistingUser.addText(x - 116, y - 10, 'Username:', 4, false);
-        this.controlLoginUser = this.panelLoginExistingUser.addTextInput(x - 116, y + 10, 200, 40, 4, 12, false, false);
-        y += 47;
-        this.panelLoginExistingUser.addButtonBackground(x - 66, y, 200, 40);
-        this.panelLoginExistingUser.addText(x - 66, y - 10, 'Password:', 4, false);
-        this.controlLoginPass = this.panelLoginExistingUser.addTextInput(x - 66, y + 10, 200, 40, 4, 20, true, false);
-        y -= 55;
-        this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
-        this.panelLoginExistingUser.addText(x + 154, y, 'Ok', 4, false);
-        this.controlLoginOk = this.panelLoginExistingUser.addButton(x + 154, y, 120, 25);
-        y += 30;
-        this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
-        this.panelLoginExistingUser.addText(x + 154, y, 'Cancel', 4, false);
-        this.controlLoginCancel = this.panelLoginExistingUser.addButton(x + 154, y, 120, 25);
-        y += 30;
-        this.panelLoginExistingUser.setFocus(this.controlLoginUser);
-    }
-
-    autorotateCamera() {
+    autoRotateCamera() {
         if ((this.cameraAngle & 1) === 1 && this.isValidCameraAngle(this.cameraAngle)) {
             return;
         }
@@ -17197,79 +16893,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogTradeConfirm() {
-        let dialogX = 22;
-        let dialogY = 36;
-
-        this.surface.drawBox(dialogX, dialogY, 468, 16, 192);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 16, 468, 246, 0x989898, 160);
-        this.surface.drawStringCenter('Please confirm your trade with @yel@' + Utility.hashToUsername(this.tradeRecipientConfirmHash), dialogX + 234, dialogY + 12, 1, 0xffffff);
-        this.surface.drawStringCenter('You are about to give:', dialogX + 117, dialogY + 30, 1, 0xffff00);
-
-        for (let j = 0; j < this.tradeConfirmItemsCount; j++) {
-            let s = GameData.itemName[this.tradeConfirmItems[j]];
-
-            if (GameData.itemStackable[this.tradeConfirmItems[j]] === 0) {
-                s = s + ' x ' + mudclient.formatNumber(this.tradeConfirmItemCount[j]);
-            }
-
-            this.surface.drawStringCenter(s, dialogX + 117, dialogY + 42 + j * 12, 1, 0xffffff);
-        }
-
-        if (this.tradeConfirmItemsCount === 0) {
-            this.surface.drawStringCenter('Nothing!', dialogX + 117, dialogY + 42, 1, 0xffffff);
-        }
-
-        this.surface.drawStringCenter('In return you will receive:', dialogX + 351, dialogY + 30, 1, 0xffff00);
-
-        for (let k = 0; k < this.tradeRecipientConfirmItemsCount; k++) {
-            let s1 = GameData.itemName[this.tradeRecipientConfirmItems[k]];
-
-            if (GameData.itemStackable[this.tradeRecipientConfirmItems[k]] === 0) {
-                s1 = s1 + ' x ' + mudclient.formatNumber(this.tradeRecipientConfirmItemCount[k]);
-            }
-
-            this.surface.drawStringCenter(s1, dialogX + 351, dialogY + 42 + k * 12, 1, 0xffffff);
-        }
-
-        if (this.tradeRecipientConfirmItemsCount === 0) {
-            this.surface.drawStringCenter('Nothing!', dialogX + 351, dialogY + 42, 1, 0xffffff);
-        }
-
-        this.surface.drawStringCenter('Are you sure you want to do this?', dialogX + 234, dialogY + 200, 4, 65535);
-        this.surface.drawStringCenter('There is NO WAY to reverse a trade if you change your mind.', dialogX + 234, dialogY + 215, 1, 0xffffff);
-        this.surface.drawStringCenter('Remember that not all players are trustworthy', dialogX + 234, dialogY + 230, 1, 0xffffff);
-
-        if (!this.tradeConfirmAccepted) {
-            this.surface._drawSprite_from3((dialogX + 118) - 35, dialogY + 238, this.spriteMedia + 25);
-            this.surface._drawSprite_from3((dialogX + 352) - 35, dialogY + 238, this.spriteMedia + 26);
-        } else {
-            this.surface.drawStringCenter('Waiting for other player...', dialogX + 234, dialogY + 250, 1, 0xffff00);
-        }
-
-        if (this.mouseButtonClick === 1) {
-            if (this.mouseX < dialogX || this.mouseY < dialogY || this.mouseX > dialogX + 468 || this.mouseY > dialogY + 262) {
-                this.showDialogTradeConfirm = false;
-                this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                this.packetStream.sendPacket();
-            }
-
-            if (this.mouseX >= (dialogX + 118) - 35 && this.mouseX <= dialogX + 118 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
-                this.tradeConfirmAccepted = true;
-                this.packetStream.newPacket(clientOpcodes.TRADE_CONFIRM_ACCEPT);
-                this.packetStream.sendPacket();
-            }
-
-            if (this.mouseX >= (dialogX + 352) - 35 && this.mouseX <= dialogX + 353 + 70 && this.mouseY >= dialogY + 238 && this.mouseY <= dialogY + 238 + 21) {
-                this.showDialogTradeConfirm = false;
-                this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
-                this.packetStream.sendPacket();
-            }
-
-            this.mouseButtonClick = 0;
-        }
-    }
-
     setActiveUiTab() {
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 35) {
             this.showUiTab = 1;
@@ -17337,35 +16960,6 @@ class mudclient extends GameConnection {
 
         if (this.showUiTab === 6 && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 311)) {
             this.showUiTab = 0;
-        }
-    }
-
-    drawOptionMenu() {
-        if (this.mouseButtonClick !== 0) {
-            for (let i = 0; i < this.optionMenuCount; i++) {
-                if (this.mouseX >= this.surface.textWidth(this.optionMenuEntry[i], 1) || this.mouseY <= i * 12 || this.mouseY >= 12 + i * 12) {
-                    continue;
-                }
-
-                this.packetStream.newPacket(clientOpcodes.CHOOSE_OPTION);
-                this.packetStream.putByte(i);
-                this.packetStream.sendPacket();
-                break;
-            }
-
-            this.mouseButtonClick = 0;
-            this.showOptionMenu = false;
-            return;
-        }
-
-        for (let j = 0; j < this.optionMenuCount; j++) {
-            let k = 65535;
-
-            if (this.mouseX < this.surface.textWidth(this.optionMenuEntry[j], 1) && this.mouseY > j * 12 && this.mouseY < 12 + j * 12) {
-                k = 0xff0000;
-            }
-
-            this.surface.drawString(this.optionMenuEntry[j], 6, 12 + j * 12, 1, k);
         }
     }
 
@@ -17492,41 +17086,34 @@ class mudclient extends GameConnection {
     walkToWallObject(i, j, k) {
         if (k === 0) {
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, i, j - 1, i, j, false, true);
-            return;
-        }
-
-        if (k === 1) {
+        } else if (k === 1) {
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, i - 1, j, i, j, false, true);
-            return;
         } else {
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, i, j, i, j, true, true);
-            return;
         }
     }
 
     async loadGameConfig() {
-        let configJag = await this.readDataFile('config' + version.CONFIG + '.jag', 'Configuration', 10);
+        const configJag = await this.readDataFile('config' + version.CONFIG + '.jag', 'Configuration', 10);
 
-        if (configJag === null) {
+        if (!configJag) {
             this.errorLoadingData = true;
             return;
         }
 
         GameData.loadData(configJag, this.members);
 
-        let abyte1 = await this.readDataFile('filter' + version.FILTER + '.jag', 'Chat system', 15);
+        const filterJag = await this.readDataFile('filter' + version.FILTER + '.jag', 'Chat system', 15);
 
-        if (abyte1 === null) {
+        if (!filterJag) {
             this.errorLoadingData = true;
-            return;
         } else {
-            let buffragments = Utility.loadData('fragmentsenc.txt', 0, abyte1);
-            let buffbandenc = Utility.loadData('badenc.txt', 0, abyte1);
-            let buffhostenc = Utility.loadData('hostenc.txt', 0, abyte1);
-            let bufftldlist = Utility.loadData('tldlist.txt', 0, abyte1);
+            let buffragments = Utility.loadData('fragmentsenc.txt', 0, filterJag);
+            let buffbandenc = Utility.loadData('badenc.txt', 0, filterJag);
+            let buffhostenc = Utility.loadData('hostenc.txt', 0, filterJag);
+            let bufftldlist = Utility.loadData('tldlist.txt', 0, filterJag);
 
             WordFilter.loadFilters(new GameBuffer(buffragments), new GameBuffer(buffbandenc), new GameBuffer(buffhostenc), new GameBuffer(bufftldlist));
-            return;
         }
     }
 
@@ -17610,8 +17197,6 @@ class mudclient extends GameConnection {
 
             let mouseX = this.mouseX - (((this.gameWidth / 2) | 0) - ((dialogWidth / 2) | 0));
             let mouseY = this.mouseY - (((this.gameHeight / 2) | 0) - ((dialogHeight / 2) | 0));
-            //let mouseX = this.mouseX - (256 - dialogWidth / 2);
-            //let mouseY = this.mouseY - (170 - dialogHeight / 2);
 
             if (mouseX >= 0 && mouseY >= 12 && mouseX < 408 && mouseY < 280) {
                 let i1 = this.bankActivePage * 48;
@@ -17761,8 +17346,6 @@ class mudclient extends GameConnection {
 
         let x = ((this.gameWidth / 2) | 0) - ((dialogWidth / 2) | 0);
         let y = ((this.gameHeight / 2) | 0) - ((dialogHeight / 2) | 0);
-        //let x = 256 - dialogWidth / 2;
-        //let y = 170 - dialogHeight / 2;
 
         this.surface.drawBox(x, y, 408, 12, 192);
         this.surface.drawBoxAlpha(x, y + 12, 408, 17, 0x989898, 160);
@@ -18809,174 +18392,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogShop() {
-        if (this.mouseButtonClick !== 0) {
-            this.mouseButtonClick = 0;
-
-            let mouseX = this.mouseX - 52;
-            let mouseY = this.mouseY - 44;
-
-            if (mouseX >= 0 && mouseY >= 12 && mouseX < 408 && mouseY < 246) {
-                let itemIndex = 0;
-
-                for (let row = 0; row < 5; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        let slotX = 7 + col * 49;
-                        let slotY = 28 + row * 34;
-
-                        if (mouseX > slotX && mouseX < slotX + 49 && mouseY > slotY && mouseY < slotY + 34 && this.shopItem[itemIndex] !== -1) {
-                            this.shopSelectedItemIndex = itemIndex;
-                            this.shopSelectedItemType = this.shopItem[itemIndex];
-                        }
-
-                        itemIndex++;
-                    }
-
-                }
-
-                if (this.shopSelectedItemIndex >= 0) {
-                    let itemType = this.shopItem[this.shopSelectedItemIndex];
-
-                    if (itemType !== -1) {
-                        if (this.shopItemCount[this.shopSelectedItemIndex] > 0 && mouseX > 298 && mouseY >= 204 && mouseX < 408 && mouseY <= 215) {
-                            let priceMod = this.shopBuyPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                            if (priceMod < 10) {
-                                priceMod = 10;
-                            }
-
-                            let itemPrice = ((priceMod * GameData.itemBasePrice[itemType]) / 100) | 0;
-
-                            this.packetStream.newPacket(clientOpcodes.SHOP_BUY);
-                            this.packetStream.putShort(this.shopItem[this.shopSelectedItemIndex]);
-                            this.packetStream.putInt(itemPrice);
-                            this.packetStream.sendPacket();
-                        }
-
-                        if (this.getInventoryCount(itemType) > 0 && mouseX > 2 && mouseY >= 229 && mouseX < 112 && mouseY <= 240) {
-                            let priceMod = this.shopSellPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                            if (priceMod < 10) {
-                                priceMod = 10;
-                            }
-
-                            let itemPrice = ((priceMod * GameData.itemBasePrice[itemType]) / 100) | 0;
-
-                            this.packetStream.newPacket(clientOpcodes.SHOP_SELL);
-                            this.packetStream.putShort(this.shopItem[this.shopSelectedItemIndex]);
-                            this.packetStream.putInt(itemPrice);
-                            this.packetStream.sendPacket();
-                        }
-                    }
-                }
-            } else {
-                this.packetStream.newPacket(clientOpcodes.SHOP_CLOSE);
-                this.packetStream.sendPacket();
-                this.showDialogShop = false;
-                return;
-            }
-        }
-
-        let dialogX = 52;
-        let dialogY = 44;
-
-        this.surface.drawBox(dialogX, dialogY, 408, 12, 192);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 12, 408, 17, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 29, 8, 170, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX + 399, dialogY + 29, 9, 170, 0x989898, 160);
-        this.surface.drawBoxAlpha(dialogX, dialogY + 199, 408, 47, 0x989898, 160);
-        this.surface.drawString('Buying and selling items', dialogX + 1, dialogY + 10, 1, 0xffffff);
-        let colour = 0xffffff;
-
-        if (this.mouseX > dialogX + 320 && this.mouseY >= dialogY && this.mouseX < dialogX + 408 && this.mouseY < dialogY + 12) {
-            colour = 0xff0000;
-        }
-
-        this.surface.drawStringRight('Close window', dialogX + 406, dialogY + 10, 1, colour);
-        this.surface.drawString('Shops stock in green', dialogX + 2, dialogY + 24, 1, 65280);
-        this.surface.drawString('Number you own in blue', dialogX + 135, dialogY + 24, 1, 65535);
-        this.surface.drawString('Your money: ' + this.getInventoryCount(10) + 'gp', dialogX + 280, dialogY + 24, 1, 0xffff00);
-        let itemIndex = 0;
-
-        for (let row = 0; row < 5; row++) {
-            for (let col = 0; col < 8; col++) {
-                let slotX = dialogX + 7 + col * 49;
-                let slotY = dialogY + 28 + row * 34;
-
-                if (this.shopSelectedItemIndex === itemIndex) {
-                    this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xff0000, 160);
-                } else {
-                    this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xd0d0d0, 160);
-                }
-
-                this.surface.drawBoxEdge(slotX, slotY, 50, 35, 0);
-
-                if (this.shopItem[itemIndex] !== -1) {
-                    this.surface._spriteClipping_from9(slotX, slotY, 48, 32, this.spriteItem + GameData.itemPicture[this.shopItem[itemIndex]], GameData.itemMask[this.shopItem[itemIndex]], 0, 0, false);
-                    this.surface.drawString(this.shopItemCount[itemIndex].toString(), slotX + 1, slotY + 10, 1, 65280);
-                    this.surface.drawStringRight(this.getInventoryCount(this.shopItem[itemIndex]).toString(), slotX + 47, slotY + 10, 1, 65535);
-                }
-
-                itemIndex++;
-            }
-
-        }
-
-        this.surface.drawLineHoriz(dialogX + 5, dialogY + 222, 398, 0);
-
-        if (this.shopSelectedItemIndex === -1) {
-            this.surface.drawStringCenter('Select an object to buy or sell', dialogX + 204, dialogY + 214, 3, 0xffff00);
-            return;
-        }
-
-        let selectedItemType = this.shopItem[this.shopSelectedItemIndex];
-
-        if (selectedItemType !== -1) {
-            if (this.shopItemCount[this.shopSelectedItemIndex] > 0) {
-                let priceMod = this.shopBuyPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                if (priceMod < 10) {
-                    priceMod = 10;
-                }
-
-                let itemPrice = ((priceMod * GameData.itemBasePrice[selectedItemType]) / 100) | 0;
-                this.surface.drawString('Buy a new ' + GameData.itemName[selectedItemType] + ' for ' + itemPrice + 'gp', dialogX + 2, dialogY + 214, 1, 0xffff00);
-
-                colour = 0xffffff;
-                if (this.mouseX > dialogX + 298 && this.mouseY >= dialogY + 204 && this.mouseX < dialogX + 408 && this.mouseY <= dialogY + 215) {
-                    colour = 0xff0000;
-                }
-
-                this.surface.drawStringRight('Click here to buy', dialogX + 405, dialogY + 214, 3, colour);
-            } else {
-                this.surface.drawStringCenter('This item is not currently available to buy', dialogX + 204, dialogY + 214, 3, 0xffff00);
-            }
-
-            if (this.getInventoryCount(selectedItemType) > 0) {
-                let priceMod = this.shopSellPriceMod + this.shopItemPrice[this.shopSelectedItemIndex];
-
-                if (priceMod < 10) {
-                    priceMod = 10;
-                }
-
-                let itemPrice = ((priceMod * GameData.itemBasePrice[selectedItemType]) / 100) | 0;
-
-                this.surface.drawStringRight('Sell your ' + GameData.itemName[selectedItemType] + ' for ' + itemPrice + 'gp', dialogX + 405, dialogY + 239, 1, 0xffff00);
-
-                colour = 0xffffff;
-
-                if (this.mouseX > dialogX + 2 && this.mouseY >= dialogY + 229 && this.mouseX < dialogX + 112 && this.mouseY <= dialogY + 240) {
-                    colour = 0xff0000;
-                }
-
-                this.surface.drawString('Click here to sell', dialogX + 2, dialogY + 239, 3, colour);
-                return;
-            }
-
-            this.surface.drawStringCenter('You do not have any of this item to sell', dialogX + 204, dialogY + 239, 3, 0xffff00);
-        }
-    }
-
     hasInventoryItems(id, mincount) {
         if (id === 31 && (this.isItemEquipped(197) || this.isItemEquipped(615) || this.isItemEquipped(682))) {
             return true;
@@ -19255,7 +18670,7 @@ class mudclient extends GameConnection {
             if (this.optionCameraModeAuto && !this.fogOfWar) {
                 let j5 = this.cameraAngle;
 
-                this.autorotateCamera();
+                this.autoRotateCamera();
 
                 if (this.cameraAngle !== j5) {
                     this.cameraAutoRotatePlayerX = this.localPlayer.currentX;
@@ -19275,7 +18690,7 @@ class mudclient extends GameConnection {
             this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, this.cameraRotation * 4, 0, 2000);
         } else {
             if (this.optionCameraModeAuto && !this.fogOfWar) {
-                this.autorotateCamera();
+                this.autoRotateCamera();
             }
 
             if (!this.interlace) {
@@ -19665,7 +19080,7 @@ class mudclient extends GameConnection {
             let s = GameData.itemName[this.duelItems[itemIndex]];
 
             if (GameData.itemStackable[this.duelItems[itemIndex]] === 0) {
-                s = s + ' x ' + mudclient.formatNumber(this.duelItemCount[itemIndex]);
+                s = s + ' x ' + Utility.formatConfirmAmount(this.duelItemCount[itemIndex]);
             }
 
             this.surface.drawStringCenter(s, dialogX + 117, dialogY + 42 + itemIndex * 12, 1, 0xffffff);
@@ -19681,7 +19096,7 @@ class mudclient extends GameConnection {
             let s1 = GameData.itemName[this.duelOpponentItems[itemIndex]];
 
             if (GameData.itemStackable[this.duelOpponentItems[itemIndex]] === 0) {
-                s1 = s1 + ' x ' + mudclient.formatNumber(this.duelOpponentItemCount[itemIndex]);
+                s1 = s1 + ' x ' + Utility.formatConfirmAmount(this.duelOpponentItemCount[itemIndex]);
             }
 
             this.surface.drawStringCenter(s1, dialogX + 351, dialogY + 42 + itemIndex * 12, 1, 0xffffff);
@@ -19783,41 +19198,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogServerMessage() {
-        let width = 400;
-        let height = 100;
-
-        if (this.serverMessageBoxTop) {
-            height = 450;
-            height = 300;
-        }
-
-        this.surface.drawBox(256 - ((width / 2) | 0), 167 - ((height / 2) | 0), width, height, 0);
-        this.surface.drawBoxEdge(256 - ((width / 2) | 0), 167 - ((height / 2) | 0), width, height, 0xffffff);
-        this.surface.drawParagraph(this.serverMessage, 256, (167 - ((height / 2) | 0)) + 20, 1, 0xffffff, width - 40);
-
-        let i = 157 + ((height / 2) | 0);
-        let j = 0xffffff;
-
-        if (this.mouseY > i - 12 && this.mouseY <= i && this.mouseX > 106 && this.mouseX < 406) {
-            j = 0xff0000;
-        }
-
-        this.surface.drawStringCenter('Click here to close window', 256, i, 1, j);
-
-        if (this.mouseButtonClick === 1) {
-            if (j === 0xff0000) {
-                this.showDialogServerMessage = false;
-            }
-
-            if ((this.mouseX < 256 - ((width / 2) | 0) || this.mouseX > 256 + ((width / 2) | 0)) && (this.mouseY < 167 - ((height / 2) | 0) || this.mouseY > 167 + ((height / 2) | 0))) {
-                this.showDialogServerMessage = false;
-            }
-        }
-
-        this.mouseButtonClick = 0;
-    }
-
     showMessage(message, type) {
         if (type === 2 || type === 4 || type === 6) {
             for (; message.length > 5 && message[0] === '@' && message[4] === '@'; message = message.substring(5)) ;
@@ -19916,17 +19296,11 @@ class mudclient extends GameConnection {
             if (id === 0) {
                 x--;
                 w++;
-            }
-
-            if (id === 2) {
+            } else if (id === 2) {
                 h++;
-            }
-
-            if (id === 4) {
+            } else if (id === 4) {
                 w++;
-            }
-
-            if (id === 6) {
+            } else if (id === 6) {
                 y--;
                 h++;
             }
@@ -19955,70 +19329,23 @@ class mudclient extends GameConnection {
         return count;
     }
 
-    drawLoginScreens() {
-        this.welcomScreenAlreadyShown = false;
-        this.surface.interlace = false;
-
-        this.surface.blackScreen();
-
-        if (this.loginScreen === 0 || this.loginScreen === 1 || this.loginScreen === 2 || this.loginScreen === 3) {
-            let i = (this.loginTimer * 2) % 3072;
-
-            if (i < 1024) {
-                this.surface._drawSprite_from3(0, 10, this.spriteLogo);
-
-                if (i > 768) {
-                    this.surface._drawSpriteAlpha_from4(0, 10, this.spriteLogo + 1, i - 768);
-                }
-            } else if (i < 2048) {
-                this.surface._drawSprite_from3(0, 10, this.spriteLogo + 1);
-
-                if (i > 1792) {
-                    this.surface._drawSpriteAlpha_from4(0, 10, this.spriteMedia + 10, i - 1792);
-                }
-            } else {
-                this.surface._drawSprite_from3(0, 10, this.spriteMedia + 10);
-
-                if (i > 2816) {
-                    this.surface._drawSpriteAlpha_from4(0, 10, this.spriteLogo, i - 2816);
-                }
-            }
-        }
-
-        if (this.loginScreen === 0) {
-            this.panelLoginWelcome.drawPanel();
-        }
-
-        if (this.loginScreen === 1) {
-            this.panelLoginNewUser.drawPanel();
-        }
-
-        if (this.loginScreen === 2) {
-            this.panelLoginExistingUser.drawPanel();
-        }
-
-        // blue bar
-        this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 22);
-        this.surface.draw(this.graphics, 0, 0);
-    }
-
     async loadTextures() {
-        let buffTextures = await this.readDataFile('textures' + version.TEXTURES + '.jag', 'Textures', 50);
+        const texturesJag = await this.readDataFile('textures' + version.TEXTURES + '.jag', 'Textures', 50);
 
-        if (buffTextures === null) {
+        if (!texturesJag) {
             this.errorLoadingData = true;
             return;
         }
 
-        let buffIndex = Utility.loadData('index.dat', 0, buffTextures);
+        const indexDat = Utility.loadData('index.dat', 0, texturesJag);
         this.scene.allocateTextures(GameData.textureCount, 7, 11);
 
         for (let i = 0; i < GameData.textureCount; i++) {
             let name = GameData.textureName[i];
 
-            let buff1 = Utility.loadData(name + '.dat', 0, buffTextures);
+            let buff1 = Utility.loadData(name + '.dat', 0, texturesJag);
 
-            this.surface.parseSprite(this.spriteTexture, buff1, buffIndex, 1);
+            this.surface.parseSprite(this.spriteTexture, buff1, indexDat, 1);
             this.surface.drawBox(0, 0, 128, 128, 0xff00ff);
             this.surface._drawSprite_from3(0, 0, this.spriteTexture);
 
@@ -20026,9 +19353,9 @@ class mudclient extends GameConnection {
             let nameSub = GameData.textureSubtypeName[i];
 
             if (nameSub !== null && nameSub.length > 0) {
-                let buff2 = Utility.loadData(nameSub + '.dat', 0, buffTextures);
+                let buff2 = Utility.loadData(nameSub + '.dat', 0, texturesJag);
 
-                this.surface.parseSprite(this.spriteTexture, buff2, buffIndex, 1);
+                this.surface.parseSprite(this.spriteTexture, buff2, indexDat, 1);
                 this.surface._drawSprite_from3(0, 0, this.spriteTexture);
             }
 
@@ -20047,22 +19374,22 @@ class mudclient extends GameConnection {
         }
     }
 
-    handleMouseDown(i, j, k) {
-        this.mouseClickXHistory[this.mouseClickCount] = j;
-        this.mouseClickYHistory[this.mouseClickCount] = k;
+    handleMouseDown(i, x, y) {
+        this.mouseClickXHistory[this.mouseClickCount] = x;
+        this.mouseClickYHistory[this.mouseClickCount] = y;
         this.mouseClickCount = this.mouseClickCount + 1 & 8191;
 
         for (let l = 10; l < 4000; l++) {
             let i1 = this.mouseClickCount - l & 8191;
 
-            if (this.mouseClickXHistory[i1] === j && this.mouseClickYHistory[i1] === k) {
+            if (this.mouseClickXHistory[i1] === x && this.mouseClickYHistory[i1] === y) {
                 let flag = false;
 
                 for (let j1 = 1; j1 < l; j1++) {
                     let k1 = this.mouseClickCount - j1 & 8191;
                     let l1 = i1 - j1 & 8191;
 
-                    if (this.mouseClickXHistory[l1] !== j || this.mouseClickYHistory[l1] !== k) {
+                    if (this.mouseClickXHistory[l1] !== x || this.mouseClickYHistory[l1] !== y) {
                         flag = true;
                     }
 
@@ -20246,12 +19573,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawDialogLogout() {
-        this.surface.drawBox(126, 137, 260, 60, 0);
-        this.surface.drawBoxEdge(126, 137, 260, 60, 0xffffff);
-        this.surface.drawStringCenter('Logging out...', 256, 173, 5, 0xffffff);
-    }
-
     menuItemClick(i) {
         const menuX = this.menuItemX[i];
         const menuY = this.menuItemY[i];
@@ -20261,307 +19582,307 @@ class mudclient extends GameConnection {
         const menuType = this.menuType[i];
 
         switch (menuType) {
-        case 200:
-            this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
-                menuY, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_GROUNDITEM);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 210:
-            this.walkToGroundItem(this.localRegionX, this.localRegionY,
-                menuX, menuY, true);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_GROUNDITEM);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 220:
-            this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
-                menuY, true);
-            this.packetStream.newPacket(clientOpcodes.GROUNDITEM_TAKE);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 3200:
-            this.showMessage(GameData.itemDescription[menuIndex], 3);
-            break;
-        case 300:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.CAST_WALLOBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 310:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_WALLOBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 320:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND1);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 2300:
-            this.walkToWallObject(menuX, menuY, menuIndex);
-            this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND2);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putByte(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 3300:
-            this.showMessage(GameData.wallObjectDescription[menuIndex], 3);
-            break;
-        case 400:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.CAST_OBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuTargetIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 410:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_OBJECT);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuTargetIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 420:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.OBJECT_CMD1);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.sendPacket();
-            break;
-        case 2400:
-            this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
-            this.packetStream.newPacket(clientOpcodes.OBJECT_CMD2);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.sendPacket();
-            break;
-        case 3400:
-            this.showMessage(GameData.objectDescription[menuIndex], 3);
-            break;
-        case 600:
-            this.packetStream.newPacket(clientOpcodes.CAST_INVITEM);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 610:
-            this.packetStream.newPacket(clientOpcodes.USEWITH_INVITEM);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        case 620:
-            this.packetStream.newPacket(clientOpcodes.INV_UNEQUIP);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 630:
-            this.packetStream.newPacket(clientOpcodes.INV_WEAR);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 640:
-            this.packetStream.newPacket(clientOpcodes.INV_CMD);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 650:
-            this.selectedItemInventoryIndex = menuIndex;
-            this.showUiTab = 0;
-            this.selectedItemName =
-                    GameData.itemName[this.inventoryItemId[
-                        this.selectedItemInventoryIndex]];
-            break;
-        case 660:
-            this.packetStream.newPacket(clientOpcodes.INV_DROP);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            this.showUiTab = 0;
-            this.showMessage('Dropping ' +
-                GameData.itemName[this.inventoryItemId[menuIndex]], 4);
-            break;
-        case 3600:
-            this.showMessage(GameData.itemDescription[menuIndex], 3);
-            break;
-        case 700: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
+            case 200:
+                this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
+                    menuY, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_GROUNDITEM);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 210:
+                this.walkToGroundItem(this.localRegionX, this.localRegionY,
+                    menuX, menuY, true);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_GROUNDITEM);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 220:
+                this.walkToGroundItem(this.localRegionX, this.localRegionY, menuX,
+                    menuY, true);
+                this.packetStream.newPacket(clientOpcodes.GROUNDITEM_TAKE);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 3200:
+                this.showMessage(GameData.itemDescription[menuIndex], 3);
+                break;
+            case 300:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.CAST_WALLOBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 310:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_WALLOBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 320:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND1);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 2300:
+                this.walkToWallObject(menuX, menuY, menuIndex);
+                this.packetStream.newPacket(clientOpcodes.WALL_OBJECT_COMMAND2);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putByte(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 3300:
+                this.showMessage(GameData.wallObjectDescription[menuIndex], 3);
+                break;
+            case 400:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.CAST_OBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuTargetIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 410:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_OBJECT);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuTargetIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 420:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.OBJECT_CMD1);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.sendPacket();
+                break;
+            case 2400:
+                this.walkToObject(menuX, menuY, menuIndex, menuSourceIndex);
+                this.packetStream.newPacket(clientOpcodes.OBJECT_CMD2);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.sendPacket();
+                break;
+            case 3400:
+                this.showMessage(GameData.objectDescription[menuIndex], 3);
+                break;
+            case 600:
+                this.packetStream.newPacket(clientOpcodes.CAST_INVITEM);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 610:
+                this.packetStream.newPacket(clientOpcodes.USEWITH_INVITEM);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            case 620:
+                this.packetStream.newPacket(clientOpcodes.INV_UNEQUIP);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 630:
+                this.packetStream.newPacket(clientOpcodes.INV_WEAR);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 640:
+                this.packetStream.newPacket(clientOpcodes.INV_CMD);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 650:
+                this.selectedItemInventoryIndex = menuIndex;
+                this.showUiTab = 0;
+                this.selectedItemName =
+                        GameData.itemName[this.inventoryItemId[
+                            this.selectedItemInventoryIndex]];
+                break;
+            case 660:
+                this.packetStream.newPacket(clientOpcodes.INV_DROP);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                this.showUiTab = 0;
+                this.showMessage('Dropping ' +
+                    GameData.itemName[this.inventoryItemId[menuIndex]], 4);
+                break;
+            case 3600:
+                this.showMessage(GameData.itemDescription[menuIndex], 3);
+                break;
+            case 700: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
 
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_NPC);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        }
-        case 710: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_NPC);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        }
-        case 720: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.NPC_TALK);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 725: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.NPC_CMD);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 715:
-        case 2715: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.NPC_ATTACK);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 3700:
-            this.showMessage(GameData.npcDescription[menuIndex], 3);
-            break;
-        case 800: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_PLAYER);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        }
-        case 810: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.USEWITH_PLAYER);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.putShort(menuSourceIndex);
-            this.packetStream.sendPacket();
-            this.selectedItemInventoryIndex = -1;
-            break;
-        }
-        case 805:
-        case 2805: {
-            const x = ((menuX - 64) / this.magicLoc) | 0;
-            const y = ((menuY - 64) / this.magicLoc) | 0;
-
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                x, y, true);
-            this.packetStream.newPacket(clientOpcodes.PLAYER_ATTACK);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        }
-        case 2806:
-            this.packetStream.newPacket(clientOpcodes.PLAYER_DUEL);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 2810:
-            this.packetStream.newPacket(clientOpcodes.PLAYER_TRADE);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 2820:
-            this.packetStream.newPacket(clientOpcodes.PLAYER_FOLLOW);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            break;
-        case 900:
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                menuX, menuY, true);
-            this.packetStream.newPacket(clientOpcodes.CAST_GROUND);
-            this.packetStream.putShort(menuX + this.regionX);
-            this.packetStream.putShort(menuY + this.regionY);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 920:
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                menuX, menuY, false);
-
-            if (this.mouseClickXStep === -24) {
-                this.mouseClickXStep = 24;
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_NPC);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
             }
-            break;
-        case 1000:
-            this.packetStream.newPacket(clientOpcodes.CAST_SELF);
-            this.packetStream.putShort(menuIndex);
-            this.packetStream.sendPacket();
-            this.selectedSpell = -1;
-            break;
-        case 4000:
-            this.selectedItemInventoryIndex = -1;
-            this.selectedSpell = -1;
-            break;
+            case 710: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_NPC);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            }
+            case 720: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.NPC_TALK);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 725: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.NPC_CMD);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 715:
+            case 2715: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.NPC_ATTACK);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 3700:
+                this.showMessage(GameData.npcDescription[menuIndex], 3);
+                break;
+            case 800: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_PLAYER);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            }
+            case 810: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.USEWITH_PLAYER);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.putShort(menuSourceIndex);
+                this.packetStream.sendPacket();
+                this.selectedItemInventoryIndex = -1;
+                break;
+            }
+            case 805:
+            case 2805: {
+                const x = ((menuX - 64) / this.magicLoc) | 0;
+                const y = ((menuY - 64) / this.magicLoc) | 0;
+
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    x, y, true);
+                this.packetStream.newPacket(clientOpcodes.PLAYER_ATTACK);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            }
+            case 2806:
+                this.packetStream.newPacket(clientOpcodes.PLAYER_DUEL);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 2810:
+                this.packetStream.newPacket(clientOpcodes.PLAYER_TRADE);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 2820:
+                this.packetStream.newPacket(clientOpcodes.PLAYER_FOLLOW);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                break;
+            case 900:
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    menuX, menuY, true);
+                this.packetStream.newPacket(clientOpcodes.CAST_GROUND);
+                this.packetStream.putShort(menuX + this.regionX);
+                this.packetStream.putShort(menuY + this.regionY);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 920:
+                this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
+                    menuX, menuY, false);
+
+                if (this.mouseClickXStep === -24) {
+                    this.mouseClickXStep = 24;
+                }
+                break;
+            case 1000:
+                this.packetStream.newPacket(clientOpcodes.CAST_SELF);
+                this.packetStream.putShort(menuIndex);
+                this.packetStream.sendPacket();
+                this.selectedSpell = -1;
+                break;
+            case 4000:
+                this.selectedItemInventoryIndex = -1;
+                this.selectedSpell = -1;
+                break;
         }
     }
 
@@ -20582,10 +19903,8 @@ class mudclient extends GameConnection {
 
         if (this.logoutTimeout !== 0) {
             this.resetLoginVars();
-            return;
         } else {
             await super.lostConnection();
-            return;
         }
     }
 
@@ -22611,17 +21930,13 @@ class mudclient extends GameConnection {
 
             if (this.cameraRotationX < -50) {
                 this.cameraRotationXIncrement = 2;
-            }
-
-            if (this.cameraRotationX > 50) {
+            } else if (this.cameraRotationX > 50) {
                 this.cameraRotationXIncrement = -2;
             }
 
             if (this.cameraRotationY < -50) {
                 this.cameraRotationYIncrement = 2;
-            }
-
-            if (this.cameraRotationY > 50) {
+            } else if (this.cameraRotationY > 50) {
                 this.cameraRotationYIncrement = -2;
             }
 
@@ -22646,52 +21961,6 @@ class mudclient extends GameConnection {
             console.error(e);
             this.disposeAndCollect();
             this.errorLoadingMemory = true;
-        }
-    }
-
-    async handleLoginScreenInput() {
-        if (this.worldFullTimeout > 0) {
-            this.worldFullTimeout--;
-        }
-
-        if (this.loginScreen === 0) {
-            this.panelLoginWelcome.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
-
-            if (this.panelLoginWelcome.isClicked(this.controlWelcomeNewUser)) {
-                this.loginScreen = 1;
-            }
-
-            if (this.panelLoginWelcome.isClicked(this.controlWelcomeExistingUser)) {
-                this.loginScreen = 2;
-                this.panelLoginExistingUser.updateText(this.controlLoginStatus, 'Please enter your username and password');
-                this.panelLoginExistingUser.updateText(this.controlLoginUser, '');
-                this.panelLoginExistingUser.updateText(this.controlLoginPass, '');
-                this.panelLoginExistingUser.setFocus(this.controlLoginUser);
-                return;
-            }
-        } else if (this.loginScreen === 1) {
-            this.panelLoginNewUser.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
-
-            if (this.panelLoginNewUser.isClicked(this.controlLoginNewOk)) {
-                this.loginScreen = 0;
-                return;
-            }
-        } else if (this.loginScreen === 2) {
-            this.panelLoginExistingUser.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
-
-            if (this.panelLoginExistingUser.isClicked(this.controlLoginCancel)) {
-                this.loginScreen = 0;
-            }
-
-            if (this.panelLoginExistingUser.isClicked(this.controlLoginUser)) {
-                this.panelLoginExistingUser.setFocus(this.controlLoginPass);
-            }
-
-            if (this.panelLoginExistingUser.isClicked(this.controlLoginPass) || this.panelLoginExistingUser.isClicked(this.controlLoginOk)) {
-                this.loginUser = this.panelLoginExistingUser.getText(this.controlLoginUser);
-                this.loginPass = this.panelLoginExistingUser.getText(this.controlLoginPass);
-                await this.login(this.loginUser, this.loginPass, false);
-            }
         }
     }
 
@@ -22757,7 +22026,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":64,"./utility":74,"./version":75,"./word-filter":76,"./world":77,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":64,"./utility":82,"./version":83,"./word-filter":84,"./world":85,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -22897,7 +22166,7 @@ module.exports={
 const Long = require('long');
 
 function toCharArray(s) {
-    let a = new Uint16Array(s.length);
+    const a = new Uint16Array(s.length);
 
     for (let i = 0; i < s.length; i += 1) {
         a[i] = s.charCodeAt(i);
@@ -22908,24 +22177,23 @@ function toCharArray(s) {
 
 class PacketStream {
     constructor(socket) {
-        this.readTries = 0;
-        this.maxReadTries = 0;
-        this.packetStart = 0;
-        this.packetData = null;
+        this.socket = socket;
+
+        this.closed = false;
+        this.closing = false;
+        this.delay = 0;
         this.isaacIncoming = null;
         this.isaacOutgoing = null;
         this.length = 0;
-        this.socketException = false;
-        this.delay = 0;
-
-        this.packetEnd = 3;
+        this.maxReadTries = 0;
         this.packet8Check = 8;
+        this.packetData = null;
+        this.packetEnd = 3;
         this.packetMaxLength = 5000;
+        this.packetStart = 0;
+        this.readTries = 0;
+        this.socketException = false;
         this.socketExceptionMessage = '';
-
-        this.closing = false;
-        this.closed = false;
-        this.socket = socket;
     }
 
     // TODO toggle ISAAC
@@ -22954,7 +22222,8 @@ class PacketStream {
                 this.length = await this.readStream();
 
                 if (this.length >= 160) {
-                    this.length = (this.length - 160) * 256 + await this.readStream();
+                    this.length =
+                        (this.length - 160) * 256 + (await this.readStream());
                 }
             }
 
@@ -22962,7 +22231,7 @@ class PacketStream {
                 if (this.length >= 160) {
                     await this.readBytes(this.length, buff);
                 } else {
-                    buff[this.length - 1] = await this.readStream() & 0xff;
+                    buff[this.length - 1] = (await this.readStream()) & 0xff;
 
                     if (this.length > 1) {
                         await this.readBytes(this.length - 1, buff);
@@ -23015,11 +22284,12 @@ class PacketStream {
     sendPacket() {
         if (this.isaacOutgoing !== null) {
             let i = this.packetData[this.packetStart + 2] & 0xff;
-            this.packetData[this.packetStart + 2] = (i + this.isaacOutgoing.getNextValue()) & 0xff;
+            this.packetData[this.packetStart + 2] =
+                (i + this.isaacOutgoing.getNextValue()) & 0xff;
         }
 
         // what the fuck is this even for? legacy?
-        if (this.packet8Check !== 8)  {
+        if (this.packet8Check !== 8) {
             this.packetEnd++;
         }
 
@@ -23027,11 +22297,13 @@ class PacketStream {
 
         if (j >= 160) {
             this.packetData[this.packetStart] = (160 + ((j / 256) | 0)) & 0xff;
-            this.packetData[this.packetStart + 1] = (j & 0xff);
+            this.packetData[this.packetStart + 1] = j & 0xff;
         } else {
             this.packetData[this.packetStart] = j & 0xff;
             this.packetEnd--;
-            this.packetData[this.packetStart + 1] = this.packetData[this.packetEnd];
+            this.packetData[this.packetStart + 1] = this.packetData[
+                this.packetEnd
+            ];
         }
 
         // this seems largely useless and doesn't appear to do anything
@@ -23082,7 +22354,11 @@ class PacketStream {
         let l2 = await this.getShort();
         let l3 = await this.getShort();
 
-        return Long.fromInt(l).shiftLeft(48).add(Long.fromInt(l1).shiftLeft(32)).add(l2 << 16).add(l3);
+        return Long.fromInt(l)
+            .shiftLeft(48)
+            .add(Long.fromInt(l1).shiftLeft(32))
+            .add(l2 << 16)
+            .add(l3);
     }
 
     putShort(i) {
@@ -23119,7 +22395,7 @@ class PacketStream {
     }
 
     async getByte() {
-        return await this.readStream() & 0xff;
+        return (await this.readStream()) & 0xff;
     }
 
     flushPacket() {
@@ -24088,7 +23364,7 @@ const Scanline = require('./scanline');
 const COLOUR_TRANSPARENT = 12345678;
 
 class Scene {
-    constructor(surface, i, polygons, k) {
+    constructor(surface, maxModelCount, polygonCount, spriteCount) {
         this.lastVisiblePolygonsCount = 0;
         this.anIntArray377 = null;
         this.textureCount = 0;
@@ -24156,7 +23432,7 @@ class Scene {
         this.clipY = (surface.height2 / 2) | 0;
         this.raster = surface.pixels;
         this.modelCount = 0;
-        this.maxModelCount = i;
+        this.maxModelCount = maxModelCount;
         this.models = [];
         this.models.length = this.maxModelCount;
         this.models.fill(null);
@@ -24164,19 +23440,19 @@ class Scene {
         this.visiblePolygonsCount = 0;
         this.visiblePolygons = [];
 
-        for (let l = 0; l < polygons; l++) {
+        for (let l = 0; l < polygonCount; l++) {
             this.visiblePolygons.push(new Polygon());
         }
 
         this.spriteCount = 0;
         //this.view = new GameModel(k * 2, k);
-        this.spriteId = new Int32Array(k);
-        this.spriteWidth = new Int32Array(k);
-        this.spriteHeight = new Int32Array(k);
-        this.spriteX = new Int32Array(k);
-        this.spriteZ = new Int32Array(k);
-        this.spriteY = new Int32Array(k);
-        this.spriteTranslateX = new Int32Array(k);
+        this.spriteId = new Int32Array(spriteCount);
+        this.spriteWidth = new Int32Array(spriteCount);
+        this.spriteHeight = new Int32Array(spriteCount);
+        this.spriteX = new Int32Array(spriteCount);
+        this.spriteZ = new Int32Array(spriteCount);
+        this.spriteY = new Int32Array(spriteCount);
+        this.spriteTranslateX = new Int32Array(spriteCount);
 
         if (this.aByteArray434 === null) {
             this.aByteArray434 = new Int8Array(17691);
@@ -24191,16 +23467,33 @@ class Scene {
 
         for (let i1 = 0; i1 < 256; i1++) {
             Scene.sin512Cache[i1] = (Math.sin(i1 * 0.02454369) * 32768) | 0;
-            Scene.sin512Cache[i1 + 256] = (Math.cos(i1 * 0.02454369) * 32768) | 0;
+            Scene.sin512Cache[i1 + 256] =
+                (Math.cos(i1 * 0.02454369) * 32768) | 0;
         }
 
         for (let j1 = 0; j1 < 1024; j1++) {
             Scene.sinCosCache[j1] = (Math.sin(j1 * 0.00613592315) * 32768) | 0;
-            Scene.sinCosCache[j1 + 1024] = (Math.cos(j1 * 0.00613592315) * 32768) | 0;
+            Scene.sinCosCache[j1 + 1024] =
+                (Math.cos(j1 * 0.00613592315) * 32768) | 0;
         }
     }
 
-    static textureScanline(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureScanline(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -24210,8 +23503,8 @@ class Scene {
         let i4 = 0;
 
         if (i1 !== 0) {
-            i = k / i1 << 7;
-            j = l / i1 << 7;
+            i = (k / i1) << 7;
+            j = (l / i1) << 7;
         }
 
         if (i < 0) {
@@ -24225,8 +23518,8 @@ class Scene {
         i1 += l1;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 7;
-            j3 = l / i1 << 7;
+            i3 = (k / i1) << 7;
+            j3 = (l / i1) << 7;
         }
 
         if (i3 < 0) {
@@ -24235,8 +23528,8 @@ class Scene {
             i3 = 16256;
         }
 
-        let k3 = i3 - i >> 4;
-        let l3 = j3 - j >> 4;
+        let k3 = (i3 - i) >> 4;
+        let l3 = (j3 - j) >> 4;
 
         for (let j4 = i2 >> 4; j4 > 0; j4--) {
             i += k2 & 0x600000;
@@ -24304,8 +23597,8 @@ class Scene {
             i1 += l1;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 7;
-                j3 = l / i1 << 7;
+                i3 = (k / i1) << 7;
+                j3 = (l / i1) << 7;
             }
 
             if (i3 < 0) {
@@ -24314,8 +23607,8 @@ class Scene {
                 i3 = 16256;
             }
 
-            k3 = i3 - i >> 4;
-            l3 = j3 - j >> 4;
+            k3 = (i3 - i) >> 4;
+            l3 = (j3 - j) >> 4;
         }
 
         for (let k4 = 0; k4 < (i2 & 0xf); k4++) {
@@ -24331,7 +23624,22 @@ class Scene {
         }
     }
 
-    static textureTranslucentScanline(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureTranslucentScanline(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -24341,8 +23649,8 @@ class Scene {
         let i4 = 0;
 
         if (i1 !== 0) {
-            i = k / i1 << 7;
-            j = l / i1 << 7;
+            i = (k / i1) << 7;
+            j = (l / i1) << 7;
         }
 
         if (i < 0) {
@@ -24356,8 +23664,8 @@ class Scene {
         i1 += l1;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 7;
-            j3 = l / i1 << 7;
+            i3 = (k / i1) << 7;
+            j3 = (l / i1) << 7;
         }
 
         if (i3 < 0) {
@@ -24366,68 +23674,100 @@ class Scene {
             i3 = 16256;
         }
 
-        let k3 = i3 - i >> 4;
-        let l3 = j3 - j >> 4;
+        let k3 = (i3 - i) >> 4;
+        let l3 = (j3 - j) >> 4;
 
         for (let j4 = i2 >> 4; j4 > 0; j4--) {
             i += k2 & 0x600000;
             i4 = k2 >> 23;
             k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            i = (i & 0x3fff) + (k2 & 0x600000);
-            i4 = k2 >> 23;
-            k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
             i = (i & 0x3fff) + (k2 & 0x600000);
             i4 = k2 >> 23;
             k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
             i = (i & 0x3fff) + (k2 & 0x600000);
             i4 = k2 >> 23;
             k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            i = (i & 0x3fff) + (k2 & 0x600000);
+            i4 = k2 >> 23;
+            k2 += l2;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i = i3;
             j = j3;
             k += j1;
@@ -24435,8 +23775,8 @@ class Scene {
             i1 += l1;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 7;
-                j3 = l / i1 << 7;
+                i3 = (k / i1) << 7;
+                j3 = (l / i1) << 7;
             }
 
             if (i3 < 0) {
@@ -24445,8 +23785,8 @@ class Scene {
                 i3 = 16256;
             }
 
-            k3 = i3 - i >> 4;
-            l3 = j3 - j >> 4;
+            k3 = (i3 - i) >> 4;
+            l3 = (j3 - j) >> 4;
         }
 
         for (let k4 = 0; k4 < (i2 & 0xf); k4++) {
@@ -24456,13 +23796,31 @@ class Scene {
                 k2 += l2;
             }
 
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
         }
     }
 
-    static textureBackTranslucentScanline(ai, i, j, k, ai1, l, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
+    static textureBackTranslucentScanline(
+        ai,
+        i,
+        j,
+        k,
+        ai1,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
         if (j2 <= 0) {
             return;
         }
@@ -24472,8 +23830,8 @@ class Scene {
         i3 <<= 2;
 
         if (j1 !== 0) {
-            j3 = l / j1 << 7;
-            k3 = i1 / j1 << 7;
+            j3 = (l / j1) << 7;
+            k3 = (i1 / j1) << 7;
         }
 
         if (j3 < 0) {
@@ -24490,8 +23848,8 @@ class Scene {
             k = k3;
 
             if (j1 !== 0) {
-                j3 = l / j1 << 7;
-                k3 = i1 / j1 << 7;
+                j3 = (l / j1) << 7;
+                k3 = (i1 / j1) << 7;
             }
 
             if (j3 < 0) {
@@ -24500,8 +23858,8 @@ class Scene {
                 j3 = 16256;
             }
 
-            let l3 = j3 - j >> 4;
-            let i4 = k3 - k >> 4;
+            let l3 = (j3 - j) >> 4;
+            let i4 = (k3 - k) >> 4;
             let k4 = l2 >> 23;
 
             j += l2 & 0x600000;
@@ -24660,10 +24018,24 @@ class Scene {
                 k2++;
             }
         }
-
     }
 
-    static textureScanline2(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureScanline2(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -24673,8 +24045,8 @@ class Scene {
         l2 <<= 2;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 6;
-            j3 = l / i1 << 6;
+            i3 = (k / i1) << 6;
+            j3 = (l / i1) << 6;
         }
 
         if (i3 < 0) {
@@ -24691,8 +24063,8 @@ class Scene {
             j = j3;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 6;
-                j3 = l / i1 << 6;
+                i3 = (k / i1) << 6;
+                j3 = (l / i1) << 6;
             }
 
             if (i3 < 0) {
@@ -24701,8 +24073,8 @@ class Scene {
                 i3 = 4032;
             }
 
-            let k3 = i3 - i >> 4;
-            let l3 = j3 - j >> 4;
+            let k3 = (i3 - i) >> 4;
+            let l3 = (j3 - j) >> 4;
             let j4 = k2 >> 20;
             i += k2 & 0xc0000;
             k2 += l2;
@@ -24779,7 +24151,22 @@ class Scene {
         }
     }
 
-    static textureTranslucentScanline2(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureTranslucentScanline2(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -24789,8 +24176,8 @@ class Scene {
         l2 <<= 2;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 6;
-            j3 = l / i1 << 6;
+            i3 = (k / i1) << 6;
+            j3 = (l / i1) << 6;
         }
 
         if (i3 < 0) {
@@ -24807,8 +24194,8 @@ class Scene {
             j = j3;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 6;
-                j3 = l / i1 << 6;
+                i3 = (k / i1) << 6;
+                j3 = (l / i1) << 6;
             }
 
             if (i3 < 0) {
@@ -24817,15 +24204,17 @@ class Scene {
                 i3 = 4032;
             }
 
-            let k3 = i3 - i >> 4;
-            let l3 = j3 - j >> 4;
+            let k3 = (i3 - i) >> 4;
+            let l3 = (j3 - j) >> 4;
             let j4 = k2 >> 20;
             i += k2 & 0xc0000;
             k2 += l2;
 
             if (i4 < 16) {
                 for (let k4 = 0; k4 < i4; k4++) {
-                    ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                    ai[j2++] =
+                        (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                        ((ai[j2] >> 1) & 0x7f7f7f);
                     i += k3;
                     j += l3;
 
@@ -24836,66 +24225,114 @@ class Scene {
                     }
                 }
             } else {
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                i = (i & 0xfff) + (k2 & 0xc0000);
-                j4 = k2 >> 20;
-                k2 += l2;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
                 i = (i & 0xfff) + (k2 & 0xc0000);
                 j4 = k2 >> 20;
                 k2 += l2;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
                 i = (i & 0xfff) + (k2 & 0xc0000);
                 j4 = k2 >> 20;
                 k2 += l2;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                i = (i & 0xfff) + (k2 & 0xc0000);
+                j4 = k2 >> 20;
+                k2 += l2;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
             }
         }
     }
 
-    static textureBackTranslucentScanline2(ai, i, j, k, ai1, l, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
+    static textureBackTranslucentScanline2(
+        ai,
+        i,
+        j,
+        k,
+        ai1,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
         if (j2 <= 0) {
             return;
         }
@@ -24905,8 +24342,8 @@ class Scene {
         i3 <<= 2;
 
         if (j1 !== 0) {
-            j3 = l / j1 << 6;
-            k3 = i1 / j1 << 6;
+            j3 = (l / j1) << 6;
+            k3 = (i1 / j1) << 6;
         }
 
         if (j3 < 0) {
@@ -24923,8 +24360,8 @@ class Scene {
             k = k3;
 
             if (j1 !== 0) {
-                j3 = l / j1 << 6;
-                k3 = i1 / j1 << 6;
+                j3 = (l / j1) << 6;
+                k3 = (i1 / j1) << 6;
             }
 
             if (j3 < 0) {
@@ -24933,8 +24370,8 @@ class Scene {
                 j3 = 4032;
             }
 
-            let l3 = j3 - j >> 4;
-            let i4 = k3 - k >> 4;
+            let l3 = (j3 - j) >> 4;
+            let i4 = (k3 - k) >> 4;
             let k4 = l2 >> 20;
             j += l2 & 0xc0000;
             l2 += i3;
@@ -25100,26 +24537,26 @@ class Scene {
         }
 
         i1 <<= 1;
-        k = ai1[l >> 8 & 0xff];
+        k = ai1[(l >> 8) & 0xff];
         l += i1;
         let j1 = (i / 8) | 0;
 
         for (let k1 = j1; k1 < 0; k1++) {
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
 
@@ -25129,7 +24566,7 @@ class Scene {
             ai[j++] = k;
 
             if ((l1 & 1) === 1) {
-                k = ai1[l >> 8 & 0xff];
+                k = ai1[(l >> 8) & 0xff];
                 l += i1;
             }
         }
@@ -25141,49 +24578,48 @@ class Scene {
         }
 
         i1 <<= 2;
-        k = ai1[l >> 8 & 0xff];
+        k = ai1[(l >> 8) & 0xff];
         l += i1;
         let j1 = (i / 16) | 0;
 
         for (let k1 = j1; k1 < 0; k1++) {
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
 
         j1 = -(i % 16);
 
         for (let l1 = 0; l1 < j1; l1++) {
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
 
             if ((l1 & 3) === 3) {
-                k = ai1[l >> 8 & 0xff];
+                k = ai1[(l >> 8) & 0xff];
                 l += i1;
                 l += i1;
             }
         }
-
     }
 
     static gradientScanline2(ai, i, j, k, ai1, l, i1) {
@@ -25192,7 +24628,7 @@ class Scene {
         }
 
         i1 <<= 2;
-        k = ai1[l >> 8 & 0xff];
+        k = ai1[(l >> 8) & 0xff];
         l += i1;
         let j1 = (i / 16) | 0;
 
@@ -25201,25 +24637,25 @@ class Scene {
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
 
@@ -25229,7 +24665,7 @@ class Scene {
             ai[j++] = k;
 
             if ((l1 & 3) === 3) {
-                k = ai1[l >> 8 & 0xff];
+                k = ai1[(l >> 8) & 0xff];
                 l += i1;
             }
         }
@@ -25294,11 +24730,11 @@ class Scene {
         this.spriteHeight[this.spriteCount] = h;
         this.spriteTranslateX[this.spriteCount] = 0;
 
-        let l1 = this.view.createVertex(x, z, y);
-        let i2 = this.view.createVertex(x, z - h, y);
-        let vs = new Int32Array([l1, i2]);
+        const bottomVert = this.view.createVertex(x, z, y);
+        const topVert = this.view.createVertex(x, z - h, y);
+        const vertexes = new Int32Array([bottomVert, topVert]);
 
-        this.view.createFace(2, vs, 0, 0);
+        this.view.createFace(2, vertexes, 0, 0);
         this.view.faceTag[this.spriteCount] = tag;
         this.view.isLocalPlayer[this.spriteCount++] = 0;
 
@@ -25407,7 +24843,15 @@ class Scene {
             for (let k1 = j1; k1 >= i1 + 1; k1--) {
                 let other = polygons[k1];
 
-                if (polygon.minPlaneX < other.maxPlaneX && other.minPlaneX < polygon.maxPlaneX && polygon.minPlaneY < other.maxPlaneY && other.minPlaneY < polygon.maxPlaneY && polygon.index !== other.index2 && !this.separatePolygon(polygon, other) && this.heuristicPolygon(other, polygon)) {
+                if (
+                    polygon.minPlaneX < other.maxPlaneX &&
+                    other.minPlaneX < polygon.maxPlaneX &&
+                    polygon.minPlaneY < other.maxPlaneY &&
+                    other.minPlaneY < polygon.maxPlaneY &&
+                    polygon.index !== other.index2 &&
+                    !this.separatePolygon(polygon, other) &&
+                    this.heuristicPolygon(other, polygon)
+                ) {
                     this.polygonsOrder(polygons, i1, k1);
 
                     if (polygons[k1] !== other) {
@@ -25483,31 +24927,31 @@ class Scene {
     }
 
     setFrustum(i, j, k) {
-        let l = -this.cameraYaw + 1024 & 0x3ff;
-        let i1 = -this.cameraPitch + 1024 & 0x3ff;
-        let j1 = -this.cameraRoll + 1024 & 0x3ff;
+        let l = (-this.cameraYaw + 1024) & 0x3ff;
+        let i1 = (-this.cameraPitch + 1024) & 0x3ff;
+        let j1 = (-this.cameraRoll + 1024) & 0x3ff;
 
         if (j1 !== 0) {
             let k1 = Scene.sinCosCache[j1];
             let j2 = Scene.sinCosCache[j1 + 1024];
-            let i3 = j * k1 + i * j2 >> 15;
-            j = j * j2 - i * k1 >> 15;
+            let i3 = (j * k1 + i * j2) >> 15;
+            j = (j * j2 - i * k1) >> 15;
             i = i3;
         }
 
         if (l !== 0) {
             let l1 = Scene.sinCosCache[l];
             let k2 = Scene.sinCosCache[l + 1024];
-            let j3 = j * k2 - k * l1 >> 15;
-            k = j * l1 + k * k2 >> 15;
+            let j3 = (j * k2 - k * l1) >> 15;
+            k = (j * l1 + k * k2) >> 15;
             j = j3;
         }
 
         if (i1 !== 0) {
             let i2 = Scene.sinCosCache[i1];
             let l2 = Scene.sinCosCache[i1 + 1024];
-            let k3 = k * i2 + i * l2 >> 15;
-            k = k * l2 - i * i2 >> 15;
+            let k3 = (k * i2 + i * l2) >> 15;
+            k = (k * l2 - i * i2) >> 15;
             i = k3;
         }
 
@@ -25538,8 +24982,8 @@ class Scene {
 
     render() {
         this.interlace = this.surface.interlace;
-        let i3 = this.clipX * this.clipFar3d >> this.viewDistance;
-        let j3 = this.clipY * this.clipFar3d >> this.viewDistance;
+        let i3 = (this.clipX * this.clipFar3d) >> this.viewDistance;
+        let j3 = (this.clipY * this.clipFar3d) >> this.viewDistance;
 
         Scene.frustumMaxX = 0;
         Scene.frustumMinX = 0;
@@ -25568,10 +25012,28 @@ class Scene {
         this.view.transformState = 2;
 
         for (let i = 0; i < this.modelCount; i++) {
-            this.models[i].project(this.cameraX, this.cameraY, this.cameraZ, this.cameraYaw, this.cameraPitch, this.cameraRoll, this.viewDistance, this.clipNear);
+            this.models[i].project(
+                this.cameraX,
+                this.cameraY,
+                this.cameraZ,
+                this.cameraYaw,
+                this.cameraPitch,
+                this.cameraRoll,
+                this.viewDistance,
+                this.clipNear
+            );
         }
 
-        this.models[this.modelCount].project(this.cameraX, this.cameraY, this.cameraZ, this.cameraYaw, this.cameraPitch, this.cameraRoll, this.viewDistance, this.clipNear);
+        this.models[this.modelCount].project(
+            this.cameraX,
+            this.cameraY,
+            this.cameraZ,
+            this.cameraYaw,
+            this.cameraPitch,
+            this.cameraRoll,
+            this.viewDistance,
+            this.clipNear
+        );
         this.visiblePolygonsCount = 0;
 
         for (let count = 0; count < this.modelCount; count++) {
@@ -25616,8 +25078,13 @@ class Scene {
                         if (viewXCount === 3) {
                             let viewYCount = 0;
 
-                            for (let vertex = 0; vertex < num_vertices; vertex++) {
-                                let k1 = gameModel.vertexViewY[vertices[vertex]];
+                            for (
+                                let vertex = 0;
+                                vertex < num_vertices;
+                                vertex++
+                            ) {
+                                let k1 =
+                                    gameModel.vertexViewY[vertices[vertex]];
 
                                 if (k1 > -this.clipY) {
                                     viewYCount |= 1;
@@ -25633,10 +25100,14 @@ class Scene {
                             }
 
                             if (viewYCount === 3) {
-                                let polygon_1 = this.visiblePolygons[this.visiblePolygonsCount];
+                                let polygon_1 = this.visiblePolygons[
+                                    this.visiblePolygonsCount
+                                ];
                                 polygon_1.model = gameModel;
                                 polygon_1.face = face;
-                                this.initialisePolygon3D(this.visiblePolygonsCount);
+                                this.initialisePolygon3D(
+                                    this.visiblePolygonsCount
+                                );
 
                                 let faceFill = 0;
 
@@ -25649,11 +25120,20 @@ class Scene {
                                 if (faceFill !== COLOUR_TRANSPARENT) {
                                     let h = 0;
 
-                                    for (let vertex = 0; vertex < num_vertices; vertex++) {
-                                        h += gameModel.projectVertexZ[vertices[vertex]];
+                                    for (
+                                        let vertex = 0;
+                                        vertex < num_vertices;
+                                        vertex++
+                                    ) {
+                                        h +=
+                                            gameModel.projectVertexZ[
+                                                vertices[vertex]
+                                            ];
                                     }
 
-                                    polygon_1.depth = ((h / num_vertices) | 0) + gameModel.depth;
+                                    polygon_1.depth =
+                                        ((h / num_vertices) | 0) +
+                                        gameModel.depth;
                                     polygon_1.facefill = faceFill;
                                     this.visiblePolygonsCount++;
                                 }
@@ -25675,17 +25155,31 @@ class Scene {
                 let vz = model_2d.projectVertexZ[vertex0];
 
                 if (vz > this.clipNear && vz < this.clipFar2d) {
-                    let vw = ((this.spriteWidth[face] << this.viewDistance) / vz) | 0;
-                    let vh = ((this.spriteHeight[face] << this.viewDistance) / vz) | 0;
+                    let vw =
+                        ((this.spriteWidth[face] << this.viewDistance) / vz) |
+                        0;
+                    let vh =
+                        ((this.spriteHeight[face] << this.viewDistance) / vz) |
+                        0;
 
-                    if (vx - ((vw / 2) | 0) <= this.clipX && vx + ((vw / 2) | 0) >= -this.clipX && vy - vh <= this.clipY && vy >= -this.clipY) {
-                        let polygon_2 = this.visiblePolygons[this.visiblePolygonsCount];
+                    if (
+                        vx - ((vw / 2) | 0) <= this.clipX &&
+                        vx + ((vw / 2) | 0) >= -this.clipX &&
+                        vy - vh <= this.clipY &&
+                        vy >= -this.clipY
+                    ) {
+                        let polygon_2 = this.visiblePolygons[
+                            this.visiblePolygonsCount
+                        ];
                         polygon_2.model = model_2d;
                         polygon_2.face = face;
 
                         this.initialisePolygon2D(this.visiblePolygonsCount);
 
-                        polygon_2.depth = ((vz + model_2d.projectVertexZ[faceVertices[1]]) / 2) | 0;
+                        polygon_2.depth =
+                            ((vz + model_2d.projectVertexZ[faceVertices[1]]) /
+                                2) |
+                            0;
                         this.visiblePolygonsCount++;
                     }
                 }
@@ -25697,8 +25191,16 @@ class Scene {
         }
 
         this.lastVisiblePolygonsCount = this.visiblePolygonsCount;
-        this.polygonsQSort(this.visiblePolygons, 0, this.visiblePolygonsCount - 1);
-        this.polygonsIntersectSort(100, this.visiblePolygons, this.visiblePolygonsCount);
+        this.polygonsQSort(
+            this.visiblePolygons,
+            0,
+            this.visiblePolygonsCount - 1
+        );
+        this.polygonsIntersectSort(
+            100,
+            this.visiblePolygons,
+            this.visiblePolygonsCount
+        );
 
         for (let model = 0; model < this.visiblePolygonsCount; model++) {
             let polygon = this.visiblePolygons[model];
@@ -25715,15 +25217,37 @@ class Scene {
                 let h = ((this.spriteHeight[l] << this.viewDistance) / vz) | 0;
                 let tx = gameModel_2.vertexViewX[faceverts[1]] - vx;
                 let x = vx - ((w / 2) | 0);
-                let y = (this.baseY + vy) - h;
+                let y = this.baseY + vy - h;
 
-                this.surface._spriteClipping_from7(x + this.baseX, y, w, h, this.spriteId[l], tx, ((256 << this.viewDistance) / vz) | 0);
+                this.surface._spriteClipping_from7(
+                    x + this.baseX,
+                    y,
+                    w,
+                    h,
+                    this.spriteId[l],
+                    tx,
+                    ((256 << this.viewDistance) / vz) | 0
+                );
 
-                if (this.mousePickingActive && this.mousePickedCount < this.mousePickedMax) {
-                    x += ((this.spriteTranslateX[l] << this.viewDistance) / vz) | 0;
+                if (
+                    this.mousePickingActive &&
+                    this.mousePickedCount < this.mousePickedMax
+                ) {
+                    x +=
+                        ((this.spriteTranslateX[l] << this.viewDistance) / vz) |
+                        0;
 
-                    if (this.mouseY >= y && this.mouseY <= y + h && this.mouseX >= x && this.mouseX <= x + w && !gameModel_2.unpickable && gameModel_2.isLocalPlayer[l] === 0) {
-                        this.mousePickedModels[this.mousePickedCount] = gameModel_2;
+                    if (
+                        this.mouseY >= y &&
+                        this.mouseY <= y + h &&
+                        this.mouseX >= x &&
+                        this.mouseX <= x + w &&
+                        !gameModel_2.unpickable &&
+                        gameModel_2.isLocalPlayer[l] === 0
+                    ) {
+                        this.mousePickedModels[
+                            this.mousePickedCount
+                        ] = gameModel_2;
                         this.mousePickedFaces[this.mousePickedCount] = l;
                         this.mousePickedCount++;
                     }
@@ -25736,9 +25260,13 @@ class Scene {
 
                 if (gameModel_2.faceIntensity[l] !== COLOUR_TRANSPARENT) {
                     if (polygon.visibility < 0) {
-                        j10 = gameModel_2.lightAmbience - gameModel_2.faceIntensity[l];
+                        j10 =
+                            gameModel_2.lightAmbience -
+                            gameModel_2.faceIntensity[l];
                     } else {
-                        j10 = gameModel_2.lightAmbience + gameModel_2.faceIntensity[l];
+                        j10 =
+                            gameModel_2.lightAmbience +
+                            gameModel_2.faceIntensity[l];
                     }
                 }
 
@@ -25751,9 +25279,15 @@ class Scene {
 
                     if (gameModel_2.faceIntensity[l] === COLOUR_TRANSPARENT) {
                         if (polygon.visibility < 0) {
-                            j10 = (gameModel_2.lightAmbience - gameModel_2.vertexIntensity[k2]) + gameModel_2.vertexAmbience[k2];
+                            j10 =
+                                gameModel_2.lightAmbience -
+                                gameModel_2.vertexIntensity[k2] +
+                                gameModel_2.vertexAmbience[k2];
                         } else {
-                            j10 = gameModel_2.lightAmbience + gameModel_2.vertexIntensity[k2] + gameModel_2.vertexAmbience[k2];
+                            j10 =
+                                gameModel_2.lightAmbience +
+                                gameModel_2.vertexIntensity[k2] +
+                                gameModel_2.vertexAmbience[k2];
                         }
                     }
 
@@ -25762,8 +25296,14 @@ class Scene {
                         this.planeY[k8] = gameModel_2.vertexViewY[k2];
                         this.vertexShade[k8] = j10;
 
-                        if (gameModel_2.projectVertexZ[k2] > this.fogZDistance) {
-                            this.vertexShade[k8] += ((gameModel_2.projectVertexZ[k2] - this.fogZDistance) / this.fogZFalloff) | 0;
+                        if (
+                            gameModel_2.projectVertexZ[k2] > this.fogZDistance
+                        ) {
+                            this.vertexShade[k8] +=
+                                ((gameModel_2.projectVertexZ[k2] -
+                                    this.fogZDistance) /
+                                    this.fogZFalloff) |
+                                0;
                         }
 
                         k8++;
@@ -25777,11 +25317,29 @@ class Scene {
                         }
 
                         if (gameModel_2.projectVertexZ[k9] >= this.clipNear) {
-                            let k7 = gameModel_2.projectVertexZ[k2] - gameModel_2.projectVertexZ[k9];
-                            let i5 = gameModel_2.projectVertexX[k2] - ((((gameModel_2.projectVertexX[k2] - gameModel_2.projectVertexX[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / k7) | 0);
-                            let j6 = gameModel_2.projectVertexY[k2] - ((((gameModel_2.projectVertexY[k2] - gameModel_2.projectVertexY[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / k7) | 0);
-                            this.planeX[k8] = ((i5 << this.viewDistance) / this.clipNear) | 0;
-                            this.planeY[k8] = ((j6 << this.viewDistance) / this.clipNear) | 0;
+                            let k7 =
+                                gameModel_2.projectVertexZ[k2] -
+                                gameModel_2.projectVertexZ[k9];
+                            let i5 =
+                                gameModel_2.projectVertexX[k2] -
+                                ((((gameModel_2.projectVertexX[k2] -
+                                    gameModel_2.projectVertexX[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    k7) |
+                                    0);
+                            let j6 =
+                                gameModel_2.projectVertexY[k2] -
+                                ((((gameModel_2.projectVertexY[k2] -
+                                    gameModel_2.projectVertexY[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    k7) |
+                                    0);
+                            this.planeX[k8] =
+                                ((i5 << this.viewDistance) / this.clipNear) | 0;
+                            this.planeY[k8] =
+                                ((j6 << this.viewDistance) / this.clipNear) | 0;
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -25793,11 +25351,29 @@ class Scene {
                         }
 
                         if (gameModel_2.projectVertexZ[k9] >= this.clipNear) {
-                            let l7 = gameModel_2.projectVertexZ[k2] - gameModel_2.projectVertexZ[k9];
-                            let j5 = gameModel_2.projectVertexX[k2] - ((((gameModel_2.projectVertexX[k2] - gameModel_2.projectVertexX[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / l7) | 0);
-                            let k6 = gameModel_2.projectVertexY[k2] - ((((gameModel_2.projectVertexY[k2] - gameModel_2.projectVertexY[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / l7) | 0);
-                            this.planeX[k8] = ((j5 << this.viewDistance) / this.clipNear) | 0;
-                            this.planeY[k8] = ((k6 << this.viewDistance) / this.clipNear) | 0;
+                            let l7 =
+                                gameModel_2.projectVertexZ[k2] -
+                                gameModel_2.projectVertexZ[k9];
+                            let j5 =
+                                gameModel_2.projectVertexX[k2] -
+                                ((((gameModel_2.projectVertexX[k2] -
+                                    gameModel_2.projectVertexX[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    l7) |
+                                    0);
+                            let k6 =
+                                gameModel_2.projectVertexY[k2] -
+                                ((((gameModel_2.projectVertexY[k2] -
+                                    gameModel_2.projectVertexY[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    l7) |
+                                    0);
+                            this.planeX[k8] =
+                                ((j5 << this.viewDistance) / this.clipNear) | 0;
+                            this.planeY[k8] =
+                                ((k6 << this.viewDistance) / this.clipNear) | 0;
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -25820,10 +25396,30 @@ class Scene {
                     }
                 }
 
-                this.generateScanlines(0, 0, 0, 0, k8, this.planeX, this.planeY, this.vertexShade, gameModel_2, l);
+                this.generateScanlines(
+                    0,
+                    0,
+                    0,
+                    0,
+                    k8,
+                    this.planeX,
+                    this.planeY,
+                    this.vertexShade,
+                    gameModel_2,
+                    l
+                );
 
                 if (this.maxY > this.minY) {
-                    this.rasterize(0, 0, l10, this.vertexX, this.vertexY, this.vertexZ, polygon.facefill, gameModel_2);
+                    this.rasterize(
+                        0,
+                        0,
+                        l10,
+                        this.vertexX,
+                        this.vertexY,
+                        this.vertexZ,
+                        polygon.facefill,
+                        gameModel_2
+                    );
                 }
             }
         }
@@ -25842,7 +25438,7 @@ class Scene {
             let l8 = ai2[0];
             let j10 = ai2[1];
             let j11 = ai2[2];
-            let j12 = (this.baseY + this.clipY) - 1;
+            let j12 = this.baseY + this.clipY - 1;
             let l12 = 0;
             let j13 = 0;
             let l13 = 0;
@@ -25851,8 +25447,8 @@ class Scene {
             let j15 = -COLOUR_TRANSPARENT;
 
             if (k3 !== k1) {
-                j13 = ((j7 - k4 << 8) / (k3 - k1)) | 0;
-                j14 = ((j11 - l8 << 8) / (k3 - k1)) | 0;
+                j13 = (((j7 - k4) << 8) / (k3 - k1)) | 0;
+                j14 = (((j11 - l8) << 8) / (k3 - k1)) | 0;
 
                 if (k1 < k3) {
                     l12 = k4 << 8;
@@ -25885,8 +25481,8 @@ class Scene {
             let j18 = -COLOUR_TRANSPARENT;
 
             if (k2 !== k1) {
-                j16 = ((l5 - k4 << 8) / (k2 - k1)) | 0;
-                j17 = ((j10 - l8 << 8) / (k2 - k1)) | 0;
+                j16 = (((l5 - k4) << 8) / (k2 - k1)) | 0;
+                j17 = (((j10 - l8) << 8) / (k2 - k1)) | 0;
 
                 if (k1 < k2) {
                     l15 = k4 << 8;
@@ -25919,8 +25515,8 @@ class Scene {
             let j21 = -COLOUR_TRANSPARENT;
 
             if (k3 !== k2) {
-                j19 = ((j7 - l5 << 8) / (k3 - k2)) | 0;
-                j20 = ((j11 - j10 << 8) / (k3 - k2)) | 0;
+                j19 = (((j7 - l5) << 8) / (k3 - k2)) | 0;
+                j20 = (((j11 - j10) << 8) / (k3 - k2)) | 0;
 
                 if (k2 < k3) {
                     l18 = l5 << 8;
@@ -26031,7 +25627,7 @@ class Scene {
             let k12 = ai2[1];
             let i13 = ai2[2];
             let k13 = ai2[3];
-            let i14 = (this.baseY + this.clipY) - 1;
+            let i14 = this.baseY + this.clipY - 1;
             let k14 = 0;
             let i15 = 0;
             let k15 = 0;
@@ -26040,8 +25636,8 @@ class Scene {
             let i17 = -COLOUR_TRANSPARENT;
 
             if (l4 !== l1) {
-                i15 = ((k10 - i6 << 8) / (l4 - l1)) | 0;
-                i16 = ((k13 - k11 << 8) / (l4 - l1)) | 0;
+                i15 = (((k10 - i6) << 8) / (l4 - l1)) | 0;
+                i16 = (((k13 - k11) << 8) / (l4 - l1)) | 0;
 
                 if (l1 < l4) {
                     k14 = i6 << 8;
@@ -26074,8 +25670,8 @@ class Scene {
             let i20 = -COLOUR_TRANSPARENT;
 
             if (l2 !== l1) {
-                i18 = ((k7 - i6 << 8) / (l2 - l1)) | 0;
-                i19 = ((k12 - k11 << 8) / (l2 - l1)) | 0;
+                i18 = (((k7 - i6) << 8) / (l2 - l1)) | 0;
+                i19 = (((k12 - k11) << 8) / (l2 - l1)) | 0;
 
                 if (l1 < l2) {
                     k17 = i6 << 8;
@@ -26108,8 +25704,8 @@ class Scene {
             let k22 = -COLOUR_TRANSPARENT;
 
             if (l3 !== l2) {
-                i21 = ((i9 - k7 << 8) / (l3 - l2)) | 0;
-                i22 = ((i13 - k12 << 8) / (l3 - l2)) | 0;
+                i21 = (((i9 - k7) << 8) / (l3 - l2)) | 0;
+                i22 = (((i13 - k12) << 8) / (l3 - l2)) | 0;
 
                 if (l2 < l3) {
                     k20 = k7 << 8;
@@ -26142,8 +25738,8 @@ class Scene {
             let i24 = -COLOUR_TRANSPARENT;
 
             if (l4 !== l3) {
-                i23 = ((k10 - i9 << 8) / (l4 - l3)) | 0;
-                k23 = ((k13 - i13 << 8) / (l4 - l3)) | 0;
+                i23 = (((k10 - i9) << 8) / (l4 - l3)) | 0;
+                k23 = (((k13 - i13) << 8) / (l4 - l3)) | 0;
 
                 if (l3 < l4) {
                     l22 = i9 << 8;
@@ -26282,7 +25878,7 @@ class Scene {
             }
 
             if (this.maxY >= this.baseY + this.clipY) {
-                this.maxY = (this.baseY + this.clipY) - 1;
+                this.maxY = this.baseY + this.clipY - 1;
             }
 
             if (this.minY >= this.maxY) {
@@ -26301,9 +25897,9 @@ class Scene {
 
             if (i3 < i4) {
                 let i5 = ai[0] << 8;
-                let j6 = ((ai[j2] - ai[0] << 8) / (i4 - i3)) | 0;
+                let j6 = (((ai[j2] - ai[0]) << 8) / (i4 - i3)) | 0;
                 let l7 = ai2[0] << 8;
-                let j9 = ((ai2[j2] - ai2[0] << 8) / (i4 - i3)) | 0;
+                let j9 = (((ai2[j2] - ai2[0]) << 8) / (i4 - i3)) | 0;
 
                 if (i3 < 0) {
                     i5 -= j6 * i3;
@@ -26324,9 +25920,9 @@ class Scene {
                 }
             } else if (i3 > i4) {
                 let j5 = ai[j2] << 8;
-                let k6 = ((ai[0] - ai[j2] << 8) / (i3 - i4)) | 0;
+                let k6 = (((ai[0] - ai[j2]) << 8) / (i3 - i4)) | 0;
                 let i8 = ai2[j2] << 8;
-                let k9 = ((ai2[0] - ai2[j2] << 8) / (i3 - i4)) | 0;
+                let k9 = (((ai2[0] - ai2[j2]) << 8) / (i3 - i4)) | 0;
 
                 if (i4 < 0) {
                     j5 -= k6 * i4;
@@ -26354,9 +25950,9 @@ class Scene {
 
                 if (j3 < j4) {
                     let l6 = ai[k] << 8;
-                    let j8 = ((ai[k5] - ai[k] << 8) / (j4 - j3)) | 0;
+                    let j8 = (((ai[k5] - ai[k]) << 8) / (j4 - j3)) | 0;
                     let l9 = ai2[k] << 8;
-                    let l10 = ((ai2[k5] - ai2[k] << 8) / (j4 - j3)) | 0;
+                    let l10 = (((ai2[k5] - ai2[k]) << 8) / (j4 - j3)) | 0;
 
                     if (j3 < 0) {
                         l6 -= j8 * j3;
@@ -26386,9 +25982,9 @@ class Scene {
                     }
                 } else if (j3 > j4) {
                     let i7 = ai[k5] << 8;
-                    let k8 = ((ai[k] - ai[k5] << 8) / (j3 - j4)) | 0;
+                    let k8 = (((ai[k] - ai[k5]) << 8) / (j3 - j4)) | 0;
                     let i10 = ai2[k5] << 8;
-                    let i11 = ((ai2[k] - ai2[k5] << 8) / (j3 - j4)) | 0;
+                    let i11 = (((ai2[k] - ai2[k5]) << 8) / (j3 - j4)) | 0;
 
                     if (j4 < 0) {
                         i7 -= k8 * j4;
@@ -26424,10 +26020,21 @@ class Scene {
             }
         }
 
-        if (this.mousePickingActive && this.mousePickedCount < this.mousePickedMax && this.mouseY >= this.minY && this.mouseY < this.maxY) {
+        if (
+            this.mousePickingActive &&
+            this.mousePickedCount < this.mousePickedMax &&
+            this.mouseY >= this.minY &&
+            this.mouseY < this.maxY
+        ) {
             let scanline_1 = this.scanlines[this.mouseY];
 
-            if (this.mouseX >= scanline_1.startX >> 8 && this.mouseX <= scanline_1.endX >> 8 && scanline_1.startX <= scanline_1.endX && !gameModel.unpickable && gameModel.isLocalPlayer[pid] === 0) {
+            if (
+                this.mouseX >= scanline_1.startX >> 8 &&
+                this.mouseX <= scanline_1.endX >> 8 &&
+                scanline_1.startX <= scanline_1.endX &&
+                !gameModel.unpickable &&
+                gameModel.isLocalPlayer[pid] === 0
+            ) {
                 this.mousePickedModels[this.mousePickedCount] = gameModel;
                 this.mousePickedFaces[this.mousePickedCount] = pid;
                 this.mousePickedCount++;
@@ -26459,15 +26066,17 @@ class Scene {
             let k8 = ai2[k] - j2;
 
             if (this.textureDimension[l] === 1) {
-                let l9 = i6 * k1 - j7 * i1 << 12;
-                let k10 = j7 * j2 - k8 * k1 << (5 - this.viewDistance) + 7 + 4;
-                let i11 = k8 * i1 - i6 * j2 << (5 - this.viewDistance) + 7;
-                let k11 = i3 * k1 - k3 * i1 << 12;
-                let i12 = k3 * j2 - i4 * k1 << (5 - this.viewDistance) + 7 + 4;
-                let k12 = i4 * i1 - i3 * j2 << (5 - this.viewDistance) + 7;
-                let i13 = k3 * i6 - i3 * j7 << 5;
-                let k13 = i4 * j7 - k3 * k8 << (5 - this.viewDistance) + 4;
-                let i14 = i3 * k8 - i4 * i6 >> this.viewDistance - 5;
+                let l9 = (i6 * k1 - j7 * i1) << 12;
+                let k10 =
+                    (j7 * j2 - k8 * k1) << (5 - this.viewDistance + 7 + 4);
+                let i11 = (k8 * i1 - i6 * j2) << (5 - this.viewDistance + 7);
+                let k11 = (i3 * k1 - k3 * i1) << 12;
+                let i12 =
+                    (k3 * j2 - i4 * k1) << (5 - this.viewDistance + 7 + 4);
+                let k12 = (i4 * i1 - i3 * j2) << (5 - this.viewDistance + 7);
+                let i13 = (k3 * i6 - i3 * j7) << 5;
+                let k13 = (i4 * j7 - k3 * k8) << (5 - this.viewDistance + 4);
+                let i14 = (i3 * k8 - i4 * i6) >> (this.viewDistance - 5);
                 let k14 = k10 >> 4;
                 let i15 = i12 >> 4;
                 let k15 = k13 >> 4;
@@ -26522,7 +26131,22 @@ class Scene {
                                 k20 = l17 - j;
                             }
 
-                            Scene.textureTranslucentScanline(this.raster, this.texturePixels[l], 0, 0, l9 + k14 * j, k11 + i15 * j, i13 + k15 * j, k10, i12, k13, k20, i17 + j, i22, k23 << 2);
+                            Scene.textureTranslucentScanline(
+                                this.raster,
+                                this.texturePixels[l],
+                                0,
+                                0,
+                                l9 + k14 * j,
+                                k11 + i15 * j,
+                                i13 + k15 * j,
+                                k10,
+                                i12,
+                                k13,
+                                k20,
+                                i17 + j,
+                                i22,
+                                k23 << 2
+                            );
 
                             l9 += i11;
                             k11 += k12;
@@ -26561,7 +26185,22 @@ class Scene {
                                 l20 = j18 - j;
                             }
 
-                            Scene.textureScanline(this.raster, this.texturePixels[l], 0, 0, l9 + k14 * j, k11 + i15 * j, i13 + k15 * j, k10, i12, k13, l20, i17 + j, j22, l23 << 2);
+                            Scene.textureScanline(
+                                this.raster,
+                                this.texturePixels[l],
+                                0,
+                                0,
+                                l9 + k14 * j,
+                                k11 + i15 * j,
+                                i13 + k15 * j,
+                                k10,
+                                i12,
+                                k13,
+                                l20,
+                                i17 + j,
+                                j22,
+                                l23 << 2
+                            );
 
                             l9 += i11;
                             k11 += k12;
@@ -26599,7 +26238,23 @@ class Scene {
                             i21 = l18 - j;
                         }
 
-                        Scene.textureBackTranslucentScanline(this.raster, 0, 0, 0, this.texturePixels[l], l9 + k14 * j, k11 + i15 * j, i13 + k15 * j, k10, i12, k13, i21, i17 + j, k22, i24);
+                        Scene.textureBackTranslucentScanline(
+                            this.raster,
+                            0,
+                            0,
+                            0,
+                            this.texturePixels[l],
+                            l9 + k14 * j,
+                            k11 + i15 * j,
+                            i13 + k15 * j,
+                            k10,
+                            i12,
+                            k13,
+                            i21,
+                            i17 + j,
+                            k22,
+                            i24
+                        );
 
                         l9 += i11;
                         k11 += k12;
@@ -26611,15 +26266,15 @@ class Scene {
                 return;
             }
 
-            let i10 = i6 * k1 - j7 * i1 << 11;
-            let l10 = j7 * j2 - k8 * k1 << (5 - this.viewDistance) + 6 + 4;
-            let j11 = k8 * i1 - i6 * j2 << (5 - this.viewDistance) + 6;
-            let l11 = i3 * k1 - k3 * i1 << 11;
-            let j12 = k3 * j2 - i4 * k1 << (5 - this.viewDistance) + 6 + 4;
-            let l12 = i4 * i1 - i3 * j2 << (5 - this.viewDistance) + 6;
-            let j13 = k3 * i6 - i3 * j7 << 5;
-            let l13 = i4 * j7 - k3 * k8 << (5 - this.viewDistance) + 4;
-            let j14 = i3 * k8 - i4 * i6 >> this.viewDistance - 5;
+            let i10 = (i6 * k1 - j7 * i1) << 11;
+            let l10 = (j7 * j2 - k8 * k1) << (5 - this.viewDistance + 6 + 4);
+            let j11 = (k8 * i1 - i6 * j2) << (5 - this.viewDistance + 6);
+            let l11 = (i3 * k1 - k3 * i1) << 11;
+            let j12 = (k3 * j2 - i4 * k1) << (5 - this.viewDistance + 6 + 4);
+            let l12 = (i4 * i1 - i3 * j2) << (5 - this.viewDistance + 6);
+            let j13 = (k3 * i6 - i3 * j7) << 5;
+            let l13 = (i4 * j7 - k3 * k8) << (5 - this.viewDistance + 4);
+            let j14 = (i3 * k8 - i4 * i6) >> (this.viewDistance - 5);
             let l14 = l10 >> 4;
             let j15 = j12 >> 4;
             let l15 = l13 >> 4;
@@ -26674,7 +26329,22 @@ class Scene {
                             j21 = j19 - j;
                         }
 
-                        Scene.textureTranslucentScanline2(this.raster, this.texturePixels[l], 0, 0, i10 + l14 * j, l11 + j15 * j, j13 + l15 * j, l10, j12, l13, j21, j17 + j, l22, j24);
+                        Scene.textureTranslucentScanline2(
+                            this.raster,
+                            this.texturePixels[l],
+                            0,
+                            0,
+                            i10 + l14 * j,
+                            l11 + j15 * j,
+                            j13 + l15 * j,
+                            l10,
+                            j12,
+                            l13,
+                            j21,
+                            j17 + j,
+                            l22,
+                            j24
+                        );
 
                         i10 += j11;
                         l11 += l12;
@@ -26712,7 +26382,22 @@ class Scene {
                             k21 = l19 - j;
                         }
 
-                        Scene.textureScanline2(this.raster, this.texturePixels[l], 0, 0, i10 + l14 * j, l11 + j15 * j, j13 + l15 * j, l10, j12, l13, k21, j17 + j, i23, k24);
+                        Scene.textureScanline2(
+                            this.raster,
+                            this.texturePixels[l],
+                            0,
+                            0,
+                            i10 + l14 * j,
+                            l11 + j15 * j,
+                            j13 + l15 * j,
+                            l10,
+                            j12,
+                            l13,
+                            k21,
+                            j17 + j,
+                            i23,
+                            k24
+                        );
 
                         i10 += j11;
                         l11 += l12;
@@ -26750,7 +26435,23 @@ class Scene {
                         l21 = j20 - j;
                     }
 
-                    Scene.textureBackTranslucentScanline2(this.raster, 0, 0, 0, this.texturePixels[l], i10 + l14 * j, l11 + j15 * j, j13 + l15 * j, l10, j12, l13, l21, j17 + j, j23, l24);
+                    Scene.textureBackTranslucentScanline2(
+                        this.raster,
+                        0,
+                        0,
+                        0,
+                        this.texturePixels[l],
+                        i10 + l14 * j,
+                        l11 + j15 * j,
+                        j13 + l15 * j,
+                        l10,
+                        j12,
+                        l13,
+                        l21,
+                        j17 + j,
+                        j23,
+                        l24
+                    );
 
                     i10 += j11;
                     l11 += l12;
@@ -26772,8 +26473,8 @@ class Scene {
                 let l1 = (Math.random() * this.rampCount) | 0;
                 this.gradientBase[l1] = l;
                 l = -1 - l;
-                let k2 = (l >> 10 & 0x1f) * 8;
-                let j3 = (l >> 5 & 0x1f) * 8;
+                let k2 = ((l >> 10) & 0x1f) * 8;
+                let j3 = ((l >> 5) & 0x1f) * 8;
                 let l3 = (l & 0x1f) * 8;
 
                 for (let j4 = 0; j4 < 256; j4++) {
@@ -26781,7 +26482,8 @@ class Scene {
                     let k7 = ((k2 * j6) / 0x10000) | 0;
                     let l8 = ((j3 * j6) / 0x10000) | 0;
                     let j10 = ((l3 * j6) / 0x10000) | 0;
-                    this.gradientRamps[l1][255 - j4] = (k7 << 16) + (l8 << 8) + j10;
+                    this.gradientRamps[l1][255 - j4] =
+                        (k7 << 16) + (l8 << 8) + j10;
                 }
 
                 this.anIntArray377 = this.gradientRamps[l1];
@@ -26826,7 +26528,15 @@ class Scene {
                         k6 = l4 - j;
                     }
 
-                    Scene.textureGradientScanline(this.raster, -k6, l2 + j, 0, this.anIntArray377, l7, i9);
+                    Scene.textureGradientScanline(
+                        this.raster,
+                        -k6,
+                        l2 + j,
+                        0,
+                        this.anIntArray377,
+                        l7,
+                        i9
+                    );
                     l2 += i2;
                 }
             }
@@ -26858,7 +26568,15 @@ class Scene {
                         l6 = j5 - j;
                     }
 
-                    Scene.gradientScanline(this.raster, -l6, l2 + j, 0, this.anIntArray377, i8, j9);
+                    Scene.gradientScanline(
+                        this.raster,
+                        -l6,
+                        l2 + j,
+                        0,
+                        this.anIntArray377,
+                        i8,
+                        j9
+                    );
                     l2 += i2;
                 }
             }
@@ -26889,7 +26607,15 @@ class Scene {
                     i7 = l5 - j;
                 }
 
-                Scene.gradientScanline2(this.raster, -i7, l2 + j, 0, this.anIntArray377, j8, k9);
+                Scene.gradientScanline2(
+                    this.raster,
+                    -i7,
+                    l2 + j,
+                    0,
+                    this.anIntArray377,
+                    j8,
+                    k9
+                );
                 l2 += i2;
             }
         }
@@ -26899,9 +26625,9 @@ class Scene {
         pitch &= 0x3ff;
         yaw &= 0x3ff;
         roll &= 0x3ff;
-        this.cameraYaw = 1024 - pitch & 0x3ff;
-        this.cameraPitch = 1024 - yaw & 0x3ff;
-        this.cameraRoll = 1024 - roll & 0x3ff;
+        this.cameraYaw = (1024 - pitch) & 0x3ff;
+        this.cameraPitch = (1024 - yaw) & 0x3ff;
+        this.cameraRoll = (1024 - roll) & 0x3ff;
 
         let l1 = 0;
         let i2 = 0;
@@ -26910,24 +26636,24 @@ class Scene {
         if (pitch !== 0) {
             let k2 = Scene.sinCosCache[pitch];
             let j3 = Scene.sinCosCache[pitch + 1024];
-            let i4 = i2 * j3 - j2 * k2 >> 15;
-            j2 = i2 * k2 + j2 * j3 >> 15;
+            let i4 = (i2 * j3 - j2 * k2) >> 15;
+            j2 = (i2 * k2 + j2 * j3) >> 15;
             i2 = i4;
         }
 
         if (yaw !== 0) {
             let l2 = Scene.sinCosCache[yaw];
             let k3 = Scene.sinCosCache[yaw + 1024];
-            let j4 = j2 * l2 + l1 * k3 >> 15;
-            j2 = j2 * k3 - l1 * l2 >> 15;
+            let j4 = (j2 * l2 + l1 * k3) >> 15;
+            j2 = (j2 * k3 - l1 * l2) >> 15;
             l1 = j4;
         }
 
         if (roll !== 0) {
             let i3 = Scene.sinCosCache[roll];
             let l3 = Scene.sinCosCache[roll + 1024];
-            let k4 = i2 * i3 + l1 * l3 >> 15;
-            i2 = i2 * l3 - l1 * i3 >> 15;
+            let k4 = (i2 * i3 + l1 * l3) >> 15;
+            i2 = (i2 * l3 - l1 * i3) >> 15;
             l1 = k4;
         }
 
@@ -26959,14 +26685,26 @@ class Scene {
         if (faceCameraNormalScale === -1) {
             faceCameraNormalScale = 0;
 
-            for (; t1 > 25000 || t2 > 25000 || t3 > 25000 || t1 < -25000 || t2 < -25000 || t3 < -25000; t3 >>= 1) {
+            for (
+                ;
+                t1 > 25000 ||
+                t2 > 25000 ||
+                t3 > 25000 ||
+                t1 < -25000 ||
+                t2 < -25000 ||
+                t3 < -25000;
+                t3 >>= 1
+            ) {
                 faceCameraNormalScale++;
                 t1 >>= 1;
                 t2 >>= 1;
             }
 
             gameModel.normalScale[face] = faceCameraNormalScale;
-            gameModel.normalMagnitude[face] = (this.normalMagnitude * Math.sqrt(t1 * t1 + t2 * t2 + t3 * t3)) | 0;
+            gameModel.normalMagnitude[face] =
+                (this.normalMagnitude *
+                    Math.sqrt(t1 * t1 + t2 * t2 + t3 * t3)) |
+                0;
         } else {
             t1 >>= faceCameraNormalScale;
             t2 >>= faceCameraNormalScale;
@@ -27128,7 +26866,10 @@ class Scene {
 
         for (let k4 = 0; k4 < k; k4++) {
             let i1 = ai[k4];
-            let i2 = (k2 - gameModel.projectVertexX[i1]) * j3 + (l2 - gameModel.projectVertexY[i1]) * k3 + (i3 - gameModel.projectVertexZ[i1]) * l3;
+            let i2 =
+                (k2 - gameModel.projectVertexX[i1]) * j3 +
+                (l2 - gameModel.projectVertexY[i1]) * k3 +
+                (i3 - gameModel.projectVertexZ[i1]) * l3;
 
             if ((i2 >= -i4 || j4 >= 0) && (i2 <= i4 || j4 <= 0)) {
                 continue;
@@ -27154,7 +26895,10 @@ class Scene {
 
         for (let l4 = 0; l4 < l; l4++) {
             let j1 = ai1[l4];
-            let j2 = (k2 - gameModel_1.projectVertexX[j1]) * j3 + (l2 - gameModel_1.projectVertexY[j1]) * k3 + (i3 - gameModel_1.projectVertexZ[j1]) * l3;
+            let j2 =
+                (k2 - gameModel_1.projectVertexX[j1]) * j3 +
+                (l2 - gameModel_1.projectVertexY[j1]) * k3 +
+                (i3 - gameModel_1.projectVertexZ[j1]) * l3;
 
             if ((j2 >= -i4 || j4 <= 0) && (j2 <= i4 || j4 >= 0)) {
                 continue;
@@ -27191,7 +26935,6 @@ class Scene {
                 ai2[j5] = gameModel.vertexViewX[i6];
                 ai3[j5] = gameModel.vertexViewY[i6];
             }
-
         }
 
         let ai4 = null;
@@ -27243,7 +26986,10 @@ class Scene {
 
         for (let i4 = 0; i4 < k; i4++) {
             let i1 = ai[i4];
-            let k1 = (i2 - gameModel.projectVertexX[i1]) * l2 + (j2 - gameModel.projectVertexY[i1]) * i3 + (k2 - gameModel.projectVertexZ[i1]) * j3;
+            let k1 =
+                (i2 - gameModel.projectVertexX[i1]) * l2 +
+                (j2 - gameModel.projectVertexY[i1]) * i3 +
+                (k2 - gameModel.projectVertexZ[i1]) * j3;
             if ((k1 >= -k3 || l3 >= 0) && (k1 <= k3 || l3 <= 0)) {
                 continue;
             }
@@ -27267,7 +27013,10 @@ class Scene {
 
         for (let j4 = 0; j4 < l; j4++) {
             let j1 = ai1[j4];
-            let l1 = (i2 - gameModel_1.projectVertexX[j1]) * l2 + (j2 - gameModel_1.projectVertexY[j1]) * i3 + (k2 - gameModel_1.projectVertexZ[j1]) * j3;
+            let l1 =
+                (i2 - gameModel_1.projectVertexX[j1]) * l2 +
+                (j2 - gameModel_1.projectVertexY[j1]) * i3 +
+                (k2 - gameModel_1.projectVertexZ[j1]) * j3;
 
             if ((l1 >= -k3 || l3 <= 0) && (l1 <= k3 || l3 >= 0)) {
                 continue;
@@ -27316,8 +27065,10 @@ class Scene {
     defineTexture(id, usedColours, colours, wide128) {
         this.textureColoursUsed[id] = usedColours;
         this.textureColourList[id] = colours;
-        this.textureDimension[id] = wide128; // is 1 if the this.texture is 128+ pixels wide, 0 if <128
-        this.textureLoadedNumber[id] = new Long(0); // as in the current loaded this.texture count when its loaded
+        // is 1 if the this.texture is 128+ pixels wide, 0 if <128
+        this.textureDimension[id] = wide128;
+        // as in the current loaded this.texture count when its loaded
+        this.textureLoadedNumber[id] = new Long(0);
         this.textureBackTransparent[id] = false;
         this.texturePixels[id] = null;
         this.prepareTexture(id);
@@ -27335,7 +27086,8 @@ class Scene {
             return;
         }
 
-        if (this.textureDimension[id] === 0) { // is 64 pixels wide
+        if (this.textureDimension[id] === 0) {
+            // is 64 pixels wide
             for (let j = 0; j < this.textureColours64.length; j++) {
                 if (this.textureColours64[j] === null) {
                     this.textureColours64[j] = new Int32Array(16384);
@@ -27345,11 +27097,17 @@ class Scene {
                 }
             }
 
-            let GIGALONG = new Long(1).shiftLeft(30); // almost as large as exemplar's nas storage
+            // almost as large as exemplar's nas storage
+            let GIGALONG = new Long(1).shiftLeft(30);
             let wut = 0;
 
             for (let k1 = 0; k1 < this.textureCount; k1++) {
-                if (k1 !== id && this.textureDimension[k1] === 0 && this.texturePixels[k1] !== null && this.textureLoadedNumber[k1].lessThan(GIGALONG)) {
+                if (
+                    k1 !== id &&
+                    this.textureDimension[k1] === 0 &&
+                    this.texturePixels[k1] !== null &&
+                    this.textureLoadedNumber[k1].lessThan(GIGALONG)
+                ) {
                     GIGALONG = this.textureLoadedNumber[k1];
                     wut = k1;
                 }
@@ -27371,11 +27129,17 @@ class Scene {
             }
         }
 
-        let GIGALONG = new Long(1).shiftLeft(30); // 1G 2G 3G... 4G?
+        // 1G 2G 3G... 4G?
+        let GIGALONG = new Long(1).shiftLeft(30);
         let wat = 0;
 
         for (let i2 = 0; i2 < this.textureCount; i2++) {
-            if (i2 !== id && this.textureDimension[i2] === 1 && this.texturePixels[i2] !== null && this.textureLoadedNumber[i2].lessThan(GIGALONG)) {
+            if (
+                i2 !== id &&
+                this.textureDimension[i2] === 1 &&
+                this.texturePixels[i2] !== null &&
+                this.textureLoadedNumber[i2].lessThan(GIGALONG)
+            ) {
                 GIGALONG = this.textureLoadedNumber[i2];
                 wat = i2;
             }
@@ -27400,7 +27164,9 @@ class Scene {
 
         for (let x = 0; x < textureWidth; x++) {
             for (let y = 0; y < textureWidth; y++) {
-                let colour = this.textureColourList[id][this.textureColoursUsed[id][y + x * textureWidth] & 0xff];
+                let colour = this.textureColourList[id][
+                    this.textureColoursUsed[id][y + x * textureWidth] & 0xff
+                ];
                 colour &= 0xf8f8ff;
 
                 if (colour === 0) {
@@ -27416,9 +27182,11 @@ class Scene {
 
         for (let i1 = 0; i1 < colourCount; i1++) {
             let colour = colours[i1]; // ??
-            colours[colourCount + i1] = colour - (colour >>> 3) & 0xf8f8ff;
-            colours[colourCount * 2 + i1] = colour - (colour >>> 2) & 0xf8f8ff;
-            colours[colourCount * 3 + i1] = colour - (colour >>> 2) - (colour >>> 3) & 0xf8f8ff;
+            colours[colourCount + i1] = (colour - (colour >>> 3)) & 0xf8f8ff;
+            colours[colourCount * 2 + i1] =
+                (colour - (colour >>> 2)) & 0xf8f8ff;
+            colours[colourCount * 3 + i1] =
+                (colour - (colour >>> 2) - (colour >>> 3)) & 0xf8f8ff;
         }
     }
 
@@ -27445,9 +27213,9 @@ class Scene {
 
         for (let i1 = 0; i1 < c; i1++) {
             let k1 = colours[i1];
-            colours[c + i1] = k1 - (k1 >>> 3) & 0xf8f8ff;
-            colours[c * 2 + i1] = k1 - (k1 >>> 2) & 0xf8f8ff;
-            colours[c * 3 + i1] = k1 - (k1 >>> 2) - (k1 >>> 3) & 0xf8f8ff;
+            colours[c + i1] = (k1 - (k1 >>> 3)) & 0xf8f8ff;
+            colours[c * 2 + i1] = (k1 - (k1 >>> 2)) & 0xf8f8ff;
+            colours[c * 3 + i1] = (k1 - (k1 >>> 2) - (k1 >>> 3)) & 0xf8f8ff;
         }
     }
 
@@ -27465,8 +27233,8 @@ class Scene {
         if (i < 0) {
             i = -(i + 1);
 
-            let j = i >> 10 & 0x1f;
-            let k = i >> 5 & 0x1f;
+            let j = (i >> 10) & 0x1f;
+            let k = (i >> 5) & 0x1f;
             let l = i & 0x1f;
 
             return (j << 19) + (k << 11) + (l << 3);
@@ -27497,10 +27265,10 @@ class Scene {
 
     setLight(...args) {
         switch (args.length) {
-        case 3:
-            return this._setLight_from3(...args);
-        case 5:
-            return this._setLight_from5(...args);
+            case 3:
+                return this._setLight_from3(...args);
+            case 5:
+                return this._setLight_from5(...args);
         }
     }
 
@@ -27513,7 +27281,7 @@ class Scene {
     }
 
     method307(i, j, k, l, flag) {
-        if (flag && i <= k || i < k) {
+        if ((flag && i <= k) || i < k) {
             if (i > l) {
                 return true;
             }
@@ -27545,7 +27313,7 @@ class Scene {
     }
 
     method308(i, j, k, flag) {
-        if (flag && i <= k || i < k) {
+        if ((flag && i <= k) || i < k) {
             if (j > k) {
                 return true;
             }
@@ -27565,10 +27333,10 @@ class Scene {
         let j = ai2.length;
         let byte0 = 0;
         let i20;
-        let k20 = i20 = ai1[0];
+        let k20 = (i20 = ai1[0]);
         let k = 0;
         let j20;
-        let l20 = j20 = ai3[0];
+        let l20 = (j20 = ai3[0]);
         let i1 = 0;
 
         for (let i21 = 1; i21 < i; i21++) {
@@ -27603,9 +27371,21 @@ class Scene {
 
         if (ai1[k] < ai3[i1]) {
             for (l = k; ai1[l] < ai3[i1]; l = (l + 1) % i);
-            for (; ai1[k] < ai3[i1]; k = ((k - 1) + i) % i);
-            let k1 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-            let k6 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+            for (; ai1[k] < ai3[i1]; k = (k - 1 + i) % i);
+            let k1 = this.method306(
+                ai[(k + 1) % i],
+                ai1[(k + 1) % i],
+                ai[k],
+                ai1[k],
+                ai3[i1]
+            );
+            let k6 = this.method306(
+                ai[(l - 1 + i) % i],
+                ai1[(l - 1 + i) % i],
+                ai[l],
+                ai1[l],
+                ai3[i1]
+            );
             let l10 = ai2[i1];
             flag = (k1 < l10) | (k6 < l10);
 
@@ -27614,17 +27394,29 @@ class Scene {
             }
 
             j1 = (i1 + 1) % j;
-            i1 = ((i1 - 1) + j) % j;
+            i1 = (i1 - 1 + j) % j;
 
             if (k === l) {
                 byte0 = 1;
             }
         } else {
             for (j1 = i1; ai3[j1] < ai1[k]; j1 = (j1 + 1) % j);
-            for (; ai3[i1] < ai1[k]; i1 = ((i1 - 1) + j) % j);
+            for (; ai3[i1] < ai1[k]; i1 = (i1 - 1 + j) % j);
             let l1 = ai[k];
-            let i11 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-            let l15 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+            let i11 = this.method306(
+                ai2[(i1 + 1) % j],
+                ai3[(i1 + 1) % j],
+                ai2[i1],
+                ai3[i1],
+                ai1[k]
+            );
+            let l15 = this.method306(
+                ai2[(j1 - 1 + j) % j],
+                ai3[(j1 - 1 + j) % j],
+                ai2[j1],
+                ai3[j1],
+                ai1[k]
+            );
             flag = (l1 < i11) | (l1 < l15);
 
             if (this.method308(i11, l15, l1, !flag)) {
@@ -27632,7 +27424,7 @@ class Scene {
             }
 
             l = (k + 1) % i;
-            k = ((k - 1) + i) % i;
+            k = (k - 1 + i) % i;
 
             if (i1 === j1) {
                 byte0 = 2;
@@ -27644,23 +27436,59 @@ class Scene {
                 if (ai1[k] < ai3[i1]) {
                     if (ai1[k] < ai3[j1]) {
                         let i2 = ai[k];
-                        let l6 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai1[k]);
-                        let j11 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-                        let i16 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+                        let l6 = this.method306(
+                            ai[(l - 1 + i) % i],
+                            ai1[(l - 1 + i) % i],
+                            ai[l],
+                            ai1[l],
+                            ai1[k]
+                        );
+                        let j11 = this.method306(
+                            ai2[(i1 + 1) % j],
+                            ai3[(i1 + 1) % j],
+                            ai2[i1],
+                            ai3[i1],
+                            ai1[k]
+                        );
+                        let i16 = this.method306(
+                            ai2[(j1 - 1 + j) % j],
+                            ai3[(j1 - 1 + j) % j],
+                            ai2[j1],
+                            ai3[j1],
+                            ai1[k]
+                        );
 
                         if (this.method307(i2, l6, j11, i16, flag)) {
                             return true;
                         }
 
-                        k = ((k - 1) + i) % i;
+                        k = (k - 1 + i) % i;
 
                         if (k === l) {
                             byte0 = 1;
                         }
                     } else {
-                        let j2 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                        let i7 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                        let k11 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                        let j2 = this.method306(
+                            ai[(k + 1) % i],
+                            ai1[(k + 1) % i],
+                            ai[k],
+                            ai1[k],
+                            ai3[j1]
+                        );
+                        let i7 = this.method306(
+                            ai[(l - 1 + i) % i],
+                            ai1[(l - 1 + i) % i],
+                            ai[l],
+                            ai1[l],
+                            ai3[j1]
+                        );
+                        let k11 = this.method306(
+                            ai2[(i1 + 1) % j],
+                            ai3[(i1 + 1) % j],
+                            ai2[i1],
+                            ai3[i1],
+                            ai3[j1]
+                        );
                         let j16 = ai2[j1];
 
                         if (this.method307(j2, i7, k11, j16, flag)) {
@@ -27674,24 +27502,60 @@ class Scene {
                         }
                     }
                 } else if (ai3[i1] < ai3[j1]) {
-                    let k2 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                    let j7 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                    let k2 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[i1]
+                    );
+                    let j7 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[i1]
+                    );
                     let l11 = ai2[i1];
-                    let k16 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai3[i1]);
+                    let k16 = this.method306(
+                        ai2[(j1 - 1 + j) % j],
+                        ai3[(j1 - 1 + j) % j],
+                        ai2[j1],
+                        ai3[j1],
+                        ai3[i1]
+                    );
 
                     if (this.method307(k2, j7, l11, k16, flag)) {
                         return true;
                     }
 
-                    i1 = ((i1 - 1) + j) % j;
+                    i1 = (i1 - 1 + j) % j;
 
                     if (i1 === j1) {
                         byte0 = 2;
                     }
                 } else {
-                    let l2 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                    let k7 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                    let i12 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                    let l2 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[j1]
+                    );
+                    let k7 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[j1]
+                    );
+                    let i12 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai3[j1]
+                    );
                     let l16 = ai2[j1];
 
                     if (this.method307(l2, k7, i12, l16, flag)) {
@@ -27706,10 +27570,28 @@ class Scene {
                 }
             } else if (ai1[l] < ai3[i1]) {
                 if (ai1[l] < ai3[j1]) {
-                    let i3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai1[l]);
+                    let i3 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai1[l]
+                    );
                     let l7 = ai[l];
-                    let j12 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[l]);
-                    let i17 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[l]);
+                    let j12 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai1[l]
+                    );
+                    let i17 = this.method306(
+                        ai2[(j1 - 1 + j) % j],
+                        ai3[(j1 - 1 + j) % j],
+                        ai2[j1],
+                        ai3[j1],
+                        ai1[l]
+                    );
 
                     if (this.method307(i3, l7, j12, i17, flag)) {
                         return true;
@@ -27721,9 +27603,27 @@ class Scene {
                         byte0 = 1;
                     }
                 } else {
-                    let j3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                    let i8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                    let k12 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                    let j3 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[j1]
+                    );
+                    let i8 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[j1]
+                    );
+                    let k12 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai3[j1]
+                    );
                     let j17 = ai2[j1];
 
                     if (this.method307(j3, i8, k12, j17, flag)) {
@@ -27737,24 +27637,60 @@ class Scene {
                     }
                 }
             } else if (ai3[i1] < ai3[j1]) {
-                let k3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                let j8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                let k3 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[i1]
+                );
+                let j8 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[i1]
+                );
                 let l12 = ai2[i1];
-                let k17 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai3[i1]);
+                let k17 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai3[i1]
+                );
 
                 if (this.method307(k3, j8, l12, k17, flag)) {
                     return true;
                 }
 
-                i1 = ((i1 - 1) + j) % j;
+                i1 = (i1 - 1 + j) % j;
 
                 if (i1 === j1) {
                     byte0 = 2;
                 }
             } else {
-                let l3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                let k8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                let i13 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                let l3 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[j1]
+                );
+                let k8 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[j1]
+                );
+                let i13 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai3[j1]
+                );
                 let l17 = ai2[j1];
 
                 if (this.method307(l3, k8, i13, l17, flag)) {
@@ -27773,13 +27709,43 @@ class Scene {
             if (ai1[k] < ai3[i1]) {
                 if (ai1[k] < ai3[j1]) {
                     let i4 = ai[k];
-                    let j13 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-                    let i18 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+                    let j13 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai1[k]
+                    );
+                    let i18 = this.method306(
+                        ai2[(j1 - 1 + j) % j],
+                        ai3[(j1 - 1 + j) % j],
+                        ai2[j1],
+                        ai3[j1],
+                        ai1[k]
+                    );
                     return this.method308(j13, i18, i4, !flag);
                 }
-                let j4 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                let l8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                let k13 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                let j4 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[j1]
+                );
+                let l8 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[j1]
+                );
+                let k13 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai3[j1]
+                );
                 let j18 = ai2[j1];
 
                 if (this.method307(j4, l8, k13, j18, flag)) {
@@ -27792,24 +27758,60 @@ class Scene {
                     byte0 = 0;
                 }
             } else if (ai3[i1] < ai3[j1]) {
-                let k4 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                let i9 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                let k4 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[i1]
+                );
+                let i9 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[i1]
+                );
                 let l13 = ai2[i1];
-                let k18 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai3[i1]);
+                let k18 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai3[i1]
+                );
 
                 if (this.method307(k4, i9, l13, k18, flag)) {
                     return true;
                 }
 
-                i1 = ((i1 - 1) + j) % j;
+                i1 = (i1 - 1 + j) % j;
 
                 if (i1 === j1) {
                     byte0 = 0;
                 }
             } else {
-                let l4 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                let j9 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                let i14 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                let l4 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[j1]
+                );
+                let j9 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[j1]
+                );
+                let i14 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai3[j1]
+                );
                 let l18 = ai2[j1];
 
                 if (this.method307(l4, j9, i14, l18, flag)) {
@@ -27827,17 +27829,47 @@ class Scene {
         while (byte0 === 2) {
             if (ai3[i1] < ai1[k]) {
                 if (ai3[i1] < ai1[l]) {
-                    let i5 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                    let k9 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                    let i5 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[i1]
+                    );
+                    let k9 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[i1]
+                    );
                     let j14 = ai2[i1];
 
                     return this.method308(i5, k9, j14, flag);
                 }
 
-                let j5 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai1[l]);
+                let j5 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai1[l]
+                );
                 let l9 = ai[l];
-                let k14 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[l]);
-                let i19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[l]);
+                let k14 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai1[l]
+                );
+                let i19 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai1[l]
+                );
 
                 if (this.method307(j5, l9, k14, i19, flag)) {
                     return true;
@@ -27850,24 +27882,60 @@ class Scene {
                 }
             } else if (ai1[k] < ai1[l]) {
                 let k5 = ai[k];
-                let i10 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai1[k]);
-                let l14 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-                let j19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+                let i10 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai1[k]
+                );
+                let l14 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai1[k]
+                );
+                let j19 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai1[k]
+                );
 
                 if (this.method307(k5, i10, l14, j19, flag)) {
                     return true;
                 }
 
-                k = ((k - 1) + i) % i;
+                k = (k - 1 + i) % i;
 
                 if (k === l) {
                     byte0 = 0;
                 }
             } else {
-                let l5 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai1[l]);
+                let l5 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai1[l]
+                );
                 let j10 = ai[l];
-                let i15 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[l]);
-                let k19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[l]);
+                let i15 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai1[l]
+                );
+                let k19 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai1[l]
+                );
 
                 if (this.method307(l5, j10, i15, k19, flag)) {
                     return true;
@@ -27883,30 +27951,54 @@ class Scene {
 
         if (ai1[k] < ai3[i1]) {
             let i6 = ai[k];
-            let j15 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-            let l19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+            let j15 = this.method306(
+                ai2[(i1 + 1) % j],
+                ai3[(i1 + 1) % j],
+                ai2[i1],
+                ai3[i1],
+                ai1[k]
+            );
+            let l19 = this.method306(
+                ai2[(j1 - 1 + j) % j],
+                ai3[(j1 - 1 + j) % j],
+                ai2[j1],
+                ai3[j1],
+                ai1[k]
+            );
 
             return this.method308(j15, l19, i6, !flag);
         }
 
-        let j6 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-        let k10 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+        let j6 = this.method306(
+            ai[(k + 1) % i],
+            ai1[(k + 1) % i],
+            ai[k],
+            ai1[k],
+            ai3[i1]
+        );
+        let k10 = this.method306(
+            ai[(l - 1 + i) % i],
+            ai1[(l - 1 + i) % i],
+            ai[l],
+            ai1[l],
+            ai3[i1]
+        );
         let k15 = ai2[i1];
 
         return this.method308(j6, k10, k15, flag);
     }
 }
 
-Scene.sinCosCache = new Int32Array(2048);
-Scene.frustumMaxX = 0;
-Scene.frustumMinX = 0;
-Scene.frustumMaxY = 0;
-Scene.frustumMinY = 0;
+Scene.aByteArray434 = null;
 Scene.frustumFarZ = 0;
+Scene.frustumMaxX = 0;
+Scene.frustumMaxY = 0;
+Scene.frustumMinX = 0;
+Scene.frustumMinY = 0;
 Scene.frustumNearZ = 0;
 Scene.sin512Cache = new Int32Array(512);
+Scene.sinCosCache = new Int32Array(2048);
 Scene.textureCountLoaded = new Long(0);
-Scene.aByteArray434 = null;
 
 module.exports = Scene;
 
@@ -27928,7 +28020,10 @@ class StreamAudioPlayer {
     }
 
     writeStream(buffer, offset, length) {
-        const decoded = mulaw.decode(new Uint8Array(buffer.slice(offset, offset + length)));
+        const decoded = mulaw.decode(
+            new Uint8Array(buffer.slice(offset, offset + length))
+        );
+
         this.player.feed(decoded);
     }
 }
@@ -27994,7 +28089,12 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
-        this.imageData = component._graphics.ctx.getImageData(0, 0, width, height);
+        this.imageData = component._graphics.ctx.getImageData(
+            0,
+            0,
+            width,
+            height
+        );
         this.bufferedPixels = new Int32Array(width * height);
         this.pixelBytes = new Uint8ClampedArray(this.bufferedPixels.buffer);
 
@@ -28077,8 +28177,8 @@ class Surface {
 
     drawCircle(x, y, radius, colour, alpha) {
         let bgAlpha = 256 - alpha;
-        let red = (colour >> 16 & 0xff) * alpha;
-        let green = (colour >> 8 & 0xff) * alpha;
+        let red = ((colour >> 16) & 0xff) * alpha;
+        let green = ((colour >> 8) & 0xff) * alpha;
         let blue = (colour & 0xff) * alpha;
         let top = y - radius;
 
@@ -28120,10 +28220,13 @@ class Surface {
             let pixelIdx = j4 + yy * this.width2;
 
             for (let i5 = j4; i5 <= k4; i5++) {
-                let bgRed = (this.pixels[pixelIdx] >> 16 & 0xff) * bgAlpha;
-                let bgGreen = (this.pixels[pixelIdx] >> 8 & 0xff) * bgAlpha;
+                let bgRed = ((this.pixels[pixelIdx] >> 16) & 0xff) * bgAlpha;
+                let bgGreen = ((this.pixels[pixelIdx] >> 8) & 0xff) * bgAlpha;
                 let bgBlue = (this.pixels[pixelIdx] & 0xff) * bgAlpha;
-                let newColour = ((red + bgRed >> 8) << 16) + ((green + bgGreen >> 8) << 8) + (blue + bgBlue >> 8);
+                let newColour =
+                    (((red + bgRed) >> 8) << 16) +
+                    (((green + bgGreen) >> 8) << 8) +
+                    ((blue + bgBlue) >> 8);
                 this.pixels[pixelIdx++] = newColour;
             }
         }
@@ -28149,8 +28252,8 @@ class Surface {
         }
 
         let bgAlpha = 256 - alpha;
-        let red = (colour >> 16 & 0xff) * alpha;
-        let green = (colour >> 8 & 0xff) * alpha;
+        let red = ((colour >> 16) & 0xff) * alpha;
+        let green = ((colour >> 8) & 0xff) * alpha;
         let blue = (colour & 0xff) * alpha;
         let j3 = this.width2 - width; // wat
         let vertInc = 1;
@@ -28169,16 +28272,18 @@ class Surface {
 
         for (let l3 = 0; l3 < height; l3 += vertInc) {
             for (let i4 = -width; i4 < 0; i4++) {
-                let bgRed = (this.pixels[pixelIdx] >> 16 & 0xff) * bgAlpha;
-                let bgGreen = (this.pixels[pixelIdx] >> 8 & 0xff) * bgAlpha;
+                let bgRed = ((this.pixels[pixelIdx] >> 16) & 0xff) * bgAlpha;
+                let bgGreen = ((this.pixels[pixelIdx] >> 8) & 0xff) * bgAlpha;
                 let bgBlue = (this.pixels[pixelIdx] & 0xff) * bgAlpha;
-                let newColour = ((red + bgRed >> 8) << 16) + ((green + bgGreen >> 8) << 8) + (blue + bgBlue >> 8);
+                let newColour =
+                    (((red + bgRed) >> 8) << 16) +
+                    (((green + bgGreen) >> 8) << 8) +
+                    ((blue + bgBlue) >> 8);
                 this.pixels[pixelIdx++] = newColour;
             }
 
             pixelIdx += j3;
         }
-
     }
 
     drawGradient(x, y, width, height, colourTop, colourBottom) {
@@ -28191,11 +28296,11 @@ class Surface {
             width = this.boundsBottomX - x;
         }
 
-        let btmRed = colourBottom >> 16 & 0xff;
-        let btmGreen = colourBottom >> 8 & 0xff;
+        let btmRed = (colourBottom >> 16) & 0xff;
+        let btmGreen = (colourBottom >> 8) & 0xff;
         let btmBlue = colourBottom & 0xff;
-        let topRed = colourTop >> 16 & 0xff;
-        let topGreen = colourTop >> 8 & 0xff;
+        let topRed = (colourTop >> 16) & 0xff;
+        let topGreen = (colourTop >> 8) & 0xff;
         let topBlue = colourTop & 0xff;
         let i3 = this.width2 - width; // wat
         let vertInc = 1;
@@ -28214,7 +28319,11 @@ class Surface {
 
         for (let k3 = 0; k3 < height; k3 += vertInc) {
             if (k3 + y >= this.boundsTopY && k3 + y < this.boundsBottomY) {
-                let newColour = ((btmRed * k3 + topRed * (height - k3)) / height << 16) + ((btmGreen * k3 + topGreen * (height - k3)) / height << 8) + (((btmBlue * k3 + topBlue * (height - k3)) / height) | 0);
+                let newColour =
+                    (((btmRed * k3 + topRed * (height - k3)) / height) << 16) +
+                    (((btmGreen * k3 + topGreen * (height - k3)) / height) <<
+                        8) +
+                    (((btmBlue * k3 + topBlue * (height - k3)) / height) | 0);
 
                 for (let i4 = -width; i4 < 0; i4++) {
                     this.pixels[pixelIdx++] = newColour;
@@ -28272,9 +28381,9 @@ class Surface {
 
     drawBoxEdge(x, y, width, height, colour) {
         this.drawLineHoriz(x, y, width, colour);
-        this.drawLineHoriz(x, (y + height) - 1, width, colour);
+        this.drawLineHoriz(x, y + height - 1, width, colour);
         this.drawLineVert(x, y, height, colour);
-        this.drawLineVert((x + width) - 1, y, height, colour);
+        this.drawLineVert(x + width - 1, y, height, colour);
     }
 
     drawLineHoriz(x, y, width, colour) {
@@ -28317,11 +28426,15 @@ class Surface {
         for (let j1 = 0; j1 < height; j1++) {
             this.pixels[i1 + j1 * this.width2] = colour;
         }
-
     }
 
     setPixel(x, y, colour) {
-        if (x < this.boundsTopX || y < this.boundsTopY || x >= this.boundsBottomX || y >= this.boundsBottomY) {
+        if (
+            x < this.boundsTopX ||
+            y < this.boundsTopY ||
+            x >= this.boundsBottomX ||
+            y >= this.boundsBottomY
+        ) {
             return;
         } else {
             this.pixels[x + y * this.width2] = colour;
@@ -28335,7 +28448,11 @@ class Surface {
 
         for (let j = 0; j < k; j++) {
             let i = this.pixels[j] & 0xffffff;
-            this.pixels[j] = (i >>> 1 & 0x7f7f7f) + (i >>> 2 & 0x3f3f3f) + (i >>> 3 & 0x1f1f1f) + (i >>> 4 & 0xf0f0f);
+            this.pixels[j] =
+                ((i >>> 1) & 0x7f7f7f) +
+                ((i >>> 2) & 0x3f3f3f) +
+                ((i >>> 3) & 0x1f1f1f) +
+                ((i >>> 4) & 0xf0f0f);
         }
     }
 
@@ -28352,15 +28469,16 @@ class Surface {
                         for (let j3 = yy - j; j3 <= yy + j; j3++) {
                             if (j3 >= 0 && j3 < this.height2) {
                                 let k3 = this.pixels[i3 + this.width2 * j3];
-                                i2 += k3 >> 16 & 0xff;
-                                j2 += k3 >> 8 & 0xff;
+                                i2 += (k3 >> 16) & 0xff;
+                                j2 += (k3 >> 8) & 0xff;
                                 k2 += k3 & 0xff;
                                 l2++;
                             }
                         }
                     }
 
-                this.pixels[xx + this.width2 * yy] = (i2 / l2 << 16) + (j2 / l2 << 8) + ((k2 / l2) | 0);
+                this.pixels[xx + this.width2 * yy] =
+                    ((i2 / l2) << 16) + ((j2 / l2) << 8) + ((k2 / l2) | 0);
             }
         }
     }
@@ -28388,7 +28506,10 @@ class Surface {
         colours[0] = 0xff00ff;
 
         for (let i = 0; i < colourCount - 1; i++) {
-            colours[i + 1] = ((indexData[indexOff] & 0xff) << 16) + ((indexData[indexOff + 1] & 0xff) << 8) + (indexData[indexOff + 2] & 0xff);
+            colours[i + 1] =
+                ((indexData[indexOff] & 0xff) << 16) +
+                ((indexData[indexOff + 1] & 0xff) << 8) +
+                (indexData[indexOff + 2] & 0xff);
             indexOff += 3;
         }
 
@@ -28397,10 +28518,16 @@ class Surface {
         for (let id = spriteId; id < spriteId + frameCount; id++) {
             this.spriteTranslateX[id] = indexData[indexOff++] & 0xff;
             this.spriteTranslateY[id] = indexData[indexOff++] & 0xff;
-            this.spriteWidth[id] = Utility.getUnsignedShort(indexData, indexOff);
+            this.spriteWidth[id] = Utility.getUnsignedShort(
+                indexData,
+                indexOff
+            );
             indexOff += 2;
 
-            this.spriteHeight[id] = Utility.getUnsignedShort(indexData, indexOff);
+            this.spriteHeight[id] = Utility.getUnsignedShort(
+                indexData,
+                indexOff
+            );
             indexOff += 2;
 
             let unknown = indexData[indexOff++] & 0xff;
@@ -28413,7 +28540,10 @@ class Surface {
             this.surfacePixels[id] = null;
             this.spriteTranslate[id] = false;
 
-            if (this.spriteTranslateX[id] !== 0 || this.spriteTranslateY[id] !== 0) {
+            if (
+                this.spriteTranslateX[id] !== 0 ||
+                this.spriteTranslateY[id] !== 0
+            ) {
                 this.spriteTranslate[id] = true;
             }
 
@@ -28428,9 +28558,15 @@ class Surface {
             } else if (unknown === 1) {
                 for (let x = 0; x < this.spriteWidth[id]; x++) {
                     for (let y = 0; y < this.spriteHeight[id]; y++) {
-                        this.spriteColoursUsed[id][x + y * this.spriteWidth[id]] = spriteData[spriteOff++];
+                        this.spriteColoursUsed[id][
+                            x + y * this.spriteWidth[id]
+                        ] = spriteData[spriteOff++];
 
-                        if (this.spriteColoursUsed[id][x + y * this.spriteWidth[id]] === 0) {
+                        if (
+                            this.spriteColoursUsed[id][
+                                x + y * this.spriteWidth[id]
+                            ] === 0
+                        ) {
                             this.spriteTranslate[id] = true;
                         }
                     }
@@ -28440,7 +28576,7 @@ class Surface {
     }
 
     readSleepWord(spriteId, spriteData) {
-        let pixels = this.surfacePixels[spriteId] = new Int32Array(10200);
+        let pixels = (this.surfacePixels[spriteId] = new Int32Array(10200));
 
         this.spriteWidth[spriteId] = 255;
         this.spriteHeight[spriteId] = 40;
@@ -28484,13 +28620,16 @@ class Surface {
     }
 
     drawWorld(spriteId) {
-        let spriteSize = this.spriteWidth[spriteId] * this.spriteHeight[spriteId];
+        let spriteSize =
+            this.spriteWidth[spriteId] * this.spriteHeight[spriteId];
         let spritePixels = this.surfacePixels[spriteId];
         let ai1 = new Int32Array(32768);
 
         for (let k = 0; k < spriteSize; k++) {
             let l = spritePixels[k];
-            ai1[((l & 0xf80000) >> 9) + ((l & 0xf800) >> 6) + ((l & 0xf8) >> 3)]++;
+            ai1[
+                ((l & 0xf80000) >> 9) + ((l & 0xf800) >> 6) + ((l & 0xf8) >> 3)
+            ]++;
         }
 
         let ai2 = new Int32Array(256);
@@ -28512,7 +28651,11 @@ class Surface {
                         ai3[i2] = ai3[i2 - 1];
                     }
 
-                    ai2[k1] = ((i1 & 0x7c00) << 9) + ((i1 & 0x3e0) << 6) + ((i1 & 0x1f) << 3) + 0x40404;
+                    ai2[k1] =
+                        ((i1 & 0x7c00) << 9) +
+                        ((i1 & 0x3e0) << 6) +
+                        ((i1 & 0x1f) << 3) +
+                        0x40404;
                     ai3[k1] = j1;
                     break;
                 }
@@ -28525,21 +28668,27 @@ class Surface {
 
         for (let l1 = 0; l1 < spriteSize; l1++) {
             let j2 = spritePixels[l1];
-            let k2 = ((j2 & 0xf80000) >> 9) + ((j2 & 0xf800) >> 6) + ((j2 & 0xf8) >> 3);
+            let k2 =
+                ((j2 & 0xf80000) >> 9) +
+                ((j2 & 0xf800) >> 6) +
+                ((j2 & 0xf8) >> 3);
             let l2 = ai1[k2];
 
             if (l2 === -1) {
                 let i3 = 999999999;
-                let j3 = j2 >> 16 & 0xff;
-                let k3 = j2 >> 8 & 0xff;
+                let j3 = (j2 >> 16) & 0xff;
+                let k3 = (j2 >> 8) & 0xff;
                 let l3 = j2 & 0xff;
 
                 for (let i4 = 0; i4 < 256; i4++) {
                     let j4 = ai2[i4];
-                    let k4 = j4 >> 16 & 0xff;
-                    let l4 = j4 >> 8 & 0xff;
+                    let k4 = (j4 >> 16) & 0xff;
+                    let l4 = (j4 >> 8) & 0xff;
                     let i5 = j4 & 0xff;
-                    let j5 = (j3 - k4) * (j3 - k4) + (k3 - l4) * (k3 - l4) + (l3 - i5) * (l3 - i5);
+                    let j5 =
+                        (j3 - k4) * (j3 - k4) +
+                        (k3 - l4) * (k3 - l4) +
+                        (l3 - i5) * (l3 - i5);
 
                     if (j5 < i3) {
                         i3 = j5;
@@ -28602,7 +28751,9 @@ class Surface {
 
         for (let xx = x; xx < x + width; xx++) {
             for (let yy = y; yy < y + height; yy++) {
-                this.surfacePixels[sprite][pixel++] = this.pixels[xx + yy * this.width2];
+                this.surfacePixels[sprite][pixel++] = this.pixels[
+                    xx + yy * this.width2
+                ];
             }
         }
     }
@@ -28624,7 +28775,9 @@ class Surface {
 
         for (let yy = y; yy < y + height; yy++) {
             for (let xx = x; xx < x + width; xx++) {
-                this.surfacePixels[sprite][pixel++] = this.pixels[xx + yy * this.width2];
+                this.surfacePixels[sprite][pixel++] = this.pixels[
+                    xx + yy * this.width2
+                ];
             }
         }
     }
@@ -28651,7 +28804,7 @@ class Surface {
         }
 
         if (y + height >= this.boundsBottomY) {
-            height -= ((y + height) - this.boundsBottomY) + 1;
+            height -= y + height - this.boundsBottomY + 1;
         }
 
         if (x < this.boundsTopX) {
@@ -28665,7 +28818,7 @@ class Surface {
         }
 
         if (x + width >= this.boundsBottomX) {
-            let l2 = ((x + width) - this.boundsBottomX) + 1;
+            let l2 = x + width - this.boundsBottomX + 1;
             width -= l2;
             h2 += l2;
             w2 += l2;
@@ -28689,10 +28842,32 @@ class Surface {
         }
 
         if (this.surfacePixels[id] === null) {
-            this._drawSprite_from10A(this.pixels, this.spriteColoursUsed[id], this.spriteColourList[id], rX, rY, width, height, w2, h2, inc);
+            this._drawSprite_from10A(
+                this.pixels,
+                this.spriteColoursUsed[id],
+                this.spriteColourList[id],
+                rX,
+                rY,
+                width,
+                height,
+                w2,
+                h2,
+                inc
+            );
             return;
         } else {
-            this._drawSprite_from10(this.pixels, this.surfacePixels[id], 0, rX, rY, width, height, w2, h2, inc);
+            this._drawSprite_from10(
+                this.pixels,
+                this.surfacePixels[id],
+                0,
+                rX,
+                rY,
+                width,
+                height,
+                w2,
+                h2,
+                inc
+            );
             return;
         }
     }
@@ -28712,19 +28887,39 @@ class Surface {
                 j2 = ((l2 << 16) / width) | 0;
                 k2 = ((j3 << 16) / height) | 0;
 
-                x += (((this.spriteTranslateX[spriteId] * width + l2) - 1) / l2) | 0;
-                y += (((this.spriteTranslateY[spriteId] * height + j3) - 1) / j3) | 0;
+                x +=
+                    ((this.spriteTranslateX[spriteId] * width + l2 - 1) / l2) |
+                    0;
+                y +=
+                    ((this.spriteTranslateY[spriteId] * height + j3 - 1) / j3) |
+                    0;
 
                 if ((this.spriteTranslateX[spriteId] * width) % l2 !== 0) {
-                    l1 = ((l2 - (this.spriteTranslateX[spriteId] * width) % l2 << 16) / width) | 0;
+                    l1 =
+                        (((l2 -
+                            ((this.spriteTranslateX[spriteId] * width) % l2)) <<
+                            16) /
+                            width) |
+                        0;
                 }
 
                 if ((this.spriteTranslateY[spriteId] * height) % j3 !== 0) {
-                    i2 = ((j3 - (this.spriteTranslateY[spriteId] * height) % j3 << 16) / height) | 0;
+                    i2 =
+                        (((j3 -
+                            ((this.spriteTranslateY[spriteId] * height) %
+                                j3)) <<
+                            16) /
+                            height) |
+                        0;
                 }
 
-                width = ((width * (this.spriteWidth[spriteId] - (l1 >> 16))) / l2) | 0;
-                height = ((height * (this.spriteHeight[spriteId] - (i2 >> 16))) / j3) | 0;
+                width =
+                    ((width * (this.spriteWidth[spriteId] - (l1 >> 16))) / l2) |
+                    0;
+                height =
+                    ((height * (this.spriteHeight[spriteId] - (i2 >> 16))) /
+                        j3) |
+                    0;
             }
 
             let i3 = x + y * this.width2;
@@ -28739,7 +28934,7 @@ class Surface {
             }
 
             if (y + height >= this.boundsBottomY) {
-                height -= ((y + height) - this.boundsBottomY) + 1;
+                height -= y + height - this.boundsBottomY + 1;
             }
 
             if (x < this.boundsTopX) {
@@ -28752,7 +28947,7 @@ class Surface {
             }
 
             if (x + width >= this.boundsBottomX) {
-                let j4 = ((x + width) - this.boundsBottomX) + 1;
+                let j4 = x + width - this.boundsBottomX + 1;
                 width -= j4;
                 k3 += j4;
             }
@@ -28770,7 +28965,21 @@ class Surface {
                 }
             }
 
-            this._plotScale_from13(this.pixels, this.surfacePixels[spriteId], 0, l1, i2, i3, k3, width, height, j2, k2, spriteWidth, yInc);
+            this._plotScale_from13(
+                this.pixels,
+                this.surfacePixels[spriteId],
+                0,
+                l1,
+                i2,
+                i3,
+                k3,
+                width,
+                height,
+                j2,
+                k2,
+                spriteWidth,
+                yInc
+            );
         } catch (e) {
             console.log('error in sprite clipping routine');
         }
@@ -28778,7 +28987,15 @@ class Surface {
 
     _spriteClipping_from7(x, y, w, h, id, tx, ty) {
         if (id >= 50000) {
-            this.mudclientref.drawTeleportBubble(x, y, w, h, id - 50000, tx, ty);
+            this.mudclientref.drawTeleportBubble(
+                x,
+                y,
+                w,
+                h,
+                id - 50000,
+                tx,
+                ty
+            );
             return;
         }
 
@@ -28823,7 +29040,7 @@ class Surface {
         }
 
         if (y + height >= this.boundsBottomY) {
-            height -= ((y + height) - this.boundsBottomY) + 1;
+            height -= y + height - this.boundsBottomY + 1;
         }
 
         if (x < this.boundsTopX) {
@@ -28837,7 +29054,7 @@ class Surface {
         }
 
         if (x + width >= this.boundsBottomX) {
-            let i3 = ((x + width) - this.boundsBottomX) + 1;
+            let i3 = x + width - this.boundsBottomX + 1;
             width -= i3;
             j2 += i3;
             extraXSpace += i3;
@@ -28861,10 +29078,34 @@ class Surface {
         }
 
         if (this.surfacePixels[spriteId] === null) {
-            this._drawSpriteAlpha_from11A(this.pixels, this.spriteColoursUsed[spriteId], this.spriteColourList[spriteId], j1, size, width, height, extraXSpace, j2, yInc, alpha);
+            this._drawSpriteAlpha_from11A(
+                this.pixels,
+                this.spriteColoursUsed[spriteId],
+                this.spriteColourList[spriteId],
+                j1,
+                size,
+                width,
+                height,
+                extraXSpace,
+                j2,
+                yInc,
+                alpha
+            );
             return;
         } else {
-            this._drawSpriteAlpha_from11(this.pixels, this.surfacePixels[spriteId], 0, j1, size, width, height, extraXSpace, j2, yInc, alpha);
+            this._drawSpriteAlpha_from11(
+                this.pixels,
+                this.surfacePixels[spriteId],
+                0,
+                j1,
+                size,
+                width,
+                height,
+                extraXSpace,
+                j2,
+                yInc,
+                alpha
+            );
             return;
         }
     }
@@ -28884,19 +29125,37 @@ class Surface {
                 k2 = ((i3 << 16) / scaleX) | 0;
                 l2 = ((k3 << 16) / scaleY) | 0;
 
-                x += (((this.spriteTranslateX[sprite] * scaleX + i3) - 1) / i3) | 0;
-                y += (((this.spriteTranslateY[sprite] * scaleY + k3) - 1) / k3) | 0;
+                x +=
+                    ((this.spriteTranslateX[sprite] * scaleX + i3 - 1) / i3) |
+                    0;
+                y +=
+                    ((this.spriteTranslateY[sprite] * scaleY + k3 - 1) / k3) |
+                    0;
 
                 if ((this.spriteTranslateX[sprite] * scaleX) % i3 !== 0) {
-                    i2 = ((i3 - (this.spriteTranslateX[sprite] * scaleX) % i3 << 16) / scaleX) | 0;
+                    i2 =
+                        (((i3 -
+                            ((this.spriteTranslateX[sprite] * scaleX) % i3)) <<
+                            16) /
+                            scaleX) |
+                        0;
                 }
 
                 if ((this.spriteTranslateY[sprite] * scaleY) % k3 !== 0) {
-                    j2 = ((k3 - (this.spriteTranslateY[sprite] * scaleY) % k3 << 16) / scaleY) | 0;
+                    j2 =
+                        (((k3 -
+                            ((this.spriteTranslateY[sprite] * scaleY) % k3)) <<
+                            16) /
+                            scaleY) |
+                        0;
                 }
 
-                scaleX = ((scaleX * (this.spriteWidth[sprite] - (i2 >> 16))) / i3) | 0;
-                scaleY = ((scaleY * (this.spriteHeight[sprite] - (j2 >> 16))) / k3) | 0;
+                scaleX =
+                    ((scaleX * (this.spriteWidth[sprite] - (i2 >> 16))) / i3) |
+                    0;
+                scaleY =
+                    ((scaleY * (this.spriteHeight[sprite] - (j2 >> 16))) / k3) |
+                    0;
             }
 
             let j3 = x + y * this.width2;
@@ -28911,7 +29170,7 @@ class Surface {
             }
 
             if (y + scaleY >= this.boundsBottomY)
-                scaleY -= ((y + scaleY) - this.boundsBottomY) + 1;
+                scaleY -= y + scaleY - this.boundsBottomY + 1;
 
             if (x < this.boundsTopX) {
                 let j4 = this.boundsTopX - x;
@@ -28923,7 +29182,7 @@ class Surface {
             }
 
             if (x + scaleX >= this.boundsBottomX) {
-                let k4 = ((x + scaleX) - this.boundsBottomX) + 1;
+                let k4 = x + scaleX - this.boundsBottomX + 1;
                 scaleX -= k4;
                 l3 += k4;
             }
@@ -28941,7 +29200,22 @@ class Surface {
                 }
             }
 
-            this.transparentScale(this.pixels, this.surfacePixels[sprite], 0, i2, j2, j3, l3, scaleX, scaleY, k2, l2, spriteWidth, yInc, alpha);
+            this.transparentScale(
+                this.pixels,
+                this.surfacePixels[sprite],
+                0,
+                i2,
+                j2,
+                j3,
+                l3,
+                scaleX,
+                scaleY,
+                k2,
+                l2,
+                spriteWidth,
+                yInc,
+                alpha
+            );
             return;
         } catch (e) {
             console.log('error in sprite clipping routine');
@@ -28962,19 +29236,39 @@ class Surface {
                 let k3 = this.spriteHeightFull[spriteId];
                 k2 = ((i3 << 16) / width) | 0;
                 l2 = ((k3 << 16) / height) | 0;
-                x += (((this.spriteTranslateX[spriteId] * width + i3) - 1) / i3) | 0;
-                y += (((this.spriteTranslateY[spriteId] * height + k3) - 1) / k3) | 0;
+                x +=
+                    ((this.spriteTranslateX[spriteId] * width + i3 - 1) / i3) |
+                    0;
+                y +=
+                    ((this.spriteTranslateY[spriteId] * height + k3 - 1) / k3) |
+                    0;
 
                 if ((this.spriteTranslateX[spriteId] * width) % i3 !== 0) {
-                    i2 = ((i3 - (this.spriteTranslateX[spriteId] * width) % i3 << 16) / width) | 0;
+                    i2 =
+                        (((i3 -
+                            ((this.spriteTranslateX[spriteId] * width) % i3)) <<
+                            16) /
+                            width) |
+                        0;
                 }
 
                 if ((this.spriteTranslateY[spriteId] * height) % k3 !== 0) {
-                    j2 = ((k3 - (this.spriteTranslateY[spriteId] * height) % k3 << 16) / height) | 0;
+                    j2 =
+                        (((k3 -
+                            ((this.spriteTranslateY[spriteId] * height) %
+                                k3)) <<
+                            16) /
+                            height) |
+                        0;
                 }
 
-                width = ((width * (this.spriteWidth[spriteId] - (i2 >> 16))) / i3) | 0;
-                height = ((height * (this.spriteHeight[spriteId] - (j2 >> 16))) / k3) | 0;
+                width =
+                    ((width * (this.spriteWidth[spriteId] - (i2 >> 16))) / i3) |
+                    0;
+                height =
+                    ((height * (this.spriteHeight[spriteId] - (j2 >> 16))) /
+                        k3) |
+                    0;
             }
 
             let j3 = x + y * this.width2;
@@ -28989,7 +29283,7 @@ class Surface {
             }
 
             if (y + height >= this.boundsBottomY) {
-                height -= ((y + height) - this.boundsBottomY) + 1;
+                height -= y + height - this.boundsBottomY + 1;
             }
 
             if (x < this.boundsTopX) {
@@ -29002,7 +29296,7 @@ class Surface {
             }
 
             if (x + width >= this.boundsBottomX) {
-                let k4 = ((x + width) - this.boundsBottomX) + 1;
+                let k4 = x + width - this.boundsBottomX + 1;
                 width -= k4;
                 l3 += k4;
             }
@@ -29020,7 +29314,22 @@ class Surface {
                 }
             }
 
-            this._plotScale_from14(this.pixels, this.surfacePixels[spriteId], 0, i2, j2, j3, l3, width, height, k2, l2, k1, yInc, colour);
+            this._plotScale_from14(
+                this.pixels,
+                this.surfacePixels[spriteId],
+                0,
+                i2,
+                j2,
+                j3,
+                l3,
+                width,
+                height,
+                k2,
+                l2,
+                k1,
+                yInc,
+                colour
+            );
             return;
         } catch (e) {
             console.log('error in sprite clipping routine');
@@ -29028,7 +29337,18 @@ class Surface {
         }
     }
 
-    _drawSprite_from10(dest, src, i, srcPos, destPos, width, height, j1, k1, yInc) {
+    _drawSprite_from10(
+        dest,
+        src,
+        i,
+        srcPos,
+        destPos,
+        width,
+        height,
+        j1,
+        k1,
+        yInc
+    ) {
         let i2 = -(width >> 2);
         width = -(width & 3);
 
@@ -29082,7 +29402,18 @@ class Surface {
         }
     }
 
-    _drawSprite_from10A(target, colourIdx, colours, srcPos, destPos, width, height, w2, h2, rowInc) {
+    _drawSprite_from10A(
+        target,
+        colourIdx,
+        colours,
+        srcPos,
+        destPos,
+        width,
+        height,
+        w2,
+        h2,
+        rowInc
+    ) {
         let l1 = -(width >> 2);
         width = -(width & 3);
 
@@ -29166,7 +29497,19 @@ class Surface {
         }
     }
 
-    _drawSpriteAlpha_from11(dest, src, i, srcPos, size, width, height, extraXSpace, k1, yInc, alpha) {
+    _drawSpriteAlpha_from11(
+        dest,
+        src,
+        i,
+        srcPos,
+        size,
+        width,
+        height,
+        extraXSpace,
+        k1,
+        yInc,
+        alpha
+    ) {
         let j2 = 256 - alpha;
 
         for (let k2 = -height; k2 < 0; k2 += yInc) {
@@ -29175,7 +29518,12 @@ class Surface {
 
                 if (i !== 0) {
                     let i3 = dest[size];
-                    dest[size++] = ((i & 0xff00ff) * alpha + (i3 & 0xff00ff) * j2 & -16711936) + ((i & 0xff00) * alpha + (i3 & 0xff00) * j2 & 0xff0000) >> 8;
+                    dest[size++] =
+                        ((((i & 0xff00ff) * alpha + (i3 & 0xff00ff) * j2) &
+                            -16711936) +
+                            (((i & 0xff00) * alpha + (i3 & 0xff00) * j2) &
+                                0xff0000)) >>
+                        8;
                 } else {
                     size++;
                 }
@@ -29186,7 +29534,19 @@ class Surface {
         }
     }
 
-    _drawSpriteAlpha_from11A(dest, coloursUsed, colourList, listPos, size, width, height, extraXSpace, j1, yInc, alpha) {
+    _drawSpriteAlpha_from11A(
+        dest,
+        coloursUsed,
+        colourList,
+        listPos,
+        size,
+        width,
+        height,
+        extraXSpace,
+        j1,
+        yInc,
+        alpha
+    ) {
         let i2 = 256 - alpha;
 
         for (let j2 = -height; j2 < 0; j2 += yInc) {
@@ -29196,7 +29556,12 @@ class Surface {
                 if (l2 !== 0) {
                     l2 = colourList[l2 & 0xff];
                     let i3 = dest[size];
-                    dest[size++] = ((l2 & 0xff00ff) * alpha + (i3 & 0xff00ff) * i2 & -16711936) + ((l2 & 0xff00) * alpha + (i3 & 0xff00) * i2 & 0xff0000) >> 8;
+                    dest[size++] =
+                        ((((l2 & 0xff00ff) * alpha + (i3 & 0xff00ff) * i2) &
+                            -16711936) +
+                            (((l2 & 0xff00) * alpha + (i3 & 0xff00) * i2) &
+                                0xff0000)) >>
+                        8;
                 } else {
                     size++;
                 }
@@ -29207,7 +29572,22 @@ class Surface {
         }
     }
 
-    transparentScale(dest, src, i, j, k, destPos, i1, j1, k1, l1, i2, j2, yInc, alpha) {
+    transparentScale(
+        dest,
+        src,
+        i,
+        j,
+        k,
+        destPos,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        yInc,
+        alpha
+    ) {
         let i3 = 256 - alpha;
 
         try {
@@ -29221,7 +29601,12 @@ class Surface {
 
                     if (i !== 0) {
                         let j4 = dest[destPos];
-                        dest[destPos++] = ((i & 0xff00ff) * alpha + (j4 & 0xff00ff) * i3 & -16711936) + ((i & 0xff00) * alpha + (j4 & 0xff00) * i3 & 0xff0000) >> 8;
+                        dest[destPos++] =
+                            ((((i & 0xff00ff) * alpha + (j4 & 0xff00ff) * i3) &
+                                -16711936) +
+                                (((i & 0xff00) * alpha + (j4 & 0xff00) * i3) &
+                                    0xff0000)) >>
+                            8;
                     } else {
                         destPos++;
                     }
@@ -29240,9 +29625,24 @@ class Surface {
         }
     }
 
-    _plotScale_from14(target, pixels, i, j, k, l, i1, width, height, l1, i2, j2, yInc, colour) {
-        let i3 = colour >> 16 & 0xff;
-        let j3 = colour >> 8 & 0xff;
+    _plotScale_from14(
+        target,
+        pixels,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        width,
+        height,
+        l1,
+        i2,
+        j2,
+        yInc,
+        colour
+    ) {
+        let i3 = (colour >> 16) & 0xff;
+        let j3 = (colour >> 8) & 0xff;
         let k3 = colour & 0xff;
 
         try {
@@ -29254,12 +29654,15 @@ class Surface {
                     i = pixels[(j >> 16) + j4];
 
                     if (i !== 0) {
-                        let l4 = i >> 16 & 0xff;
-                        let i5 = i >> 8 & 0xff;
+                        let l4 = (i >> 16) & 0xff;
+                        let i5 = (i >> 8) & 0xff;
                         let j5 = i & 0xff;
 
                         if (l4 === i5 && i5 === j5) {
-                            target[l++] = ((l4 * i3 >> 8) << 16) + ((i5 * j3 >> 8) << 8) + (j5 * k3 >> 8);
+                            target[l++] =
+                                (((l4 * i3) >> 8) << 16) +
+                                (((i5 * j3) >> 8) << 8) +
+                                ((j5 * k3) >> 8);
                         } else {
                             target[l++] = i;
                         }
@@ -29290,8 +29693,10 @@ class Surface {
             this.landscapeColours = new Int32Array(512);
 
             for (let l1 = 0; l1 < 256; l1++) {
-                this.landscapeColours[l1] = (Math.sin(l1 * 0.02454369) * 32768) | 0;
-                this.landscapeColours[l1 + 256] = (Math.cos(l1 * 0.02454369) * 32768) | 0;
+                this.landscapeColours[l1] =
+                    (Math.sin(l1 * 0.02454369) * 32768) | 0;
+                this.landscapeColours[l1 + 256] =
+                    (Math.cos(l1 * 0.02454369) * 32768) | 0;
             }
         }
 
@@ -29312,14 +29717,14 @@ class Surface {
         rotation &= 0xff;
         let i4 = this.landscapeColours[rotation] * scale;
         let j4 = this.landscapeColours[rotation + 256] * scale;
-        let k4 = x + (j2 * i4 + i2 * j4 >> 22);
-        let l4 = y + (j2 * j4 - i2 * i4 >> 22);
-        let i5 = x + (j3 * i4 + i3 * j4 >> 22);
-        let j5 = y + (j3 * j4 - i3 * i4 >> 22);
-        let k5 = x + (l2 * i4 + k2 * j4 >> 22);
-        let l5 = y + (l2 * j4 - k2 * i4 >> 22);
-        let i6 = x + (l3 * i4 + k3 * j4 >> 22);
-        let j6 = y + (l3 * j4 - k3 * i4 >> 22);
+        let k4 = x + ((j2 * i4 + i2 * j4) >> 22);
+        let l4 = y + ((j2 * j4 - i2 * i4) >> 22);
+        let i5 = x + ((j3 * i4 + i3 * j4) >> 22);
+        let j5 = y + ((j3 * j4 - i3 * i4) >> 22);
+        let k5 = x + ((l2 * i4 + k2 * j4) >> 22);
+        let l5 = y + ((l2 * j4 - k2 * i4) >> 22);
+        let i6 = x + ((l3 * i4 + k3 * j4) >> 22);
+        let j6 = y + ((l3 * j4 - k3 * i4) >> 22);
 
         if (scale === 192 && (rotation & 0x3f) === (Surface.anInt348 & 0x3f)) {
             Surface.anInt346++;
@@ -29358,7 +29763,10 @@ class Surface {
             l6 = this.boundsBottomY;
         }
 
-        if (this.anIntArray340 === null || this.anIntArray340.length !== k1 + 1) {
+        if (
+            this.anIntArray340 === null ||
+            this.anIntArray340.length !== k1 + 1
+        ) {
             this.anIntArray340 = new Int32Array(k1 + 1);
             this.anIntArray341 = new Int32Array(k1 + 1);
             this.anIntArray342 = new Int32Array(k1 + 1);
@@ -29388,8 +29796,8 @@ class Surface {
         l3 = k9 - 1;
 
         if (j6 !== l4) {
-            i8 = ((i6 - k4 << 8) / (j6 - l4)) | 0;
-            i9 = ((l3 - j2 << 8) / (j6 - l4)) | 0;
+            i8 = (((i6 - k4) << 8) / (j6 - l4)) | 0;
+            i9 = (((l3 - j2) << 8) / (j6 - l4)) | 0;
         }
 
         let j7 = 0;
@@ -29428,8 +29836,8 @@ class Surface {
         }
 
         if (j5 !== l4) {
-            i8 = ((i5 - k4 << 8) / (j5 - l4)) | 0;
-            k8 = ((i3 - i2 << 8) / (j5 - l4)) | 0;
+            i8 = (((i5 - k4) << 8) / (j5 - l4)) | 0;
+            k8 = (((i3 - i2) << 8) / (j5 - l4)) | 0;
         }
 
         let j8 = 0;
@@ -29474,8 +29882,8 @@ class Surface {
         }
 
         if (l5 !== j5) {
-            i8 = ((k5 - i5 << 8) / (l5 - j5)) | 0;
-            i9 = ((l2 - j3 << 8) / (l5 - j5)) | 0;
+            i8 = (((k5 - i5) << 8) / (l5 - j5)) | 0;
+            i9 = (((l2 - j3) << 8) / (l5 - j5)) | 0;
         }
 
         if (j5 > l5) {
@@ -29520,8 +29928,8 @@ class Surface {
         }
 
         if (j6 !== l5) {
-            i8 = ((i6 - k5 << 8) / (j6 - l5)) | 0;
-            k8 = ((k3 - k2 << 8) / (j6 - l5)) | 0;
+            i8 = (((i6 - k5) << 8) / (j6 - l5)) | 0;
+            k8 = (((k3 - k2) << 8) / (j6 - l5)) | 0;
         }
 
         if (l5 > j6) {
@@ -29576,9 +29984,11 @@ class Surface {
                 l10 += j1;
             } else {
                 let l11 = this.anIntArray342[i11] << 9;
-                let i12 = (((this.anIntArray343[i11] << 9) - l11) / (k11 - j11)) | 0;
+                let i12 =
+                    (((this.anIntArray343[i11] << 9) - l11) / (k11 - j11)) | 0;
                 let j12 = this.anIntArray344[i11] << 9;
-                let k12 = (((this.anIntArray345[i11] << 9) - j12) / (k11 - j11)) | 0;
+                let k12 =
+                    (((this.anIntArray345[i11] << 9) - j12) / (k11 - j11)) | 0;
 
                 if (j11 < this.boundsTopX) {
                     l11 += (this.boundsTopX - j11) * i12;
@@ -29592,9 +30002,31 @@ class Surface {
 
                 if (!this.interlace || (i11 & 1) === 0) {
                     if (!this.spriteTranslate[sprite]) {
-                        this.drawMinimap(this.pixels, ai, 0, l10 + j11, l11, j12, i12, k12, j11 - k11, j9);
+                        this.drawMinimap(
+                            this.pixels,
+                            ai,
+                            0,
+                            l10 + j11,
+                            l11,
+                            j12,
+                            i12,
+                            k12,
+                            j11 - k11,
+                            j9
+                        );
                     } else {
-                        this.drawMinimapTranslate(this.pixels, ai, 0, l10 + j11, l11, j12, i12, k12, j11 - k11, j9);
+                        this.drawMinimapTranslate(
+                            this.pixels,
+                            ai,
+                            0,
+                            l10 + j11,
+                            l11,
+                            j12,
+                            i12,
+                            k12,
+                            j11 - k11,
+                            j9
+                        );
                     }
                 }
 
@@ -29657,21 +30089,25 @@ class Surface {
                     j5 = fullWidth - this.spriteWidth[sprite] - j5;
                 }
 
-                x += (((j5 * w + fullWidth) - 1) / fullWidth) | 0;
-                let l5 = (((k5 * h + fullHeight) - 1) / fullHeight) | 0;
+                x += ((j5 * w + fullWidth - 1) / fullWidth) | 0;
+                let l5 = ((k5 * h + fullHeight - 1) / fullHeight) | 0;
                 y += l5;
                 i3 += l5 * l3;
 
                 if ((j5 * w) % fullWidth !== 0) {
-                    k2 = ((fullWidth - (j5 * w) % fullWidth << 16) / w) | 0;
+                    k2 = (((fullWidth - ((j5 * w) % fullWidth)) << 16) / w) | 0;
                 }
 
                 if ((k5 * h) % fullHeight !== 0) {
-                    l2 = ((fullHeight - (k5 * h) % fullHeight << 16) / h) | 0;
+                    l2 =
+                        (((fullHeight - ((k5 * h) % fullHeight)) << 16) / h) |
+                        0;
                 }
 
-                w = (((((this.spriteWidth[sprite] << 16) - k2) + j3) - 1) / j3) | 0;
-                h = (((((this.spriteHeight[sprite] << 16) - l2) + k3) - 1) / k3) | 0;
+                w = (((this.spriteWidth[sprite] << 16) - k2 + j3 - 1) / j3) | 0;
+                h =
+                    (((this.spriteHeight[sprite] << 16) - l2 + k3 - 1) / k3) |
+                    0;
             }
 
             let j4 = y * this.width2;
@@ -29687,10 +30123,10 @@ class Surface {
             }
 
             if (y + h >= this.boundsBottomY) {
-                h -= ((y + h) - this.boundsBottomY) + 1;
+                h -= y + h - this.boundsBottomY + 1;
             }
 
-            let i5 = j4 / this.width2 & 1;
+            let i5 = (j4 / this.width2) & 1;
 
             if (!this.interlace) {
                 i5 = 2;
@@ -29699,38 +30135,174 @@ class Surface {
             if (colour2 === 0xffffff) {
                 if (this.surfacePixels[sprite] !== null) {
                     if (!flag) {
-                        this._transparentSpritePlot_from15(this.pixels, this.surfacePixels[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, i3, l3, i5);
+                        this._transparentSpritePlot_from15(
+                            this.pixels,
+                            this.surfacePixels[sprite],
+                            0,
+                            k2,
+                            l2,
+                            j4,
+                            w,
+                            h,
+                            j3,
+                            k3,
+                            width,
+                            colour1,
+                            i3,
+                            l3,
+                            i5
+                        );
                         return;
                     } else {
-                        this._transparentSpritePlot_from15(this.pixels, this.surfacePixels[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, i3, l3, i5);
+                        this._transparentSpritePlot_from15(
+                            this.pixels,
+                            this.surfacePixels[sprite],
+                            0,
+                            (this.spriteWidth[sprite] << 16) - k2 - 1,
+                            l2,
+                            j4,
+                            w,
+                            h,
+                            -j3,
+                            k3,
+                            width,
+                            colour1,
+                            i3,
+                            l3,
+                            i5
+                        );
                         return;
                     }
                 }
 
                 if (!flag) {
-                    this._transparentSpritePlot_from16A(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, i3, l3, i5);
+                    this._transparentSpritePlot_from16A(
+                        this.pixels,
+                        this.spriteColoursUsed[sprite],
+                        this.spriteColourList[sprite],
+                        0,
+                        k2,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        j3,
+                        k3,
+                        width,
+                        colour1,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 } else {
-                    this._transparentSpritePlot_from16A(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, i3, l3, i5);
+                    this._transparentSpritePlot_from16A(
+                        this.pixels,
+                        this.spriteColoursUsed[sprite],
+                        this.spriteColourList[sprite],
+                        0,
+                        (this.spriteWidth[sprite] << 16) - k2 - 1,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        -j3,
+                        k3,
+                        width,
+                        colour1,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 }
             }
 
             if (this.surfacePixels[sprite] !== null) {
                 if (!flag) {
-                    this._transparentSpritePlot_from16(this.pixels, this.surfacePixels[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, colour2, i3, l3, i5);
+                    this._transparentSpritePlot_from16(
+                        this.pixels,
+                        this.surfacePixels[sprite],
+                        0,
+                        k2,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        j3,
+                        k3,
+                        width,
+                        colour1,
+                        colour2,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 } else {
-                    this._transparentSpritePlot_from16(this.pixels, this.surfacePixels[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, colour2, i3, l3, i5);
+                    this._transparentSpritePlot_from16(
+                        this.pixels,
+                        this.surfacePixels[sprite],
+                        0,
+                        (this.spriteWidth[sprite] << 16) - k2 - 1,
+                        l2,
+                        j4,
+                        w,
+                        h,
+                        -j3,
+                        k3,
+                        width,
+                        colour1,
+                        colour2,
+                        i3,
+                        l3,
+                        i5
+                    );
                     return;
                 }
             }
 
             if (!flag) {
-                this._transparentSpritePlot_from17(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, k2, l2, j4, w, h, j3, k3, width, colour1, colour2, i3, l3, i5);
+                this._transparentSpritePlot_from17(
+                    this.pixels,
+                    this.spriteColoursUsed[sprite],
+                    this.spriteColourList[sprite],
+                    0,
+                    k2,
+                    l2,
+                    j4,
+                    w,
+                    h,
+                    j3,
+                    k3,
+                    width,
+                    colour1,
+                    colour2,
+                    i3,
+                    l3,
+                    i5
+                );
                 return;
             } else {
-                this._transparentSpritePlot_from17(this.pixels, this.spriteColoursUsed[sprite], this.spriteColourList[sprite], 0, (this.spriteWidth[sprite] << 16) - k2 - 1, l2, j4, w, h, -j3, k3, width, colour1, colour2, i3, l3, i5);
+                this._transparentSpritePlot_from17(
+                    this.pixels,
+                    this.spriteColoursUsed[sprite],
+                    this.spriteColourList[sprite],
+                    0,
+                    (this.spriteWidth[sprite] << 16) - k2 - 1,
+                    l2,
+                    j4,
+                    w,
+                    h,
+                    -j3,
+                    k3,
+                    width,
+                    colour1,
+                    colour2,
+                    i3,
+                    l3,
+                    i5
+                );
                 return;
             }
         } catch (e) {
@@ -29739,9 +30311,25 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from15(dest, src, i, j, k, destPos, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
-        let i4 = j2 >> 16 & 0xff;
-        let j4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from15(
+        dest,
+        src,
+        i,
+        j,
+        k,
+        destPos,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
+        let i4 = (j2 >> 16) & 0xff;
+        let j4 = (j2 >> 8) & 0xff;
         let k4 = j2 & 0xff;
 
         try {
@@ -29761,7 +30349,7 @@ class Surface {
                 }
 
                 if (k5 + l5 >= this.boundsBottomX) {
-                    let j6 = (k5 + l5) - this.boundsBottomX;
+                    let j6 = k5 + l5 - this.boundsBottomX;
 
                     l5 -= j6;
                 }
@@ -29773,12 +30361,15 @@ class Surface {
                         i = src[(j >> 16) + j5];
 
                         if (i !== 0) {
-                            let j3 = i >> 16 & 0xff;
-                            let k3 = i >> 8 & 0xff;
+                            let j3 = (i >> 16) & 0xff;
+                            let k3 = (i >> 8) & 0xff;
                             let l3 = i & 0xff;
 
                             if (j3 === k3 && k3 === l3) {
-                                dest[k6 + destPos] = ((j3 * i4 >> 8) << 16) + ((k3 * j4 >> 8) << 8) + (l3 * k4 >> 8);
+                                dest[k6 + destPos] =
+                                    (((j3 * i4) >> 8) << 16) +
+                                    (((k3 * j4) >> 8) << 8) +
+                                    ((l3 * k4) >> 8);
                             } else {
                                 dest[k6 + destPos] = i;
                             }
@@ -29800,12 +30391,29 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from16(dest, src, i, j, k, destPos, i1, j1, k1, l1, i2, j2, k2, l2, i3, j3) {
-        let j4 = j2 >> 16 & 0xff;
-        let k4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from16(
+        dest,
+        src,
+        i,
+        j,
+        k,
+        destPos,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3,
+        j3
+    ) {
+        let j4 = (j2 >> 16) & 0xff;
+        let k4 = (j2 >> 8) & 0xff;
         let l4 = j2 & 0xff;
-        let i5 = k2 >> 16 & 0xff;
-        let j5 = k2 >> 8 & 0xff;
+        let i5 = (k2 >> 16) & 0xff;
+        let j5 = (k2 >> 8) & 0xff;
         let k5 = k2 & 0xff;
 
         try {
@@ -29824,7 +30432,7 @@ class Surface {
                 }
 
                 if (k6 + l6 >= this.boundsBottomX) {
-                    let j7 = (k6 + l6) - this.boundsBottomX;
+                    let j7 = k6 + l6 - this.boundsBottomX;
                     l6 -= j7;
                 }
 
@@ -29835,14 +30443,20 @@ class Surface {
                         i = src[(j >> 16) + j6];
 
                         if (i !== 0) {
-                            let k3 = i >> 16 & 0xff;
-                            let l3 = i >> 8 & 0xff;
+                            let k3 = (i >> 16) & 0xff;
+                            let l3 = (i >> 8) & 0xff;
                             let i4 = i & 0xff;
 
                             if (k3 === l3 && l3 === i4) {
-                                dest[k7 + destPos] = ((k3 * j4 >> 8) << 16) + ((l3 * k4 >> 8) << 8) + (i4 * l4 >> 8);
+                                dest[k7 + destPos] =
+                                    (((k3 * j4) >> 8) << 16) +
+                                    (((l3 * k4) >> 8) << 8) +
+                                    ((i4 * l4) >> 8);
                             } else if (k3 === 255 && l3 === i4) {
-                                dest[k7 + destPos] = ((k3 * i5 >> 8) << 16) + ((l3 * j5 >> 8) << 8) + (i4 * k5 >> 8);
+                                dest[k7 + destPos] =
+                                    (((k3 * i5) >> 8) << 16) +
+                                    (((l3 * j5) >> 8) << 8) +
+                                    ((i4 * k5) >> 8);
                             } else {
                                 dest[k7 + destPos] = i;
                             }
@@ -29864,9 +30478,26 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from16A(dest, colourIdx, colours, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
-        let i4 = j2 >> 16 & 0xff;
-        let j4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from16A(
+        dest,
+        colourIdx,
+        colours,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
+        let i4 = (j2 >> 16) & 0xff;
+        let j4 = (j2 >> 8) & 0xff;
         let k4 = j2 & 0xff;
 
         try {
@@ -29885,7 +30516,7 @@ class Surface {
                 }
 
                 if (k5 + l5 >= this.boundsBottomX) {
-                    let j6 = (k5 + l5) - this.boundsBottomX;
+                    let j6 = k5 + l5 - this.boundsBottomX;
                     l5 -= j6;
                 }
 
@@ -29898,12 +30529,15 @@ class Surface {
                         if (i !== 0) {
                             i = colours[i];
 
-                            let j3 = i >> 16 & 0xff;
-                            let k3 = i >> 8 & 0xff;
+                            let j3 = (i >> 16) & 0xff;
+                            let k3 = (i >> 8) & 0xff;
                             let l3 = i & 0xff;
 
                             if (j3 === k3 && k3 === l3) {
-                                dest[k6 + l] = ((j3 * i4 >> 8) << 16) + ((k3 * j4 >> 8) << 8) + (l3 * k4 >> 8);
+                                dest[k6 + l] =
+                                    (((j3 * i4) >> 8) << 16) +
+                                    (((k3 * j4) >> 8) << 8) +
+                                    ((l3 * k4) >> 8);
                             } else {
                                 dest[k6 + l] = i;
                             }
@@ -29925,12 +30559,30 @@ class Surface {
         }
     }
 
-    _transparentSpritePlot_from17(dest, coloursUsed, colourList, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2, i3, j3) {
-        let j4 = j2 >> 16 & 0xff;
-        let k4 = j2 >> 8 & 0xff;
+    _transparentSpritePlot_from17(
+        dest,
+        coloursUsed,
+        colourList,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3,
+        j3
+    ) {
+        let j4 = (j2 >> 16) & 0xff;
+        let k4 = (j2 >> 8) & 0xff;
         let l4 = j2 & 0xff;
-        let i5 = k2 >> 16 & 0xff;
-        let j5 = k2 >> 8 & 0xff;
+        let i5 = (k2 >> 16) & 0xff;
+        let j5 = (k2 >> 8) & 0xff;
         let k5 = k2 & 0xff;
 
         try {
@@ -29949,7 +30601,7 @@ class Surface {
                 }
 
                 if (k6 + l6 >= this.boundsBottomX) {
-                    let j7 = (k6 + l6) - this.boundsBottomX;
+                    let j7 = k6 + l6 - this.boundsBottomX;
                     l6 -= j7;
                 }
 
@@ -29961,14 +30613,20 @@ class Surface {
 
                         if (i !== 0) {
                             i = colourList[i];
-                            let k3 = i >> 16 & 0xff;
-                            let l3 = i >> 8 & 0xff;
+                            let k3 = (i >> 16) & 0xff;
+                            let l3 = (i >> 8) & 0xff;
                             let i4 = i & 0xff;
 
                             if (k3 === l3 && l3 === i4) {
-                                dest[k7 + l] = ((k3 * j4 >> 8) << 16) + ((l3 * k4 >> 8) << 8) + (i4 * l4 >> 8);
+                                dest[k7 + l] =
+                                    (((k3 * j4) >> 8) << 16) +
+                                    (((l3 * k4) >> 8) << 8) +
+                                    ((i4 * l4) >> 8);
                             } else if (k3 === 255 && l3 === i4) {
-                                dest[k7 + l] = ((k3 * i5 >> 8) << 16) + ((l3 * j5 >> 8) << 8) + (i4 * k5 >> 8);
+                                dest[k7 + l] =
+                                    (((k3 * i5) >> 8) << 16) +
+                                    (((l3 * j5) >> 8) << 8) +
+                                    ((i4 * k5) >> 8);
                             } else {
                                 dest[k7 + l] = i;
                             }
@@ -29995,7 +30653,13 @@ class Surface {
     }
 
     drawStringCenter(text, x, y, font, colour) {
-        this.drawString(text, x - ((this.textWidth(text, font) / 2) | 0), y, font, colour);
+        this.drawString(
+            text,
+            x - ((this.textWidth(text, font) / 2) | 0),
+            y,
+            font,
+            colour
+        );
     }
 
     drawParagraph(text, x, y, font, colour, max) {
@@ -30006,12 +30670,23 @@ class Surface {
             let end = 0;
 
             for (let index = 0; index < text.length; index++) {
-                if (text[index] === '@' && index + 4 < text.length && text[index + 4] === '@') {
+                if (
+                    text[index] === '@' &&
+                    index + 4 < text.length &&
+                    text[index + 4] === '@'
+                ) {
                     index += 4;
-                } else if (text[index] === '~' && index + 4 < text.length && text[index + 4] === '~') {
+                } else if (
+                    text[index] === '~' &&
+                    index + 4 < text.length &&
+                    text[index + 4] === '~'
+                ) {
                     index += 4;
                 } else {
-                    width += fontData[Surface.characterWidth[text.charCodeAt(index)] + 7];
+                    width +=
+                        fontData[
+                            Surface.characterWidth[text.charCodeAt(index)] + 7
+                        ];
                 }
 
                 if (text[index] === ' ') {
@@ -30028,7 +30703,13 @@ class Surface {
                         end = index;
                     }
 
-                    this.drawStringCenter(text.slice(start, end), x, y, font, colour);
+                    this.drawStringCenter(
+                        text.slice(start, end),
+                        x,
+                        y,
+                        font,
+                        colour
+                    );
                     width = 0;
                     start = index = end + 1;
                     y += this.textHeight(font);
@@ -30049,52 +30730,101 @@ class Surface {
             let fontData = Surface.gameFonts[font];
 
             for (let i = 0; i < text.length; i++) {
-                if (text[i] === '@' && i + 4 < text.length && text[i + 4] === '@') {
+                if (
+                    text[i] === '@' &&
+                    i + 4 < text.length &&
+                    text[i + 4] === '@'
+                ) {
                     if (text.slice(i + 1, i + 4).toLowerCase() === 'red') {
                         colour = 0xff0000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'lre') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'lre'
+                    ) {
                         colour = 0xff9040;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'yel') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'yel'
+                    ) {
                         colour = 0xffff00;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gre') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gre'
+                    ) {
                         colour = 65280;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'blu') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'blu'
+                    ) {
                         colour = 255;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'cya') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'cya'
+                    ) {
                         colour = 65535;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'mag') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'mag'
+                    ) {
                         colour = 0xff00ff;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'whi') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'whi'
+                    ) {
                         colour = 0xffffff;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'bla') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'bla'
+                    ) {
                         colour = 0;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'dre') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'dre'
+                    ) {
                         colour = 0xc00000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'ora') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'ora'
+                    ) {
                         colour = 0xff9040;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'ran') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'ran'
+                    ) {
                         colour = (Math.random() * 16777215) | 0;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or1') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'or1'
+                    ) {
                         colour = 0xffb000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or2') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'or2'
+                    ) {
                         colour = 0xff7000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'or3') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'or3'
+                    ) {
                         colour = 0xff3000;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr1') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gr1'
+                    ) {
                         colour = 0xc0ff00;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr2') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gr2'
+                    ) {
                         colour = 0x80ff00;
-                    } else if (text.slice(i + 1, i + 4).toLowerCase() === 'gr3') {
+                    } else if (
+                        text.slice(i + 1, i + 4).toLowerCase() === 'gr3'
+                    ) {
                         colour = 0x40ff00;
                     }
 
                     i += 4;
-                } else if (text[i] === '~' && i + 4 < text.length && text[i + 4] === '~') {
+                } else if (
+                    text[i] === '~' &&
+                    i + 4 < text.length &&
+                    text[i + 4] === '~'
+                ) {
                     let c = text.charCodeAt(i + 1);
                     let c1 = text.charCodeAt(i + 2);
                     let c2 = text.charCodeAt(i + 3);
 
-                    if (c >= C_0 && c <= C_9 && c1 >= C_0 && c1 <= C_9 && c2 >= C_0 && c2 <= C_9) {
+                    if (
+                        c >= C_0 &&
+                        c <= C_9 &&
+                        c1 >= C_0 &&
+                        c1 <= C_9 &&
+                        c2 >= C_0 &&
+                        c2 <= C_9
+                    ) {
                         x = Number(text.substring(i + 1, i + 4)) | 0;
                     }
 
@@ -30136,7 +30866,7 @@ class Surface {
         }
 
         if (j1 + l1 >= this.boundsBottomY) {
-            l1 -= ((j1 + l1) - this.boundsBottomY) + 1;
+            l1 -= j1 + l1 - this.boundsBottomY + 1;
         }
 
         if (i1 < this.boundsTopX) {
@@ -30150,7 +30880,7 @@ class Surface {
         }
 
         if (i1 + k1 >= this.boundsBottomX) {
-            let k3 = ((i1 + k1) - this.boundsBottomX) + 1;
+            let k3 = i1 + k1 - this.boundsBottomX + 1;
             k1 -= k3;
             l2 += k3;
             k2 += k3;
@@ -30221,7 +30951,14 @@ class Surface {
                         ai[k++] = i;
                     } else {
                         let k2 = ai[k];
-                        ai[k++] = ((i & 0xff00ff) * j2 + (k2 & 0xff00ff) * (256 - j2) & 0xff00ff00) + ((i & 0xff00) * j2 + (k2 & 0xff00) * (256 - j2) & 0xff0000) >> 8;
+                        ai[k++] =
+                            ((((i & 0xff00ff) * j2 +
+                                (k2 & 0xff00ff) * (256 - j2)) &
+                                0xff00ff00) +
+                                (((i & 0xff00) * j2 +
+                                    (k2 & 0xff00) * (256 - j2)) &
+                                    0xff0000)) >>
+                            8;
                     }
                 } else {
                     k++;
@@ -30282,9 +31019,17 @@ class Surface {
         let font = Surface.gameFonts[fontId];
 
         for (let idx = 0; idx < text.length; idx++) {
-            if (text[idx] === '@' && idx + 4 < text.length && text[idx + 4] === '@') {
+            if (
+                text[idx] === '@' &&
+                idx + 4 < text.length &&
+                text[idx + 4] === '@'
+            ) {
                 idx += 4;
-            } else if (text[idx] === '~' && idx + 4 < text.length && text[idx + 4] === '~') {
+            } else if (
+                text[idx] === '~' &&
+                idx + 4 < text.length &&
+                text[idx + 4] === '~'
+            ) {
                 idx += 4;
             } else {
                 total += font[Surface.characterWidth[text.charCodeAt(idx)] + 7];
@@ -30302,8 +31047,13 @@ class Surface {
             const tabColour = selected === i ? LIGHT_GREY : DARK_GREY;
 
             this.drawBoxAlpha(x + xOffset, y, tabWidth, height, tabColour, 128);
-            this.drawStringCenter(tabs[i], x + xOffset + ((tabWidth / 2) | 0),
-                y + 16, 4, BLACK);
+            this.drawStringCenter(
+                tabs[i],
+                x + xOffset + ((tabWidth / 2) | 0),
+                y + 16,
+                4,
+                BLACK
+            );
 
             if (i > 0) {
                 this.drawLineVert(x + xOffset, y, height, BLACK);
@@ -30326,7 +31076,8 @@ Surface.gameFonts.fill(null);
 
 Surface.characterWidth = new Int32Array(256);
 
-let s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
+let s =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
 
 for (let i = 0; i < 256; i++) {
     let j = s.indexOf(String.fromCharCode(i));
@@ -30340,7 +31091,7 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":74}],63:[function(require,module,exports){
+},{"./utility":82}],63:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 
 const BLACK = 0;
@@ -30363,10 +31114,13 @@ const COMBAT_STYLES = [
 function drawDialogCombatStyle() {
     if (this.mouseButtonClick !== 0) {
         for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
-            if (i <= 0 || this.mouseX <= DIALOG_X ||
+            if (
+                i <= 0 ||
+                this.mouseX <= DIALOG_X ||
                 this.mouseX >= DIALOG_X + WIDTH ||
                 this.mouseY <= DIALOG_Y + i * BUTTON_HEIGHT ||
-                this.mouseY >= DIALOG_Y + (i * BUTTON_HEIGHT) + BUTTON_HEIGHT) {
+                this.mouseY >= DIALOG_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT
+            ) {
                 continue;
             }
 
@@ -30382,47 +31136,68 @@ function drawDialogCombatStyle() {
 
     for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
         const boxColour = i === this.combatStyle + 1 ? RED : GREY;
-        this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + i * BUTTON_HEIGHT,
-            WIDTH, BUTTON_HEIGHT, boxColour, 128);
-        this.surface.drawLineHoriz(DIALOG_X, DIALOG_Y + i * BUTTON_HEIGHT,
-            WIDTH, BLACK);
-        this.surface.drawLineHoriz(DIALOG_X, DIALOG_Y + (i * BUTTON_HEIGHT) +
-            BUTTON_HEIGHT, WIDTH, BLACK);
+
+        this.surface.drawBoxAlpha(
+            DIALOG_X,
+            DIALOG_Y + i * BUTTON_HEIGHT,
+            WIDTH,
+            BUTTON_HEIGHT,
+            boxColour,
+            128
+        );
+        this.surface.drawLineHoriz(
+            DIALOG_X,
+            DIALOG_Y + i * BUTTON_HEIGHT,
+            WIDTH,
+            BLACK
+        );
+        this.surface.drawLineHoriz(
+            DIALOG_X,
+            DIALOG_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
+            WIDTH,
+            BLACK
+        );
     }
 
     let y = 16;
 
-    this.surface.drawStringCenter('Select combat style',
-        DIALOG_X + ((WIDTH / 2) | 0), DIALOG_Y + y, 3, WHITE);
+    this.surface.drawStringCenter(
+        'Select combat style',
+        DIALOG_X + ((WIDTH / 2) | 0),
+        DIALOG_Y + y,
+        3,
+        WHITE
+    );
 
     y += BUTTON_HEIGHT;
 
     for (const combatStyle of COMBAT_STYLES) {
-        this.surface.drawStringCenter(combatStyle, DIALOG_X + ((WIDTH / 2) | 0),
-            DIALOG_Y + y, 3, BLACK);
+        this.surface.drawStringCenter(
+            combatStyle,
+            DIALOG_X + ((WIDTH / 2) | 0),
+            DIALOG_Y + y,
+            3,
+            BLACK
+        );
+
         y += BUTTON_HEIGHT;
     }
 }
 
-module.exports.combatStyle = 0;
-module.exports.drawDialogCombatStyle = drawDialogCombatStyle;
+module.exports = {
+    combatStyle: 0,
+    drawDialogCombatStyle
+};
 
 },{"../opcodes/client":54}],64:[function(require,module,exports){
-const components = [
-    require('./combat-style'),
-    require('./inventory-tab'),
-    require('./magic-tab'),
-    require('./minimap-tab'),
-    require('./options-tab'),
-    require('./player-info-tab'),
-    require('./report-dialog'),
-    require('./social-dialog'),
-    require('./social-tab'),
-    require('./wilderness-dialog')
-];
+
 
 function applyUI(mudclient) {
-    for (const component of components) {
+    const components = (function () {var f = require("./index.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["player-info-tab"]=require("./player-info-tab.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+
+    for (const componentName of Object.keys(components)) {
+        const component = components[componentName];
+
         for (const propertyName of Object.keys(component)) {
             let member = component[propertyName];
 
@@ -30437,11 +31212,12 @@ function applyUI(mudclient) {
 
 module.exports = applyUI;
 
-},{"./combat-style":63,"./inventory-tab":65,"./magic-tab":66,"./minimap-tab":67,"./options-tab":68,"./player-info-tab":69,"./report-dialog":70,"./social-dialog":71,"./social-tab":72,"./wilderness-dialog":73}],65:[function(require,module,exports){
+},{"./combat-style.js":63,"./index.js":64,"./inventory-tab.js":65,"./login-panels.js":66,"./logout-dialog.js":67,"./magic-tab.js":68,"./minimap-tab.js":69,"./option-menu.js":70,"./options-tab.js":71,"./player-info-tab.js":72,"./report-dialog.js":73,"./server-message-dialog.js":74,"./shop-dialog.js":75,"./social-dialog.js":76,"./social-tab.js":77,"./trade-confirm-dialog.js":78,"./trade-dialog.js":79,"./welcome-dialog.js":80,"./wilderness-dialog.js":81}],65:[function(require,module,exports){
 const GameData = require('../game-data');
 
 const BLACK = 0;
 const DARK_GREY = 0xb5b5b5;
+const RED = 0xff0000;
 const YELLOW = 0xffff00;
 
 const UI_X = 512 - 248;
@@ -30455,7 +31231,7 @@ function drawUiTabInventory(noMenus) {
         const slotY = 36 + ((i / 5) | 0) * 34;
 
         if (i < this.inventoryItemsCount && this.inventoryEquipped[i] === 1) {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xff0000, 128);
+            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, RED, 128);
         } else {
             this.surface.drawBoxAlpha(slotX, slotY, 49, 34, DARK_GREY, 128);
         }
@@ -30465,21 +31241,38 @@ function drawUiTabInventory(noMenus) {
                 this.spriteItem + GameData.itemPicture[this.inventoryItemId[i]];
             const spriteMask = GameData.itemMask[this.inventoryItemId[i]];
 
-            this.surface._spriteClipping_from9(slotX, slotY, 48, 32, spriteId,
-                spriteMask, 0, 0, false);
+            this.surface._spriteClipping_from9(
+                slotX,
+                slotY,
+                48,
+                32,
+                spriteId,
+                spriteMask,
+                0,
+                0,
+                false
+            );
 
             if (GameData.itemStackable[this.inventoryItemId[i]] === 0) {
                 this.surface.drawString(
                     this.inventoryItemStackCount[i].toString(),
-                    slotX + 1, slotY + 10, 1, YELLOW);
+                    slotX + 1,
+                    slotY + 10,
+                    1,
+                    YELLOW
+                );
             }
         }
     }
 
     // rows and columns
     for (let i = 1; i <= 4; i++) {
-        this.surface.drawLineVert(UI_X + i * 49, 36,
-            ((this.inventoryMaxItemCount / 5) | 0) * 34, BLACK);
+        this.surface.drawLineVert(
+            UI_X + i * 49,
+            36,
+            ((this.inventoryMaxItemCount / 5) | 0) * 34,
+            BLACK
+        );
     }
 
     for (let i = 1; i <= ((this.inventoryMaxItemCount / 5) | 0) - 1; i++) {
@@ -30493,8 +31286,12 @@ function drawUiTabInventory(noMenus) {
     const mouseX = this.mouseX - UI_X;
     const mouseY = this.mouseY - UI_Y;
 
-    if (mouseX >= 0 && mouseY >= 0 && mouseX < 248 && mouseY <
-        ((this.inventoryMaxItemCount / 5) | 0) * 34) {
+    if (
+        mouseX >= 0 &&
+        mouseY >= 0 &&
+        mouseX < 248 &&
+        mouseY < ((this.inventoryMaxItemCount / 5) | 0) * 34
+    ) {
         const itemIndex = ((mouseX / 49) | 0) + ((mouseY / 34) | 0) * 5;
 
         if (itemIndex < this.inventoryItemsCount) {
@@ -30503,25 +31300,29 @@ function drawUiTabInventory(noMenus) {
 
             if (this.selectedSpell >= 0) {
                 if (GameData.spellType[this.selectedSpell] === 3) {
-                    this.menuItemText1[this.menuItemsCount] =
-                        `Cast ${GameData.spellName[this.selectedSpell]} on`;
+                    this.menuItemText1[this.menuItemsCount] = `Cast ${
+                        GameData.spellName[this.selectedSpell]
+                    } on`;
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 600;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
-                    this.menuSourceIndex[this.menuItemsCount] =
-                        this.selectedSpell;
+                    this.menuSourceIndex[
+                        this.menuItemsCount
+                    ] = this.selectedSpell;
                     this.menuItemsCount++;
                     return;
                 }
             } else {
                 if (this.selectedItemInventoryIndex >= 0) {
-                    this.menuItemText1[this.menuItemsCount] =
-                        `Use ${this.selectedItemName} with:`;
+                    this.menuItemText1[
+                        this.menuItemsCount
+                    ] = `Use ${this.selectedItemName} with:`;
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 610;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
-                    this.menuSourceIndex[this.menuItemsCount] =
-                        this.selectedItemInventoryIndex;
+                    this.menuSourceIndex[
+                        this.menuItemsCount
+                    ] = this.selectedItemInventoryIndex;
                     this.menuItemsCount++;
                     return;
                 }
@@ -30576,9 +31377,540 @@ function drawUiTabInventory(noMenus) {
     }
 }
 
-module.exports.drawUiTabInventory = drawUiTabInventory;
+module.exports = { drawUiTabInventory };
 
 },{"../game-data":44}],66:[function(require,module,exports){
+const Panel = require('../panel');
+
+function createLoginPanels() {
+    this.panelLoginWelcome = new Panel(this.surface, 50);
+
+    let y = 40;
+    let x = (this.gameWidth / 2) | 0;
+
+    if (!this.members) {
+        this.panelLoginWelcome.addText(
+            x,
+            200 + y,
+            'Click on an option',
+            5,
+            true
+        );
+        this.panelLoginWelcome.addButtonBackground(x - 100, 240 + y, 120, 35);
+        this.panelLoginWelcome.addButtonBackground(x + 100, 240 + y, 120, 35);
+        this.panelLoginWelcome.addText(x - 100, 240 + y, 'New User', 5, false);
+        this.panelLoginWelcome.addText(
+            x + 100,
+            240 + y,
+            'Existing User',
+            5,
+            false
+        );
+        this.controlWelcomeNewUser = this.panelLoginWelcome.addButton(
+            x - 100,
+            240 + y,
+            120,
+            35
+        );
+        this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(
+            x + 100,
+            240 + y,
+            120,
+            35
+        );
+    } else {
+        this.panelLoginWelcome.addText(
+            x,
+            200 + y,
+            'Welcome to RuneScape',
+            4,
+            true
+        );
+        this.panelLoginWelcome.addText(
+            x,
+            215 + y,
+            'You need a member account to use this server',
+            4,
+            true
+        );
+        this.panelLoginWelcome.addButtonBackground(x, 250 + y, 200, 35);
+        this.panelLoginWelcome.addText(
+            x,
+            250 + y,
+            'Click here to login',
+            5,
+            false
+        );
+        this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(
+            x,
+            250 + y,
+            200,
+            35
+        );
+    }
+
+    this.panelLoginNewUser = new Panel(this.surface, 50);
+    y = 230;
+
+    if (this.referID === 0) {
+        this.panelLoginNewUser.addText(
+            x,
+            y + 8,
+            'To create an account please go back to the',
+            4,
+            true
+        );
+        y += 20;
+        this.panelLoginNewUser.addText(
+            x,
+            y + 8,
+            "www.runescape.com front page, and choose 'create account'",
+            4,
+            true
+        );
+    } else if (this.referID === 1) {
+        this.panelLoginNewUser.addText(
+            x,
+            y + 8,
+            'To create an account please click on the',
+            4,
+            true
+        );
+        y += 20;
+        this.panelLoginNewUser.addText(
+            x,
+            y + 8,
+            "'create account' link below the game window",
+            4,
+            true
+        );
+    } else {
+        this.panelLoginNewUser.addText(
+            x,
+            y + 8,
+            'To create an account please go back to the',
+            4,
+            true
+        );
+        y += 20;
+        this.panelLoginNewUser.addText(
+            x,
+            y + 8,
+            "runescape front webpage and choose 'create account'",
+            4,
+            true
+        );
+    }
+
+    y += 30;
+
+    this.panelLoginNewUser.addButtonBackground(x, y + 17, 150, 34);
+    this.panelLoginNewUser.addText(x, y + 17, 'Ok', 5, false);
+    this.controlLoginNewOk = this.panelLoginNewUser.addButton(
+        x,
+        y + 17,
+        150,
+        34
+    );
+    this.panelLoginExistingUser = new Panel(this.surface, 50);
+
+    y = 230;
+
+    this.controlLoginStatus = this.panelLoginExistingUser.addText(
+        x,
+        y - 10,
+        'Please enter your username and password',
+        4,
+        true
+    );
+
+    y += 28;
+
+    this.panelLoginExistingUser.addButtonBackground(x - 116, y, 200, 40);
+    this.panelLoginExistingUser.addText(x - 116, y - 10, 'Username:', 4, false);
+    this.controlLoginUser = this.panelLoginExistingUser.addTextInput(
+        x - 116,
+        y + 10,
+        200,
+        40,
+        4,
+        12,
+        false,
+        false
+    );
+
+    y += 47;
+
+    this.panelLoginExistingUser.addButtonBackground(x - 66, y, 200, 40);
+    this.panelLoginExistingUser.addText(x - 66, y - 10, 'Password:', 4, false);
+    this.controlLoginPass = this.panelLoginExistingUser.addTextInput(
+        x - 66,
+        y + 10,
+        200,
+        40,
+        4,
+        20,
+        true,
+        false
+    );
+
+    y -= 55;
+
+    this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
+    this.panelLoginExistingUser.addText(x + 154, y, 'Ok', 4, false);
+    this.controlLoginOk = this.panelLoginExistingUser.addButton(
+        x + 154,
+        y,
+        120,
+        25
+    );
+
+    y += 30;
+
+    this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
+    this.panelLoginExistingUser.addText(x + 154, y, 'Cancel', 4, false);
+    this.controlLoginCancel = this.panelLoginExistingUser.addButton(
+        x + 154,
+        y,
+        120,
+        25
+    );
+
+    y += 30;
+
+    this.panelLoginExistingUser.setFocus(this.controlLoginUser);
+}
+
+function renderLoginScreenViewports() {
+    const plane = 0;
+    const regionX = 50; //49;
+    const regionY = 50; //47;
+
+    this.world._loadSection_from3(regionX * 48 + 23, regionY * 48 + 23, plane);
+    this.world.addModels(this.gameModels);
+
+    let x = 9728;
+    let y = 6400;
+    let zoom = 1100;
+    let rotation = 888;
+
+    this.scene.clipFar3d = 4100;
+    this.scene.clipFar2d = 4100;
+    this.scene.fogZFalloff = 1;
+    this.scene.fogZDistance = 4000;
+
+    this.surface.blackScreen();
+    this.scene.setCamera(
+        x,
+        -this.world.getElevation(x, y),
+        y,
+        912,
+        rotation,
+        0,
+        zoom * 2
+    );
+    this.scene.render();
+    this.surface.fadeToBlack();
+    this.surface.fadeToBlack();
+    this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
+
+    for (let i = 6; i >= 1; i--) {
+        this.surface.drawLineAlpha(0, i, 0, i, this.gameWidth, 8);
+    }
+
+    this.surface.drawBox(0, 194, 512, 20, 0);
+
+    for (let i = 6; i >= 1; i--) {
+        this.surface.drawLineAlpha(0, i, 0, 194 - i, this.gameWidth, 8);
+    }
+
+    // runescape logo
+    this.surface._drawSprite_from3(
+        ((this.gameWidth / 2) | 0) -
+            ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0),
+        15,
+        this.spriteMedia + 10
+    );
+    this.surface._drawSprite_from5(this.spriteLogo, 0, 0, this.gameWidth, 200);
+    this.surface.drawWorld(this.spriteLogo);
+
+    x = 9216;
+    y = 9216;
+    zoom = 1100;
+    rotation = 888;
+
+    this.scene.clipFar3d = 4100;
+    this.scene.clipFar2d = 4100;
+    this.scene.fogZFalloff = 1;
+    this.scene.fogZDistance = 4000;
+
+    this.surface.blackScreen();
+    this.scene.setCamera(
+        x,
+        -this.world.getElevation(x, y),
+        y,
+        912,
+        rotation,
+        0,
+        zoom * 2
+    );
+    this.scene.render();
+    this.surface.fadeToBlack();
+    this.surface.fadeToBlack();
+    this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
+
+    for (let i = 6; i >= 1; i--) {
+        this.surface.drawLineAlpha(0, i, 0, i, this.gameWidth, 8);
+    }
+
+    this.surface.drawBox(0, 194, this.gameWidth, 20, 0);
+
+    for (let i = 6; i >= 1; i--) {
+        this.surface.drawLineAlpha(0, i, 0, 194 - i, this.gameWidth, 8);
+    }
+
+    this.surface._drawSprite_from3(
+        ((this.gameWidth / 2) | 0) -
+            ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0),
+        15,
+        this.spriteMedia + 10
+    );
+    this.surface._drawSprite_from5(
+        this.spriteLogo + 1,
+        0,
+        0,
+        this.gameWidth,
+        200
+    );
+    this.surface.drawWorld(this.spriteLogo + 1);
+
+    for (let i = 0; i < 64; i++) {
+        this.scene.removeModel(this.world.roofModels[0][i]);
+        this.scene.removeModel(this.world.wallModels[1][i]);
+        this.scene.removeModel(this.world.roofModels[1][i]);
+        this.scene.removeModel(this.world.wallModels[2][i]);
+        this.scene.removeModel(this.world.roofModels[2][i]);
+    }
+
+    x = 11136;
+    y = 10368;
+    zoom = 500;
+    rotation = 376;
+
+    this.scene.clipFar3d = 4100;
+    this.scene.clipFar2d = 4100;
+    this.scene.fogZFalloff = 1;
+    this.scene.fogZDistance = 4000;
+
+    this.surface.blackScreen();
+    this.scene.setCamera(
+        x,
+        -this.world.getElevation(x, y),
+        y,
+        912,
+        rotation,
+        0,
+        zoom * 2
+    );
+    this.scene.render();
+    this.surface.fadeToBlack();
+    this.surface.fadeToBlack();
+    this.surface.drawBox(0, 0, this.gameWidth, 6, 0);
+
+    for (let i = 6; i >= 1; i--) {
+        this.surface.drawLineAlpha(0, i, 0, i, this.gameWidth, 8);
+    }
+
+    this.surface.drawBox(0, 194, this.gameWidth, 20, 0);
+
+    for (let i = 6; i >= 1; i--) {
+        this.surface.drawLineAlpha(0, i, 0, 194, this.gameWidth, 8);
+    }
+
+    this.surface._drawSprite_from3(
+        ((this.gameWidth / 2) | 0) -
+            ((this.surface.spriteWidth[this.spriteMedia + 10] / 2) | 0),
+        15,
+        this.spriteMedia + 10
+    );
+    this.surface._drawSprite_from5(
+        this.spriteMedia + 10,
+        0,
+        0,
+        this.gameWidth,
+        200
+    );
+    this.surface.drawWorld(this.spriteMedia + 10);
+}
+
+function drawLoginScreens() {
+    this.welcomScreenAlreadyShown = false;
+    this.surface.interlace = false;
+
+    this.surface.blackScreen();
+
+    if (
+        this.loginScreen === 0 ||
+        this.loginScreen === 1 ||
+        this.loginScreen === 2 ||
+        this.loginScreen === 3
+    ) {
+        const cycle = (this.loginTimer * 2) % 3072;
+
+        if (cycle < 1024) {
+            this.surface._drawSprite_from3(0, 10, this.spriteLogo);
+
+            if (cycle > 768) {
+                this.surface._drawSpriteAlpha_from4(
+                    0,
+                    10,
+                    this.spriteLogo + 1,
+                    cycle - 768
+                );
+            }
+        } else if (cycle < 2048) {
+            this.surface._drawSprite_from3(0, 10, this.spriteLogo + 1);
+
+            if (cycle > 1792) {
+                this.surface._drawSpriteAlpha_from4(
+                    0,
+                    10,
+                    this.spriteMedia + 10,
+                    cycle - 1792
+                );
+            }
+        } else {
+            this.surface._drawSprite_from3(0, 10, this.spriteMedia + 10);
+
+            if (cycle > 2816) {
+                this.surface._drawSpriteAlpha_from4(
+                    0,
+                    10,
+                    this.spriteLogo,
+                    cycle - 2816
+                );
+            }
+        }
+    }
+
+    if (this.loginScreen === 0) {
+        this.panelLoginWelcome.drawPanel();
+    } else if (this.loginScreen === 1) {
+        this.panelLoginNewUser.drawPanel();
+    } else if (this.loginScreen === 2) {
+        this.panelLoginExistingUser.drawPanel();
+    }
+
+    // blue bar
+    this.surface._drawSprite_from3(
+        0,
+        this.gameHeight - 4,
+        this.spriteMedia + 22
+    );
+    this.surface.draw(this.graphics, 0, 0);
+}
+
+async function handleLoginScreenInput() {
+    if (this.worldFullTimeout > 0) {
+        this.worldFullTimeout--;
+    }
+
+    if (this.loginScreen === 0) {
+        this.panelLoginWelcome.handleMouse(
+            this.mouseX,
+            this.mouseY,
+            this.lastMouseButtonDown,
+            this.mouseButtonDown
+        );
+
+        if (this.panelLoginWelcome.isClicked(this.controlWelcomeNewUser)) {
+            this.loginScreen = 1;
+        }
+
+        if (this.panelLoginWelcome.isClicked(this.controlWelcomeExistingUser)) {
+            this.loginScreen = 2;
+            this.panelLoginExistingUser.updateText(
+                this.controlLoginStatus,
+                'Please enter your username and password'
+            );
+            this.panelLoginExistingUser.updateText(this.controlLoginUser, '');
+            this.panelLoginExistingUser.updateText(this.controlLoginPass, '');
+            this.panelLoginExistingUser.setFocus(this.controlLoginUser);
+            return;
+        }
+    } else if (this.loginScreen === 1) {
+        this.panelLoginNewUser.handleMouse(
+            this.mouseX,
+            this.mouseY,
+            this.lastMouseButtonDown,
+            this.mouseButtonDown
+        );
+
+        if (this.panelLoginNewUser.isClicked(this.controlLoginNewOk)) {
+            this.loginScreen = 0;
+            return;
+        }
+    } else if (this.loginScreen === 2) {
+        this.panelLoginExistingUser.handleMouse(
+            this.mouseX,
+            this.mouseY,
+            this.lastMouseButtonDown,
+            this.mouseButtonDown
+        );
+
+        if (this.panelLoginExistingUser.isClicked(this.controlLoginCancel)) {
+            this.loginScreen = 0;
+        }
+
+        if (this.panelLoginExistingUser.isClicked(this.controlLoginUser)) {
+            this.panelLoginExistingUser.setFocus(this.controlLoginPass);
+        }
+
+        if (
+            this.panelLoginExistingUser.isClicked(this.controlLoginPass) ||
+            this.panelLoginExistingUser.isClicked(this.controlLoginOk)
+        ) {
+            this.loginUser = this.panelLoginExistingUser.getText(
+                this.controlLoginUser
+            );
+            this.loginPass = this.panelLoginExistingUser.getText(
+                this.controlLoginPass
+            );
+
+            await this.login(this.loginUser, this.loginPass, false);
+        }
+    }
+}
+
+module.exports = {
+    controlLoginCancel: 0,
+    controlLoginNewOk: 0,
+    controlLoginOk: 0,
+    controlLoginPass: 0,
+    controlLoginStatus: 0,
+    controlLoginUser: 0,
+    controlWelcomeExistingUser: 0,
+    controlWelcomeNewUser: 0,
+    createLoginPanels,
+    drawLoginScreens,
+    handleLoginScreenInput,
+    loginScreen: 0,
+    renderLoginScreenViewports
+};
+
+},{"../panel":57}],67:[function(require,module,exports){
+const BLACK = 0;
+const WHITE = 0xffffff;
+
+function drawDialogLogout() {
+    this.surface.drawBox(126, 137, 260, 60, BLACK);
+    this.surface.drawBoxEdge(126, 137, 260, 60, WHITE);
+    this.surface.drawStringCenter('Logging out...', 256, 173, 5, WHITE);
+}
+
+module.exports = { drawDialogLogout };
+
+},{}],68:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 
@@ -30593,17 +31925,29 @@ const UI_Y = 36;
 const WIDTH = 196;
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
-const TABS = [ 'Magic', 'Prayers' ];
+const TABS = ['Magic', 'Prayers'];
 const TAB_HEIGHT = 24;
 
 function drawUiTabMagic(noMenus) {
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 4);
 
-    this.surface.drawBoxAlpha(UI_X, UI_Y + TAB_HEIGHT, WIDTH, HEIGHT -
-        TAB_HEIGHT, LIGHT_GREY, 128);
+    this.surface.drawBoxAlpha(
+        UI_X,
+        UI_Y + TAB_HEIGHT,
+        WIDTH,
+        HEIGHT - TAB_HEIGHT,
+        LIGHT_GREY,
+        128
+    );
     this.surface.drawLineHoriz(UI_X, UI_Y + 113, WIDTH, BLACK);
-    this.surface.drawTabs(UI_X, UI_Y, WIDTH, TAB_HEIGHT, TABS,
-        this.uiTabMagicSubTab);
+    this.surface.drawTabs(
+        UI_X,
+        UI_Y,
+        WIDTH,
+        TAB_HEIGHT,
+        TABS,
+        this.uiTabMagicSubTab
+    );
 
     if (this.uiTabMagicSubTab === 0) {
         this.panelMagic.clearList(this.controlListMagic);
@@ -30629,23 +31973,36 @@ function drawUiTabMagic(noMenus) {
                 colourPrefix = '@bla@';
             }
 
-            this.panelMagic.addListEntry(this.controlListMagic, i,
+            this.panelMagic.addListEntry(
+                this.controlListMagic,
+                i,
                 `${colourPrefix}Level ${GameData.spellLevel[i]}: ` +
-                GameData.spellName[i]);
+                    GameData.spellName[i]
+            );
         }
 
         this.panelMagic.drawPanel();
 
         const spellIndex = this.panelMagic.getListEntryIndex(
-            this.controlListMagic);
+            this.controlListMagic
+        );
 
         if (spellIndex !== -1) {
             this.surface.drawString(
                 `Level ${GameData.spellLevel[spellIndex]}` +
-                `: ${GameData.spellName[spellIndex]}`,
-                UI_X + 2, UI_Y + 124, 1, YELLOW);
-            this.surface.drawString(GameData.spellDescription[spellIndex],
-                UI_X + 2, UI_Y + 136, 0, WHITE);
+                    `: ${GameData.spellName[spellIndex]}`,
+                UI_X + 2,
+                UI_Y + 124,
+                1,
+                YELLOW
+            );
+            this.surface.drawString(
+                GameData.spellDescription[spellIndex],
+                UI_X + 2,
+                UI_Y + 136,
+                0,
+                WHITE
+            );
 
             for (let i = 0; i < GameData.spellRunesRequired[spellIndex]; i++) {
                 const runeId = GameData.spellRunesId[spellIndex][i];
@@ -30657,15 +32014,27 @@ function drawUiTabMagic(noMenus) {
                     colourPrefix = '@gre@';
                 }
 
-                this.surface._drawSprite_from3(UI_X + 2 + (i * 44), UI_Y + 150,
-                    this.spriteItem + GameData.itemPicture[runeId]);
+                this.surface._drawSprite_from3(
+                    UI_X + 2 + i * 44,
+                    UI_Y + 150,
+                    this.spriteItem + GameData.itemPicture[runeId]
+                );
                 this.surface.drawString(
                     `${colourPrefix}${inventoryRuneCount}/${runeCount}`,
-                    UI_X + 2 + (i * 44), UI_Y + 150, 1, WHITE);
+                    UI_X + 2 + i * 44,
+                    UI_Y + 150,
+                    1,
+                    WHITE
+                );
             }
         } else {
-            this.surface.drawString('Point at a spell for a description',
-                UI_X + 2, UI_Y + 124, 1, BLACK);
+            this.surface.drawString(
+                'Point at a spell for a description',
+                UI_X + 2,
+                UI_Y + 124,
+                1,
+                BLACK
+            );
         }
     } else if (this.uiTabMagicSubTab === 1) {
         this.panelMagic.clearList(this.controlListMagic);
@@ -30681,30 +32050,51 @@ function drawUiTabMagic(noMenus) {
                 colourPrefix = '@gre@';
             }
 
-            this.panelMagic.addListEntry(this.controlListMagic, i,
+            this.panelMagic.addListEntry(
+                this.controlListMagic,
+                i,
                 `${colourPrefix}Level ${GameData.prayerLevel[i]}: ` +
-                GameData.prayerName[i]);
+                    GameData.prayerName[i]
+            );
         }
 
         this.panelMagic.drawPanel();
 
         const prayerIndex = this.panelMagic.getListEntryIndex(
-            this.controlListMagic);
+            this.controlListMagic
+        );
 
         if (prayerIndex !== -1) {
             this.surface.drawStringCenter(
                 `Level ${GameData.prayerLevel[prayerIndex]}: ` +
-                GameData.prayerName[prayerIndex], UI_X + HALF_WIDTH, UI_Y + 130,
-                1, YELLOW);
+                    GameData.prayerName[prayerIndex],
+                UI_X + HALF_WIDTH,
+                UI_Y + 130,
+                1,
+                YELLOW
+            );
             this.surface.drawStringCenter(
                 GameData.prayerDescription[prayerIndex],
-                UI_X + HALF_WIDTH, UI_Y + 145, 0, WHITE);
+                UI_X + HALF_WIDTH,
+                UI_Y + 145,
+                0,
+                WHITE
+            );
             this.surface.drawStringCenter(
                 'Drain rate: ' + GameData.prayerDrain[prayerIndex],
-                UI_X + HALF_WIDTH, UI_Y + 160, 1, BLACK);
+                UI_X + HALF_WIDTH,
+                UI_Y + 160,
+                1,
+                BLACK
+            );
         } else {
-            this.surface.drawString('Point at a prayer for a description',
-                UI_X + 2, UI_Y + 124, 1, BLACK);
+            this.surface.drawString(
+                'Point at a prayer for a description',
+                UI_X + 2,
+                UI_Y + 124,
+                1,
+                BLACK
+            );
         }
     }
 
@@ -30716,9 +32106,13 @@ function drawUiTabMagic(noMenus) {
     const mouseY = this.mouseY - UI_Y;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 182) {
-        this.panelMagic.handleMouse(mouseX + UI_X, mouseY + UI_Y,
-            this.lastMouseButtonDown, this.mouseButtonDown,
-            this.mouseScrollDelta);
+        this.panelMagic.handleMouse(
+            mouseX + UI_X,
+            mouseY + UI_Y,
+            this.lastMouseButtonDown,
+            this.mouseButtonDown,
+            this.mouseScrollDelta
+        );
 
         if (mouseY <= TAB_HEIGHT && this.mouseButtonClick === 1) {
             if (mouseX < HALF_WIDTH && this.uiTabMagicSubTab === 1) {
@@ -30732,28 +32126,41 @@ function drawUiTabMagic(noMenus) {
 
         if (this.mouseButtonClick === 1 && this.uiTabMagicSubTab === 0) {
             const spellIndex = this.panelMagic.getListEntryIndex(
-                this.controlListMagic);
+                this.controlListMagic
+            );
 
             if (spellIndex !== -1) {
                 const magicLevel = this.playerStatCurrent[6];
 
                 if (GameData.spellLevel[spellIndex] > magicLevel) {
-                    this.showMessage('Your magic ability is not high enough ' +
-                        'for this spell', 3);
+                    this.showMessage(
+                        'Your magic ability is not high enough for this spell',
+                        3
+                    );
                 } else {
                     let i = 0;
 
-                    for (i = 0; i < GameData.spellRunesRequired[spellIndex];
-                        i++) {
+                    for (
+                        i = 0;
+                        i < GameData.spellRunesRequired[spellIndex];
+                        i++
+                    ) {
                         const reagantId = GameData.spellRunesId[spellIndex][i];
 
-                        if (this.hasInventoryItems(reagantId,
-                            GameData.spellRunesCount[spellIndex][i])) {
+                        if (
+                            this.hasInventoryItems(
+                                reagantId,
+                                GameData.spellRunesCount[spellIndex][i]
+                            )
+                        ) {
                             continue;
                         }
 
-                        this.showMessage('You don\'t have all the reagents ' +
-                            'you need for this spell', 3);
+                        this.showMessage(
+                            "You don't have all the reagents you need for " +
+                                'this spell',
+                            3
+                        );
                         i = -1;
                         break;
                     }
@@ -30768,17 +32175,24 @@ function drawUiTabMagic(noMenus) {
 
         if (this.mouseButtonClick === 1 && this.uiTabMagicSubTab === 1) {
             const prayerIndex = this.panelMagic.getListEntryIndex(
-                this.controlListMagic);
+                this.controlListMagic
+            );
 
             if (prayerIndex !== -1) {
                 const prayerLevel = this.playerStatBase[5];
 
                 if (GameData.prayerLevel[prayerIndex] > prayerLevel) {
-                    this.showMessage('Your prayer ability is not high enough ' +
-                        'for this prayer', 3);
+                    this.showMessage(
+                        'Your prayer ability is not high enough for this ' +
+                            'prayer',
+                        3
+                    );
                 } else if (this.playerStatCurrent[5] === 0) {
-                    this.showMessage('You have run out of prayer points. ' +
-                        'Return to a church to recharge', 3);
+                    this.showMessage(
+                        'You have run out of prayer points. Return to a ' +
+                            'church to recharge',
+                        3
+                    );
                 } else if (this.prayerOn[prayerIndex]) {
                     this.packetStream.newPacket(clientOpcodes.PRAYER_OFF);
                     this.packetStream.putByte(prayerIndex);
@@ -30799,10 +32213,12 @@ function drawUiTabMagic(noMenus) {
     }
 }
 
-module.exports.uiTabMagicSubTab = 0;
-module.exports.drawUiTabMagic = drawUiTabMagic;
+module.exports = {
+    drawUiTabMagic,
+    uiTabMagicSubTab: 0
+};
 
-},{"../game-data":44,"../opcodes/client":54}],67:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54}],69:[function(require,module,exports){
 const Scene = require('../scene');
 
 const CYAN = 0x00ffff;
@@ -30819,6 +32235,14 @@ const WIDTH = 156;
 const HALF_HEIGHT = (HEIGHT / 2) | 0;
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
+function drawMinimapEntity(x, y, colour) {
+    this.surface.setPixel(x, y, colour);
+    this.surface.setPixel(x - 1, y, colour);
+    this.surface.setPixel(x + 1, y, colour);
+    this.surface.setPixel(x, y - 1, colour);
+    this.surface.setPixel(x, y + 1, colour);
+}
+
 function drawUiTabMinimap(noMenus) {
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 2);
 
@@ -30828,81 +32252,126 @@ function drawUiTabMinimap(noMenus) {
     this.surface.setBounds(x, UI_Y, x + WIDTH, UI_Y + HEIGHT);
 
     const scale = 192 + this.minimapRandom2;
-    const rotation = this.cameraRotation + this.minimapRandom1 & 0xff;
+    const rotation = (this.cameraRotation + this.minimapRandom1) & 0xff;
 
     let playerX = (((this.localPlayer.currentX - 6040) * 3 * scale) / 2048) | 0;
     let playerY = (((this.localPlayer.currentY - 6040) * 3 * scale) / 2048) | 0;
 
-    const sin = Scene.sinCosCache[1024 - rotation * 4 & 0x3ff];
-    const cos = Scene.sinCosCache[(1024 - rotation * 4 & 0x3ff) + 1024];
-    const tempX = playerY * sin + playerX * cos >> 18;
+    const sin = Scene.sinCosCache[(1024 - rotation * 4) & 0x3ff];
+    const cos = Scene.sinCosCache[((1024 - rotation * 4) & 0x3ff) + 1024];
+    const tempX = (playerY * sin + playerX * cos) >> 18;
 
-    playerY = playerY * cos - playerX * sin >> 18;
+    playerY = (playerY * cos - playerX * sin) >> 18;
     playerX = tempX;
 
     this.surface.drawMinimapSprite(
-        x + HALF_WIDTH - playerX, UI_Y + HALF_HEIGHT + playerY,
-        this.spriteMedia - 1, rotation + 64 & 255, scale);
+        x + HALF_WIDTH - playerX,
+        UI_Y + HALF_HEIGHT + playerY,
+        this.spriteMedia - 1,
+        (rotation + 64) & 255,
+        scale
+    );
 
     for (let i = 0; i < this.objectCount; i++) {
-        let objectX = ((((this.objectX[i] * this.magicLoc + 64) -
-            this.localPlayer.currentX) * 3 * scale) / 2048) | 0;
-        let objectY = ((((this.objectY[i] * this.magicLoc + 64) -
-            this.localPlayer.currentY) * 3 * scale) / 2048) | 0;
-        const tempX = objectY * sin + objectX * cos >> 18;
+        let objectX =
+            (((this.objectX[i] * this.magicLoc +
+                64 -
+                this.localPlayer.currentX) *
+                3 *
+                scale) /
+                2048) |
+            0;
+        let objectY =
+            (((this.objectY[i] * this.magicLoc +
+                64 -
+                this.localPlayer.currentY) *
+                3 *
+                scale) /
+                2048) |
+            0;
+        const tempX = (objectY * sin + objectX * cos) >> 18;
 
-        objectY = objectY * cos - objectX * sin >> 18;
+        objectY = (objectY * cos - objectX * sin) >> 18;
         objectX = tempX;
 
-        this.drawMinimapEntity(x + HALF_WIDTH + objectX, UI_Y + HALF_HEIGHT -
-            objectY, CYAN);
+        this.drawMinimapEntity(
+            x + HALF_WIDTH + objectX,
+            UI_Y + HALF_HEIGHT - objectY,
+            CYAN
+        );
     }
 
     for (let i = 0; i < this.groundItemCount; i++) {
-        let itemX = ((((this.groundItemX[i] * this.magicLoc + 64) -
-            this.localPlayer.currentX) * 3 * scale) / 2048) | 0;
-        let itemY = ((((this.groundItemY[i] * this.magicLoc + 64) -
-            this.localPlayer.currentY) * 3 * scale) / 2048) | 0;
-        const tempX = itemY * sin + itemX * cos >> 18;
+        let itemX =
+            (((this.groundItemX[i] * this.magicLoc +
+                64 -
+                this.localPlayer.currentX) *
+                3 *
+                scale) /
+                2048) |
+            0;
+        let itemY =
+            (((this.groundItemY[i] * this.magicLoc +
+                64 -
+                this.localPlayer.currentY) *
+                3 *
+                scale) /
+                2048) |
+            0;
+        const tempX = (itemY * sin + itemX * cos) >> 18;
 
-        itemY = itemY * cos - itemX * sin >> 18;
+        itemY = (itemY * cos - itemX * sin) >> 18;
         itemX = tempX;
 
-        this.drawMinimapEntity(x + HALF_WIDTH + itemX, UI_Y + HALF_HEIGHT -
-            itemY, RED);
+        this.drawMinimapEntity(
+            x + HALF_WIDTH + itemX,
+            UI_Y + HALF_HEIGHT - itemY,
+            RED
+        );
     }
 
     for (let i = 0; i < this.npcCount; i++) {
         const npc = this.npcs[i];
-        let npcX = (((npc.currentX - this.localPlayer.currentX) * 3 * scale) /
-            2048) | 0;
-        let npcY = (((npc.currentY - this.localPlayer.currentY) * 3 * scale) /
-            2048) | 0;
-        const tempX = npcY * sin + npcX * cos >> 18;
+        let npcX =
+            (((npc.currentX - this.localPlayer.currentX) * 3 * scale) / 2048) |
+            0;
+        let npcY =
+            (((npc.currentY - this.localPlayer.currentY) * 3 * scale) / 2048) |
+            0;
+        const tempX = (npcY * sin + npcX * cos) >> 18;
 
-        npcY = npcY * cos - npcX * sin >> 18;
+        npcY = (npcY * cos - npcX * sin) >> 18;
         npcX = tempX;
 
-        this.drawMinimapEntity(x + HALF_WIDTH + npcX, UI_Y + HALF_HEIGHT - npcY,
-            YELLOW);
+        this.drawMinimapEntity(
+            x + HALF_WIDTH + npcX,
+            UI_Y + HALF_HEIGHT - npcY,
+            YELLOW
+        );
     }
 
     for (let i = 0; i < this.playerCount; i++) {
         const player = this.players[i];
-        let otherPlayerX = (((player.currentX - this.localPlayer.currentX) * 3 *
-            scale) / 2048) | 0;
-        let otherPlayerY = (((player.currentY - this.localPlayer.currentY) * 3 *
-            scale) / 2048) | 0;
-        const tempX = otherPlayerY * sin + otherPlayerX * cos >> 18;
+        let otherPlayerX =
+            (((player.currentX - this.localPlayer.currentX) * 3 * scale) /
+                2048) |
+            0;
+        let otherPlayerY =
+            (((player.currentY - this.localPlayer.currentY) * 3 * scale) /
+                2048) |
+            0;
+        const tempX = (otherPlayerY * sin + otherPlayerX * cos) >> 18;
 
-        otherPlayerY = otherPlayerY * cos - otherPlayerX * sin >> 18;
+        otherPlayerY = (otherPlayerY * cos - otherPlayerX * sin) >> 18;
         otherPlayerX = tempX;
 
         let playerColour = WHITE;
 
         for (let j = 0; j < this.friendListCount; j++) {
-            if (!player.hash.equals(this.friendListHashes[j]) ||
-                this.friendListOnline[j] !== 255) {
+            if (
+                !player.hash.equals(this.friendListHashes[j]) ||
+                this.friendListOnline[j] !== 255
+            ) {
                 continue;
             }
 
@@ -30910,16 +32379,23 @@ function drawUiTabMinimap(noMenus) {
             break;
         }
 
-        this.drawMinimapEntity(x + HALF_WIDTH + otherPlayerX,
-            UI_Y + HALF_HEIGHT - otherPlayerY, playerColour);
+        this.drawMinimapEntity(
+            x + HALF_WIDTH + otherPlayerX,
+            UI_Y + HALF_HEIGHT - otherPlayerY,
+            playerColour
+        );
     }
 
-    this.surface.drawCircle(x + HALF_WIDTH, UI_Y + HALF_HEIGHT, 2, WHITE,
-        255);
+    this.surface.drawCircle(x + HALF_WIDTH, UI_Y + HALF_HEIGHT, 2, WHITE, 255);
 
     // compass
-    this.surface.drawMinimapSprite(x + 19, 55, this.spriteMedia + 24,
-        this.cameraRotation + 128 & 255, 128);
+    this.surface.drawMinimapSprite(
+        x + 19,
+        55,
+        this.spriteMedia + 24,
+        (this.cameraRotation + 128) & 255,
+        128
+    );
     this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
     if (!noMenus) {
@@ -30929,8 +32405,14 @@ function drawUiTabMinimap(noMenus) {
     const mouseX = this.mouseX - UI_X;
     const mouseY = this.mouseY - UI_Y;
 
-    if (this.options.resetCompass && this.mouseButtonClick === 1 &&
-        mouseX > 42 && mouseX < 75 && mouseY > 3 && mouseY < UI_Y) {
+    if (
+        this.options.resetCompass &&
+        this.mouseButtonClick === 1 &&
+        mouseX > 42 &&
+        mouseX < 75 &&
+        mouseY > 3 &&
+        mouseY < UI_Y
+    ) {
         this.cameraRotation = 128;
         this.mouseButtonClick = 0;
         return;
@@ -30938,37 +32420,98 @@ function drawUiTabMinimap(noMenus) {
 
     if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
         let dX = (((this.mouseX - (x + HALF_WIDTH)) * 16384) / (3 * scale)) | 0;
-        let dY = (((this.mouseY - (UI_Y + HALF_HEIGHT)) * 16384) / (3 * scale))
-            | 0;
-        const tempX = dY * sin + dX * cos >> 15;
+        let dY =
+            (((this.mouseY - (UI_Y + HALF_HEIGHT)) * 16384) / (3 * scale)) | 0;
+        const tempX = (dY * sin + dX * cos) >> 15;
 
-        dY = dY * cos - dX * sin >> 15;
+        dY = (dY * cos - dX * sin) >> 15;
         dX = tempX;
         dX += this.localPlayer.currentX;
         dY = this.localPlayer.currentY - dY;
 
         if (this.mouseButtonClick === 1) {
-            this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
-                (dX / 128) | 0, (dY / 128) | 0, false);
+            this._walkToActionSource_from5(
+                this.localRegionX,
+                this.localRegionY,
+                (dX / 128) | 0,
+                (dY / 128) | 0,
+                false
+            );
             this.mouseButtonClick = 0;
         }
     }
 }
 
-module.exports.drawUiTabMinimap = drawUiTabMinimap;
+module.exports = {
+    drawMinimapEntity,
+    drawUiTabMinimap
+};
 
-},{"../scene":60}],68:[function(require,module,exports){
+},{"../scene":60}],70:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
+
+const CYAN = 0x00ffff;
+const RED = 0xff0000;
+
+function drawOptionMenu() {
+    if (this.mouseButtonClick !== 0) {
+        for (let i = 0; i < this.optionMenuCount; i++) {
+            if (
+                this.mouseX >=
+                    this.surface.textWidth(this.optionMenuEntry[i], 1) ||
+                this.mouseY <= i * 12 ||
+                this.mouseY >= 12 + i * 12
+            ) {
+                continue;
+            }
+
+            this.packetStream.newPacket(clientOpcodes.CHOOSE_OPTION);
+            this.packetStream.putByte(i);
+            this.packetStream.sendPacket();
+            break;
+        }
+
+        this.mouseButtonClick = 0;
+        this.showOptionMenu = false;
+        return;
+    }
+
+    for (let i = 0; i < this.optionMenuCount; i++) {
+        let textColour = CYAN;
+
+        if (
+            this.mouseX < this.surface.textWidth(this.optionMenuEntry[i], 1) &&
+            this.mouseY > i * 12 &&
+            this.mouseY < 12 + i * 12
+        ) {
+            textColour = RED;
+        }
+
+        this.surface.drawString(
+            this.optionMenuEntry[i],
+            6,
+            12 + i * 12,
+            1,
+            textColour
+        );
+    }
+}
+
+module.exports = { drawOptionMenu };
+
+},{"../opcodes/client":54}],71:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client');
+
+const BLACK = 0;
+const DARK_GREY = 0xb5b5b5;
+const LIGHT_GREY = 0xc9c9c9;
+const WHITE = 0xffffff;
+const YELLOW = 0xffff00;
 
 const UI_X = 313;
 const UI_Y = 36;
 const WIDTH = 196;
 const LINE_BREAK = 15;
-
-const DARK_GREY = 0xb5b5b5;
-const LIGHT_GREY = 0xc9c9c9;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
 
 function drawUiTabOptions(noMenus) {
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 6);
@@ -30981,86 +32524,175 @@ function drawUiTabOptions(noMenus) {
     let x = UI_X + 3;
     let y = UI_Y + LINE_BREAK;
 
-    this.surface.drawString('Game options - click to toggle', x, y, 1, 0);
+    this.surface.drawString('Game options - click to toggle', x, y, 1, BLACK);
+
     y += LINE_BREAK;
+
     this.surface.drawString(
         'Camera angle mode - ' +
-        (this.optionCameraModeAuto ? '@gre@Auto' : '@red@Manual'), x, y, 1,
-        WHITE);
+            (this.optionCameraModeAuto ? '@gre@Auto' : '@red@Manual'),
+        x,
+        y,
+        1,
+        WHITE
+    );
+
     y += LINE_BREAK;
+
     this.surface.drawString(
         'Mouse buttons - ' +
-        (this.optionMouseButtonOne ? '@red@One' : '@gre@Two'), x, y, 1, WHITE);
+            (this.optionMouseButtonOne ? '@red@One' : '@gre@Two'),
+        x,
+        y,
+        1,
+        WHITE
+    );
+
     y += LINE_BREAK;
 
     if (this.members) {
         this.surface.drawString(
             'Sound effects - ' +
-            (this.optionSoundDisabled ? '@red@off' : '@gre@on'), x, y, 1,
-            WHITE);
+                (this.optionSoundDisabled ? '@red@off' : '@gre@on'),
+            x,
+            y,
+            1,
+            WHITE
+        );
     }
 
     y += LINE_BREAK;
+
     this.surface.drawString('To change your contact details,', x, y, 0, WHITE);
+
     y += LINE_BREAK;
-    this.surface.drawString('password, recovery questions, etc..', x, y, 0,
-        WHITE);
+
+    this.surface.drawString(
+        'password, recovery questions, etc..',
+        x,
+        y,
+        0,
+        WHITE
+    );
+
     y += LINE_BREAK;
-    this.surface.drawString('please select \'account management\'', x, y, 0,
-        WHITE);
+
+    this.surface.drawString(
+        "please select 'account management'",
+        x,
+        y,
+        0,
+        WHITE
+    );
+
     y += LINE_BREAK;
 
     if (this.referID === 0) {
-        this.surface.drawString('from the runescape.com front page', x, y, 0,
-            WHITE);
+        this.surface.drawString(
+            'from the runescape.com front page',
+            x,
+            y,
+            0,
+            WHITE
+        );
     } else if (this.referID === 1) {
-        this.surface.drawString('from the link below the gamewindow', x, y, 0,
-            WHITE);
+        this.surface.drawString(
+            'from the link below the gamewindow',
+            x,
+            y,
+            0,
+            WHITE
+        );
     } else {
-        this.surface.drawString('from the runescape front webpage', x, y, 0,
-            WHITE);
+        this.surface.drawString(
+            'from the runescape front webpage',
+            x,
+            y,
+            0,
+            WHITE
+        );
     }
 
+    y += LINE_BREAK + 5;
+
+    this.surface.drawString(
+        'Privacy settings. Will be applied to',
+        UI_X + 3,
+        y,
+        1,
+        BLACK
+    );
+
     y += LINE_BREAK;
-    y += 5;
-    this.surface.drawString('Privacy settings. Will be applied to', UI_X + 3,
-        y, 1, 0);
+
+    this.surface.drawString(
+        'all people not on your friends list',
+        UI_X + 3,
+        y,
+        1,
+        BLACK
+    );
+
     y += LINE_BREAK;
-    this.surface.drawString('all people not on your friends list', UI_X + 3, y,
-        1, 0);
-    y += LINE_BREAK;
+
     this.surface.drawString(
         'Block chat messages: ' +
-        (!this.settingsBlockChat ? '@red@<off>' : '@gre@<on>'), UI_X + 3, y, 1,
-        WHITE);
+            (!this.settingsBlockChat ? '@red@<off>' : '@gre@<on>'),
+        UI_X + 3,
+        y,
+        1,
+        WHITE
+    );
+
     y += LINE_BREAK;
+
     this.surface.drawString(
         'Block private messages: ' +
-        (!this.settingsBlockPrivate ? '@red@<off>' : '@gre@<on>'), UI_X + 3,
-        y, 1, WHITE);
+            (!this.settingsBlockPrivate ? '@red@<off>' : '@gre@<on>'),
+        UI_X + 3,
+        y,
+        1,
+        WHITE
+    );
+
     y += LINE_BREAK;
+
     this.surface.drawString(
         'Block trade requests: ' +
-        (!this.settingsBlockTrade ? '@red@<off>' : '@gre@<on>'), UI_X + 3, y,
-        1, WHITE);
+            (!this.settingsBlockTrade ? '@red@<off>' : '@gre@<on>'),
+        UI_X + 3,
+        y,
+        1,
+        WHITE
+    );
+
     y += LINE_BREAK;
 
     if (this.members) {
         this.surface.drawString(
             'Block duel requests: ' +
-            (!this.settingsBlockDuel ? '@red@<off>' : '@gre@<on>'), UI_X + 3, y,
-            1, WHITE);
+                (!this.settingsBlockDuel ? '@red@<off>' : '@gre@<on>'),
+            UI_X + 3,
+            y,
+            1,
+            WHITE
+        );
     }
 
-    y += LINE_BREAK;
-    y += 5;
-    this.surface.drawString('Always logout when you finish', x, y, 1, 0);
+    y += LINE_BREAK + 5;
+
+    this.surface.drawString('Always logout when you finish', x, y, 1, BLACK);
+
     y += LINE_BREAK;
 
     let textColour = WHITE;
 
-    if (this.mouseX > x && this.mouseX < x + WIDTH && this.mouseY > y - 12 &&
-        this.mouseY < y + 4) {
+    if (
+        this.mouseX > x &&
+        this.mouseX < x + WIDTH &&
+        this.mouseY > y - 12 &&
+        this.mouseY < y + 4
+    ) {
         textColour = YELLOW;
     }
 
@@ -31070,16 +32702,20 @@ function drawUiTabOptions(noMenus) {
         return;
     }
 
-    let mouseX = this.mouseX - (this.surface.width2 - 199);
-    let mouseY = this.mouseY - 36;
+    const mouseX = this.mouseX - (this.surface.width2 - 199);
+    const mouseY = this.mouseY - 36;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 265) {
         let x = UI_X + 3;
         let y = UI_Y + 30;
 
-        if (this.mouseX > x && this.mouseX < x + WIDTH &&
-            this.mouseY > y - 12 && this.mouseY < y + 4 &&
-            this.mouseButtonClick === 1) {
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.optionCameraModeAuto = !this.optionCameraModeAuto;
             this.packetStream.newPacket(clientOpcodes.SETTINGS_GAME);
             this.packetStream.putByte(0);
@@ -31089,8 +32725,13 @@ function drawUiTabOptions(noMenus) {
 
         y += LINE_BREAK;
 
-        if (this.mouseX > x && this.mouseX < x + WIDTH && this.mouseY > y - 12
-            && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.optionMouseButtonOne = !this.optionMouseButtonOne;
             this.packetStream.newPacket(clientOpcodes.SETTINGS_GAME);
             this.packetStream.putByte(2);
@@ -31100,9 +32741,14 @@ function drawUiTabOptions(noMenus) {
 
         y += LINE_BREAK;
 
-        if (this.members && this.mouseX > x && this.mouseX < x + WIDTH &&
-            this.mouseY > y - 12 && this.mouseY < y + 4 &&
-            this.mouseButtonClick === 1) {
+        if (
+            this.members &&
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.optionSoundDisabled = !this.optionSoundDisabled;
             this.packetStream.newPacket(clientOpcodes.SETTINGS_GAME);
             this.packetStream.putByte(3);
@@ -31118,36 +32764,53 @@ function drawUiTabOptions(noMenus) {
 
         y += 35;
 
-        if (this.mouseX > x && this.mouseX < x + WIDTH &&
-            this.mouseY > y - 12 && this.mouseY < y + 4 &&
-            this.mouseButtonClick === 1) {
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.settingsBlockChat = 1 - this.settingsBlockChat;
             hasChangedSetting = true;
         }
 
         y += LINE_BREAK;
 
-        if (this.mouseX > x && this.mouseX < x + WIDTH &&
-            this.mouseY > y - 12 && this.mouseY < y + 4 &&
-            this.mouseButtonClick === 1) {
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.settingsBlockPrivate = 1 - this.settingsBlockPrivate;
             hasChangedSetting = true;
         }
 
         y += LINE_BREAK;
 
-        if (this.mouseX > x && this.mouseX < x + WIDTH &&
-            this.mouseY > y - 12 && this.mouseY < y + 4 &&
-            this.mouseButtonClick === 1) {
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.settingsBlockTrade = 1 - this.settingsBlockTrade;
             hasChangedSetting = true;
         }
 
         y += LINE_BREAK;
 
-        if (this.members && this.mouseX > x && this.mouseX < x + WIDTH &&
-            this.mouseY > y - 12 && this.mouseY < y + 4 &&
-            this.mouseButtonClick === 1) {
+        if (
+            this.members &&
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.settingsBlockDuel = 1 - this.settingsBlockDuel;
             hasChangedSetting = true;
         }
@@ -31155,15 +32818,23 @@ function drawUiTabOptions(noMenus) {
         y += LINE_BREAK;
 
         if (hasChangedSetting) {
-            this.sendPrivacySettings(this.settingsBlockChat,
-                this.settingsBlockPrivate, this.settingsBlockTrade,
-                this.settingsBlockDuel);
+            this.sendPrivacySettings(
+                this.settingsBlockChat,
+                this.settingsBlockPrivate,
+                this.settingsBlockTrade,
+                this.settingsBlockDuel
+            );
         }
 
         y += 20;
 
-        if (this.mouseX > x && this.mouseX < x + WIDTH && this.mouseY > y - 12
-            && this.mouseY < y + 4 && this.mouseButtonClick === 1) {
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4 &&
+            this.mouseButtonClick === 1
+        ) {
             this.sendLogout();
         }
 
@@ -31171,9 +32842,9 @@ function drawUiTabOptions(noMenus) {
     }
 }
 
-module.exports.drawUiTabOptions = drawUiTabOptions;
+module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54}],69:[function(require,module,exports){
+},{"../opcodes/client":54}],72:[function(require,module,exports){
 const BLACK = 0;
 const LIGHT_GREY = 0xdcdcdc;
 const RED = 0xff0000;
@@ -31186,23 +32857,57 @@ const UI_Y = 36;
 const WIDTH = 196;
 
 const HALF_WIDTH = (WIDTH / 2) | 0;
-const TABS = [ 'Stats', 'Quests' ];
+const TABS = ['Stats', 'Quests'];
 const TAB_HEIGHT = 24;
 
 const SHORT_SKILL_NAMES = [
-    'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic',
-    'Cooking', 'Woodcut', 'Fletching', 'Fishing', 'Firemaking', 'Crafting',
-    'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
+    'Attack',
+    'Defense',
+    'Strength',
+    'Hits',
+    'Ranged',
+    'Prayer',
+    'Magic',
+    'Cooking',
+    'Woodcut',
+    'Fletching',
+    'Fishing',
+    'Firemaking',
+    'Crafting',
+    'Smithing',
+    'Mining',
+    'Herblaw',
+    'Agility',
+    'Thieving'
 ];
 
 const SKILL_NAMES = [
-    'Attack', 'Defense', 'Strength', 'Hits', 'Ranged', 'Prayer', 'Magic',
-    'Cooking', 'Woodcutting', 'Fletching', 'Fishing', 'Firemaking', 'Crafting',
-    'Smithing', 'Mining', 'Herblaw', 'Agility', 'Thieving'
+    'Attack',
+    'Defense',
+    'Strength',
+    'Hits',
+    'Ranged',
+    'Prayer',
+    'Magic',
+    'Cooking',
+    'Woodcutting',
+    'Fletching',
+    'Fishing',
+    'Firemaking',
+    'Crafting',
+    'Smithing',
+    'Mining',
+    'Herblaw',
+    'Agility',
+    'Thieving'
 ];
 
 const EQUIPMENT_STAT_NAMES = [
-    'Armour', 'WeaponAim', 'WeaponPower', 'Magic', 'Prayer'
+    'Armour',
+    'WeaponAim',
+    'WeaponPower',
+    'Magic',
+    'Prayer'
 ];
 
 const EXPERIENCE_ARRAY = [];
@@ -31217,35 +32922,83 @@ for (let i = 0; i < 99; i++) {
 }
 
 const FREE_QUESTS = [
-    'Black knight\'s fortress', 'Cook\'s assistant', 'Demon slayer',
-    'Doric\'s quest', 'The restless ghost', 'Goblin diplomacy',
-    'Ernest the chicken', 'Imp catcher', 'Pirate\'s treasure',
-    'Prince Ali rescue', 'Romeo & Juliet', 'Sheep shearer', 'Shield of Arrav',
-    'The knight\'s sword', 'Vampire slayer', 'Witch\'s potion',
+    "Black knight's fortress",
+    "Cook's assistant",
+    'Demon slayer',
+    "Doric's quest",
+    'The restless ghost',
+    'Goblin diplomacy',
+    'Ernest the chicken',
+    'Imp catcher',
+    "Pirate's treasure",
+    'Prince Ali rescue',
+    'Romeo & Juliet',
+    'Sheep shearer',
+    'Shield of Arrav',
+    "The knight's sword",
+    'Vampire slayer',
+    "Witch's potion",
     'Dragon slayer'
 ];
 
 const MEMBERS_QUESTS = [
-    'Witch\'s house', 'Lost city', 'Hero\'s quest', 'Druidic ritual',
-    'Merlin\'s crystal', 'Scorpion catcher', 'Family crest', 'Tribal totem',
-    'Fishing contest', 'Monk\'s friend', 'Temple of Ikov', 'Clock tower',
-    'The Holy Grail', 'Fight Arena', 'Tree Gnome Village', 'The Hazeel Cult',
-    'Sheep Herder', 'Plague City', 'Sea Slug', 'Waterfall quest', 'Biohazard',
-    'Jungle potion', 'Grand tree', 'Shilo village', 'Underground pass',
-    'Observatory quest', 'Tourist trap', 'Watchtower', 'Dwarf Cannon',
-    'Murder Mystery', 'Digsite', 'Gertrude\'s Cat', 'Legend\'s Quest'
-].map(questName => `${questName} (members)`);
+    "Witch's house",
+    'Lost city',
+    "Hero's quest",
+    'Druidic ritual',
+    "Merlin's crystal",
+    'Scorpion catcher',
+    'Family crest',
+    'Tribal totem',
+    'Fishing contest',
+    "Monk's friend",
+    'Temple of Ikov',
+    'Clock tower',
+    'The Holy Grail',
+    'Fight Arena',
+    'Tree Gnome Village',
+    'The Hazeel Cult',
+    'Sheep Herder',
+    'Plague City',
+    'Sea Slug',
+    'Waterfall quest',
+    'Biohazard',
+    'Jungle potion',
+    'Grand tree',
+    'Shilo village',
+    'Underground pass',
+    'Observatory quest',
+    'Tourist trap',
+    'Watchtower',
+    'Dwarf Cannon',
+    'Murder Mystery',
+    'Digsite',
+    "Gertrude's Cat",
+    "Legend's Quest"
+].map((questName) => `${questName} (members)`);
 
 const QUEST_NAMES = FREE_QUESTS.concat(MEMBERS_QUESTS);
 
 function drawUiTabPlayerInfo(noMenus) {
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 3);
 
-    this.surface.drawBoxAlpha(UI_X, UI_Y + TAB_HEIGHT, WIDTH, HEIGHT -
-        TAB_HEIGHT, LIGHT_GREY, 128);
+    this.surface.drawBoxAlpha(
+        UI_X,
+        UI_Y + TAB_HEIGHT,
+        WIDTH,
+        HEIGHT - TAB_HEIGHT,
+        LIGHT_GREY,
+        128
+    );
     this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, BLACK);
-    this.surface.drawTabs(UI_X, UI_Y, WIDTH, TAB_HEIGHT, TABS,
-        this.uiTabPlayerInfoSubTab);
+    this.surface.drawTabs(
+        UI_X,
+        UI_Y,
+        WIDTH,
+        TAB_HEIGHT,
+        TABS,
+        this.uiTabPlayerInfoSubTab
+    );
 
     // the handler for the Stats tab
     if (this.uiTabPlayerInfoSubTab === 0) {
@@ -31261,40 +33014,66 @@ function drawUiTabPlayerInfo(noMenus) {
             // left column
             let textColour = WHITE;
 
-            if (this.mouseX > UI_X + 3 && this.mouseY >= y - 11 &&
-                this.mouseY < y + 2 && this.mouseX < UI_X + 90) {
+            if (
+                this.mouseX > UI_X + 3 &&
+                this.mouseY >= y - 11 &&
+                this.mouseY < y + 2 &&
+                this.mouseX < UI_X + 90
+            ) {
                 textColour = RED;
                 selectedSkill = i;
             }
 
             this.surface.drawString(
                 `${SHORT_SKILL_NAMES[i]}:@yel@${this.playerStatCurrent[i]}/` +
-                this.playerStatBase[i], UI_X + 5, y, 1, textColour);
+                    this.playerStatBase[i],
+                UI_X + 5,
+                y,
+                1,
+                textColour
+            );
 
             // right column
             textColour = WHITE;
 
-            if (this.mouseX >= UI_X + 90 && this.mouseY >= y - 13 - 11 &&
-                this.mouseY < (y - 13) + 2 && this.mouseX < UI_X + 196) {
+            if (
+                this.mouseX >= UI_X + 90 &&
+                this.mouseY >= y - 13 - 11 &&
+                this.mouseY < y - 13 + 2 &&
+                this.mouseX < UI_X + 196
+            ) {
                 textColour = RED;
                 selectedSkill = i + 9;
             }
 
             this.surface.drawString(
                 `${SHORT_SKILL_NAMES[i + 9]}:@yel@` +
-                `${this.playerStatCurrent[i + 9]}/` +
-                this.playerStatBase[i + 9],
-                (UI_X + HALF_WIDTH) - 5, y - 13, 1, textColour);
+                    `${this.playerStatCurrent[i + 9]}/` +
+                    this.playerStatBase[i + 9],
+                UI_X + HALF_WIDTH - 5,
+                y - 13,
+                1,
+                textColour
+            );
 
             y += 13;
         }
 
-        this.surface.drawString(`Quest Points:@yel@${this.playerQuestPoints}`,
-            (UI_X + HALF_WIDTH) - 5, y - 13, 1, WHITE);
+        this.surface.drawString(
+            `Quest Points:@yel@${this.playerQuestPoints}`,
+            UI_X + HALF_WIDTH - 5,
+            y - 13,
+            1,
+            WHITE
+        );
         y += 12;
         this.surface.drawString(
-            `Fatigue: @yel@${(((this.statFatigue * 100) / 750) | 0)}%`,
-            UI_X + 5, y - 13, 1, WHITE);
+            `Fatigue: @yel@${((this.statFatigue * 100) / 750) | 0}%`,
+            UI_X + 5,
+            y - 13,
+            1,
+            WHITE
+        );
         y += 8;
 
         this.surface.drawString('Equipment Status', UI_X + 5, y, 3, YELLOW);
@@ -31303,14 +33082,22 @@ function drawUiTabPlayerInfo(noMenus) {
         for (let i = 0; i < 3; i++) {
             this.surface.drawString(
                 `${EQUIPMENT_STAT_NAMES[i]}:@yel@` +
-                this.playerStatEquipment[i],
-                UI_X + 5, y, 1, WHITE);
+                    this.playerStatEquipment[i],
+                UI_X + 5,
+                y,
+                1,
+                WHITE
+            );
 
             if (i < 2) {
                 this.surface.drawString(
                     `${EQUIPMENT_STAT_NAMES[i + 3]}:@yel@` +
-                    this.playerStatEquipment[i + 3],
-                    UI_X + HALF_WIDTH + 25, y, 1, WHITE);
+                        this.playerStatEquipment[i + 3],
+                    UI_X + HALF_WIDTH + 25,
+                    y,
+                    1,
+                    WHITE
+                );
             }
 
             y += 13;
@@ -31320,15 +33107,21 @@ function drawUiTabPlayerInfo(noMenus) {
         this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, BLACK);
 
         if (selectedSkill !== -1) {
-            this.surface.drawString(`${SKILL_NAMES[selectedSkill]} skill`,
-                UI_X + 5, y, 1, YELLOW);
+            this.surface.drawString(
+                `${SKILL_NAMES[selectedSkill]} skill`,
+                UI_X + 5,
+                y,
+                1,
+                YELLOW
+            );
             y += 12;
 
             let nextLevelAt = EXPERIENCE_ARRAY[0];
 
             for (let i = 0; i < 98; i++) {
-                if (this.playerExperience[selectedSkill] >=
-                    EXPERIENCE_ARRAY[i]) {
+                if (
+                    this.playerExperience[selectedSkill] >= EXPERIENCE_ARRAY[i]
+                ) {
                     nextLevelAt = EXPERIENCE_ARRAY[i + 1];
                     break;
                 }
@@ -31336,10 +33129,19 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 'Total xp: ' + ((this.playerExperience[selectedSkill] / 4) | 0),
-                UI_X + 5, y, 1, WHITE);
+                UI_X + 5,
+                y,
+                1,
+                WHITE
+            );
             y += 12;
-            this.surface.drawString('Next level at: ' +
-                ((nextLevelAt / 4) | 0), UI_X + 5, y, 1, WHITE);
+            this.surface.drawString(
+                'Next level at: ' + ((nextLevelAt / 4) | 0),
+                UI_X + 5,
+                y,
+                1,
+                WHITE
+            );
         } else {
             this.surface.drawString('Overall levels', UI_X + 5, y, 1, YELLOW);
             y += 12;
@@ -31350,22 +33152,38 @@ function drawUiTabPlayerInfo(noMenus) {
                 totalLevel += this.playerStatBase[i];
             }
 
-            this.surface.drawString(`Skill total: ${totalLevel}`,
-                UI_X + 5, y, 1, WHITE);
+            this.surface.drawString(
+                `Skill total: ${totalLevel}`,
+                UI_X + 5,
+                y,
+                1,
+                WHITE
+            );
             y += 12;
-            this.surface.drawString(`Combat level: ${this.localPlayer.level}`,
-                UI_X + 5, y, 1, WHITE);
+            this.surface.drawString(
+                `Combat level: ${this.localPlayer.level}`,
+                UI_X + 5,
+                y,
+                1,
+                WHITE
+            );
             y += 12;
         }
-    // the handler for the Quests tab
+        // the handler for the Quests tab
     } else if (this.uiTabPlayerInfoSubTab === 1) {
         this.panelQuestList.clearList(this.controlListQuest);
-        this.panelQuestList.addListEntry(this.controlListQuest, 0,
-            '@whi@Quest-list (green=completed)');
+        this.panelQuestList.addListEntry(
+            this.controlListQuest,
+            0,
+            '@whi@Quest-list (green=completed)'
+        );
 
         for (let i = 0; i < QUEST_NAMES.length; i++) {
-            this.panelQuestList.addListEntry(this.controlListQuest, i + 1,
-                (this.questComplete[i] ? '@gre@' : '@red@') + QUEST_NAMES[i]);
+            this.panelQuestList.addListEntry(
+                this.controlListQuest,
+                i + 1,
+                (this.questComplete[i] ? '@gre@' : '@red@') + QUEST_NAMES[i]
+            );
         }
 
         this.panelQuestList.drawPanel();
@@ -31382,9 +33200,13 @@ function drawUiTabPlayerInfo(noMenus) {
     // quest list
     if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < HEIGHT) {
         if (this.uiTabPlayerInfoSubTab === 1) {
-            this.panelQuestList.handleMouse(mouseX + UI_X, mouseY + UI_Y,
-                this.lastMouseButtonDown, this.mouseButtonDown,
-                this.mouseScrollDelta);
+            this.panelQuestList.handleMouse(
+                mouseX + UI_X,
+                mouseY + UI_Y,
+                this.lastMouseButtonDown,
+                this.mouseButtonDown,
+                this.mouseScrollDelta
+            );
         }
 
         if (mouseY <= TAB_HEIGHT && this.mouseButtonClick === 1) {
@@ -31397,10 +33219,12 @@ function drawUiTabPlayerInfo(noMenus) {
     }
 }
 
-module.exports.drawUiTabPlayerInfo = drawUiTabPlayerInfo;
-module.exports.uiTabPlayerInfoSubTab = 0;
+module.exports = {
+    drawUiTabPlayerInfo,
+    uiTabPlayerInfoSubTab: 0
+};
 
-},{}],70:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 
@@ -31437,8 +33261,12 @@ function drawDialogReportAbuse() {
     let y = 135;
 
     for (let i = 0; i < 12; i++) {
-        if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 12 &&
-            this.mouseY < y + 3) {
+        if (
+            this.mouseX > 66 &&
+            this.mouseX < 446 &&
+            this.mouseY >= y - 12 &&
+            this.mouseY < y + 3
+        ) {
             this.reportAbuseOffence = i + 1;
         }
 
@@ -31458,14 +33286,22 @@ function drawDialogReportAbuse() {
     if (this.mouseButtonClick !== 0) {
         this.mouseButtonClick = 0;
 
-        if (this.mouseX < DIALOG_X || this.mouseY < DIALOG_Y ||
-            this.mouseX > 456 || this.mouseY > 325) {
+        if (
+            this.mouseX < DIALOG_X ||
+            this.mouseY < DIALOG_Y ||
+            this.mouseX > 456 ||
+            this.mouseY > 325
+        ) {
             this.showDialogReportAbuseStep = 0;
             return;
         }
 
-        if (this.mouseX > 66 && this.mouseX < 446 && this.mouseY >= y - 15 &&
-            this.mouseY < y + 5) {
+        if (
+            this.mouseX > 66 &&
+            this.mouseX < 446 &&
+            this.mouseY >= y - 15 &&
+            this.mouseY < y + 5
+        ) {
             this.showDialogReportAbuseStep = 0;
             return;
         }
@@ -31476,20 +33312,54 @@ function drawDialogReportAbuse() {
 
     y = 50;
 
-    this.surface.drawStringCenter('This form is for reporting players ' +
-        'who are breaking our rules', 256, y, 1, WHITE);
+    this.surface.drawStringCenter(
+        'This form is for reporting players who are breaking our rules',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 15;
-    this.surface.drawStringCenter('Using it sends a snapshot of the last 60 ' +
-        'secs of activity to us' , 256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'Using it sends a snapshot of the last 60 secs of activity to us',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 15;
-    this.surface.drawStringCenter('If you misuse this form you will be banned',
-        256, y, 1, ORANGE);
+
+    this.surface.drawStringCenter(
+        'If you misuse this form you will be banned',
+        256,
+        y,
+        1,
+        ORANGE
+    );
+
     y += 25;
-    this.surface.drawStringCenter('First indicate which of our 12 rules is ' +
-        'being broken. For a detailed', 256, y, 1, YELLOW);
+
+    this.surface.drawStringCenter(
+        'First indicate which of our 12 rules is being broken. For a detailed',
+        256,
+        y,
+        1,
+        YELLOW
+    );
+
     y += 15;
-    this.surface.drawStringCenter('explanation of each rule please read the ' +
-        'manual on our website.', 256, y, 1, YELLOW);
+
+    this.surface.drawStringCenter(
+        'explanation of each rule please read the manual on our website.',
+        256,
+        y,
+        1,
+        YELLOW
+    );
+
     y += 15;
 
     for (let i = 1; i < RULES.length + 1; i += 1) {
@@ -31512,13 +33382,22 @@ function drawDialogReportAbuse() {
 
     let textColour = WHITE;
 
-    if (this.mouseX > 196 && this.mouseX < 316 && this.mouseY > y - 15 &&
-        this.mouseY < y + 5) {
+    if (
+        this.mouseX > 196 &&
+        this.mouseX < 316 &&
+        this.mouseY > y - 15 &&
+        this.mouseY < y + 5
+    ) {
         textColour = YELLOW;
     }
 
-    this.surface.drawStringCenter('Click here to cancel', 256, y, 1,
-        textColour);
+    this.surface.drawStringCenter(
+        'Click here to cancel',
+        256,
+        y,
+        1,
+        textColour
+    );
 }
 
 function drawDialogReportAbuseInput() {
@@ -31543,16 +33422,33 @@ function drawDialogReportAbuseInput() {
     }
 
     this.surface.drawBox(DIALOG_X, INPUT_DIALOG_Y, WIDTH, INPUT_HEIGHT, BLACK);
-    this.surface.drawBoxEdge(DIALOG_X, INPUT_DIALOG_Y, WIDTH, INPUT_HEIGHT,
-        WHITE);
+    this.surface.drawBoxEdge(
+        DIALOG_X,
+        INPUT_DIALOG_Y,
+        WIDTH,
+        INPUT_HEIGHT,
+        WHITE
+    );
 
     let y = INPUT_DIALOG_Y + 30;
 
-    this.surface.drawStringCenter('Now type the name of the offending ' +
-        'player, and press enter', 256, y, 1, YELLOW);
+    this.surface.drawStringCenter(
+        'Now type the name of the offending player, and press enter',
+        256,
+        y,
+        1,
+        YELLOW
+    );
+
     y += 18;
-    this.surface.drawStringCenter(`Name: ${this.inputTextCurrent}*`,
-        256, y, 4, WHITE);
+
+    this.surface.drawStringCenter(
+        `Name: ${this.inputTextCurrent}*`,
+        256,
+        y,
+        4,
+        WHITE
+    );
 
     if (this.moderatorLevel > 0) {
         y = INPUT_DIALOG_Y + 77;
@@ -31565,11 +33461,21 @@ function drawDialogReportAbuseInput() {
             toggleText = 'ON';
         }
 
-        this.surface.drawStringCenter('Moderator option: Mute player for 48 ' +
-            `hours: <${toggleText}>`, 256, y, 1, textColour);
+        this.surface.drawStringCenter(
+            `Moderator option: Mute player for 48 hours: <${toggleText}>`,
+            256,
+            y,
+            1,
+            textColour
+        );
 
-        if (this.mouseX > 106 && this.mouseX < 406 && this.mouseY > y - 13
-            && this.mouseY < y + 2 && this.mouseButtonClick === 1) {
+        if (
+            this.mouseX > 106 &&
+            this.mouseX < 406 &&
+            this.mouseY > y - 13 &&
+            this.mouseY < y + 2 &&
+            this.mouseButtonClick === 1
+        ) {
             this.mouseButtonClick = 0;
             this.reportAbuseMute = !this.reportAbuseMute;
         }
@@ -31579,8 +33485,12 @@ function drawDialogReportAbuseInput() {
 
     let textColour = WHITE;
 
-    if (this.mouseX > 196 && this.mouseX < 316 && this.mouseY > y - 13 &&
-        this.mouseY < y + 2) {
+    if (
+        this.mouseX > 196 &&
+        this.mouseX < 316 &&
+        this.mouseY > y - 13 &&
+        this.mouseY < y + 2
+    ) {
         textColour = YELLOW;
 
         if (this.mouseButtonClick === 1) {
@@ -31589,23 +33499,454 @@ function drawDialogReportAbuseInput() {
         }
     }
 
-    this.surface.drawStringCenter('Click here to cancel', 256, y, 1,
-        textColour);
+    this.surface.drawStringCenter(
+        'Click here to cancel',
+        256,
+        y,
+        1,
+        textColour
+    );
 
-    if (this.mouseButtonClick === 1 && (this.mouseX < DIALOG_X ||
-        this.mouseX > 456 || this.mouseY < 130 || this.mouseY > 230)) {
+    if (
+        this.mouseButtonClick === 1 &&
+        (this.mouseX < DIALOG_X ||
+            this.mouseX > 456 ||
+            this.mouseY < 130 ||
+            this.mouseY > 230)
+    ) {
         this.mouseButtonClick = 0;
         this.showDialogReportAbuseStep = 0;
     }
 }
 
-module.exports.drawDialogReportAbuse = drawDialogReportAbuse;
-module.exports.drawDialogReportAbuseInput = drawDialogReportAbuseInput;
-module.exports.reportAbuseMute = false;
-module.exports.reportAbuseOffence = 0;
-module.exports.showDialogReportAbuseStep = 0;
+module.exports = {
+    drawDialogReportAbuse: drawDialogReportAbuse,
+    drawDialogReportAbuseInput: drawDialogReportAbuseInput,
+    reportAbuseMute: false,
+    reportAbuseOffence: 0,
+    showDialogReportAbuseStep: 0
+};
 
-},{"../opcodes/client":54,"../utility":74}],71:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":82}],74:[function(require,module,exports){
+const BLACK = 0;
+const RED = 0xff0000;
+const WHITE = 0xffffff;
+
+function drawDialogServerMessage() {
+    let width = 400;
+    let height = 100;
+
+    if (this.serverMessageBoxTop) {
+        height = 450;
+        height = 300;
+    }
+
+    this.surface.drawBox(
+        256 - ((width / 2) | 0),
+        167 - ((height / 2) | 0),
+        width,
+        height,
+        BLACK
+    );
+    this.surface.drawBoxEdge(
+        256 - ((width / 2) | 0),
+        167 - ((height / 2) | 0),
+        width,
+        height,
+        WHITE
+    );
+    this.surface.drawParagraph(
+        this.serverMessage,
+        256,
+        167 - ((height / 2) | 0) + 20,
+        1,
+        WHITE,
+        width - 40
+    );
+
+    let i = 157 + ((height / 2) | 0);
+    let textColour = WHITE;
+
+    if (
+        this.mouseY > i - 12 &&
+        this.mouseY <= i &&
+        this.mouseX > 106 &&
+        this.mouseX < 406
+    ) {
+        textColour = RED;
+    }
+
+    this.surface.drawStringCenter(
+        'Click here to close window',
+        256,
+        i,
+        1,
+        textColour
+    );
+
+    if (this.mouseButtonClick === 1) {
+        if (textColour === RED) {
+            this.showDialogServerMessage = false;
+        }
+
+        if (
+            (this.mouseX < 256 - ((width / 2) | 0) ||
+                this.mouseX > 256 + ((width / 2) | 0)) &&
+            (this.mouseY < 167 - ((height / 2) | 0) ||
+                this.mouseY > 167 + ((height / 2) | 0))
+        ) {
+            this.showDialogServerMessage = false;
+        }
+    }
+
+    this.mouseButtonClick = 0;
+}
+
+module.exports = { drawDialogServerMessage };
+
+},{}],75:[function(require,module,exports){
+const GameData = require('../game-data');
+const clientOpcodes = require('../opcodes/client');
+
+const GREY = 0x989898;
+const WHITE = 0xffffff;
+const RED = 0xff0000;
+
+function drawDialogShop() {
+    if (this.mouseButtonClick !== 0) {
+        this.mouseButtonClick = 0;
+
+        const mouseX = this.mouseX - 52;
+        const mouseY = this.mouseY - 44;
+
+        if (mouseX >= 0 && mouseY >= 12 && mouseX < 408 && mouseY < 246) {
+            let itemIndex = 0;
+
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 8; col++) {
+                    let slotX = 7 + col * 49;
+                    let slotY = 28 + row * 34;
+
+                    if (
+                        mouseX > slotX &&
+                        mouseX < slotX + 49 &&
+                        mouseY > slotY &&
+                        mouseY < slotY + 34 &&
+                        this.shopItem[itemIndex] !== -1
+                    ) {
+                        this.shopSelectedItemIndex = itemIndex;
+                        this.shopSelectedItemType = this.shopItem[itemIndex];
+                    }
+
+                    itemIndex++;
+                }
+            }
+
+            if (this.shopSelectedItemIndex >= 0) {
+                const itemID = this.shopItem[this.shopSelectedItemIndex];
+
+                if (itemID !== -1) {
+                    if (
+                        this.shopItemCount[this.shopSelectedItemIndex] > 0 &&
+                        mouseX > 298 &&
+                        mouseY >= 204 &&
+                        mouseX < 408 &&
+                        mouseY <= 215
+                    ) {
+                        let priceMod =
+                            this.shopBuyPriceMod +
+                            this.shopItemPrice[this.shopSelectedItemIndex];
+
+                        if (priceMod < 10) {
+                            priceMod = 10;
+                        }
+
+                        const itemPrice =
+                            ((priceMod * GameData.itemBasePrice[itemID]) /
+                                100) |
+                            0;
+
+                        this.packetStream.newPacket(clientOpcodes.SHOP_BUY);
+                        this.packetStream.putShort(
+                            this.shopItem[this.shopSelectedItemIndex]
+                        );
+                        this.packetStream.putInt(itemPrice);
+                        this.packetStream.sendPacket();
+                    }
+
+                    if (
+                        this.getInventoryCount(itemID) > 0 &&
+                        mouseX > 2 &&
+                        mouseY >= 229 &&
+                        mouseX < 112 &&
+                        mouseY <= 240
+                    ) {
+                        let priceMod =
+                            this.shopSellPriceMod +
+                            this.shopItemPrice[this.shopSelectedItemIndex];
+
+                        if (priceMod < 10) {
+                            priceMod = 10;
+                        }
+
+                        const itemPrice =
+                            ((priceMod * GameData.itemBasePrice[itemID]) /
+                                100) |
+                            0;
+
+                        this.packetStream.newPacket(clientOpcodes.SHOP_SELL);
+                        this.packetStream.putShort(
+                            this.shopItem[this.shopSelectedItemIndex]
+                        );
+                        this.packetStream.putInt(itemPrice);
+                        this.packetStream.sendPacket();
+                    }
+                }
+            }
+        } else {
+            this.packetStream.newPacket(clientOpcodes.SHOP_CLOSE);
+            this.packetStream.sendPacket();
+            this.showDialogShop = false;
+            return;
+        }
+    }
+
+    let dialogX = 52;
+    let dialogY = 44;
+
+    this.surface.drawBox(dialogX, dialogY, 408, 12, 192);
+    this.surface.drawBoxAlpha(dialogX, dialogY + 12, 408, 17, GREY, 160);
+    this.surface.drawBoxAlpha(dialogX, dialogY + 29, 8, 170, GREY, 160);
+    this.surface.drawBoxAlpha(
+        dialogX + 399,
+        dialogY + 29,
+        9,
+        170,
+        GREY,
+        160
+    );
+    this.surface.drawBoxAlpha(dialogX, dialogY + 199, 408, 47, GREY, 160);
+    this.surface.drawString(
+        'Buying and selling items',
+        dialogX + 1,
+        dialogY + 10,
+        1,
+        WHITE
+    );
+
+    let textColour = WHITE;
+
+    if (
+        this.mouseX > dialogX + 320 &&
+        this.mouseY >= dialogY &&
+        this.mouseX < dialogX + 408 &&
+        this.mouseY < dialogY + 12
+    ) {
+        textColour = RED;
+    }
+
+    this.surface.drawStringRight(
+        'Close window',
+        dialogX + 406,
+        dialogY + 10,
+        1,
+        textColour
+    );
+    this.surface.drawString(
+        'Shops stock in green',
+        dialogX + 2,
+        dialogY + 24,
+        1,
+        65280
+    );
+    this.surface.drawString(
+        'Number you own in blue',
+        dialogX + 135,
+        dialogY + 24,
+        1,
+        65535
+    );
+    this.surface.drawString(
+        'Your money: ' + this.getInventoryCount(10) + 'gp',
+        dialogX + 280,
+        dialogY + 24,
+        1,
+        0xffff00
+    );
+    let itemIndex = 0;
+
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 8; col++) {
+            let slotX = dialogX + 7 + col * 49;
+            let slotY = dialogY + 28 + row * 34;
+
+            if (this.shopSelectedItemIndex === itemIndex) {
+                this.surface.drawBoxAlpha(slotX, slotY, 49, 34, RED, 160);
+            } else {
+                this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xd0d0d0, 160);
+            }
+
+            this.surface.drawBoxEdge(slotX, slotY, 50, 35, 0);
+
+            if (this.shopItem[itemIndex] !== -1) {
+                this.surface._spriteClipping_from9(
+                    slotX,
+                    slotY,
+                    48,
+                    32,
+                    this.spriteItem +
+                        GameData.itemPicture[this.shopItem[itemIndex]],
+                    GameData.itemMask[this.shopItem[itemIndex]],
+                    0,
+                    0,
+                    false
+                );
+                this.surface.drawString(
+                    this.shopItemCount[itemIndex].toString(),
+                    slotX + 1,
+                    slotY + 10,
+                    1,
+                    65280
+                );
+                this.surface.drawStringRight(
+                    this.getInventoryCount(this.shopItem[itemIndex]).toString(),
+                    slotX + 47,
+                    slotY + 10,
+                    1,
+                    65535
+                );
+            }
+
+            itemIndex++;
+        }
+    }
+
+    this.surface.drawLineHoriz(dialogX + 5, dialogY + 222, 398, 0);
+
+    if (this.shopSelectedItemIndex === -1) {
+        this.surface.drawStringCenter(
+            'Select an object to buy or sell',
+            dialogX + 204,
+            dialogY + 214,
+            3,
+            0xffff00
+        );
+        return;
+    }
+
+    const selectedItemID = this.shopItem[this.shopSelectedItemIndex];
+
+    if (selectedItemID !== -1) {
+        if (this.shopItemCount[this.shopSelectedItemIndex] > 0) {
+            let priceMod =
+                this.shopBuyPriceMod +
+                this.shopItemPrice[this.shopSelectedItemIndex];
+
+            if (priceMod < 10) {
+                priceMod = 10;
+            }
+
+            const itemPrice =
+                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) |
+                0;
+
+            this.surface.drawString(
+                'Buy a new ' +
+                    GameData.itemName[selectedItemID] +
+                    ' for ' +
+                    itemPrice +
+                    'gp',
+                dialogX + 2,
+                dialogY + 214,
+                1,
+                0xffff00
+            );
+
+            textColour = WHITE;
+
+            if (
+                this.mouseX > dialogX + 298 &&
+                this.mouseY >= dialogY + 204 &&
+                this.mouseX < dialogX + 408 &&
+                this.mouseY <= dialogY + 215
+            ) {
+                textColour = RED;
+            }
+
+            this.surface.drawStringRight(
+                'Click here to buy',
+                dialogX + 405,
+                dialogY + 214,
+                3,
+                textColour
+            );
+        } else {
+            this.surface.drawStringCenter(
+                'This item is not currently available to buy',
+                dialogX + 204,
+                dialogY + 214,
+                3,
+                0xffff00
+            );
+        }
+
+        if (this.getInventoryCount(selectedItemID) > 0) {
+            let priceMod =
+                this.shopSellPriceMod +
+                this.shopItemPrice[this.shopSelectedItemIndex];
+
+            if (priceMod < 10) {
+                priceMod = 10;
+            }
+
+            const itemPrice =
+                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) |
+                0;
+
+            this.surface.drawStringRight(
+                `Sell your ${GameData.itemName[selectedItemID]} for ` +
+                    `${itemPrice} gp`,
+                dialogX + 405,
+                dialogY + 239,
+                1,
+                0xffff00
+            );
+
+            textColour = WHITE;
+
+            if (
+                this.mouseX > dialogX + 2 &&
+                this.mouseY >= dialogY + 229 &&
+                this.mouseX < dialogX + 112 &&
+                this.mouseY <= dialogY + 240
+            ) {
+                textColour = RED;
+            }
+
+            this.surface.drawString(
+                'Click here to sell',
+                dialogX + 2,
+                dialogY + 239,
+                3,
+                textColour
+            );
+
+            return;
+        }
+
+        this.surface.drawStringCenter(
+            'You do not have any of this item to sell',
+            dialogX + 204,
+            dialogY + 239,
+            3,
+            0xffff00
+        );
+    }
+}
+
+module.exports = { drawDialogShop };
+
+},{"../game-data":44,"../opcodes/client":54}],76:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
@@ -31617,27 +33958,45 @@ function drawDialogSocialInput() {
     if (this.mouseButtonClick !== 0) {
         this.mouseButtonClick = 0;
 
-        if (this.showDialogSocialInput === 1 && (this.mouseX < 106 ||
-            this.mouseY < 145 || this.mouseX > 406 || this.mouseY > 215)) {
+        if (
+            this.showDialogSocialInput === 1 &&
+            (this.mouseX < 106 ||
+                this.mouseY < 145 ||
+                this.mouseX > 406 ||
+                this.mouseY > 215)
+        ) {
             this.showDialogSocialInput = 0;
             return;
         }
 
-        if (this.showDialogSocialInput === 2 && (this.mouseX < 6 ||
-            this.mouseY < 145 || this.mouseX > 506 || this.mouseY > 215)) {
+        if (
+            this.showDialogSocialInput === 2 &&
+            (this.mouseX < 6 ||
+                this.mouseY < 145 ||
+                this.mouseX > 506 ||
+                this.mouseY > 215)
+        ) {
             this.showDialogSocialInput = 0;
             return;
         }
 
-        if (this.showDialogSocialInput === 3 &&
-            (this.mouseX < 106 || this.mouseY < 145 || this.mouseX > 406 ||
-                this.mouseY > 215)) {
+        if (
+            this.showDialogSocialInput === 3 &&
+            (this.mouseX < 106 ||
+                this.mouseY < 145 ||
+                this.mouseX > 406 ||
+                this.mouseY > 215)
+        ) {
             this.showDialogSocialInput = 0;
             return;
         }
 
-        if (this.mouseX > 236 && this.mouseX < 276 && this.mouseY > 193 &&
-            this.mouseY < 213) {
+        if (
+            this.mouseX > 236 &&
+            this.mouseX < 276 &&
+            this.mouseY > 193 &&
+            this.mouseY < 213
+        ) {
             this.showDialogSocialInput = 0;
             return;
         }
@@ -31649,22 +34008,34 @@ function drawDialogSocialInput() {
         this.surface.drawBox(106, y, 300, 70, 0);
         this.surface.drawBoxEdge(106, y, 300, 70, WHITE);
         y += 20;
-        this.surface.drawStringCenter('Enter name to add to friends list', 256,
-            y, 4, WHITE);
+        this.surface.drawStringCenter(
+            'Enter name to add to friends list',
+            256,
+            y,
+            4,
+            WHITE
+        );
         y += 20;
-        this.surface.drawStringCenter(`${this.inputTextCurrent}*`, 256, y, 4,
-            WHITE);
+        this.surface.drawStringCenter(
+            `${this.inputTextCurrent}*`,
+            256,
+            y,
+            4,
+            WHITE
+        );
 
         if (this.inputTextFinal.length > 0) {
             const username = this.inputTextFinal.trim();
-            const usernameHash = Utility.usernameToHash(username);
+            const encodedUsername = Utility.usernameToHash(username);
 
             this.inputTextCurrent = '';
             this.inputTextFinal = '';
             this.showDialogSocialInput = 0;
 
-            if (username.length > 0 &&
-                !usernameHash.equals(this.localPlayer.hash)) {
+            if (
+                username.length > 0 &&
+                !encodedUsername.equals(this.localPlayer.hash)
+            ) {
                 this.friendAdd(username);
             }
         }
@@ -31674,11 +34045,20 @@ function drawDialogSocialInput() {
         y += 20;
         this.surface.drawStringCenter(
             'Enter message to send to ' +
-            Utility.hashToUsername(this.privateMessageTarget), 256, y, 4,
-            WHITE);
+                Utility.hashToUsername(this.privateMessageTarget),
+            256,
+            y,
+            4,
+            WHITE
+        );
         y += 20;
-        this.surface.drawStringCenter(this.inputPMCurrent + '*', 256, y, 4,
-            WHITE);
+        this.surface.drawStringCenter(
+            this.inputPMCurrent + '*',
+            256,
+            y,
+            4,
+            WHITE
+        );
 
         if (this.inputPMFinal.length > 0) {
             let message = this.inputPMFinal;
@@ -31687,39 +34067,59 @@ function drawDialogSocialInput() {
             this.showDialogSocialInput = 0;
 
             let scrambledMessage = ChatMessage.scramble(message);
-            this.sendPrivateMessage(this.privateMessageTarget,
-                ChatMessage.scrambledBytes, scrambledMessage);
-            message = ChatMessage.descramble(ChatMessage.scrambledBytes,
-                0, scrambledMessage);
+            this.sendPrivateMessage(
+                this.privateMessageTarget,
+                ChatMessage.scrambledBytes,
+                scrambledMessage
+            );
+            message = ChatMessage.descramble(
+                ChatMessage.scrambledBytes,
+                0,
+                scrambledMessage
+            );
 
             if (this.options.wordFilter) {
                 message = WordFilter.filter(message);
             }
 
-            this.showServerMessage('@pri@You tell ' +
-                `${Utility.hashToUsername(this.privateMessageTarget)}: ` +
-                message);
+            this.showServerMessage(
+                '@pri@You tell ' +
+                    `${Utility.hashToUsername(this.privateMessageTarget)}: ` +
+                    message
+            );
         }
     } else if (this.showDialogSocialInput === 3) {
         this.surface.drawBox(106, y, 300, 70, 0);
         this.surface.drawBoxEdge(106, y, 300, 70, WHITE);
         y += 20;
-        this.surface.drawStringCenter('Enter name to add to ignore list', 256,
-            y, 4, WHITE);
+        this.surface.drawStringCenter(
+            'Enter name to add to ignore list',
+            256,
+            y,
+            4,
+            WHITE
+        );
         y += 20;
-        this.surface.drawStringCenter(`${this.inputTextCurrent}*`, 256, y, 4,
-            WHITE);
+        this.surface.drawStringCenter(
+            `${this.inputTextCurrent}*`,
+            256,
+            y,
+            4,
+            WHITE
+        );
 
         if (this.inputTextFinal.length > 0) {
             const username = this.inputTextFinal.trim();
-            const usernameHash = Utility.usernameToHash(username);
+            const encodedUsername = Utility.usernameToHash(username);
 
             this.inputTextCurrent = '';
             this.inputTextFinal = '';
             this.showDialogSocialInput = 0;
 
-            if (username.length > 0 &&
-                !usernameHash.equals(this.localPlayer.hash)) {
+            if (
+                username.length > 0 &&
+                !encodedUsername.equals(this.localPlayer.hash)
+            ) {
                 this.ignoreAdd(username);
             }
         }
@@ -31727,8 +34127,12 @@ function drawDialogSocialInput() {
 
     let textColour = WHITE;
 
-    if (this.mouseX > 236 && this.mouseX < 276 && this.mouseY > 193 &&
-        this.mouseY < 213) {
+    if (
+        this.mouseX > 236 &&
+        this.mouseX < 276 &&
+        this.mouseY > 193 &&
+        this.mouseY < 213
+    ) {
         textColour = YELLOW;
     }
 
@@ -31740,11 +34144,13 @@ function resetPMText() {
     this.inputPMFinal = '';
 }
 
-module.exports.drawDialogSocialInput = drawDialogSocialInput;
-module.exports.resetPMText = resetPMText;
-module.exports.showDialogSocialInput = 0;
+module.exports = {
+    drawDialogSocialInput,
+    resetPMText,
+    showDialogSocialInput: 0
+};
 
-},{"../chat-message":40,"../utility":74,"../word-filter":76}],72:[function(require,module,exports){
+},{"../chat-message":40,"../utility":82,"../word-filter":84}],77:[function(require,module,exports){
 const Utility = require('../utility');
 
 const BLACK = 0;
@@ -31758,17 +34164,29 @@ const UI_Y = 36;
 const WIDTH = 196;
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
-const TABS = [ 'Friends', 'Ignore' ];
+const TABS = ['Friends', 'Ignore'];
 const TAB_HEIGHT = 24;
 
 function drawUiTabSocial(noMenus) {
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 5);
 
-    this.surface.drawBoxAlpha(UI_X, UI_Y + TAB_HEIGHT, WIDTH, HEIGHT -
-        TAB_HEIGHT, LIGHT_GREY, 128);
-    this.surface.drawLineHoriz(UI_X, (UI_Y + HEIGHT) - 16, WIDTH, BLACK);
-    this.surface.drawTabs(UI_X, UI_Y, WIDTH, TAB_HEIGHT, TABS,
-        this.uiTabSocialSubTab);
+    this.surface.drawBoxAlpha(
+        UI_X,
+        UI_Y + TAB_HEIGHT,
+        WIDTH,
+        HEIGHT - TAB_HEIGHT,
+        LIGHT_GREY,
+        128
+    );
+    this.surface.drawLineHoriz(UI_X, UI_Y + HEIGHT - 16, WIDTH, BLACK);
+    this.surface.drawTabs(
+        UI_X,
+        UI_Y,
+        WIDTH,
+        TAB_HEIGHT,
+        TABS,
+        this.uiTabSocialSubTab
+    );
 
     this.panelSocialList.clearList(this.controlListSocialPlayers);
 
@@ -31784,16 +34202,23 @@ function drawUiTabSocial(noMenus) {
                 colour = '@red@';
             }
 
-            this.panelSocialList.addListEntry(this.controlListSocialPlayers, i,
-                colour + Utility.hashToUsername(this.friendListHashes[i]) +
-                '~439~@whi@Remove         WWWWWWWWWW');
+            this.panelSocialList.addListEntry(
+                this.controlListSocialPlayers,
+                i,
+                colour +
+                    Utility.hashToUsername(this.friendListHashes[i]) +
+                    '~439~@whi@Remove         WWWWWWWWWW'
+            );
         }
-
     } else if (this.uiTabSocialSubTab === 1) {
         for (let i = 0; i < this.ignoreListCount; i++) {
-            this.panelSocialList.addListEntry(this.controlListSocialPlayers, i,
-                '@yel@' + Utility.hashToUsername(this.ignoreList[i]) +
-                '~439~@whi@Remove         WWWWWWWWWW');
+            this.panelSocialList.addListEntry(
+                this.controlListSocialPlayers,
+                i,
+                '@yel@' +
+                    Utility.hashToUsername(this.ignoreList[i]) +
+                    '~439~@whi@Remove         WWWWWWWWWW'
+            );
         }
     }
 
@@ -31801,78 +34226,135 @@ function drawUiTabSocial(noMenus) {
 
     if (this.uiTabSocialSubTab === 0) {
         const friendIndex = this.panelSocialList.getListEntryIndex(
-            this.controlListSocialPlayers);
+            this.controlListSocialPlayers
+        );
 
         if (friendIndex >= 0 && this.mouseX < 489) {
-            const username =
-                Utility.hashToUsername(this.friendListHashes[friendIndex]);
+            const username = Utility.hashToUsername(
+                this.friendListHashes[friendIndex]
+            );
 
             if (this.mouseX > 429) {
-                this.surface.drawStringCenter(`Click to remove ${username}`,
-                    UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+                this.surface.drawStringCenter(
+                    `Click to remove ${username}`,
+                    UI_X + HALF_WIDTH,
+                    UI_Y + 35,
+                    1,
+                    WHITE
+                );
             } else if (this.friendListOnline[friendIndex] === 255) {
-                this.surface.drawStringCenter(`Click to message ${username}`,
-                    UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+                this.surface.drawStringCenter(
+                    `Click to message ${username}`,
+                    UI_X + HALF_WIDTH,
+                    UI_Y + 35,
+                    1,
+                    WHITE
+                );
             } else if (this.friendListOnline[friendIndex] > 0) {
                 if (this.friendListOnline[friendIndex] < 200) {
                     this.surface.drawStringCenter(
                         `${username} is on world ` +
-                        (this.friendListOnline[friendIndex] - 9),
-                        UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+                            (this.friendListOnline[friendIndex] - 9),
+                        UI_X + HALF_WIDTH,
+                        UI_Y + 35,
+                        1,
+                        WHITE
+                    );
                 } else {
                     this.surface.drawStringCenter(
                         `${username} is on classic ` +
-                        (this.friendListOnline[friendIndex] - 219),
-                        UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+                            (this.friendListOnline[friendIndex] - 219),
+                        UI_X + HALF_WIDTH,
+                        UI_Y + 35,
+                        1,
+                        WHITE
+                    );
                 }
             } else {
-                this.surface.drawStringCenter(`${username} is offline`,
-                    UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+                this.surface.drawStringCenter(
+                    `${username} is offline`,
+                    UI_X + HALF_WIDTH,
+                    UI_Y + 35,
+                    1,
+                    WHITE
+                );
             }
         } else {
-            this.surface.drawStringCenter('Click a name to send a message',
-                UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+            this.surface.drawStringCenter(
+                'Click a name to send a message',
+                UI_X + HALF_WIDTH,
+                UI_Y + 35,
+                1,
+                WHITE
+            );
         }
 
         let textColour = 0;
 
-        if (this.mouseX > UI_X && this.mouseX < UI_X + WIDTH &&
-            this.mouseY > (UI_Y + HEIGHT) - 16 && this.mouseY < UI_Y + HEIGHT) {
+        if (
+            this.mouseX > UI_X &&
+            this.mouseX < UI_X + WIDTH &&
+            this.mouseY > UI_Y + HEIGHT - 16 &&
+            this.mouseY < UI_Y + HEIGHT
+        ) {
             textColour = YELLOW;
         } else {
             textColour = WHITE;
         }
 
-        this.surface.drawStringCenter('Click here to add a friend',
-            UI_X + HALF_WIDTH, (UI_Y + HEIGHT) - 3, 1, textColour);
+        this.surface.drawStringCenter(
+            'Click here to add a friend',
+            UI_X + HALF_WIDTH,
+            UI_Y + HEIGHT - 3,
+            1,
+            textColour
+        );
     } else if (this.uiTabSocialSubTab === 1) {
-        const ignoreIndex =
-            this.panelSocialList.getListEntryIndex(
-                this.controlListSocialPlayers);
+        const ignoreIndex = this.panelSocialList.getListEntryIndex(
+            this.controlListSocialPlayers
+        );
 
         if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
             if (this.mouseX > 429) {
                 this.surface.drawStringCenter(
                     'Click to remove ' +
-                    Utility.hashToUsername(this.ignoreList[ignoreIndex]),
-                    UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+                        Utility.hashToUsername(this.ignoreList[ignoreIndex]),
+                    UI_X + HALF_WIDTH,
+                    UI_Y + 35,
+                    1,
+                    WHITE
+                );
             }
         } else {
-            this.surface.drawStringCenter('Blocking messages from:',
-                UI_X + HALF_WIDTH, UI_Y + 35, 1, WHITE);
+            this.surface.drawStringCenter(
+                'Blocking messages from:',
+                UI_X + HALF_WIDTH,
+                UI_Y + 35,
+                1,
+                WHITE
+            );
         }
 
         let textColour = 0;
 
-        if (this.mouseX > UI_X && this.mouseX < UI_X + WIDTH &&
-            this.mouseY > (UI_Y + HEIGHT) - 16 && this.mouseY < UI_Y + HEIGHT) {
+        if (
+            this.mouseX > UI_X &&
+            this.mouseX < UI_X + WIDTH &&
+            this.mouseY > UI_Y + HEIGHT - 16 &&
+            this.mouseY < UI_Y + HEIGHT
+        ) {
             textColour = YELLOW;
         } else {
             textColour = WHITE;
         }
 
-        this.surface.drawStringCenter('Click here to add a name',
-            UI_X + HALF_WIDTH, (UI_Y + HEIGHT) - 3, 1, textColour);
+        this.surface.drawStringCenter(
+            'Click here to add a name',
+            UI_X + HALF_WIDTH,
+            UI_Y + HEIGHT - 3,
+            1,
+            textColour
+        );
     }
 
     if (!noMenus) {
@@ -31883,33 +34365,41 @@ function drawUiTabSocial(noMenus) {
     const mouseY = this.mouseY - UI_Y;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < 182) {
-        this.panelSocialList.handleMouse(mouseX + UI_X, mouseY + UI_Y,
-            this.lastMouseButtonDown, this.mouseButtonDown,
-            this.mouseScrollDelta);
+        this.panelSocialList.handleMouse(
+            mouseX + UI_X,
+            mouseY + UI_Y,
+            this.lastMouseButtonDown,
+            this.mouseButtonDown,
+            this.mouseScrollDelta
+        );
 
         if (mouseY <= TAB_HEIGHT && this.mouseButtonClick === 1) {
             if (mouseX < HALF_WIDTH && this.uiTabSocialSubTab === 1) {
                 this.uiTabSocialSubTab = 0;
                 this.panelSocialList.resetListProps(
-                    this.controlListSocialPlayers);
+                    this.controlListSocialPlayers
+                );
             } else if (mouseX > HALF_WIDTH && this.uiTabSocialSubTab === 0) {
                 this.uiTabSocialSubTab = 1;
                 this.panelSocialList.resetListProps(
-                    this.controlListSocialPlayers);
+                    this.controlListSocialPlayers
+                );
             }
         }
 
         if (this.mouseButtonClick === 1 && this.uiTabSocialSubTab === 0) {
             const friendIndex = this.panelSocialList.getListEntryIndex(
-                this.controlListSocialPlayers);
+                this.controlListSocialPlayers
+            );
 
             if (friendIndex >= 0 && this.mouseX < 489) {
                 if (this.mouseX > 429) {
                     this.friendRemove(this.friendListHashes[friendIndex]);
                 } else if (this.friendListOnline[friendIndex] !== 0) {
                     this.showDialogSocialInput = 2;
-                    this.privateMessageTarget =
-                        this.friendListHashes[friendIndex];
+                    this.privateMessageTarget = this.friendListHashes[
+                        friendIndex
+                    ];
                     this.inputPMCurrent = '';
                     this.inputPMFinal = '';
                 }
@@ -31918,7 +34408,8 @@ function drawUiTabSocial(noMenus) {
 
         if (this.mouseButtonClick === 1 && this.uiTabSocialSubTab === 1) {
             const ignoreIndex = this.panelSocialList.getListEntryIndex(
-                this.controlListSocialPlayers);
+                this.controlListSocialPlayers
+            );
 
             if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
                 this.ignoreRemove(this.ignoreList[ignoreIndex]);
@@ -31940,10 +34431,920 @@ function drawUiTabSocial(noMenus) {
     }
 }
 
-module.exports.drawUiTabSocial = drawUiTabSocial;
-module.exports.uiTabSocialSubTab = 0;
+module.exports = {
+    drawUiTabSocial,
+    uiTabSocialSubTab: 0
+};
 
-},{"../utility":74}],73:[function(require,module,exports){
+},{"../utility":82}],78:[function(require,module,exports){
+const GameData = require('../game-data');
+const Utility = require('../utility');
+const clientOpcodes = require('../opcodes/client');
+
+const CYAN = 0x00ffff;
+const GREY = 0x989898;
+const WHITE = 0xffffff;
+const YELLOW = 0xffff00;
+
+const DIALOG_X = 22;
+const DIALOG_Y = 36;
+
+function drawDialogTradeConfirm() {
+    this.surface.drawBox(DIALOG_X, DIALOG_Y, 468, 16, 192);
+    this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + 16, 468, 246, GREY, 160);
+    this.surface.drawStringCenter(
+        'Please confirm your trade with @yel@' +
+            Utility.hashToUsername(this.tradeRecipientConfirmHash),
+        DIALOG_X + 234,
+        DIALOG_Y + 12,
+        1,
+        WHITE
+    );
+    this.surface.drawStringCenter(
+        'You are about to give:',
+        DIALOG_X + 117,
+        DIALOG_Y + 30,
+        1,
+        YELLOW
+    );
+
+    for (let i = 0; i < this.tradeConfirmItemsCount; i++) {
+        let itemLine = GameData.itemName[this.tradeConfirmItems[i]];
+
+        if (GameData.itemStackable[this.tradeConfirmItems[i]] === 0) {
+            itemLine +=
+                ' x ' +
+                Utility.formatConfirmAmount(this.tradeConfirmItemCount[i]);
+        }
+
+        this.surface.drawStringCenter(
+            itemLine,
+            DIALOG_X + 117,
+            DIALOG_Y + 42 + i * 12,
+            1,
+            WHITE
+        );
+    }
+
+    if (this.tradeConfirmItemsCount === 0) {
+        this.surface.drawStringCenter(
+            'Nothing!',
+            DIALOG_X + 117,
+            DIALOG_Y + 42,
+            1,
+            WHITE
+        );
+    }
+
+    this.surface.drawStringCenter(
+        'In return you will receive:',
+        DIALOG_X + 351,
+        DIALOG_Y + 30,
+        1,
+        YELLOW
+    );
+
+    for (let i = 0; i < this.tradeRecipientConfirmItemsCount; i++) {
+        let itemLine = GameData.itemName[this.tradeRecipientConfirmItems[i]];
+
+        if (GameData.itemStackable[this.tradeRecipientConfirmItems[i]] === 0) {
+            itemLine +=
+                ' x ' +
+                Utility.formatConfirmAmount(
+                    this.tradeRecipientConfirmItemCount[i]
+                );
+        }
+
+        this.surface.drawStringCenter(
+            itemLine,
+            DIALOG_X + 351,
+            DIALOG_Y + 42 + i * 12,
+            1,
+            WHITE
+        );
+    }
+
+    if (this.tradeRecipientConfirmItemsCount === 0) {
+        this.surface.drawStringCenter(
+            'Nothing!',
+            DIALOG_X + 351,
+            DIALOG_Y + 42,
+            1,
+            WHITE
+        );
+    }
+
+    this.surface.drawStringCenter(
+        'Are you sure you want to do this?',
+        DIALOG_X + 234,
+        DIALOG_Y + 200,
+        4,
+        CYAN
+    );
+    this.surface.drawStringCenter(
+        'There is NO WAY to reverse a trade if you change your mind.',
+        DIALOG_X + 234,
+        DIALOG_Y + 215,
+        1,
+        WHITE
+    );
+    this.surface.drawStringCenter(
+        'Remember that not all players are trustworthy',
+        DIALOG_X + 234,
+        DIALOG_Y + 230,
+        1,
+        WHITE
+    );
+
+    if (!this.tradeConfirmAccepted) {
+        this.surface._drawSprite_from3(
+            DIALOG_X + 118 - 35,
+            DIALOG_Y + 238,
+            this.spriteMedia + 25
+        );
+        this.surface._drawSprite_from3(
+            DIALOG_X + 352 - 35,
+            DIALOG_Y + 238,
+            this.spriteMedia + 26
+        );
+    } else {
+        this.surface.drawStringCenter(
+            'Waiting for other player...',
+            DIALOG_X + 234,
+            DIALOG_Y + 250,
+            1,
+            YELLOW
+        );
+    }
+
+    if (this.mouseButtonClick === 1) {
+        if (
+            this.mouseX < DIALOG_X ||
+            this.mouseY < DIALOG_Y ||
+            this.mouseX > DIALOG_X + 468 ||
+            this.mouseY > DIALOG_Y + 262
+        ) {
+            this.showDialogTradeConfirm = false;
+            this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
+            this.packetStream.sendPacket();
+        }
+
+        if (
+            this.mouseX >= DIALOG_X + 118 - 35 &&
+            this.mouseX <= DIALOG_X + 118 + 70 &&
+            this.mouseY >= DIALOG_Y + 238 &&
+            this.mouseY <= DIALOG_Y + 238 + 21
+        ) {
+            this.tradeConfirmAccepted = true;
+            this.packetStream.newPacket(clientOpcodes.TRADE_CONFIRM_ACCEPT);
+            this.packetStream.sendPacket();
+        }
+
+        if (
+            this.mouseX >= DIALOG_X + 352 - 35 &&
+            this.mouseX <= DIALOG_X + 353 + 70 &&
+            this.mouseY >= DIALOG_Y + 238 &&
+            this.mouseY <= DIALOG_Y + 238 + 21
+        ) {
+            this.showDialogTradeConfirm = false;
+            this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
+            this.packetStream.sendPacket();
+        }
+
+        this.mouseButtonClick = 0;
+    }
+}
+
+module.exports = {
+    drawDialogTradeConfirm,
+    showDialogTradeConfirm: false
+};
+
+},{"../game-data":44,"../opcodes/client":54,"../utility":82}],79:[function(require,module,exports){
+const GameData = require('../game-data');
+const clientOpcodes = require('../opcodes/client');
+
+const BLACK = 0;
+const GREY = 0x989898;
+const LIGHT_GREY = 0xd0d0d0;
+const WHITE = 0xffffff;
+const YELLOW = 0xffff00;
+
+const DIALOG_X = 22;
+const DIALOG_Y = 36;
+
+function drawDialogTrade() {
+    if (
+        this.mouseButtonClick !== 0 &&
+        this.mouseButtonItemCountIncrement === 0
+    ) {
+        this.mouseButtonItemCountIncrement = 1;
+    }
+
+    if (this.mouseButtonItemCountIncrement > 0) {
+        const mouseX = this.mouseX - 22;
+        const mouseY = this.mouseY - 36;
+
+        if (mouseX >= 0 && mouseY >= 0 && mouseX < 468 && mouseY < 262) {
+            if (mouseX > 216 && mouseY > 30 && mouseX < 462 && mouseY < 235) {
+                const slot =
+                    (((mouseX - 217) / 49) | 0) +
+                    (((mouseY - 31) / 34) | 0) * 5;
+
+                if (slot >= 0 && slot < this.inventoryItemsCount) {
+                    let sendUpdate = false;
+                    let itemCountAdd = 0;
+                    const itemType = this.inventoryItemId[slot];
+
+                    for (let i = 0; i < this.tradeItemsCount; i++) {
+                        if (this.tradeItems[i] === itemType) {
+                            if (GameData.itemStackable[itemType] === 0) {
+                                for (
+                                    let j = 0;
+                                    j < this.mouseButtonItemCountIncrement;
+                                    j++
+                                ) {
+                                    if (
+                                        this.tradeItemCount[i] <
+                                        this.inventoryItemStackCount[slot]
+                                    ) {
+                                        this.tradeItemCount[i]++;
+                                    }
+
+                                    sendUpdate = true;
+                                }
+                            } else {
+                                itemCountAdd++;
+                            }
+                        }
+                    }
+
+                    if (this.getInventoryCount(itemType) <= itemCountAdd) {
+                        sendUpdate = true;
+                    }
+
+                    if (GameData.itemSpecial[itemType] === 1) {
+                        this.showMessage(
+                            'This object cannot be traded with other players',
+                            3
+                        );
+                        sendUpdate = true;
+                    }
+
+                    if (!sendUpdate && this.tradeItemsCount < 12) {
+                        this.tradeItems[this.tradeItemsCount] = itemType;
+                        this.tradeItemCount[this.tradeItemsCount] = 1;
+                        this.tradeItemsCount++;
+                        sendUpdate = true;
+                    }
+
+                    if (sendUpdate) {
+                        this.packetStream.newPacket(
+                            clientOpcodes.TRADE_ITEM_UPDATE
+                        );
+                        this.packetStream.putByte(this.tradeItemsCount);
+
+                        for (let j = 0; j < this.tradeItemsCount; j++) {
+                            this.packetStream.putShort(this.tradeItems[j]);
+                            this.packetStream.putInt(this.tradeItemCount[j]);
+                        }
+
+                        this.packetStream.sendPacket();
+                        this.tradeRecipientAccepted = false;
+                        this.tradeAccepted = false;
+                    }
+                }
+            }
+
+            if (mouseX > 8 && mouseY > 30 && mouseX < 205 && mouseY < 133) {
+                let itemIndex =
+                    (((mouseX - 9) / 49) | 0) + (((mouseY - 31) / 34) | 0) * 4;
+
+                if (itemIndex >= 0 && itemIndex < this.tradeItemsCount) {
+                    let itemType = this.tradeItems[itemIndex];
+
+                    for (
+                        let i = 0;
+                        i < this.mouseButtonItemCountIncrement;
+                        i++
+                    ) {
+                        if (
+                            GameData.itemStackable[itemType] === 0 &&
+                            this.tradeItemCount[itemIndex] > 1
+                        ) {
+                            this.tradeItemCount[itemIndex]--;
+                            continue;
+                        }
+                        this.tradeItemsCount--;
+                        this.mouseButtonDownTime = 0;
+
+                        for (let j = itemIndex; j < this.tradeItemsCount; j++) {
+                            this.tradeItems[j] = this.tradeItems[j + 1];
+                            this.tradeItemCount[j] = this.tradeItemCount[j + 1];
+                        }
+
+                        break;
+                    }
+
+                    this.packetStream.newPacket(
+                        clientOpcodes.TRADE_ITEM_UPDATE
+                    );
+                    this.packetStream.putByte(this.tradeItemsCount);
+
+                    for (let i = 0; i < this.tradeItemsCount; i++) {
+                        this.packetStream.putShort(this.tradeItems[i]);
+                        this.packetStream.putInt(this.tradeItemCount[i]);
+                    }
+
+                    this.packetStream.sendPacket();
+                    this.tradeRecipientAccepted = false;
+                    this.tradeAccepted = false;
+                }
+            }
+
+            if (
+                mouseX >= 217 &&
+                mouseY >= 238 &&
+                mouseX <= 286 &&
+                mouseY <= 259
+            ) {
+                this.tradeAccepted = true;
+                this.packetStream.newPacket(clientOpcodes.TRADE_ACCEPT);
+                this.packetStream.sendPacket();
+            }
+
+            if (
+                mouseX >= 394 &&
+                mouseY >= 238 &&
+                mouseX < 463 &&
+                mouseY < 259
+            ) {
+                this.showDialogTrade = false;
+                this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
+                this.packetStream.sendPacket();
+            }
+        } else if (this.mouseButtonClick !== 0) {
+            this.showDialogTrade = false;
+            this.packetStream.newPacket(clientOpcodes.TRADE_DECLINE);
+            this.packetStream.sendPacket();
+        }
+
+        this.mouseButtonClick = 0;
+        this.mouseButtonItemCountIncrement = 0;
+    }
+
+    if (!this.showDialogTrade) {
+        return;
+    }
+
+    this.surface.drawBox(DIALOG_X, DIALOG_Y, 468, 12, 192);
+    this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + 12, 468, 18, GREY, 160);
+    this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + 30, 8, 248, GREY, 160);
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 205,
+        DIALOG_Y + 30,
+        11,
+        248,
+        GREY,
+        160
+    );
+    this.surface.drawBoxAlpha(DIALOG_X + 462, DIALOG_Y + 30, 6, 248, GREY, 160);
+    this.surface.drawBoxAlpha(DIALOG_X + 8, DIALOG_Y + 133, 197, 22, GREY, 160);
+    this.surface.drawBoxAlpha(DIALOG_X + 8, DIALOG_Y + 258, 197, 20, GREY, 160);
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 216,
+        DIALOG_Y + 235,
+        246,
+        43,
+        GREY,
+        160
+    );
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 8,
+        DIALOG_Y + 30,
+        197,
+        103,
+        LIGHT_GREY,
+        160
+    );
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 8,
+        DIALOG_Y + 155,
+        197,
+        103,
+        LIGHT_GREY,
+        160
+    );
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 216,
+        DIALOG_Y + 30,
+        246,
+        205,
+        LIGHT_GREY,
+        160
+    );
+
+    for (let i = 0; i < 4; i++) {
+        this.surface.drawLineHoriz(
+            DIALOG_X + 8,
+            DIALOG_Y + 30 + i * 34,
+            197,
+            BLACK
+        );
+    }
+
+    for (let i = 0; i < 4; i++) {
+        this.surface.drawLineHoriz(
+            DIALOG_X + 8,
+            DIALOG_Y + 155 + i * 34,
+            197,
+            BLACK
+        );
+    }
+
+    for (let i = 0; i < 7; i++) {
+        this.surface.drawLineHoriz(
+            DIALOG_X + 216,
+            DIALOG_Y + 30 + i * 34,
+            246,
+            BLACK
+        );
+    }
+
+    for (let i = 0; i < 6; i++) {
+        if (i < 5) {
+            this.surface.drawLineVert(
+                DIALOG_X + 8 + i * 49,
+                DIALOG_Y + 30,
+                103,
+                BLACK
+            );
+            this.surface.drawLineVert(
+                DIALOG_X + 8 + i * 49,
+                DIALOG_Y + 155,
+                103,
+                BLACK
+            );
+        }
+
+        this.surface.drawLineVert(
+            DIALOG_X + 216 + i * 49,
+            DIALOG_Y + 30,
+            205,
+            BLACK
+        );
+    }
+
+    this.surface.drawString(
+        'Trading with: ' + this.tradeRecipientName,
+        DIALOG_X + 1,
+        DIALOG_Y + 10,
+        1,
+        WHITE
+    );
+    this.surface.drawString(
+        'Your Offer',
+        DIALOG_X + 9,
+        DIALOG_Y + 27,
+        4,
+        WHITE
+    );
+    this.surface.drawString(
+        "Opponent's Offer",
+        DIALOG_X + 9,
+        DIALOG_Y + 152,
+        4,
+        WHITE
+    );
+    this.surface.drawString(
+        'Your Inventory',
+        DIALOG_X + 216,
+        DIALOG_Y + 27,
+        4,
+        WHITE
+    );
+
+    if (!this.tradeAccepted) {
+        this.surface._drawSprite_from3(
+            DIALOG_X + 217,
+            DIALOG_Y + 238,
+            this.spriteMedia + 25
+        );
+    }
+
+    this.surface._drawSprite_from3(
+        DIALOG_X + 394,
+        DIALOG_Y + 238,
+        this.spriteMedia + 26
+    );
+
+    if (this.tradeRecipientAccepted) {
+        this.surface.drawStringCenter(
+            'Other player',
+            DIALOG_X + 341,
+            DIALOG_Y + 246,
+            1,
+            WHITE
+        );
+        this.surface.drawStringCenter(
+            'has accepted',
+            DIALOG_X + 341,
+            DIALOG_Y + 256,
+            1,
+            WHITE
+        );
+    }
+
+    if (this.tradeAccepted) {
+        this.surface.drawStringCenter(
+            'Waiting for',
+            DIALOG_X + 217 + 35,
+            DIALOG_Y + 246,
+            1,
+            WHITE
+        );
+        this.surface.drawStringCenter(
+            'other player',
+            DIALOG_X + 217 + 35,
+            DIALOG_Y + 256,
+            1,
+            WHITE
+        );
+    }
+
+    for (let i = 0; i < this.inventoryItemsCount; i++) {
+        const slotX = 217 + DIALOG_X + (i % 5) * 49;
+        const slotY = 31 + DIALOG_Y + ((i / 5) | 0) * 34;
+
+        this.surface._spriteClipping_from9(
+            slotX,
+            slotY,
+            48,
+            32,
+            this.spriteItem + GameData.itemPicture[this.inventoryItemId[i]],
+            GameData.itemMask[this.inventoryItemId[i]],
+            0,
+            0,
+            false
+        );
+
+        if (GameData.itemStackable[this.inventoryItemId[i]] === 0) {
+            this.surface.drawString(
+                this.inventoryItemStackCount[i].toString(),
+                slotX + 1,
+                slotY + 10,
+                1,
+                YELLOW
+            );
+        }
+    }
+
+    for (let i = 0; i < this.tradeItemsCount; i++) {
+        const slotX = 9 + DIALOG_X + (i % 4) * 49;
+        const slotY = 31 + DIALOG_Y + ((i / 4) | 0) * 34;
+
+        this.surface._spriteClipping_from9(
+            slotX,
+            slotY,
+            48,
+            32,
+            this.spriteItem + GameData.itemPicture[this.tradeItems[i]],
+            GameData.itemMask[this.tradeItems[i]],
+            0,
+            0,
+            false
+        );
+
+        if (GameData.itemStackable[this.tradeItems[i]] === 0) {
+            this.surface.drawString(
+                this.tradeItemCount[i].toString(),
+                slotX + 1,
+                slotY + 10,
+                1,
+                YELLOW
+            );
+        }
+
+        if (
+            this.mouseX > slotX &&
+            this.mouseX < slotX + 48 &&
+            this.mouseY > slotY &&
+            this.mouseY < slotY + 32
+        ) {
+            this.surface.drawString(
+                `${GameData.itemName[this.tradeItems[i]]}: @whi@` +
+                    GameData.itemDescription[this.tradeItems[i]],
+                DIALOG_X + 8,
+                DIALOG_Y + 273,
+                1,
+                YELLOW
+            );
+        }
+    }
+
+    for (let i = 0; i < this.tradeRecipientItemsCount; i++) {
+        const slotX = 9 + DIALOG_X + (i % 4) * 49;
+        const slotY = 156 + DIALOG_Y + ((i / 4) | 0) * 34;
+
+        this.surface._spriteClipping_from9(
+            slotX,
+            slotY,
+            48,
+            32,
+            this.spriteItem + GameData.itemPicture[this.tradeRecipientItems[i]],
+            GameData.itemMask[this.tradeRecipientItems[i]],
+            0,
+            0,
+            false
+        );
+
+        if (GameData.itemStackable[this.tradeRecipientItems[i]] === 0) {
+            this.surface.drawString(
+                this.tradeRecipientItemCount[i].toString(),
+                slotX + 1,
+                slotY + 10,
+                1,
+                YELLOW
+            );
+        }
+
+        if (
+            this.mouseX > slotX &&
+            this.mouseX < slotX + 48 &&
+            this.mouseY > slotY &&
+            this.mouseY < slotY + 32
+        ) {
+            this.surface.drawString(
+                GameData.itemName[this.tradeRecipientItems[i]] +
+                    ': @whi@' +
+                    GameData.itemDescription[this.tradeRecipientItems[i]],
+                DIALOG_X + 8,
+                DIALOG_Y + 273,
+                1,
+                YELLOW
+            );
+        }
+    }
+}
+
+module.exports = {
+    drawDialogTrade,
+    showDialogTrade: false
+};
+
+},{"../game-data":44,"../opcodes/client":54}],80:[function(require,module,exports){
+const ORANGE = 0xff8000;
+const RED = 0xff0000;
+const WHITE = 0xffffff;
+const YELLOW = 0xffff00;
+
+const WIDTH = 400;
+
+function drawDialogWelcome() {
+    let height = 65;
+
+    if (this.welcomeRecoverySetDays !== 201) {
+        height += 60;
+    }
+
+    if (this.welcomeUnreadMessages > 0) {
+        height += 60;
+    }
+
+    if (this.welcomeLastLoggedInIP !== 0) {
+        height += 45;
+    }
+
+    let y = 167 - ((height / 2) | 0);
+
+    this.surface.drawBox(56, 167 - ((height / 2) | 0), WIDTH, height, 0);
+    this.surface.drawBoxEdge(
+        56,
+        167 - ((height / 2) | 0),
+        WIDTH,
+        height,
+        WHITE
+    );
+
+    y += 20;
+
+    this.surface.drawStringCenter(
+        'Welcome to RuneScape ' + this.loginUser,
+        256,
+        y,
+        4,
+        YELLOW
+    );
+
+    y += 30;
+
+    let daysAgo = null;
+
+    if (this.welcomeLastLoggedInDays === 0) {
+        daysAgo = 'earlier today';
+    } else if (this.welcomeLastLoggedInDays === 1) {
+        daysAgo = 'yesterday';
+    } else {
+        daysAgo = `${this.welcomeLastLoggedInDays} days ago`;
+    }
+
+    if (this.welcomeLastLoggedInIP !== 0) {
+        this.surface.drawStringCenter(
+            `You last logged in ${daysAgo}`,
+            256,
+            y,
+            1,
+            WHITE
+        );
+
+        y += 15;
+
+        if (this.welcomeLastLoggedInHost === null) {
+            this.welcomeLastLoggedInHost = this.getHostnameIP(
+                this.welcomeLastLoggedInIP
+            );
+        }
+
+        this.surface.drawStringCenter(
+            'from: ' + this.welcomeLastLoggedInHost,
+            256,
+            y,
+            1,
+            WHITE
+        );
+
+        y += 15;
+        y += 15;
+    }
+
+    if (this.welcomeUnreadMessages > 0) {
+        let textColour = WHITE;
+
+        this.surface.drawStringCenter(
+            'Jagex staff will NEVER email you. We use the',
+            256,
+            y,
+            1,
+            textColour
+        );
+
+        y += 15;
+
+        this.surface.drawStringCenter(
+            'message-centre on this website instead.',
+            256,
+            y,
+            1,
+            textColour
+        );
+
+        y += 15;
+
+        if (this.welcomeUnreadMessages === 1) {
+            this.surface.drawStringCenter(
+                'You have @yel@0@whi@ unread messages in your message-centre',
+                256,
+                y,
+                1,
+                WHITE
+            );
+        } else {
+            this.surface.drawStringCenter(
+                'You have @gre@' +
+                    (this.welcomeUnreadMessages - 1) +
+                    ' unread messages @whi@in your message-centre',
+                256,
+                y,
+                1,
+                WHITE
+            );
+        }
+
+        y += 15;
+        y += 15;
+    }
+
+    if (this.welcomeRecoverySetDays !== 201) {
+        if (this.welcomeRecoverySetDays === 200) {
+            this.surface.drawStringCenter(
+                'You have not yet set any password recovery questions.',
+                256,
+                y,
+                1,
+                ORANGE
+            );
+
+            y += 15;
+
+            this.surface.drawStringCenter(
+                'We strongly recommend you do so now to secure your account.',
+                256,
+                y,
+                1,
+                ORANGE
+            );
+
+            y += 15;
+
+            this.surface.drawStringCenter(
+                "Do this from the 'account management' area on our front " +
+                    'webpage',
+                256,
+                y,
+                1,
+                ORANGE
+            );
+
+            y += 15;
+        } else {
+            let daysAgo = null;
+
+            if (this.welcomeRecoverySetDays === 0) {
+                daysAgo = 'Earlier today';
+            } else if (this.welcomeRecoverySetDays === 1) {
+                daysAgo = 'Yesterday';
+            } else {
+                daysAgo = `${this.welcomeRecoverySetDays} days ago`;
+            }
+
+            this.surface.drawStringCenter(
+                `${daysAgo} you changed your recovery questions`,
+                256,
+                y,
+                1,
+                ORANGE
+            );
+
+            y += 15;
+
+            this.surface.drawStringCenter(
+                'If you do not remember making this change then cancel it ' +
+                    'immediately',
+                256,
+                y,
+                1,
+                ORANGE
+            );
+
+            y += 15;
+
+            this.surface.drawStringCenter(
+                "Do this from the 'account management' area on our front " +
+                    'webpage',
+                256,
+                y,
+                1,
+                ORANGE
+            );
+
+            y += 15;
+        }
+
+        y += 15;
+    }
+
+    let textColour = WHITE;
+
+    if (
+        this.mouseY > y - 12 &&
+        this.mouseY <= y &&
+        this.mouseX > 106 &&
+        this.mouseX < 406
+    ) {
+        textColour = RED;
+    }
+
+    this.surface.drawStringCenter(
+        'Click here to close window',
+        256,
+        y,
+        1,
+        textColour
+    );
+
+    if (this.mouseButtonClick === 1) {
+        if (textColour === RED) {
+            this.showDialogWelcome = false;
+        }
+
+        if (
+            (this.mouseX < 86 || this.mouseX > 426) &&
+            (this.mouseY < 167 - ((height / 2) | 0) ||
+                this.mouseY > 167 + ((height / 2) | 0))
+        ) {
+            this.showDialogWelcome = false;
+        }
+    }
+
+    this.mouseButtonClick = 0;
+}
+
+module.exports = {
+    drawDialogWelcome,
+    showDialogWelcome: false
+};
+
+},{}],81:[function(require,module,exports){
 const BLACK = 0;
 const RED = 0xff0000;
 const WHITE = 0xffffff;
@@ -31954,49 +35355,121 @@ function drawDialogWildWarn() {
     this.surface.drawBox(86, 77, 340, 180, BLACK);
     this.surface.drawBoxEdge(86, 77, 340, 180, WHITE);
 
-    this.surface.drawStringCenter('Warning! Proceed with caution',
-        256, y, 4, RED);
+    this.surface.drawStringCenter(
+        'Warning! Proceed with caution',
+        256,
+        y,
+        4,
+        RED
+    );
+
     y += 26;
-    this.surface.drawStringCenter('If you go much further north you will ' +
-        'enter the', 256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'If you go much further north you will ' + 'enter the',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 13;
-    this.surface.drawStringCenter('wilderness. This a very dangerous area ' +
-        'where', 256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'wilderness. This a very dangerous area where',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 13;
-    this.surface.drawStringCenter('other players can attack you!',
-        256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'other players can attack you!',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 22;
-    this.surface.drawStringCenter('The further north you go the more ' +
-        'dangerous it', 256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'The further north you go the more dangerous it',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 13;
-    this.surface.drawStringCenter('becomes, but the more treasure you will ' +
-        'find.', 256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'becomes, but the more treasure you will find.',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 22;
-    this.surface.drawStringCenter('In the wilderness an indicator at the ' +
-        'bottom-right', 256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'In the wilderness an indicator at the bottom-right',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 13;
-    this.surface.drawStringCenter('of the screen will show the current level ' +
-        'of danger', 256, y, 1, WHITE);
+
+    this.surface.drawStringCenter(
+        'of the screen will show the current level of danger',
+        256,
+        y,
+        1,
+        WHITE
+    );
+
     y += 22;
 
     let textColour = WHITE;
 
-    if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 &&
-        this.mouseX < 331) {
+    if (
+        this.mouseY > y - 12 &&
+        this.mouseY <= y &&
+        this.mouseX > 181 &&
+        this.mouseX < 331
+    ) {
         textColour = RED;
     }
 
-    this.surface.drawStringCenter('Click here to close window',
-        256, y, 1, textColour);
+    this.surface.drawStringCenter(
+        'Click here to close window',
+        256,
+        y,
+        1,
+        textColour
+    );
 
     if (this.mouseButtonClick !== 0) {
-        if (this.mouseY > y - 12 && this.mouseY <= y && this.mouseX > 181 &&
-            this.mouseX < 331) {
+        if (
+            this.mouseY > y - 12 &&
+            this.mouseY <= y &&
+            this.mouseX > 181 &&
+            this.mouseX < 331
+        ) {
             this.showUiWildWarn = 2;
         }
 
-        if (this.mouseX < 86 || this.mouseX > 426 || this.mouseY < 77 ||
-            this.mouseY > 257) {
+        if (
+            this.mouseX < 86 ||
+            this.mouseX > 426 ||
+            this.mouseY < 77 ||
+            this.mouseY > 257
+        ) {
             this.showUiWildWarn = 2;
         }
 
@@ -32004,10 +35477,12 @@ function drawDialogWildWarn() {
     }
 }
 
-module.exports.showUiWildWarn = 0;
-module.exports.drawDialogWildWarn = drawDialogWildWarn;
+module.exports = {
+    showUiWildWarn: 0,
+    drawDialogWildWarn
+};
 
-},{}],74:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -32263,19 +35738,38 @@ class Utility {
 
         return null;
     }
+
+    static formatConfirmAmount(amount) {
+        let formatted = amount.toString();
+
+        for (let i = formatted.length - 3; i > 0; i -= 3) {
+            formatted = formatted.substring(0, i) + ',' +
+                formatted.substring(i);
+        }
+
+        if (formatted.length > 8) {
+            formatted = `@gre@${formatted.substring(0, formatted.length - 8)}` +
+                ` million @whi@(${formatted})`;
+        } else if (formatted.length > 4) {
+            formatted = `@cya@${formatted.substring(0, formatted.length - 4)}` +
+                `K @whi@(${formatted})`;
+        }
+
+        return formatted;
+    }
 }
 
 Utility.aBoolean546 = false;
 Utility.bitmask = new Int32Array([
     0, 1, 3, 7, 15, 31, 63, 127, 255, 511,
     1023, 2047, 4095, 8191, 16383, 32767, 65535, 0x1ffff, 0x3ffff, 0x7ffff,
-    0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff, 0x1ffffff, 0x3ffffff, 0x7ffffff, 0xfffffff, 0x1fffffff,
-    0x3fffffff, 0x7fffffff, -1
+    0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff, 0x1ffffff, 0x3ffffff,
+    0x7ffffff, 0xfffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff, -1
 ]);
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],75:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],83:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -32288,7 +35782,7 @@ module.exports={
     "SOUNDS": 1,
     "TEXTURES": 17
 }
-},{}],76:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -32300,7 +35794,7 @@ const C_COMMA = ','.charCodeAt(0);
 const C_DOT = '.'.charCodeAt(0);
 const C_J = 'j'.charCodeAt(0);
 const C_Q = 'q'.charCodeAt(0);
-const C_SINGLE_QUOTE = '\''.charCodeAt(0);
+const C_SINGLE_QUOTE = "'".charCodeAt(0);
 const C_SLASH = '/'.charCodeAt(0);
 const C_SPACE = ' '.charCodeAt(0);
 const C_V = 'v'.charCodeAt(0);
@@ -32318,7 +35812,9 @@ function toCharArray(s) {
 }
 
 function fromCharArray(a) {
-    return Array.from(a).map(c => String.fromCharCode(c)).join('');
+    return Array.from(a)
+        .map((c) => String.fromCharCode(c))
+        .join('');
 }
 
 class WordFilter {
@@ -32358,7 +35854,11 @@ class WordFilter {
         WordFilter.badCharIds.length = wordCount;
         WordFilter.badCharIds.fill(null);
 
-        WordFilter.readBuffer(buffer, WordFilter.badList, WordFilter.badCharIds);
+        WordFilter.readBuffer(
+            buffer,
+            WordFilter.badList,
+            WordFilter.badCharIds
+        );
     }
 
     static loadHost(buffer) {
@@ -32371,7 +35871,11 @@ class WordFilter {
         WordFilter.hostCharIds.length = wordCount;
         WordFilter.hostCharIds.fill(null);
 
-        WordFilter.readBuffer(buffer, WordFilter.hostList, WordFilter.hostCharIds);
+        WordFilter.readBuffer(
+            buffer,
+            WordFilter.hostList,
+            WordFilter.hostCharIds
+        );
     }
 
     static loadFragments(buffer) {
@@ -32396,8 +35900,10 @@ class WordFilter {
             ids.length = buffer.getUnsignedInt();
 
             for (let j = 0; j < ids.length; j++) {
-                ids[j] = [ (buffer.getUnsignedByte() & 0xff), 
-                    (buffer.getUnsignedByte() & 0xff) ];
+                ids[j] = [
+                    buffer.getUnsignedByte() & 0xff,
+                    buffer.getUnsignedByte() & 0xff
+                ];
             }
 
             if (ids.length > 0) {
@@ -32414,12 +35920,30 @@ class WordFilter {
         WordFilter.applyHostFilter(inputChars);
         WordFilter.heywhathteufck(inputChars);
 
-        for (let ignoreIdx = 0; ignoreIdx < WordFilter.ignoreList.length; ignoreIdx++) {
-            for (let inputIgnoreIdx = -1; (inputIgnoreIdx = input.indexOf(WordFilter.ignoreList[ignoreIdx], inputIgnoreIdx + 1)) !== -1;) {
-                let ignoreWordChars = toCharArray(WordFilter.ignoreList[ignoreIdx]);
+        for (
+            let ignoreIdx = 0;
+            ignoreIdx < WordFilter.ignoreList.length;
+            ignoreIdx++
+        ) {
+            for (
+                let inputIgnoreIdx = -1;
+                (inputIgnoreIdx = input.indexOf(
+                    WordFilter.ignoreList[ignoreIdx],
+                    inputIgnoreIdx + 1
+                )) !== -1;
 
-                for (let ignorewordIdx = 0; ignorewordIdx < ignoreWordChars.length; ignorewordIdx++) {
-                    inputChars[ignorewordIdx + inputIgnoreIdx] = ignoreWordChars[ignorewordIdx];
+            ) {
+                let ignoreWordChars = toCharArray(
+                    WordFilter.ignoreList[ignoreIdx]
+                );
+
+                for (
+                    let ignorewordIdx = 0;
+                    ignorewordIdx < ignoreWordChars.length;
+                    ignorewordIdx++
+                ) {
+                    inputChars[ignorewordIdx + inputIgnoreIdx] =
+                        ignoreWordChars[ignorewordIdx];
                 }
             }
         }
@@ -32452,7 +35976,7 @@ class WordFilter {
                         isUpperCase = false;
                     }
                 } else if (WordFilter.isUpperCase(current)) {
-                    input[i] = ((current + 97) - 65);
+                    input[i] = current + 97 - 65;
                 }
             } else {
                 isUpperCase = true;
@@ -32463,14 +35987,22 @@ class WordFilter {
     static applyBadwordFilter(input) {
         for (let i = 0; i < 2; i++) {
             for (let j = WordFilter.badList.length - 1; j >= 0; j--) {
-                WordFilter.applyWordFilter(input, WordFilter.badList[j], WordFilter.badCharIds[j]);
+                WordFilter.applyWordFilter(
+                    input,
+                    WordFilter.badList[j],
+                    WordFilter.badCharIds[j]
+                );
             }
         }
     }
 
     static applyHostFilter(input) {
         for (let i = WordFilter.hostList.length - 1; i >= 0; i--) {
-            WordFilter.applyWordFilter(input, WordFilter.hostList[i], WordFilter.hostCharIds[i]);
+            WordFilter.applyWordFilter(
+                input,
+                WordFilter.hostList[i],
+                WordFilter.hostCharIds[i]
+            );
         }
     }
 
@@ -32484,7 +36016,13 @@ class WordFilter {
         WordFilter.applyWordFilter(input2, slash, null);
 
         for (let i = 0; i < WordFilter.tldList.length; i++) {
-            WordFilter.applyTldFilter(input, input1, input2, WordFilter.tldList[i], WordFilter.tldType[i]);
+            WordFilter.applyTldFilter(
+                input,
+                input1,
+                input2,
+                WordFilter.tldList[i],
+                WordFilter.tldType[i]
+            );
         }
     }
 
@@ -32493,7 +36031,11 @@ class WordFilter {
             return;
         }
 
-        for (let charIndex = 0; charIndex <= input.length - tld.length; charIndex++) {
+        for (
+            let charIndex = 0;
+            charIndex <= input.length - tld.length;
+            charIndex++
+        ) {
             let inputCharCount = charIndex;
             let l = 0;
 
@@ -32506,7 +36048,14 @@ class WordFilter {
                     next = input[inputCharCount + 1];
                 }
 
-                if (l < tld.length && (i1 = WordFilter.compareLettersNumbers(tld[l], current, next)) > 0) {
+                if (
+                    l < tld.length &&
+                    (i1 = WordFilter.compareLettersNumbers(
+                        tld[l],
+                        current,
+                        next
+                    )) > 0
+                ) {
                     inputCharCount += i1;
                     l++;
                     continue;
@@ -32516,7 +36065,13 @@ class WordFilter {
                     break;
                 }
 
-                if ((i1 = WordFilter.compareLettersNumbers(tld[l - 1], current, next)) > 0) {
+                if (
+                    (i1 = WordFilter.compareLettersNumbers(
+                        tld[l - 1],
+                        current,
+                        next
+                    )) > 0
+                ) {
                     inputCharCount += i1;
                     continue;
                 }
@@ -32530,18 +36085,34 @@ class WordFilter {
 
             if (l >= tld.length) {
                 let flag = false;
-                let startMatch = WordFilter.getAsteriskCount(input, input1, charIndex);
-                let endMatch = WordFilter.getAsteriskCount2(input, input2, inputCharCount - 1);
+                let startMatch = WordFilter.getAsteriskCount(
+                    input,
+                    input1,
+                    charIndex
+                );
+                let endMatch = WordFilter.getAsteriskCount2(
+                    input,
+                    input2,
+                    inputCharCount - 1
+                );
 
                 if (WordFilter.DEBUGTLD) {
-                    console.log(`Potential tld: ${tld} at char ${charIndex} (type="${type}, startmatch="${startMatch}, endmatch=${endMatch})`);
+                    console.log(
+                        `Potential tld: ${tld} at char ${charIndex} ` +
+                            `(type="${type}, startmatch="${startMatch}, ` +
+                            `endmatch=${endMatch})`
+                    );
                 }
 
                 if (type === 1 && startMatch > 0 && endMatch > 0) {
                     flag = true;
                 }
 
-                if (type === 2 && (startMatch > 2 && endMatch > 0 || startMatch > 0 && endMatch > 2)) {
+                if (
+                    type === 2 &&
+                    ((startMatch > 2 && endMatch > 0) ||
+                        (startMatch > 0 && endMatch > 2))
+                ) {
                     flag = true;
                 }
 
@@ -32551,7 +36122,9 @@ class WordFilter {
 
                 if (flag) {
                     if (WordFilter.DEBUGTLD) {
-                        console.log(`Filtered tld: ${tld} at char ${charIndex}`);
+                        console.log(
+                            `Filtered tld: ${tld} at char ${charIndex}`
+                        );
                     }
 
                     let l1 = charIndex;
@@ -32668,7 +36241,7 @@ class WordFilter {
     }
 
     static getAsteriskCount2(input, input1, len) {
-        if ((len + 1) === input.length) {
+        if (len + 1 === input.length) {
             return 2;
         }
 
@@ -32706,7 +36279,11 @@ class WordFilter {
             return;
         }
 
-        for (let charIndex = 0; charIndex <= input.length - wordList.length; charIndex++) {
+        for (
+            let charIndex = 0;
+            charIndex <= input.length - wordList.length;
+            charIndex++
+        ) {
             let inputCharCount = charIndex;
             let k = 0;
             let specialChar = false;
@@ -32716,11 +36293,18 @@ class WordFilter {
                 let inputChar = input[inputCharCount];
                 let nextChar = 0;
 
-                if ((inputCharCount + 1) < input.length) {
+                if (inputCharCount + 1 < input.length) {
                     nextChar = input[inputCharCount + 1];
                 }
 
-                if (k < wordList.length && (l = WordFilter.compareLettersSymbols(wordList[k], inputChar, nextChar)) > 0) {
+                if (
+                    k < wordList.length &&
+                    (l = WordFilter.compareLettersSymbols(
+                        wordList[k],
+                        inputChar,
+                        nextChar
+                    )) > 0
+                ) {
                     inputCharCount += l;
                     k++;
                     continue;
@@ -32730,16 +36314,28 @@ class WordFilter {
                     break;
                 }
 
-                if ((l = WordFilter.compareLettersSymbols(wordList[k - 1], inputChar, nextChar)) > 0) {
+                if (
+                    (l = WordFilter.compareLettersSymbols(
+                        wordList[k - 1],
+                        inputChar,
+                        nextChar
+                    )) > 0
+                ) {
                     inputCharCount += l;
                     continue;
                 }
 
-                if (k >= wordList.length || !WordFilter.isNotLowerCase(inputChar)) {
+                if (
+                    k >= wordList.length ||
+                    !WordFilter.isNotLowerCase(inputChar)
+                ) {
                     break;
                 }
 
-                if (WordFilter.isSpecial(inputChar) && inputChar !== C_SINGLE_QUOTE) {
+                if (
+                    WordFilter.isSpecial(inputChar) &&
+                    inputChar !== C_SINGLE_QUOTE
+                ) {
                     specialChar = true;
                 }
 
@@ -32750,13 +36346,15 @@ class WordFilter {
                 let filter = true;
 
                 if (WordFilter.DEBUGTLD) {
-                    console.log(`Potential word: ${wordList} at char ${charIndex}`);
+                    console.log(
+                        `Potential word: ${wordList} at char ${charIndex}`
+                    );
                 }
 
                 if (!specialChar) {
                     let prevChar = C_SPACE;
 
-                    if ((charIndex - 1) >= 0) {
+                    if (charIndex - 1 >= 0) {
                         prevChar = input[charIndex - 1];
                     }
 
@@ -32769,18 +36367,29 @@ class WordFilter {
                     let prevId = WordFilter.getCharId(prevChar);
                     let curId = WordFilter.getCharId(curChar);
 
-                    if (charIds && WordFilter.compareCharIds(charIds, prevId, curId)) { 
+                    if (
+                        charIds &&
+                        WordFilter.compareCharIds(charIds, prevId, curId)
+                    ) {
                         filter = false;
                     }
                 } else {
                     let flag2 = false;
                     let flag3 = false;
 
-                    if ((charIndex - 1) < 0 || WordFilter.isSpecial(input[charIndex - 1]) && input[charIndex - 1] !== C_SINGLE_QUOTE) {
+                    if (
+                        charIndex - 1 < 0 ||
+                        (WordFilter.isSpecial(input[charIndex - 1]) &&
+                            input[charIndex - 1] !== C_SINGLE_QUOTE)
+                    ) {
                         flag2 = true;
                     }
 
-                    if (inputCharCount >= input.length || WordFilter.isSpecial(input[inputCharCount]) && input[inputCharCount] !== C_SINGLE_QUOTE) {
+                    if (
+                        inputCharCount >= input.length ||
+                        (WordFilter.isSpecial(input[inputCharCount]) &&
+                            input[inputCharCount] !== C_SINGLE_QUOTE)
+                    ) {
                         flag3 = true;
                     }
 
@@ -32793,12 +36402,20 @@ class WordFilter {
                         }
 
                         for (; !flag4 && j1 < inputCharCount; j1++) {
-                            if (j1 >= 0 && (!WordFilter.isSpecial(input[j1]) || input[j1] === C_SINGLE_QUOTE)) {
+                            if (
+                                j1 >= 0 &&
+                                (!WordFilter.isSpecial(input[j1]) ||
+                                    input[j1] === C_SINGLE_QUOTE)
+                            ) {
                                 let ac2 = new Uint16Array(3);
                                 let k1;
 
                                 for (k1 = 0; k1 < 3; k1++) {
-                                    if ((j1 + k1) >= input.length || WordFilter.isSpecial(input[j1 + k1]) && input[j1 + k1] !== C_SINGLE_QUOTE) {
+                                    if (
+                                        j1 + k1 >= input.length ||
+                                        (WordFilter.isSpecial(input[j1 + k1]) &&
+                                            input[j1 + k1] !== C_SINGLE_QUOTE)
+                                    ) {
                                         break;
                                     }
 
@@ -32811,11 +36428,19 @@ class WordFilter {
                                     flag5 = false;
                                 }
 
-                                if (k1 < 3 && j1 - 1 >= 0 && (!WordFilter.isSpecial(input[j1 - 1]) || input[j1 - 1] === C_SINGLE_QUOTE)) {
+                                if (
+                                    k1 < 3 &&
+                                    j1 - 1 >= 0 &&
+                                    (!WordFilter.isSpecial(input[j1 - 1]) ||
+                                        input[j1 - 1] === C_SINGLE_QUOTE)
+                                ) {
                                     flag5 = false;
                                 }
 
-                                if (flag5 && !WordFilter.containsFragmentHashes(ac2)) {
+                                if (
+                                    flag5 &&
+                                    !WordFilter.containsFragmentHashes(ac2)
+                                ) {
                                     flag4 = true;
                                 }
                             }
@@ -32829,7 +36454,9 @@ class WordFilter {
 
                 if (filter) {
                     if (WordFilter.DEBUGWORD) {
-                        console.log(`Filtered word: ${wordList} at char ${charIndex}`);
+                        console.log(
+                            `Filtered word: ${wordList} at char ${charIndex}`
+                        );
                     }
 
                     for (let i1 = charIndex; i1 < inputCharCount; i1++) {
@@ -32843,24 +36470,37 @@ class WordFilter {
     static compareCharIds(charIdData, prevCharId, curCharId) {
         let first = 0;
 
-        if (charIdData[first][0] === prevCharId && charIdData[first][1] === curCharId) {
+        if (
+            charIdData[first][0] === prevCharId &&
+            charIdData[first][1] === curCharId
+        ) {
             return true;
         }
 
         let last = charIdData.length - 1;
 
-        if (charIdData[last][0] === prevCharId && charIdData[last][1] === curCharId) {
+        if (
+            charIdData[last][0] === prevCharId &&
+            charIdData[last][1] === curCharId
+        ) {
             return true;
         }
 
-        while (first !== last && (first + 1) !== last) {
+        while (first !== last && first + 1 !== last) {
             let middle = ((first + last) / 2) | 0;
 
-            if (charIdData[middle][0] === prevCharId && charIdData[middle][1] === curCharId) {
+            if (
+                charIdData[middle][0] === prevCharId &&
+                charIdData[middle][1] === curCharId
+            ) {
                 return true;
             }
 
-            if (prevCharId < charIdData[middle][0] || prevCharId === charIdData[middle][0] && curCharId < charIdData[middle][1]) {
+            if (
+                prevCharId < charIdData[middle][0] ||
+                (prevCharId === charIdData[middle][0] &&
+                    curCharId < charIdData[middle][1])
+            ) {
                 last = middle;
             } else {
                 first = middle;
@@ -32883,11 +36523,17 @@ class WordFilter {
             return 1;
         }
 
-        if (filterChar === 't' && (currentChar === '7' || currentChar === '+')) {
+        if (
+            filterChar === 't' &&
+            (currentChar === '7' || currentChar === '+')
+        ) {
             return 1;
         }
 
-        if (filterChar === 'a' && (currentChar === '4' || currentChar === '@')) {
+        if (
+            filterChar === 'a' &&
+            (currentChar === '4' || currentChar === '@')
+        ) {
             return 1;
         }
 
@@ -32945,7 +36591,15 @@ class WordFilter {
             }
 
             if (filterChar === 'i') {
-                return currentChar === 'y' || currentChar === 'l' || currentChar === 'j' || currentChar === 'l' || currentChar === '!' || currentChar === ':' || currentChar === ';' ? 1 : 0;
+                return currentChar === 'y' ||
+                    currentChar === 'l' ||
+                    currentChar === 'j' ||
+                    currentChar === 'l' ||
+                    currentChar === '!' ||
+                    currentChar === ':' ||
+                    currentChar === ';'
+                    ? 1
+                    : 0;
             }
 
             if (filterChar === 'n') {
@@ -32953,7 +36607,11 @@ class WordFilter {
             }
 
             if (filterChar === 's') {
-                return currentChar === '5' || currentChar === 'z' || currentChar === '$' ? 1 : 0;
+                return currentChar === '5' ||
+                    currentChar === 'z' ||
+                    currentChar === '$'
+                    ? 1
+                    : 0;
             }
 
             if (filterChar === 'r') {
@@ -33102,7 +36760,7 @@ class WordFilter {
             return currentChar === 'i' ? 1 : 0;
         }
 
-        if (filterChar === '\'') {
+        if (filterChar === "'") {
             return 0;
         }
 
@@ -33139,7 +36797,10 @@ class WordFilter {
             let flag = false;
 
             for (let i = fromIndex; i >= 0 && i < digitIndex && !flag; i++) {
-                if (!WordFilter.isSpecial(input[i]) && !WordFilter.isNotLowerCase(input[i])) {
+                if (
+                    !WordFilter.isSpecial(input[i]) &&
+                    !WordFilter.isNotLowerCase(input[i])
+                ) {
                     flag = true;
                 }
             }
@@ -33157,7 +36818,7 @@ class WordFilter {
             let j1 = 0;
 
             for (let k1 = digitIndex; k1 < fromIndex; k1++) {
-                j1 = (j1 * 10 + input[k1]) - 48;
+                j1 = j1 * 10 + input[k1] - 48;
             }
 
             if (j1 > 255 || fromIndex - digitIndex > 8) {
@@ -33209,7 +36870,7 @@ class WordFilter {
     }
 
     static isLetter(c) {
-        return c >= C_A && c <= C_Z || c >= C_BIG_A && c <= C_BIG_Z;
+        return (c >= C_A && c <= C_Z) || (c >= C_BIG_A && c <= C_BIG_Z);
     }
 
     static isDigit(c) {
@@ -33241,7 +36902,10 @@ class WordFilter {
         let first = 0;
         let last = WordFilter.hashFragments.length - 1;
 
-        if (inputHash === WordFilter.hashFragments[first] || inputHash === WordFilter.hashFragments[last]) {
+        if (
+            inputHash === WordFilter.hashFragments[first] ||
+            inputHash === WordFilter.hashFragments[last]
+        ) {
             return true;
         }
 
@@ -33269,7 +36933,7 @@ class WordFilter {
 
         let hash = 0;
 
-        for (let i = 0; i < word.length; i++) { 
+        for (let i = 0; i < word.length; i++) {
             let c = word[word.length - i - 1];
 
             if (c >= C_A && c <= C_Z) {
@@ -33294,10 +36958,12 @@ class WordFilter {
 WordFilter.DEBUGTLD = false;
 WordFilter.DEBUGWORD = false;
 WordFilter.forceLowerCase = true;
-WordFilter.ignoreList = [ 'cook', 'cook\'s', 'cooks', 'seeks', 'sheet' ];
+WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
-},{}],77:[function(require,module,exports){
+
+
+},{}],85:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -33318,7 +36984,10 @@ class World {
         this.memberMapPack = null;
 
         this.worldInitialised = true;
-        this.objectAdjacency = ndarray(new Int32Array(this.regionWidth * this.regionHeight), [this.regionWidth, this.regionHeight]);
+        this.objectAdjacency = ndarray(
+            new Int32Array(this.regionWidth * this.regionHeight),
+            [this.regionWidth, this.regionHeight]
+        );
         this.tileDirection = ndarray(new Int8Array(4 * 2304), [4, 2304]);
 
         this.wallModels = [];
@@ -33341,12 +37010,18 @@ class World {
         this.terrainColour = ndarray(new Int8Array(4 * 2304), [4, 2304]);
         this.localY = new Int32Array(18432);
         this.tileDecoration = ndarray(new Int8Array(4 * 2304), [4, 2304]);
-        this.routeVia = ndarray(new Int32Array(this.regionWidth * this.regionHeight), [this.regionWidth, this.regionHeight]);
+        this.routeVia = ndarray(
+            new Int32Array(this.regionWidth * this.regionHeight),
+            [this.regionWidth, this.regionHeight]
+        );
         this.wallsDiagonal = ndarray(new Int32Array(4 * 2304), [4, 2304]);
         this.wallsEastWest = ndarray(new Int8Array(4 * 2304), [4, 2304]);
         this.aBoolean592 = false;
         this.playerAlive = false;
-        this.terrainHeightLocal = ndarray(new Int32Array(this.regionWidth * this.regionHeight), [this.regionWidth, this.regionHeight]);
+        this.terrainHeightLocal = ndarray(
+            new Int32Array(this.regionWidth * this.regionHeight),
+            [this.regionWidth, this.regionHeight]
+        );
 
         this.terrainModels = [];
         this.terrainModels.length = 64;
@@ -33359,7 +37034,11 @@ class World {
         this.surface = surface;
 
         for (let i = 0; i < 64; i++) {
-            this.terrainColours[i] = Scene.rgb(255 - i * 4, 255 - ((i * 1.75) | 0), 255 - i * 4);
+            this.terrainColours[i] = Scene.rgb(
+                255 - i * 4,
+                255 - ((i * 1.75) | 0),
+                255 - i * 4
+            );
         }
 
         for (let j = 0; j < 64; j++) {
@@ -33367,11 +37046,19 @@ class World {
         }
 
         for (let k = 0; k < 64; k++) {
-            this.terrainColours[k + 128] = Scene.rgb(192 - ((k * 1.5) | 0), 144 - ((k * 1.5) | 0), 0);
+            this.terrainColours[k + 128] = Scene.rgb(
+                192 - ((k * 1.5) | 0),
+                144 - ((k * 1.5) | 0),
+                0
+            );
         }
 
         for (let l = 0; l < 64; l++) {
-            this.terrainColours[l + 192] = Scene.rgb(96 - ((l * 1.5) | 0), 48 + ((l * 1.5) | 0), 0);
+            this.terrainColours[l + 192] = Scene.rgb(
+                96 - ((l * 1.5) | 0),
+                48 + ((l * 1.5) | 0),
+                0
+            );
         }
     }
 
@@ -33401,7 +37088,10 @@ class World {
         let gameModel = this.terrainModels[x + y * 8];
 
         for (let j1 = 0; j1 < gameModel.numVertices; j1++) {
-            if (gameModel.vertexX[j1] === x2 * this.anInt585 && gameModel.vertexZ[j1] === y2 * this.anInt585) {
+            if (
+                gameModel.vertexX[j1] === x2 * this.anInt585 &&
+                gameModel.vertexZ[j1] === y2 * this.anInt585
+            ) {
                 gameModel.setVertexAmbience(j1, ambience);
                 return;
             }
@@ -33456,7 +37146,10 @@ class World {
             aY = this.anInt585 - aY;
         }
 
-        let elevation = h + (((hx * aX) / this.anInt585) | 0) + (((hy * aY) / this.anInt585) | 0);
+        let elevation =
+            h +
+            (((hx * aX) / this.anInt585) | 0) +
+            (((hy * aY) / this.anInt585) | 0);
 
         return elevation;
     }
@@ -33574,8 +37267,8 @@ class World {
         let k1 = j * 3;
         let l1 = this.scene.method302(l);
         let i2 = this.scene.method302(i1);
-        l1 = l1 >> 1 & 0x7f7f7f;
-        i2 = i2 >> 1 & 0x7f7f7f;
+        l1 = (l1 >> 1) & 0x7f7f7f;
+        i2 = (i2 >> 1) & 0x7f7f7f;
 
         if (k === 0) {
             this.surface.drawLineHoriz(j1, k1, 3, l1);
@@ -33597,14 +37290,23 @@ class World {
     }
 
     _loadSection_from4I(x, y, plane, chunk) {
-        let mapName = 'm' + plane + ((x / 10) | 0) + x % 10 + ((y / 10) | 0) + y % 10;
+        let mapName =
+            'm' + plane + ((x / 10) | 0) + (x % 10) + ((y / 10) | 0) + (y % 10);
 
         try {
             if (this.landscapePack !== null) {
-                let mapData = Utility.loadData(mapName + '.hei', 0, this.landscapePack);
+                let mapData = Utility.loadData(
+                    mapName + '.hei',
+                    0,
+                    this.landscapePack
+                );
 
                 if (mapData === null && this.memberLandscapePack !== null) {
-                    mapData = Utility.loadData(mapName + '.hei', 0, this.memberLandscapePack);
+                    mapData = Utility.loadData(
+                        mapName + '.hei',
+                        0,
+                        this.memberLandscapePack
+                    );
                 }
 
                 if (mapData !== null && mapData.length > 0) {
@@ -33621,7 +37323,11 @@ class World {
 
                         if (val >= 128) {
                             for (let i = 0; i < val - 128; i++) {
-                                this.terrainHeight.set(chunk, tile++, lastVal & 0xff);
+                                this.terrainHeight.set(
+                                    chunk,
+                                    tile++,
+                                    lastVal & 0xff
+                                );
                             }
                         }
                     }
@@ -33630,8 +37336,18 @@ class World {
 
                     for (let tileY = 0; tileY < 48; tileY++) {
                         for (let tileX = 0; tileX < 48; tileX++) {
-                            lastVal = this.terrainHeight.get(chunk, tileX * 48 + tileY) + lastVal & 0x7f;
-                            this.terrainHeight.set(chunk, tileX * 48 + tileY, (lastVal * 2) & 0xff);
+                            lastVal =
+                                (this.terrainHeight.get(
+                                    chunk,
+                                    tileX * 48 + tileY
+                                ) +
+                                    lastVal) &
+                                0x7f;
+                            this.terrainHeight.set(
+                                chunk,
+                                tileX * 48 + tileY,
+                                (lastVal * 2) & 0xff
+                            );
                         }
                     }
 
@@ -33647,7 +37363,11 @@ class World {
 
                         if (val >= 128) {
                             for (let i = 0; i < val - 128; i++) {
-                                this.terrainColour.set(chunk, tile++, lastVal & 0xff);
+                                this.terrainColour.set(
+                                    chunk,
+                                    tile++,
+                                    lastVal & 0xff
+                                );
                             }
                         }
                     }
@@ -33656,8 +37376,18 @@ class World {
 
                     for (let tileY = 0; tileY < 48; tileY++) {
                         for (let tileX = 0; tileX < 48; tileX++) {
-                            lastVal = this.terrainColour.get(chunk, tileX * 48 + tileY) + lastVal & 0x7f; // ??? wat
-                            this.terrainColour.set(chunk, tileX * 48 + tileY, (lastVal * 2) & 0xff);
+                            lastVal =
+                                (this.terrainColour.get(
+                                    chunk,
+                                    tileX * 48 + tileY
+                                ) +
+                                    lastVal) &
+                                0x7f; // ??? wat
+                            this.terrainColour.set(
+                                chunk,
+                                tileX * 48 + tileY,
+                                (lastVal * 2) & 0xff
+                            );
                         }
                     }
                 } else {
@@ -33670,7 +37400,11 @@ class World {
                 mapData = Utility.loadData(mapName + '.dat', 0, this.mapPack);
 
                 if (mapData === null && this.memberMapPack !== null) {
-                    mapData = Utility.loadData(mapName + '.dat', 0, this.memberMapPack);
+                    mapData = Utility.loadData(
+                        mapName + '.dat',
+                        0,
+                        this.memberMapPack
+                    );
                 }
 
                 if (mapData === null || mapData.length === 0) {
@@ -33695,7 +37429,7 @@ class World {
                     let val = mapData[off++] & 0xff;
 
                     if (val > 0) {
-                        this.wallsDiagonal.set(chunk, tile, val + 12000); // why??
+                        this.wallsDiagonal.set(chunk, tile, val + 12000);
                     }
                 }
 
@@ -33787,25 +37521,35 @@ class World {
 
     loadSection(...args) {
         switch (args.length) {
-        case 3:
-            return this._loadSection_from3(...args);
-        case 4:
-            if (typeof args[3] === 'number') {
-                return this._loadSection_from4I(...args);
-            }
+            case 3:
+                return this._loadSection_from3(...args);
+            case 4:
+                if (typeof args[3] === 'number') {
+                    return this._loadSection_from4I(...args);
+                }
 
-            return this._loadSection_from4(...args);
+                return this._loadSection_from4(...args);
         }
     }
 
     method404(x, y, k, l) {
-        if (x < 1 || y < 1 || x + k >= this.regionWidth || y + l >= this.regionHeight) {
+        if (
+            x < 1 ||
+            y < 1 ||
+            x + k >= this.regionWidth ||
+            y + l >= this.regionHeight
+        ) {
             return;
         }
 
         for (let xx = x; xx <= x + k; xx++) {
             for (let yy = y; yy <= y + l; yy++) {
-                if ((this.getObjectAdjacency(xx, yy) & 0x63) !== 0 || (this.getObjectAdjacency(xx - 1, yy) & 0x59) !== 0 || (this.getObjectAdjacency(xx, yy - 1) & 0x56) !== 0 || (this.getObjectAdjacency(xx - 1, yy - 1) & 0x6c) !== 0) {
+                if (
+                    (this.getObjectAdjacency(xx, yy) & 0x63) !== 0 ||
+                    (this.getObjectAdjacency(xx - 1, yy) & 0x59) !== 0 ||
+                    (this.getObjectAdjacency(xx, yy - 1) & 0x56) !== 0 ||
+                    (this.getObjectAdjacency(xx - 1, yy - 1) & 0x6c) !== 0
+                ) {
                     this.method425(xx, yy, 35);
                 } else {
                     this.method425(xx, yy, 0);
@@ -33823,12 +37567,17 @@ class World {
     }
 
     hasRoof(x, y) {
-        return this.getWallRoof(x, y) > 0 && this.getWallRoof(x - 1, y) > 0 && this.getWallRoof(x - 1, y - 1) > 0 && this.getWallRoof(x, y - 1) > 0;
+        return (
+            this.getWallRoof(x, y) > 0 &&
+            this.getWallRoof(x - 1, y) > 0 &&
+            this.getWallRoof(x - 1, y - 1) > 0 &&
+            this.getWallRoof(x, y - 1) > 0
+        );
     }
 
     method407(i, j, k) {
         const adjacency = this.objectAdjacency.get(i, j);
-        this.objectAdjacency.set(i, j, adjacency & 0xffff - k);
+        this.objectAdjacency.set(i, j, adjacency & (0xffff - k));
     }
 
     getTerrainColour(x, y) {
@@ -33868,19 +37617,24 @@ class World {
             for (let k = 0; k < 4; k++) {
                 this.roofModels[k][i] = null;
             }
-
         }
-
-        //System.gc();
     }
 
     setTiles() {
         for (let x = 0; x < this.regionWidth; x++) {
             for (let y = 0; y < this.regionHeight; y++) {
                 if (this.getTileDecoration(x, y, 0) === 250) {
-                    if (x === 47 && this.getTileDecoration(x + 1, y, 0) !== 250 && this.getTileDecoration(x + 1, y, 0) !== 2) {
+                    if (
+                        x === 47 &&
+                        this.getTileDecoration(x + 1, y, 0) !== 250 &&
+                        this.getTileDecoration(x + 1, y, 0) !== 2
+                    ) {
                         this.setTileDecoration(x, y, 9);
-                    } else if (y === 47 && this.getTileDecoration(x, y + 1, 0) !== 250 && this.getTileDecoration(x, y + 1, 0) !== 2) {
+                    } else if (
+                        y === 47 &&
+                        this.getTileDecoration(x, y + 1, 0) !== 250 &&
+                        this.getTileDecoration(x, y + 1, 0) !== 2
+                    ) {
                         this.setTileDecoration(x, y, 9);
                     } else {
                         this.setTileDecoration(x, y, 2);
@@ -33935,12 +37689,12 @@ class World {
     }
 
     _getTileDecoration_from4(x, y, unused, def) {
-        let deco = this._getTileDecoration_from3(x, y);
+        const decoration = this._getTileDecoration_from3(x, y);
 
-        if (deco === 0) {
+        if (decoration === 0) {
             return def;
         } else {
-            return GameData.tileDecoration[deco - 1];
+            return GameData.tileDecoration[decoration - 1];
         }
     }
 
@@ -33968,10 +37722,10 @@ class World {
 
     getTileDecoration(...args) {
         switch (args.length) {
-        case 3:
-            return this._getTileDecoration_from3(...args);
-        case 4:
-            return this._getTileDecoration_from4(...args);
+            case 3:
+                return this._getTileDecoration_from3(...args);
+            case 4:
+                return this._getTileDecoration_from4(...args);
         }
     }
 
@@ -34027,77 +37781,149 @@ class World {
             }
 
             if (objects) {
-                if (x > 0 && x - 1 >= endX1 && x - 1 <= endX2 && y >= endY1 && y <= endY2 && (this.objectAdjacency.get(x - 1, y) & 8) === 0) {
+                if (
+                    x > 0 &&
+                    x - 1 >= endX1 &&
+                    x - 1 <= endX2 &&
+                    y >= endY1 &&
+                    y <= endY2 &&
+                    (this.objectAdjacency.get(x - 1, y) & 8) === 0
+                ) {
                     reached = true;
                     break;
                 }
 
-                if (x < 95 && x + 1 >= endX1 && x + 1 <= endX2 && y >= endY1 && y <= endY2 && (this.objectAdjacency.get(x + 1, y) & 2) === 0) {
+                if (
+                    x < 95 &&
+                    x + 1 >= endX1 &&
+                    x + 1 <= endX2 &&
+                    y >= endY1 &&
+                    y <= endY2 &&
+                    (this.objectAdjacency.get(x + 1, y) & 2) === 0
+                ) {
                     reached = true;
                     break;
                 }
 
-                if (y > 0 && x >= endX1 && x <= endX2 && y - 1 >= endY1 && y - 1 <= endY2 && (this.objectAdjacency.get(x, y - 1) & 4) === 0) {
+                if (
+                    y > 0 &&
+                    x >= endX1 &&
+                    x <= endX2 &&
+                    y - 1 >= endY1 &&
+                    y - 1 <= endY2 &&
+                    (this.objectAdjacency.get(x, y - 1) & 4) === 0
+                ) {
                     reached = true;
                     break;
                 }
 
-                if (y < 95 && x >= endX1 && x <= endX2 && y + 1 >= endY1 && y + 1 <= endY2 && (this.objectAdjacency.get(x, y + 1) & 1) === 0) {
+                if (
+                    y < 95 &&
+                    x >= endX1 &&
+                    x <= endX2 &&
+                    y + 1 >= endY1 &&
+                    y + 1 <= endY2 &&
+                    (this.objectAdjacency.get(x, y + 1) & 1) === 0
+                ) {
                     reached = true;
                     break;
                 }
             }
 
-            if (x > 0 && this.routeVia.get(x - 1, y) === 0 && (this.objectAdjacency.get(x - 1, y) & 0x78) === 0) {
+            if (
+                x > 0 &&
+                this.routeVia.get(x - 1, y) === 0 &&
+                (this.objectAdjacency.get(x - 1, y) & 0x78) === 0
+            ) {
                 routeX[writePtr] = x - 1;
                 routeY[writePtr] = y;
                 writePtr = (writePtr + 1) % size;
                 this.routeVia.set(x - 1, y, 2);
             }
 
-            if (x < 95 && this.routeVia.get(x + 1, y) === 0 && (this.objectAdjacency.get(x + 1, y) & 0x72) === 0) {
+            if (
+                x < 95 &&
+                this.routeVia.get(x + 1, y) === 0 &&
+                (this.objectAdjacency.get(x + 1, y) & 0x72) === 0
+            ) {
                 routeX[writePtr] = x + 1;
                 routeY[writePtr] = y;
                 writePtr = (writePtr + 1) % size;
                 this.routeVia.set(x + 1, y, 8);
             }
 
-            if (y > 0 && this.routeVia.get(x, y - 1) === 0 && (this.objectAdjacency.get(x, y - 1) & 0x74) === 0) {
+            if (
+                y > 0 &&
+                this.routeVia.get(x, y - 1) === 0 &&
+                (this.objectAdjacency.get(x, y - 1) & 0x74) === 0
+            ) {
                 routeX[writePtr] = x;
                 routeY[writePtr] = y - 1;
                 writePtr = (writePtr + 1) % size;
                 this.routeVia.set(x, y - 1, 1);
             }
 
-            if (y < 95 && this.routeVia.get(x, y + 1) === 0 && (this.objectAdjacency.get(x, y + 1) & 0x71) === 0) {
+            if (
+                y < 95 &&
+                this.routeVia.get(x, y + 1) === 0 &&
+                (this.objectAdjacency.get(x, y + 1) & 0x71) === 0
+            ) {
                 routeX[writePtr] = x;
                 routeY[writePtr] = y + 1;
                 writePtr = (writePtr + 1) % size;
                 this.routeVia.set(x, y + 1, 4);
             }
 
-            if (x > 0 && y > 0 && (this.objectAdjacency.get(x, y - 1) & 0x74) === 0 && (this.objectAdjacency.get(x - 1, y) & 0x78) === 0 && (this.objectAdjacency.get(x - 1, y - 1) & 0x7c) === 0 && this.routeVia.get(x - 1, y - 1) === 0) {
+            if (
+                x > 0 &&
+                y > 0 &&
+                (this.objectAdjacency.get(x, y - 1) & 0x74) === 0 &&
+                (this.objectAdjacency.get(x - 1, y) & 0x78) === 0 &&
+                (this.objectAdjacency.get(x - 1, y - 1) & 0x7c) === 0 &&
+                this.routeVia.get(x - 1, y - 1) === 0
+            ) {
                 routeX[writePtr] = x - 1;
                 routeY[writePtr] = y - 1;
                 writePtr = (writePtr + 1) % size;
                 this.routeVia.set(x - 1, y - 1, 3);
             }
 
-            if (x < 95 && y > 0 && (this.objectAdjacency.get(x, y - 1) & 0x74) === 0 && (this.objectAdjacency.get(x + 1, y) & 0x72) === 0 && (this.objectAdjacency.get(x + 1, y - 1) & 0x76) === 0 && this.routeVia.get(x + 1, y - 1) === 0) {
+            if (
+                x < 95 &&
+                y > 0 &&
+                (this.objectAdjacency.get(x, y - 1) & 0x74) === 0 &&
+                (this.objectAdjacency.get(x + 1, y) & 0x72) === 0 &&
+                (this.objectAdjacency.get(x + 1, y - 1) & 0x76) === 0 &&
+                this.routeVia.get(x + 1, y - 1) === 0
+            ) {
                 routeX[writePtr] = x + 1;
                 routeY[writePtr] = y - 1;
                 writePtr = (writePtr + 1) % size;
                 this.routeVia.set(x + 1, y - 1, 9);
             }
 
-            if (x > 0 && y < 95 && (this.objectAdjacency.get(x, y + 1) & 0x71) === 0 && (this.objectAdjacency.get(x - 1, y) & 0x78) === 0 && (this.objectAdjacency.get(x - 1, y + 1) & 0x79) === 0 && this.routeVia.get(x - 1, y + 1) === 0) {
+            if (
+                x > 0 &&
+                y < 95 &&
+                (this.objectAdjacency.get(x, y + 1) & 0x71) === 0 &&
+                (this.objectAdjacency.get(x - 1, y) & 0x78) === 0 &&
+                (this.objectAdjacency.get(x - 1, y + 1) & 0x79) === 0 &&
+                this.routeVia.get(x - 1, y + 1) === 0
+            ) {
                 routeX[writePtr] = x - 1;
                 routeY[writePtr] = y + 1;
                 writePtr = (writePtr + 1) % size;
                 this.routeVia.set(x - 1, y + 1, 6);
             }
 
-            if (x < 95 && y < 95 && (this.objectAdjacency.get(x, y + 1) & 0x71) === 0 && (this.objectAdjacency.get(x + 1, y) & 0x72) === 0 && (this.objectAdjacency.get(x + 1,y + 1) & 0x73) === 0 && this.routeVia.get(x + 1, y + 1) === 0) {
+            if (
+                x < 95 &&
+                y < 95 &&
+                (this.objectAdjacency.get(x, y + 1) & 0x71) === 0 &&
+                (this.objectAdjacency.get(x + 1, y) & 0x72) === 0 &&
+                (this.objectAdjacency.get(x + 1, y + 1) & 0x73) === 0 &&
+                this.routeVia.get(x + 1, y + 1) === 0
+            ) {
                 routeX[writePtr] = x + 1;
                 routeY[writePtr] = y + 1;
                 writePtr = (writePtr + 1) % size;
@@ -34115,7 +37941,11 @@ class World {
 
         let stride;
 
-        for (let step = stride = this.routeVia.get(x, y); x !== startX || y !== startY; step = this.routeVia.get(x, y)) {
+        for (
+            let step = (stride = this.routeVia.get(x, y));
+            x !== startX || y !== startY;
+            step = this.routeVia.get(x, y)
+        ) {
             if (step !== stride) {
                 stride = step;
                 routeX[readPtr] = x;
@@ -34170,10 +38000,10 @@ class World {
 
     setObjectAdjacency(...args) {
         switch (args.length) {
-        case 4:
-            return this._setObjectAdjacency_from4(...args);
-        case 3:
-            return this._setObjectAdjacency_from3(...args);
+            case 4:
+                return this._setObjectAdjacency_from4(...args);
+            case 3:
+                return this._setObjectAdjacency_from3(...args);
         }
     }
 
@@ -34188,7 +38018,15 @@ class World {
         this.setTiles();
 
         if (this.parentModel === null) {
-            this.parentModel = GameModel._from7(18688, 18688, true, true, false, false, true);
+            this.parentModel = GameModel._from7(
+                18688,
+                18688,
+                true,
+                true,
+                false,
+                false,
+                true
+            );
         }
 
         if (flag) {
@@ -34207,23 +38045,47 @@ class World {
                 for (let i3 = 0; i3 < this.regionHeight; i3++) {
                     let i4 = -this.getTerrainHeight(j2, i3);
 
-                    if (this.getTileDecoration(j2, i3, plane) > 0 && GameData.tileType[this.getTileDecoration(j2, i3, plane) - 1] === 4) {
+                    if (
+                        this.getTileDecoration(j2, i3, plane) > 0 &&
+                        GameData.tileType[
+                            this.getTileDecoration(j2, i3, plane) - 1
+                        ] === 4
+                    ) {
                         i4 = 0;
                     }
 
-                    if (this.getTileDecoration(j2 - 1, i3, plane) > 0 && GameData.tileType[this.getTileDecoration(j2 - 1, i3, plane) - 1] === 4) {
+                    if (
+                        this.getTileDecoration(j2 - 1, i3, plane) > 0 &&
+                        GameData.tileType[
+                            this.getTileDecoration(j2 - 1, i3, plane) - 1
+                        ] === 4
+                    ) {
                         i4 = 0;
                     }
 
-                    if (this.getTileDecoration(j2, i3 - 1, plane) > 0 && GameData.tileType[this.getTileDecoration(j2, i3 - 1, plane) - 1] === 4) {
+                    if (
+                        this.getTileDecoration(j2, i3 - 1, plane) > 0 &&
+                        GameData.tileType[
+                            this.getTileDecoration(j2, i3 - 1, plane) - 1
+                        ] === 4
+                    ) {
                         i4 = 0;
                     }
 
-                    if (this.getTileDecoration(j2 - 1, i3 - 1, plane) > 0 && GameData.tileType[this.getTileDecoration(j2 - 1, i3 - 1, plane) - 1] === 4) {
+                    if (
+                        this.getTileDecoration(j2 - 1, i3 - 1, plane) > 0 &&
+                        GameData.tileType[
+                            this.getTileDecoration(j2 - 1, i3 - 1, plane) - 1
+                        ] === 4
+                    ) {
                         i4 = 0;
                     }
 
-                    let j5 = gameModel.vertexAt(j2 * this.anInt585, i4, i3 * this.anInt585);
+                    let j5 = gameModel.vertexAt(
+                        j2 * this.anInt585,
+                        i4,
+                        i3 * this.anInt585
+                    );
                     let j7 = ((Math.random() * 10) | 0) - 5;
 
                     gameModel.setVertexAmbience(j5, j7);
@@ -34245,11 +38107,17 @@ class World {
                     }
 
                     if (this.getTileDecoration(lx, ly, plane) > 0) {
-                        let decorationType = this.getTileDecoration(lx, ly, plane);
-                        let decorationTileType = GameData.tileType[decorationType - 1];
+                        let decorationType = this.getTileDecoration(
+                            lx,
+                            ly,
+                            plane
+                        );
+                        let decorationTileType =
+                            GameData.tileType[decorationType - 1];
                         let tileType = this.getTileType(lx, ly, plane);
 
-                        colour = colour_1 = GameData.tileDecoration[decorationType - 1];
+                        colour = colour_1 =
+                            GameData.tileDecoration[decorationType - 1];
 
                         if (decorationTileType === 4) {
                             colour = 1;
@@ -34262,32 +38130,127 @@ class World {
                         }
 
                         if (decorationTileType === 5) {
-                            if (this.getWallDiagonal(lx, ly) > 0 && this.getWallDiagonal(lx, ly) < 24000) {
-                                if (this.getTileDecoration(lx - 1, ly, plane, colour_2) !== World.colourTransparent && this.getTileDecoration(lx, ly - 1, plane, colour_2) !== World.colourTransparent) {
-                                    colour = this.getTileDecoration(lx - 1, ly, plane, colour_2);
+                            if (
+                                this.getWallDiagonal(lx, ly) > 0 &&
+                                this.getWallDiagonal(lx, ly) < 24000
+                            ) {
+                                if (
+                                    this.getTileDecoration(
+                                        lx - 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent &&
+                                    this.getTileDecoration(
+                                        lx,
+                                        ly - 1,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent
+                                ) {
+                                    colour = this.getTileDecoration(
+                                        lx - 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    );
                                     l14 = 0;
-                                } else if (this.getTileDecoration(lx + 1, ly, plane, colour_2) !== World.colourTransparent && this.getTileDecoration(lx, ly + 1, plane, colour_2) !== World.colourTransparent) {
-                                    colour_1 = this.getTileDecoration(lx + 1, ly, plane, colour_2);
+                                } else if (
+                                    this.getTileDecoration(
+                                        lx + 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent &&
+                                    this.getTileDecoration(
+                                        lx,
+                                        ly + 1,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent
+                                ) {
+                                    colour_1 = this.getTileDecoration(
+                                        lx + 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    );
                                     l14 = 0;
-                                } else if (this.getTileDecoration(lx + 1, ly, plane, colour_2) !== World.colourTransparent && this.getTileDecoration(lx, ly - 1, plane, colour_2) !== World.colourTransparent) {
-                                    colour_1 = this.getTileDecoration(lx + 1, ly, plane, colour_2);
+                                } else if (
+                                    this.getTileDecoration(
+                                        lx + 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent &&
+                                    this.getTileDecoration(
+                                        lx,
+                                        ly - 1,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent
+                                ) {
+                                    colour_1 = this.getTileDecoration(
+                                        lx + 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    );
                                     l14 = 1;
-                                } else if (this.getTileDecoration(lx - 1, ly, plane, colour_2) !== World.colourTransparent && this.getTileDecoration(lx, ly + 1, plane, colour_2) !== World.colourTransparent) {
-                                    colour = this.getTileDecoration(lx - 1, ly, plane, colour_2);
+                                } else if (
+                                    this.getTileDecoration(
+                                        lx - 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent &&
+                                    this.getTileDecoration(
+                                        lx,
+                                        ly + 1,
+                                        plane,
+                                        colour_2
+                                    ) !== World.colourTransparent
+                                ) {
+                                    colour = this.getTileDecoration(
+                                        lx - 1,
+                                        ly,
+                                        plane,
+                                        colour_2
+                                    );
                                     l14 = 1;
                                 }
                             }
-                        } else if (decorationTileType !== 2 || this.getWallDiagonal(lx, ly) > 0 && this.getWallDiagonal(lx, ly) < 24000) {
-                            if (this.getTileType(lx - 1, ly, plane) !== tileType && this.getTileType(lx, ly - 1, plane) !== tileType) {
+                        } else if (
+                            decorationTileType !== 2 ||
+                            (this.getWallDiagonal(lx, ly) > 0 &&
+                                this.getWallDiagonal(lx, ly) < 24000)
+                        ) {
+                            if (
+                                this.getTileType(lx - 1, ly, plane) !==
+                                    tileType &&
+                                this.getTileType(lx, ly - 1, plane) !== tileType
+                            ) {
                                 colour = colour_2;
                                 l14 = 0;
-                            } else if (this.getTileType(lx + 1, ly, plane) !== tileType && this.getTileType(lx, ly + 1, plane) !== tileType) {
+                            } else if (
+                                this.getTileType(lx + 1, ly, plane) !==
+                                    tileType &&
+                                this.getTileType(lx, ly + 1, plane) !== tileType
+                            ) {
                                 colour_1 = colour_2;
                                 l14 = 0;
-                            } else if (this.getTileType(lx + 1, ly, plane) !== tileType && this.getTileType(lx, ly - 1, plane) !== tileType) {
+                            } else if (
+                                this.getTileType(lx + 1, ly, plane) !==
+                                    tileType &&
+                                this.getTileType(lx, ly - 1, plane) !== tileType
+                            ) {
                                 colour_1 = colour_2;
                                 l14 = 1;
-                            } else if (this.getTileType(lx - 1, ly, plane) !== tileType && this.getTileType(lx, ly + 1, plane) !== tileType) {
+                            } else if (
+                                this.getTileType(lx - 1, ly, plane) !==
+                                    tileType &&
+                                this.getTileType(lx, ly + 1, plane) !== tileType
+                            ) {
                                 colour = colour_2;
                                 l14 = 1;
                             }
@@ -34306,7 +38269,11 @@ class World {
 
                     this.method402(lx, ly, l14, colour, colour_1);
 
-                    let i17 = ((this.getTerrainHeight(lx + 1, ly + 1) - this.getTerrainHeight(lx + 1, ly)) + this.getTerrainHeight(lx, ly + 1)) - this.getTerrainHeight(lx, ly);
+                    let i17 =
+                        this.getTerrainHeight(lx + 1, ly + 1) -
+                        this.getTerrainHeight(lx + 1, ly) +
+                        this.getTerrainHeight(lx, ly + 1) -
+                        this.getTerrainHeight(lx, ly);
 
                     if (colour !== colour_1 || i17 !== 0) {
                         let ai = new Int32Array(3);
@@ -34318,7 +38285,12 @@ class World {
                                 ai[1] = ly + lx * 96;
                                 ai[2] = ly + lx * 96 + 1;
 
-                                let l21 = gameModel.createFace(3, ai, World.colourTransparent, colour);
+                                let l21 = gameModel.createFace(
+                                    3,
+                                    ai,
+                                    World.colourTransparent,
+                                    colour
+                                );
 
                                 this.localX[l21] = lx;
                                 this.localY[l21] = ly;
@@ -34331,7 +38303,12 @@ class World {
                                 ai7[1] = ly + lx * 96 + 96 + 1;
                                 ai7[2] = ly + lx * 96 + 96;
 
-                                let i22 = gameModel.createFace(3, ai7, World.colourTransparent, colour_1);
+                                let i22 = gameModel.createFace(
+                                    3,
+                                    ai7,
+                                    World.colourTransparent,
+                                    colour_1
+                                );
 
                                 this.localX[i22] = lx;
                                 this.localY[i22] = ly;
@@ -34344,7 +38321,12 @@ class World {
                                 ai[1] = ly + lx * 96 + 96 + 1;
                                 ai[2] = ly + lx * 96;
 
-                                let j22 = gameModel.createFace(3, ai, World.colourTransparent, colour);
+                                let j22 = gameModel.createFace(
+                                    3,
+                                    ai,
+                                    World.colourTransparent,
+                                    colour
+                                );
 
                                 this.localX[j22] = lx;
                                 this.localY[j22] = ly;
@@ -34357,7 +38339,12 @@ class World {
                                 ai7[1] = ly + lx * 96;
                                 ai7[2] = ly + lx * 96 + 96 + 1;
 
-                                let k22 = gameModel.createFace(3, ai7, World.colourTransparent, colour_1);
+                                let k22 = gameModel.createFace(
+                                    3,
+                                    ai7,
+                                    World.colourTransparent,
+                                    colour_1
+                                );
 
                                 this.localX[k22] = lx;
                                 this.localY[k22] = ly;
@@ -34372,7 +38359,12 @@ class World {
                         ai1[2] = ly + lx * 96 + 1;
                         ai1[3] = ly + lx * 96 + 96 + 1;
 
-                        let l19 = gameModel.createFace(4, ai1, World.colourTransparent, colour);
+                        let l19 = gameModel.createFace(
+                            4,
+                            ai1,
+                            World.colourTransparent,
+                            colour
+                        );
 
                         this.localX[l19] = lx;
                         this.localY[l19] = ly;
@@ -34384,69 +38376,223 @@ class World {
 
             for (let k4 = 1; k4 < 95; k4++) {
                 for (let i6 = 1; i6 < 95; i6++) {
-                    if (this.getTileDecoration(k4, i6, plane) > 0 && GameData.tileType[this.getTileDecoration(k4, i6, plane) - 1] === 4) {
-                        let l7 = GameData.tileDecoration[this.getTileDecoration(k4, i6, plane) - 1];
-                        let j10 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6), i6 * this.anInt585);
-                        let l12 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6), i6 * this.anInt585);
-                        let i15 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6 + 1), (i6 + 1) * this.anInt585);
-                        let j17 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6 + 1), (i6 + 1) * this.anInt585);
+                    if (
+                        this.getTileDecoration(k4, i6, plane) > 0 &&
+                        GameData.tileType[
+                            this.getTileDecoration(k4, i6, plane) - 1
+                        ] === 4
+                    ) {
+                        let l7 =
+                            GameData.tileDecoration[
+                                this.getTileDecoration(k4, i6, plane) - 1
+                            ];
+                        let j10 = gameModel.vertexAt(
+                            k4 * this.anInt585,
+                            -this.getTerrainHeight(k4, i6),
+                            i6 * this.anInt585
+                        );
+                        let l12 = gameModel.vertexAt(
+                            (k4 + 1) * this.anInt585,
+                            -this.getTerrainHeight(k4 + 1, i6),
+                            i6 * this.anInt585
+                        );
+                        let i15 = gameModel.vertexAt(
+                            (k4 + 1) * this.anInt585,
+                            -this.getTerrainHeight(k4 + 1, i6 + 1),
+                            (i6 + 1) * this.anInt585
+                        );
+                        let j17 = gameModel.vertexAt(
+                            k4 * this.anInt585,
+                            -this.getTerrainHeight(k4, i6 + 1),
+                            (i6 + 1) * this.anInt585
+                        );
                         let ai2 = new Int32Array([j10, l12, i15, j17]);
-                        let i20 = gameModel.createFace(4, ai2, l7, World.colourTransparent);
+                        let i20 = gameModel.createFace(
+                            4,
+                            ai2,
+                            l7,
+                            World.colourTransparent
+                        );
                         this.localX[i20] = k4;
                         this.localY[i20] = i6;
                         gameModel.faceTag[i20] = 0x30d40 + i20;
                         this.method402(k4, i6, 0, l7, l7);
-                    } else if (this.getTileDecoration(k4, i6, plane) === 0 || GameData.tileType[this.getTileDecoration(k4, i6, plane) - 1] !== 3) {
-                        if (this.getTileDecoration(k4, i6 + 1, plane) > 0 && GameData.tileType[this.getTileDecoration(k4, i6 + 1, plane) - 1] === 4) {
-                            let i8 = GameData.tileDecoration[this.getTileDecoration(k4, i6 + 1, plane) - 1];
-                            let k10 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6), i6 * this.anInt585);
-                            let i13 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6), i6 * this.anInt585);
-                            let j15 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6 + 1), (i6 + 1) * this.anInt585);
-                            let k17 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6 + 1), (i6 + 1) * this.anInt585);
+                    } else if (
+                        this.getTileDecoration(k4, i6, plane) === 0 ||
+                        GameData.tileType[
+                            this.getTileDecoration(k4, i6, plane) - 1
+                        ] !== 3
+                    ) {
+                        if (
+                            this.getTileDecoration(k4, i6 + 1, plane) > 0 &&
+                            GameData.tileType[
+                                this.getTileDecoration(k4, i6 + 1, plane) - 1
+                            ] === 4
+                        ) {
+                            let i8 =
+                                GameData.tileDecoration[
+                                    this.getTileDecoration(k4, i6 + 1, plane) -
+                                        1
+                                ];
+                            let k10 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6),
+                                i6 * this.anInt585
+                            );
+                            let i13 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6),
+                                i6 * this.anInt585
+                            );
+                            let j15 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
+                            let k17 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
                             let ai3 = new Int32Array([k10, i13, j15, k17]);
-                            let j20 = gameModel.createFace(4, ai3, i8, World.colourTransparent);
+                            let j20 = gameModel.createFace(
+                                4,
+                                ai3,
+                                i8,
+                                World.colourTransparent
+                            );
                             this.localX[j20] = k4;
                             this.localY[j20] = i6;
                             gameModel.faceTag[j20] = 0x30d40 + j20;
                             this.method402(k4, i6, 0, i8, i8);
                         }
 
-                        if (this.getTileDecoration(k4, i6 - 1, plane) > 0 && GameData.tileType[this.getTileDecoration(k4, i6 - 1, plane) - 1] === 4) {
-                            let j8 = GameData.tileDecoration[this.getTileDecoration(k4, i6 - 1, plane) - 1];
-                            let l10 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6), i6 * this.anInt585);
-                            let j13 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6), i6 * this.anInt585);
-                            let k15 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6 + 1), (i6 + 1) * this.anInt585);
-                            let l17 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6 + 1), (i6 + 1) * this.anInt585);
+                        if (
+                            this.getTileDecoration(k4, i6 - 1, plane) > 0 &&
+                            GameData.tileType[
+                                this.getTileDecoration(k4, i6 - 1, plane) - 1
+                            ] === 4
+                        ) {
+                            let j8 =
+                                GameData.tileDecoration[
+                                    this.getTileDecoration(k4, i6 - 1, plane) -
+                                        1
+                                ];
+                            let l10 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6),
+                                i6 * this.anInt585
+                            );
+                            let j13 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6),
+                                i6 * this.anInt585
+                            );
+                            let k15 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
+                            let l17 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
                             let ai4 = new Int32Array([l10, j13, k15, l17]);
-                            let k20 = gameModel.createFace(4, ai4, j8, World.colourTransparent);
+                            let k20 = gameModel.createFace(
+                                4,
+                                ai4,
+                                j8,
+                                World.colourTransparent
+                            );
                             this.localX[k20] = k4;
                             this.localY[k20] = i6;
                             gameModel.faceTag[k20] = 0x30d40 + k20;
                             this.method402(k4, i6, 0, j8, j8);
                         }
 
-                        if (this.getTileDecoration(k4 + 1, i6, plane) > 0 && GameData.tileType[this.getTileDecoration(k4 + 1, i6, plane) - 1] === 4) {
-                            let k8 = GameData.tileDecoration[this.getTileDecoration(k4 + 1, i6, plane) - 1];
-                            let i11 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6), i6 * this.anInt585);
-                            let k13 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6), i6 * this.anInt585);
-                            let l15 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6 + 1), (i6 + 1) * this.anInt585);
-                            let i18 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6 + 1), (i6 + 1) * this.anInt585);
+                        if (
+                            this.getTileDecoration(k4 + 1, i6, plane) > 0 &&
+                            GameData.tileType[
+                                this.getTileDecoration(k4 + 1, i6, plane) - 1
+                            ] === 4
+                        ) {
+                            let k8 =
+                                GameData.tileDecoration[
+                                    this.getTileDecoration(k4 + 1, i6, plane) -
+                                        1
+                                ];
+                            let i11 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6),
+                                i6 * this.anInt585
+                            );
+                            let k13 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6),
+                                i6 * this.anInt585
+                            );
+                            let l15 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
+                            let i18 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
                             let ai5 = new Int32Array([i11, k13, l15, i18]);
-                            let l20 = gameModel.createFace(4, ai5, k8, World.colourTransparent);
+                            let l20 = gameModel.createFace(
+                                4,
+                                ai5,
+                                k8,
+                                World.colourTransparent
+                            );
                             this.localX[l20] = k4;
                             this.localY[l20] = i6;
                             gameModel.faceTag[l20] = 0x30d40 + l20;
                             this.method402(k4, i6, 0, k8, k8);
                         }
 
-                        if (this.getTileDecoration(k4 - 1, i6, plane) > 0 && GameData.tileType[this.getTileDecoration(k4 - 1, i6, plane) - 1] === 4) {
-                            let l8 = GameData.tileDecoration[this.getTileDecoration(k4 - 1, i6, plane) - 1];
-                            let j11 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6), i6 * this.anInt585);
-                            let l13 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6), i6 * this.anInt585);
-                            let i16 = gameModel.vertexAt((k4 + 1) * this.anInt585, -this.getTerrainHeight(k4 + 1, i6 + 1), (i6 + 1) * this.anInt585);
-                            let j18 = gameModel.vertexAt(k4 * this.anInt585, -this.getTerrainHeight(k4, i6 + 1), (i6 + 1) * this.anInt585);
+                        if (
+                            this.getTileDecoration(k4 - 1, i6, plane) > 0 &&
+                            GameData.tileType[
+                                this.getTileDecoration(k4 - 1, i6, plane) - 1
+                            ] === 4
+                        ) {
+                            let l8 =
+                                GameData.tileDecoration[
+                                    this.getTileDecoration(k4 - 1, i6, plane) -
+                                        1
+                                ];
+                            let j11 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6),
+                                i6 * this.anInt585
+                            );
+                            let l13 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6),
+                                i6 * this.anInt585
+                            );
+                            let i16 = gameModel.vertexAt(
+                                (k4 + 1) * this.anInt585,
+                                -this.getTerrainHeight(k4 + 1, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
+                            let j18 = gameModel.vertexAt(
+                                k4 * this.anInt585,
+                                -this.getTerrainHeight(k4, i6 + 1),
+                                (i6 + 1) * this.anInt585
+                            );
                             let ai6 = new Int32Array([j11, l13, i16, j18]);
-                            let i21 = gameModel.createFace(4, ai6, l8, World.colourTransparent);
+                            let i21 = gameModel.createFace(
+                                4,
+                                ai6,
+                                l8,
+                                World.colourTransparent
+                            );
                             this.localX[i21] = k4;
                             this.localY[i21] = i6;
                             gameModel.faceTag[i21] = 0x30d40 + i21;
@@ -34457,7 +38603,16 @@ class World {
             }
 
             gameModel._setLight_from6(true, 40, 48, -50, -10, -50);
-            this.terrainModels = this.parentModel.split(0, 0, 1536, 1536, 8, 64, 233, false);
+            this.terrainModels = this.parentModel.split(
+                0,
+                0,
+                1536,
+                1536,
+                8,
+                64,
+                233,
+                false
+            );
 
             for (let j6 = 0; j6 < 64; j6++) {
                 this.scene.addModel(this.terrainModels[j6]);
@@ -34465,7 +38620,11 @@ class World {
 
             for (let X = 0; X < this.regionWidth; X++) {
                 for (let Y = 0; Y < this.regionHeight; Y++) {
-                    this.terrainHeightLocal.set(X, Y, this.getTerrainHeight(X, Y));
+                    this.terrainHeightLocal.set(
+                        X,
+                        Y,
+                        this.getTerrainHeight(X, Y)
+                    );
                 }
             }
         }
@@ -34477,8 +38636,19 @@ class World {
             for (let k2 = 0; k2 < 95; k2++) {
                 let k3 = this.getWallEastWest(i2, k2);
 
-                if (k3 > 0 && (GameData.wallObjectInvisible[k3 - 1] === 0 || this.aBoolean592)) {
-                    this.method422(this.parentModel, k3 - 1, i2, k2, i2 + 1, k2);
+                if (
+                    k3 > 0 &&
+                    (GameData.wallObjectInvisible[k3 - 1] === 0 ||
+                        this.aBoolean592)
+                ) {
+                    this.method422(
+                        this.parentModel,
+                        k3 - 1,
+                        i2,
+                        k2,
+                        i2 + 1,
+                        k2
+                    );
 
                     if (flag && GameData.wallObjectAdjacent[k3 - 1] !== 0) {
                         const adjacency = this.objectAdjacency.get(i2, k2);
@@ -34496,8 +38666,19 @@ class World {
 
                 k3 = this.getWallNorthSouth(i2, k2);
 
-                if (k3 > 0 && (GameData.wallObjectInvisible[k3 - 1] === 0 || this.aBoolean592)) {
-                    this.method422(this.parentModel, k3 - 1, i2, k2, i2, k2 + 1);
+                if (
+                    k3 > 0 &&
+                    (GameData.wallObjectInvisible[k3 - 1] === 0 ||
+                        this.aBoolean592)
+                ) {
+                    this.method422(
+                        this.parentModel,
+                        k3 - 1,
+                        i2,
+                        k2,
+                        i2,
+                        k2 + 1
+                    );
 
                     if (flag && GameData.wallObjectAdjacent[k3 - 1] !== 0) {
                         const adjacency = this.objectAdjacency.get(i2, k2);
@@ -34515,8 +38696,20 @@ class World {
 
                 k3 = this.getWallDiagonal(i2, k2);
 
-                if (k3 > 0 && k3 < 12000 && (GameData.wallObjectInvisible[k3 - 1] === 0 || this.aBoolean592)) {
-                    this.method422(this.parentModel, k3 - 1, i2, k2, i2 + 1, k2 + 1);
+                if (
+                    k3 > 0 &&
+                    k3 < 12000 &&
+                    (GameData.wallObjectInvisible[k3 - 1] === 0 ||
+                        this.aBoolean592)
+                ) {
+                    this.method422(
+                        this.parentModel,
+                        k3 - 1,
+                        i2,
+                        k2,
+                        i2 + 1,
+                        k2 + 1
+                    );
 
                     if (flag && GameData.wallObjectAdjacent[k3 - 1] !== 0) {
                         const adjacency = this.objectAdjacency.get(i2, k2);
@@ -34530,8 +38723,20 @@ class World {
                     }
                 }
 
-                if (k3 > 12000 && k3 < 24000 && (GameData.wallObjectInvisible[k3 - 12001] === 0 || this.aBoolean592)) {
-                    this.method422(this.parentModel, k3 - 12001, i2 + 1, k2, i2, k2 + 1);
+                if (
+                    k3 > 12000 &&
+                    k3 < 24000 &&
+                    (GameData.wallObjectInvisible[k3 - 12001] === 0 ||
+                        this.aBoolean592)
+                ) {
+                    this.method422(
+                        this.parentModel,
+                        k3 - 12001,
+                        i2 + 1,
+                        k2,
+                        i2,
+                        k2 + 1
+                    );
 
                     if (flag && GameData.wallObjectAdjacent[k3 - 12001] !== 0) {
                         const adjacency = this.objectAdjacency.get(i2, k2);
@@ -34548,12 +38753,27 @@ class World {
         }
 
         if (flag) {
-            this.surface.drawSpriteMinimap(this.baseMediaSprite - 1, 0, 0, 285, 285);
+            this.surface.drawSpriteMinimap(
+                this.baseMediaSprite - 1,
+                0,
+                0,
+                285,
+                285
+            );
         }
 
         this.parentModel._setLight_from6(false, 60, 24, -50, -10, -50);
 
-        this.wallModels[plane] = this.parentModel.split(0, 0, 1536, 1536, 8, 64, 338, true);
+        this.wallModels[plane] = this.parentModel.split(
+            0,
+            0,
+            1536,
+            1536,
+            8,
+            64,
+            338,
+            true
+        );
 
         for (let l2 = 0; l2 < 64; l2++) {
             this.scene.addModel(this.wallModels[plane][l2]);
@@ -34808,34 +39028,70 @@ class World {
                     l27 = -l27;
                     i28 = -i28;
 
-                    if (this.getWallDiagonal(i7, k9) > 12000 && this.getWallDiagonal(i7, k9) < 24000 && this.getWallRoof(i7 - 1, k9 - 1) === 0) {
+                    if (
+                        this.getWallDiagonal(i7, k9) > 12000 &&
+                        this.getWallDiagonal(i7, k9) < 24000 &&
+                        this.getWallRoof(i7 - 1, k9 - 1) === 0
+                    ) {
                         let ai8 = new Int32Array(3);
                         ai8[0] = this.parentModel.vertexAt(l26, l27, i26);
                         ai8[1] = this.parentModel.vertexAt(j26, i28, i27);
                         ai8[2] = this.parentModel.vertexAt(k25, k27, k26);
 
-                        this.parentModel.createFace(3, ai8, roofNvs, World.colourTransparent);
-                    } else if (this.getWallDiagonal(i7, k9) > 12000 && this.getWallDiagonal(i7, k9) < 24000 && this.getWallRoof(i7 + 1, k9 + 1) === 0) {
+                        this.parentModel.createFace(
+                            3,
+                            ai8,
+                            roofNvs,
+                            World.colourTransparent
+                        );
+                    } else if (
+                        this.getWallDiagonal(i7, k9) > 12000 &&
+                        this.getWallDiagonal(i7, k9) < 24000 &&
+                        this.getWallRoof(i7 + 1, k9 + 1) === 0
+                    ) {
                         let ai9 = new Int32Array(3);
                         ai9[0] = this.parentModel.vertexAt(k24, j27, i25);
                         ai9[1] = this.parentModel.vertexAt(k25, k27, k26);
                         ai9[2] = this.parentModel.vertexAt(j26, i28, i27);
 
-                        this.parentModel.createFace(3, ai9, roofNvs, World.colourTransparent);
-                    } else if (this.getWallDiagonal(i7, k9) > 0 && this.getWallDiagonal(i7, k9) < 12000 && this.getWallRoof(i7 + 1, k9 - 1) === 0) {
+                        this.parentModel.createFace(
+                            3,
+                            ai9,
+                            roofNvs,
+                            World.colourTransparent
+                        );
+                    } else if (
+                        this.getWallDiagonal(i7, k9) > 0 &&
+                        this.getWallDiagonal(i7, k9) < 12000 &&
+                        this.getWallRoof(i7 + 1, k9 - 1) === 0
+                    ) {
                         let ai10 = new Int32Array(3);
                         ai10[0] = this.parentModel.vertexAt(j26, i28, i27);
                         ai10[1] = this.parentModel.vertexAt(k24, j27, i25);
                         ai10[2] = this.parentModel.vertexAt(l26, l27, i26);
 
-                        this.parentModel.createFace(3, ai10, roofNvs, World.colourTransparent);
-                    } else if (this.getWallDiagonal(i7, k9) > 0 && this.getWallDiagonal(i7, k9) < 12000 && this.getWallRoof(i7 - 1, k9 + 1) === 0) {
+                        this.parentModel.createFace(
+                            3,
+                            ai10,
+                            roofNvs,
+                            World.colourTransparent
+                        );
+                    } else if (
+                        this.getWallDiagonal(i7, k9) > 0 &&
+                        this.getWallDiagonal(i7, k9) < 12000 &&
+                        this.getWallRoof(i7 - 1, k9 + 1) === 0
+                    ) {
                         let ai11 = new Int32Array(3);
                         ai11[0] = this.parentModel.vertexAt(k25, k27, k26);
                         ai11[1] = this.parentModel.vertexAt(l26, l27, i26);
                         ai11[2] = this.parentModel.vertexAt(k24, j27, i25);
 
-                        this.parentModel.createFace(3, ai11, roofNvs, World.colourTransparent);
+                        this.parentModel.createFace(
+                            3,
+                            ai11,
+                            roofNvs,
+                            World.colourTransparent
+                        );
                     } else if (j27 === k27 && l27 === i28) {
                         let ai12 = new Int32Array(4);
                         ai12[0] = this.parentModel.vertexAt(k24, j27, i25);
@@ -34843,7 +39099,12 @@ class World {
                         ai12[2] = this.parentModel.vertexAt(l26, l27, i26);
                         ai12[3] = this.parentModel.vertexAt(j26, i28, i27);
 
-                        this.parentModel.createFace(4, ai12, roofNvs, World.colourTransparent);
+                        this.parentModel.createFace(
+                            4,
+                            ai12,
+                            roofNvs,
+                            World.colourTransparent
+                        );
                     } else if (j27 === i28 && k27 === l27) {
                         let ai13 = new Int32Array(4);
                         ai13[0] = this.parentModel.vertexAt(j26, i28, i27);
@@ -34851,7 +39112,12 @@ class World {
                         ai13[2] = this.parentModel.vertexAt(k25, k27, k26);
                         ai13[3] = this.parentModel.vertexAt(l26, l27, i26);
 
-                        this.parentModel.createFace(4, ai13, roofNvs, World.colourTransparent);
+                        this.parentModel.createFace(
+                            4,
+                            ai13,
+                            roofNvs,
+                            World.colourTransparent
+                        );
                     } else {
                         let flag1 = true;
 
@@ -34869,28 +39135,48 @@ class World {
                             ai14[1] = this.parentModel.vertexAt(l26, l27, i26);
                             ai14[2] = this.parentModel.vertexAt(k24, j27, i25);
 
-                            this.parentModel.createFace(3, ai14, roofNvs, World.colourTransparent);
+                            this.parentModel.createFace(
+                                3,
+                                ai14,
+                                roofNvs,
+                                World.colourTransparent
+                            );
 
                             let ai16 = new Int32Array(3);
                             ai16[0] = this.parentModel.vertexAt(j26, i28, i27);
                             ai16[1] = this.parentModel.vertexAt(k24, j27, i25);
                             ai16[2] = this.parentModel.vertexAt(l26, l27, i26);
 
-                            this.parentModel.createFace(3, ai16, roofNvs, World.colourTransparent);
+                            this.parentModel.createFace(
+                                3,
+                                ai16,
+                                roofNvs,
+                                World.colourTransparent
+                            );
                         } else {
                             let ai15 = new Int32Array(3);
                             ai15[0] = this.parentModel.vertexAt(k24, j27, i25);
                             ai15[1] = this.parentModel.vertexAt(k25, k27, k26);
                             ai15[2] = this.parentModel.vertexAt(j26, i28, i27);
 
-                            this.parentModel.createFace(3, ai15, roofNvs, World.colourTransparent);
+                            this.parentModel.createFace(
+                                3,
+                                ai15,
+                                roofNvs,
+                                World.colourTransparent
+                            );
 
                             let ai17 = new Int32Array(3);
                             ai17[0] = this.parentModel.vertexAt(l26, l27, i26);
                             ai17[1] = this.parentModel.vertexAt(j26, i28, i27);
                             ai17[2] = this.parentModel.vertexAt(k25, k27, k26);
 
-                            this.parentModel.createFace(3, ai17, roofNvs, World.colourTransparent);
+                            this.parentModel.createFace(
+                                3,
+                                ai17,
+                                roofNvs,
+                                World.colourTransparent
+                            );
                         }
                     }
                 }
@@ -34898,7 +39184,16 @@ class World {
         }
 
         this.parentModel._setLight_from6(true, 50, 50, -50, -10, -50);
-        this.roofModels[plane] = this.parentModel.split(0, 0, 1536, 1536, 8, 64, 169, true);
+        this.roofModels[plane] = this.parentModel.split(
+            0,
+            0,
+            1536,
+            1536,
+            8,
+            64,
+            169,
+            true
+        );
 
         for (let l9 = 0; l9 < 64; l9++) {
             this.scene.addModel(this.roofModels[plane][l9]);
@@ -34938,7 +39233,10 @@ class World {
     addModels(models) {
         for (let i = 0; i < 94; i++) {
             for (let j = 0; j < 94; j++) {
-                if (this.getWallDiagonal(i, j) > 48000 && this.getWallDiagonal(i, j) < 60000) {
+                if (
+                    this.getWallDiagonal(i, j) > 48000 &&
+                    this.getWallDiagonal(i, j) < 60000
+                ) {
                     let k = this.getWallDiagonal(i, j) - 48001;
                     let l = this.getTileDirection(i, j);
                     let i1 = 0;
@@ -34954,7 +39252,12 @@ class World {
 
                     this.removeObject2(i, j, k);
 
-                    let gameModel = models[GameData.objectModelIndex[k]].copy(false, true, false, false);
+                    let gameModel = models[GameData.objectModelIndex[k]].copy(
+                        false,
+                        true,
+                        false,
+                        false
+                    );
                     let k1 = (((i + i + i1) * this.anInt585) / 2) | 0;
                     let i2 = (((j + j + j1) * this.anInt585) / 2) | 0;
                     gameModel.translate(k1, -this.getElevation(k1, i2), i2);
@@ -34965,7 +39268,10 @@ class World {
                     if (i1 > 1 || j1 > 1) {
                         for (let k2 = i; k2 < i + i1; k2++) {
                             for (let l2 = j; l2 < j + j1; l2++) {
-                                if ((k2 > i || l2 > j) && this.getWallDiagonal(k2, l2) - 48001 === k) {
+                                if (
+                                    (k2 > i || l2 > j) &&
+                                    this.getWallDiagonal(k2, l2) - 48001 === k
+                                ) {
                                     let l1 = k2;
                                     let j2 = l2;
                                     let byte0 = 0;
@@ -34982,7 +39288,11 @@ class World {
                                         j2 -= 48;
                                     }
 
-                                    this.wallsDiagonal.set(byte0, l1 * 48 + j2,  0);
+                                    this.wallsDiagonal.set(
+                                        byte0,
+                                        l1 * 48 + j2,
+                                        0
+                                    );
                                 }
                             }
                         }
@@ -35004,9 +39314,21 @@ class World {
         let k2 = l * this.anInt585;
         let l2 = i1 * this.anInt585;
         let i3 = gameModel.vertexAt(i2, -this.terrainHeightLocal.get(j, k), j2);
-        let j3 = gameModel.vertexAt(i2, -this.terrainHeightLocal.get(j, k) - h, j2);
-        let k3 = gameModel.vertexAt(k2, -this.terrainHeightLocal.get(l, i1) - h, l2);
-        let l3 = gameModel.vertexAt(k2, -this.terrainHeightLocal.get(l, i1), l2);
+        let j3 = gameModel.vertexAt(
+            i2,
+            -this.terrainHeightLocal.get(j, k) - h,
+            j2
+        );
+        let k3 = gameModel.vertexAt(
+            k2,
+            -this.terrainHeightLocal.get(l, i1) - h,
+            l2
+        );
+        let l3 = gameModel.vertexAt(
+            k2,
+            -this.terrainHeightLocal.get(l, i1),
+            l2
+        );
         let ai = new Int32Array([i3, j3, k3, l3]);
         let i4 = gameModel.createFace(4, ai, front, back);
 
@@ -35138,7 +39460,12 @@ class World {
     }
 
     method427(i, j) {
-        return this.getWallRoof(i, j) > 0 || this.getWallRoof(i - 1, j) > 0 || this.getWallRoof(i - 1, j - 1) > 0 || this.getWallRoof(i, j - 1) > 0;
+        return (
+            this.getWallRoof(i, j) > 0 ||
+            this.getWallRoof(i - 1, j) > 0 ||
+            this.getWallRoof(i - 1, j - 1) > 0 ||
+            this.getWallRoof(i, j - 1) > 0
+        );
     }
 
     method428(i, j, k, l, i1) {
@@ -35162,4 +39489,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":74,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":82,"ndarray":34}]},{},[1]);

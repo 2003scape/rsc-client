@@ -55,56 +55,64 @@ class GameConnection extends GameShell {
         this.anIntArray629 = new Int32Array(GameConnection.maxSocialListSize);
     }
 
-    async login(u, p, reconnecting) {
+    async login(username, password, reconnecting) {
         if (this.worldFullTimeout > 0) {
-            this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+            this.showLoginScreenStatus('Please wait...',
+                'Connecting to server');
             await sleep(2000);
-            this.showLoginScreenStatus('Sorry! The server is currently full.', 'Please try again later');
+            this.showLoginScreenStatus('Sorry! The server is currently full.',
+                'Please try again later');
             return;
         }
 
         try {
-            this.username = u;
-            u = Utility.formatAuthString(u, 20);
+            this.username = username;
+            username = Utility.formatAuthString(username, 20);
 
-            this.password = p;
-            p = Utility.formatAuthString(p, 20);
+            this.password = password;
+            password = Utility.formatAuthString(password, 20);
 
-            if (u.trim().length === 0) {
-                this.showLoginScreenStatus('You must enter both a username', 'and a password - Please try again');
+            if (username.trim().length === 0) {
+                this.showLoginScreenStatus('You must enter both a username',
+                    'and a password - Please try again');
                 return;
             }
 
             if (reconnecting) {
-                this.drawTextBox('Connection lost! Please wait...', 'Attempting to re-establish');
+                this.drawTextBox('Connection lost! Please wait...',
+                    'Attempting to re-establish');
             } else {
-                this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+                this.showLoginScreenStatus('Please wait...',
+                    'Connecting to server');
             }
 
-            this.packetStream = new PacketStream(await this.createSocket(this.server, this.port), this);
+            this.packetStream = new PacketStream(
+                await this.createSocket(this.server, this.port), this);
             this.packetStream.maxReadTries = GameConnection.maxReadTries;
 
-            let l = Utility.usernameToHash(u);
+            const encodedUsername = Utility.usernameToHash(username);
 
             this.packetStream.newPacket(clientOpcodes.SESSION);
-            this.packetStream.putByte(l.shiftRight(16).and(31).toInt());
+            this.packetStream.putByte(
+                encodedUsername.shiftRight(16).and(31).toInt());
             this.packetStream.flushPacket();
 
-            let sessId = await this.packetStream.getLong();
-            this.sessionID = sessId;
+            const sessionID = await this.packetStream.getLong();
+            this.sessionID = sessionID;
 
-            if (sessId.equals(0)) {
-                this.showLoginScreenStatus('Login server offline.', 'Please try again in a few mins');
+            if (sessionID.equals(0)) {
+                this.showLoginScreenStatus('Login server offline.',
+                    'Please try again in a few mins');
                 return;
             }
 
-            console.log('Verb: Session id: ' + sessId);
+            console.log('Verb: Session id: ' + sessionID);
 
-            let ai = new Int32Array(4);
-            ai[0] = (Math.random() * 99999999) | 0;
-            ai[1] = (Math.random() * 99999999) | 0;
-            ai[2] = sessId.shiftRight(32).toInt();
-            ai[3] = sessId.toInt();
+            let keys = new Int32Array(4);
+            keys[0] = (Math.random() * 99999999) | 0;
+            keys[1] = (Math.random() * 99999999) | 0;
+            keys[2] = sessionID.shiftRight(32).toInt();
+            keys[3] = sessionID.toInt();
 
             this.packetStream.newPacket(clientOpcodes.LOGIN);
 
@@ -118,142 +126,124 @@ class GameConnection extends GameShell {
             this.packetStream.putByte(0); // limit30
 
             this.packetStream.putByte(10);
-            this.packetStream.putInt(ai[0]);
-            this.packetStream.putInt(ai[1]);
-            this.packetStream.putInt(ai[2]);
-            this.packetStream.putInt(ai[3]);
+            this.packetStream.putInt(keys[0]);
+            this.packetStream.putInt(keys[1]);
+            this.packetStream.putInt(keys[2]);
+            this.packetStream.putInt(keys[3]);
             this.packetStream.putInt(0); // uuid
-            this.packetStream.putString(u);
-            this.packetStream.putString(p);
+            this.packetStream.putString(username);
+            this.packetStream.putString(password);
 
             this.packetStream.flushPacket();
             //this.packetStream.seedIsaac(ai);
 
-            let resp = await this.packetStream.readStream();
-            console.log('login response:' + resp);
+            const response = await this.packetStream.readStream();
+            console.log('login response:' + response);
 
-            if (resp === 25) {
+            if (response === 25) {
                 this.moderatorLevel = 1;
                 this.autoLoginTimeout = 0;
                 this.resetGame();
                 return;
-            }
-
-            if (resp === 0) {
+            } else if (response === 0) {
                 this.moderatorLevel = 0;
                 this.autoLoginTimeout = 0;
                 this.resetGame();
                 return;
-            }
-
-            if (resp === 1) {
+            } else if (response === 1) {
                 this.autoLoginTimeout = 0;
                 return;
             }
 
             if (reconnecting) {
-                u = '';
-                p = '';
+                username = '';
+                password = '';
                 this.resetLoginVars();
                 return;
             }
 
-            if (resp === -1) {
-                this.showLoginScreenStatus('Error unable to login.', 'Server timed out');
+            switch (response) {
+            case -1:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Server timed out');
                 return;
-            }
-
-            if (resp === 3) {
-                this.showLoginScreenStatus('Invalid username or password.', 'Try again, or create a new account');
+            case 3:
+                this.showLoginScreenStatus('Invalid username or password.',
+                    'Try again, or create a new account');
                 return;
-            }
-
-            if (resp === 4) {
-                this.showLoginScreenStatus('That username is already logged in.', 'Wait 60 seconds then retry');
+            case 4:
+                this.showLoginScreenStatus('That username is already logged ' +
+                    'in.', 'Wait 60 seconds then retry');
                 return;
-            }
-
-            if (resp === 5) {
-                this.showLoginScreenStatus('The client has been updated.', 'Please reload this page');
+            case 5:
+                this.showLoginScreenStatus('The client has been updated.',
+                    'Please reload this page');
                 return;
-            }
-
-            if (resp === 6) {
-                this.showLoginScreenStatus('You may only use 1 character at once.', 'Your ip-address is already in use');
+            case 6:
+                this.showLoginScreenStatus('You may only use 1 character at ' +
+                    'once.', 'Your ip-address is already in use');
                 return;
-            }
-
-            if (resp === 7) {
-                this.showLoginScreenStatus('Login attempts exceeded!', 'Please try again in 5 minutes');
+            case 7:
+                this.showLoginScreenStatus('Login attempts exceeded!',
+                    'Please try again in 5 minutes');
                 return;
-            }
-
-            if (resp === 8) {
-                this.showLoginScreenStatus('Error unable to login.', 'Server rejected session');
+            case 8:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Server rejected session');
                 return;
-            }
-
-            if (resp === 9) {
-                this.showLoginScreenStatus('Error unable to login.', 'Loginserver rejected session');
+            case 9:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Loginserver rejected session');
                 return;
-            }
-
-            if (resp === 10) {
-                this.showLoginScreenStatus('That username is already in use.', 'Wait 60 seconds then retry');
+            case 10:
+                this.showLoginScreenStatus('That username is already in use.',
+                    'Wait 60 seconds then retry');
                 return;
-            }
-
-            if (resp === 11) {
-                this.showLoginScreenStatus('Account temporarily disabled.', 'Check your message inbox for details');
+            case 11:
+                this.showLoginScreenStatus('Account temporarily disabled.',
+                    'Check your message inbox for details');
                 return;
-            }
-
-            if (resp === 12) {
-                this.showLoginScreenStatus('Account permanently disabled.', 'Check your message inbox for details');
+            case 12:
+                this.showLoginScreenStatus('Account permanently disabled.',
+                    'Check your message inbox for details');
                 return;
-            }
-
-            if (resp === 14) {
-                this.showLoginScreenStatus('Sorry! This world is currently full.', 'Please try a different world');
+            case 14:
+                this.showLoginScreenStatus('Sorry! This world is currently ' +
+                    'full.', 'Please try a different world');
                 this.worldFullTimeout = 1500;
                 return;
-            }
-
-            if (resp === 15) {
-                this.showLoginScreenStatus('You need a members account', 'to login to this world');
+            case 15:
+                this.showLoginScreenStatus('You need a members account',
+                    'to login to this world');
                 return;
-            }
-
-            if (resp === 16) {
-                this.showLoginScreenStatus('Error - no reply from loginserver.', 'Please try again');
+            case 16:
+                this.showLoginScreenStatus('Error - no reply from loginserver.',
+                    'Please try again');
                 return;
-            }
-
-            if (resp === 17) {
-                this.showLoginScreenStatus('Error - failed to decode profile.', 'Contact customer support');
+            case 17:
+                this.showLoginScreenStatus('Error - failed to decode profile.',
+                    'Contact customer support');
                 return;
-            }
-
-            if (resp === 18) {
-                this.showLoginScreenStatus('Account suspected stolen.', 'Press \'recover a locked account\' on front page.');
+            case 18:
+                this.showLoginScreenStatus('Account suspected stolen.',
+                    'Press \'recover a locked account\' on front page.');
                 return;
-            }
-
-            if (resp === 20) {
-                this.showLoginScreenStatus('Error - loginserver mismatch', 'Please try a different world');
+            case 20:
+                this.showLoginScreenStatus('Error - loginserver mismatch',
+                    'Please try a different world');
                 return;
-            }
-
-            if (resp === 21) {
-                this.showLoginScreenStatus('Unable to login.', 'That is not an RS-Classic account');
+            case 21:
+                this.showLoginScreenStatus('Unable to login.',
+                    'That is not an RS-Classic account');
                 return;
-            }
 
-            if (resp === 22) {
-                this.showLoginScreenStatus('Password suspected stolen.', 'Press \'change your password\' on front page.');
+            case 22:
+                this.showLoginScreenStatus('Password suspected stolen.',
+                    'Press \'change your password\' on front page.');
                 return;
-            } else {
-                this.showLoginScreenStatus('Error unable to login.', 'Unrecognised response code');
+            default:
+                this.showLoginScreenStatus('Error unable to login.',
+                    'Unrecognised response code');
                 return;
             }
         } catch (e) {
@@ -271,7 +261,8 @@ class GameConnection extends GameShell {
             this.password = '';
             this.resetLoginVars();
         } else {
-            this.showLoginScreenStatus('Sorry! Unable to connect.', 'Check internet settings or try another world');
+            this.showLoginScreenStatus('Sorry! Unable to connect.',
+                'Check internet settings or try another world');
         }
     }
 
@@ -295,37 +286,41 @@ class GameConnection extends GameShell {
         try {
             throw new Error('');
         } catch (e) {
-            console.log('loast connection: ');
             console.error(e);
         }
 
-        console.log('Lost connection');
         this.autoLoginTimeout = 10;
         await this.login(this.username, this.password, true);
     }
 
     drawTextBox(s, s1) {
-        let g = this.getGraphics();
-        let font = new Font('Helvetica', 1, 15);
-        let w = 512;
-        let h = 344;
-        g.setColor(Color.black);
-        g.fillRect(((w / 2) | 0) - 140, ((h / 2) | 0) - 25, 280, 50);
-        g.setColor(Color.white);
-        g.drawRect(((w / 2) | 0) - 140, ((h / 2) | 0) - 25, 280, 50);
-        this.drawString(g, s, font, (w / 2) | 0, ((h / 2) | 0) - 10);
-        this.drawString(g, s1, font, (w / 2) | 0, ((h / 2) | 0) + 10);
+        const graphics = this.getGraphics();
+        const font = new Font('Helvetica', 1, 15);
+        const width = 512;
+        const height = 344;
+
+        graphics.setColor(Color.black);
+        graphics.fillRect(((width / 2) | 0) - 140, ((height / 2) | 0) - 25, 280,
+            50);
+        graphics.setColor(Color.white);
+        graphics.drawRect(((width / 2) | 0) - 140, ((height / 2) | 0) - 25, 280,
+            50);
+
+        this.drawString(graphics, s, font, (width / 2) | 0,
+            ((height / 2) | 0) - 10);
+        this.drawString(graphics, s1, font, (width / 2) | 0,
+            ((height / 2) | 0) + 10);
     }
 
     async checkConnection() {
-        let l = Date.now();
+        const timestamp = Date.now();
 
         if (this.packetStream.hasPacket()) {
-            this.packetLastRead = l;
+            this.packetLastRead = timestamp;
         }
 
-        if (l - this.packetLastRead > 5000) {
-            this.packetLastRead = l;
+        if (timestamp - this.packetLastRead > 5000) {
+            this.packetLastRead = timestamp;
             this.packetStream.newPacket(clientOpcodes.PING);
             this.packetStream.sendPacket();
         }
@@ -422,7 +417,8 @@ class GameConnection extends GameShell {
 
         if (opcode === serverOpcodes.FRIEND_MESSAGE) {
             let from = Utility.getUnsignedLong(this.incomingPacket, 1);
-            let k1 = Utility.getUnsignedInt(this.incomingPacket, 9); // is this some sort of message id ?
+            // is this some sort of message id ?
+            let k1 = Utility.getUnsignedInt(this.incomingPacket, 9);
 
             for (let j2 = 0; j2 < this.maxSocialListSize; j2++) {
                 if (this.anIntArray629[j2] === k1) {
@@ -448,7 +444,10 @@ class GameConnection extends GameShell {
             flag = false;
 
             for (let i = 0; i < this.friendListCount - 1; i++) {
-                if (this.friendListOnline[i] !== 255 && this.friendListOnline[i + 1] === 255 || this.friendListOnline[i] === 0 && this.friendListOnline[i + 1] !== 0) {
+                if (this.friendListOnline[i] !== 255 &&
+                    this.friendListOnline[i + 1] === 255 ||
+                    this.friendListOnline[i] === 0 &&
+                    this.friendListOnline[i + 1] !== 0) {
                     let j = this.friendListOnline[i];
                     this.friendListOnline[i] = this.friendListOnline[i + 1];
                     this.friendListOnline[i + 1] = j;
@@ -463,24 +462,24 @@ class GameConnection extends GameShell {
         }
     }
 
-    sendPrivacySettings(chat, priv, trade, duel) {
+    sendPrivacySettings(chat, privateChat, trade, duel) {
         this.packetStream.newPacket(clientOpcodes.SETTINGS_PRIVACY);
         this.packetStream.putByte(chat);
-        this.packetStream.putByte(priv);
+        this.packetStream.putByte(privateChat);
         this.packetStream.putByte(trade);
         this.packetStream.putByte(duel);
         this.packetStream.sendPacket();
     }
 
-    ignoreAdd(s) {
-        let l = Utility.usernameToHash(s);
+    ignoreAdd(username) {
+        const encodedUsername = Utility.usernameToHash(username);
 
         this.packetStream.newPacket(clientOpcodes.IGNORE_ADD);
-        this.packetStream.putLong(l);
+        this.packetStream.putLong(encodedUsername);
         this.packetStream.sendPacket();
 
         for (let i = 0; i < this.ignoreListCount; i++) {
-            if (this.ignoreList[i].equals(l)) {
+            if (this.ignoreList[i].equals(encodedUsername)) {
                 return;
             }
         }
@@ -488,18 +487,18 @@ class GameConnection extends GameShell {
         if (this.ignoreListCount >= GameConnection.maxSocialListSize) {
             return;
         } else {
-            this.ignoreList[this.ignoreListCount++] = l;
+            this.ignoreList[this.ignoreListCount++] = encodedUsername;
             return;
         }
     }
 
-    ignoreRemove(l) {
+    ignoreRemove(encodedUsername) {
         this.packetStream.newPacket(clientOpcodes.IGNORE_REMOVE);
-        this.packetStream.putLong(l);
+        this.packetStream.putLong(encodedUsername);
         this.packetStream.sendPacket();
 
         for (let i = 0; i < this.ignoreListCount; i++) {
-            if (this.ignoreList[i].equals(l)) {
+            if (this.ignoreList[i].equals(encodedUsername)) {
                 this.ignoreListCount--;
 
                 for (let j = i; j < this.ignoreListCount; j++) {
@@ -511,15 +510,15 @@ class GameConnection extends GameShell {
         }
     }
 
-    friendAdd(s) {
+    friendAdd(username) {
         this.packetStream.newPacket(clientOpcodes.FRIEND_ADD);
-        this.packetStream.putLong(Utility.usernameToHash(s));
+        this.packetStream.putLong(Utility.usernameToHash(username));
         this.packetStream.sendPacket();
 
-        let l = Utility.usernameToHash(s);
+        const encodedUsername = Utility.usernameToHash(username);
 
         for (let i = 0; i < this.friendListCount; i++) {
-            if (this.friendListHashes[i].equals(l)) {
+            if (this.friendListHashes[i].equals(encodedUsername)) {
                 return;
             }
         }
@@ -527,20 +526,20 @@ class GameConnection extends GameShell {
         if (this.friendListCount >= GameConnection.maxSocialListSize) {
             return;
         } else {
-            this.friendListHashes[this.friendListCount] = l;
+            this.friendListHashes[this.friendListCount] = encodedUsername;
             this.friendListOnline[this.friendListCount] = 0;
             this.friendListCount++;
             return;
         }
     }
 
-    friendRemove(l) {
+    friendRemove(encodedUsername) {
         this.packetStream.newPacket(clientOpcodes.FRIEND_REMOVE);
-        this.packetStream.putLong(l);
+        this.packetStream.putLong(encodedUsername);
         this.packetStream.sendPacket();
 
         for (let i = 0; i < this.friendListCount; i++) {
-            if (!this.friendListHashes[i].equals(l)) {
+            if (!this.friendListHashes[i].equals(encodedUsername)) {
                 continue;
             }
 
@@ -554,25 +553,25 @@ class GameConnection extends GameShell {
             break;
         }
 
-        this.showServerMessage('@pri@' + Utility.hashToUsername(l) + ' has been removed from your friends list');
+        this.showServerMessage('@pri@' + Utility.hashToUsername(encodedUsername) + ' has been removed from your friends list');
     }
 
-    sendPrivateMessage(u, buff, len) {
+    sendPrivateMessage(username, message, length) {
         this.packetStream.newPacket(clientOpcodes.PM);
-        this.packetStream.putLong(u);
-        this.packetStream.putBytes(buff, 0, len);
+        this.packetStream.putLong(username);
+        this.packetStream.putBytes(message, 0, length);
         this.packetStream.sendPacket();
     }
 
-    sendChatMessage(buff, len) {
+    sendChatMessage(message, length) {
         this.packetStream.newPacket(clientOpcodes.CHAT);
-        this.packetStream.putBytes(buff, 0, len);
+        this.packetStream.putBytes(message, 0, length);
         this.packetStream.sendPacket();
     }
 
-    sendCommandString(s) {
+    sendCommandString(command) {
         this.packetStream.newPacket(clientOpcodes.COMMAND);
-        this.packetStream.putString(s);
+        this.packetStream.putString(command);
         this.packetStream.sendPacket();
     }
 }

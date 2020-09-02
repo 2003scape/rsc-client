@@ -5,7 +5,7 @@ const Scanline = require('./scanline');
 const COLOUR_TRANSPARENT = 12345678;
 
 class Scene {
-    constructor(surface, i, polygons, k) {
+    constructor(surface, maxModelCount, polygonCount, spriteCount) {
         this.lastVisiblePolygonsCount = 0;
         this.anIntArray377 = null;
         this.textureCount = 0;
@@ -73,7 +73,7 @@ class Scene {
         this.clipY = (surface.height2 / 2) | 0;
         this.raster = surface.pixels;
         this.modelCount = 0;
-        this.maxModelCount = i;
+        this.maxModelCount = maxModelCount;
         this.models = [];
         this.models.length = this.maxModelCount;
         this.models.fill(null);
@@ -81,19 +81,19 @@ class Scene {
         this.visiblePolygonsCount = 0;
         this.visiblePolygons = [];
 
-        for (let l = 0; l < polygons; l++) {
+        for (let l = 0; l < polygonCount; l++) {
             this.visiblePolygons.push(new Polygon());
         }
 
         this.spriteCount = 0;
         //this.view = new GameModel(k * 2, k);
-        this.spriteId = new Int32Array(k);
-        this.spriteWidth = new Int32Array(k);
-        this.spriteHeight = new Int32Array(k);
-        this.spriteX = new Int32Array(k);
-        this.spriteZ = new Int32Array(k);
-        this.spriteY = new Int32Array(k);
-        this.spriteTranslateX = new Int32Array(k);
+        this.spriteId = new Int32Array(spriteCount);
+        this.spriteWidth = new Int32Array(spriteCount);
+        this.spriteHeight = new Int32Array(spriteCount);
+        this.spriteX = new Int32Array(spriteCount);
+        this.spriteZ = new Int32Array(spriteCount);
+        this.spriteY = new Int32Array(spriteCount);
+        this.spriteTranslateX = new Int32Array(spriteCount);
 
         if (this.aByteArray434 === null) {
             this.aByteArray434 = new Int8Array(17691);
@@ -108,16 +108,33 @@ class Scene {
 
         for (let i1 = 0; i1 < 256; i1++) {
             Scene.sin512Cache[i1] = (Math.sin(i1 * 0.02454369) * 32768) | 0;
-            Scene.sin512Cache[i1 + 256] = (Math.cos(i1 * 0.02454369) * 32768) | 0;
+            Scene.sin512Cache[i1 + 256] =
+                (Math.cos(i1 * 0.02454369) * 32768) | 0;
         }
 
         for (let j1 = 0; j1 < 1024; j1++) {
             Scene.sinCosCache[j1] = (Math.sin(j1 * 0.00613592315) * 32768) | 0;
-            Scene.sinCosCache[j1 + 1024] = (Math.cos(j1 * 0.00613592315) * 32768) | 0;
+            Scene.sinCosCache[j1 + 1024] =
+                (Math.cos(j1 * 0.00613592315) * 32768) | 0;
         }
     }
 
-    static textureScanline(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureScanline(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -127,8 +144,8 @@ class Scene {
         let i4 = 0;
 
         if (i1 !== 0) {
-            i = k / i1 << 7;
-            j = l / i1 << 7;
+            i = (k / i1) << 7;
+            j = (l / i1) << 7;
         }
 
         if (i < 0) {
@@ -142,8 +159,8 @@ class Scene {
         i1 += l1;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 7;
-            j3 = l / i1 << 7;
+            i3 = (k / i1) << 7;
+            j3 = (l / i1) << 7;
         }
 
         if (i3 < 0) {
@@ -152,8 +169,8 @@ class Scene {
             i3 = 16256;
         }
 
-        let k3 = i3 - i >> 4;
-        let l3 = j3 - j >> 4;
+        let k3 = (i3 - i) >> 4;
+        let l3 = (j3 - j) >> 4;
 
         for (let j4 = i2 >> 4; j4 > 0; j4--) {
             i += k2 & 0x600000;
@@ -221,8 +238,8 @@ class Scene {
             i1 += l1;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 7;
-                j3 = l / i1 << 7;
+                i3 = (k / i1) << 7;
+                j3 = (l / i1) << 7;
             }
 
             if (i3 < 0) {
@@ -231,8 +248,8 @@ class Scene {
                 i3 = 16256;
             }
 
-            k3 = i3 - i >> 4;
-            l3 = j3 - j >> 4;
+            k3 = (i3 - i) >> 4;
+            l3 = (j3 - j) >> 4;
         }
 
         for (let k4 = 0; k4 < (i2 & 0xf); k4++) {
@@ -248,7 +265,22 @@ class Scene {
         }
     }
 
-    static textureTranslucentScanline(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureTranslucentScanline(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -258,8 +290,8 @@ class Scene {
         let i4 = 0;
 
         if (i1 !== 0) {
-            i = k / i1 << 7;
-            j = l / i1 << 7;
+            i = (k / i1) << 7;
+            j = (l / i1) << 7;
         }
 
         if (i < 0) {
@@ -273,8 +305,8 @@ class Scene {
         i1 += l1;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 7;
-            j3 = l / i1 << 7;
+            i3 = (k / i1) << 7;
+            j3 = (l / i1) << 7;
         }
 
         if (i3 < 0) {
@@ -283,68 +315,100 @@ class Scene {
             i3 = 16256;
         }
 
-        let k3 = i3 - i >> 4;
-        let l3 = j3 - j >> 4;
+        let k3 = (i3 - i) >> 4;
+        let l3 = (j3 - j) >> 4;
 
         for (let j4 = i2 >> 4; j4 > 0; j4--) {
             i += k2 & 0x600000;
             i4 = k2 >> 23;
             k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            i = (i & 0x3fff) + (k2 & 0x600000);
-            i4 = k2 >> 23;
-            k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
-            i += k3;
-            j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
             i = (i & 0x3fff) + (k2 & 0x600000);
             i4 = k2 >> 23;
             k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
             i = (i & 0x3fff) + (k2 & 0x600000);
             i4 = k2 >> 23;
             k2 += l2;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            i = (i & 0x3fff) + (k2 & 0x600000);
+            i4 = k2 >> 23;
+            k2 += l2;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
+            i += k3;
+            j += l3;
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i = i3;
             j = j3;
             k += j1;
@@ -352,8 +416,8 @@ class Scene {
             i1 += l1;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 7;
-                j3 = l / i1 << 7;
+                i3 = (k / i1) << 7;
+                j3 = (l / i1) << 7;
             }
 
             if (i3 < 0) {
@@ -362,8 +426,8 @@ class Scene {
                 i3 = 16256;
             }
 
-            k3 = i3 - i >> 4;
-            l3 = j3 - j >> 4;
+            k3 = (i3 - i) >> 4;
+            l3 = (j3 - j) >> 4;
         }
 
         for (let k4 = 0; k4 < (i2 & 0xf); k4++) {
@@ -373,13 +437,31 @@ class Scene {
                 k2 += l2;
             }
 
-            ai[j2++] = (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) + (ai[j2] >> 1 & 0x7f7f7f);
+            ai[j2++] =
+                (ai1[(j & 0x3f80) + (i >> 7)] >>> i4) +
+                ((ai[j2] >> 1) & 0x7f7f7f);
             i += k3;
             j += l3;
         }
     }
 
-    static textureBackTranslucentScanline(ai, i, j, k, ai1, l, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
+    static textureBackTranslucentScanline(
+        ai,
+        i,
+        j,
+        k,
+        ai1,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
         if (j2 <= 0) {
             return;
         }
@@ -389,8 +471,8 @@ class Scene {
         i3 <<= 2;
 
         if (j1 !== 0) {
-            j3 = l / j1 << 7;
-            k3 = i1 / j1 << 7;
+            j3 = (l / j1) << 7;
+            k3 = (i1 / j1) << 7;
         }
 
         if (j3 < 0) {
@@ -407,8 +489,8 @@ class Scene {
             k = k3;
 
             if (j1 !== 0) {
-                j3 = l / j1 << 7;
-                k3 = i1 / j1 << 7;
+                j3 = (l / j1) << 7;
+                k3 = (i1 / j1) << 7;
             }
 
             if (j3 < 0) {
@@ -417,8 +499,8 @@ class Scene {
                 j3 = 16256;
             }
 
-            let l3 = j3 - j >> 4;
-            let i4 = k3 - k >> 4;
+            let l3 = (j3 - j) >> 4;
+            let i4 = (k3 - k) >> 4;
             let k4 = l2 >> 23;
 
             j += l2 & 0x600000;
@@ -577,10 +659,24 @@ class Scene {
                 k2++;
             }
         }
-
     }
 
-    static textureScanline2(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureScanline2(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -590,8 +686,8 @@ class Scene {
         l2 <<= 2;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 6;
-            j3 = l / i1 << 6;
+            i3 = (k / i1) << 6;
+            j3 = (l / i1) << 6;
         }
 
         if (i3 < 0) {
@@ -608,8 +704,8 @@ class Scene {
             j = j3;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 6;
-                j3 = l / i1 << 6;
+                i3 = (k / i1) << 6;
+                j3 = (l / i1) << 6;
             }
 
             if (i3 < 0) {
@@ -618,8 +714,8 @@ class Scene {
                 i3 = 4032;
             }
 
-            let k3 = i3 - i >> 4;
-            let l3 = j3 - j >> 4;
+            let k3 = (i3 - i) >> 4;
+            let l3 = (j3 - j) >> 4;
             let j4 = k2 >> 20;
             i += k2 & 0xc0000;
             k2 += l2;
@@ -696,7 +792,22 @@ class Scene {
         }
     }
 
-    static textureTranslucentScanline2(ai, ai1, i, j, k, l, i1, j1, k1, l1, i2, j2, k2, l2) {
+    static textureTranslucentScanline2(
+        ai,
+        ai1,
+        i,
+        j,
+        k,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2
+    ) {
         if (i2 <= 0) {
             return;
         }
@@ -706,8 +817,8 @@ class Scene {
         l2 <<= 2;
 
         if (i1 !== 0) {
-            i3 = k / i1 << 6;
-            j3 = l / i1 << 6;
+            i3 = (k / i1) << 6;
+            j3 = (l / i1) << 6;
         }
 
         if (i3 < 0) {
@@ -724,8 +835,8 @@ class Scene {
             j = j3;
 
             if (i1 !== 0) {
-                i3 = k / i1 << 6;
-                j3 = l / i1 << 6;
+                i3 = (k / i1) << 6;
+                j3 = (l / i1) << 6;
             }
 
             if (i3 < 0) {
@@ -734,15 +845,17 @@ class Scene {
                 i3 = 4032;
             }
 
-            let k3 = i3 - i >> 4;
-            let l3 = j3 - j >> 4;
+            let k3 = (i3 - i) >> 4;
+            let l3 = (j3 - j) >> 4;
             let j4 = k2 >> 20;
             i += k2 & 0xc0000;
             k2 += l2;
 
             if (i4 < 16) {
                 for (let k4 = 0; k4 < i4; k4++) {
-                    ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                    ai[j2++] =
+                        (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                        ((ai[j2] >> 1) & 0x7f7f7f);
                     i += k3;
                     j += l3;
 
@@ -753,66 +866,114 @@ class Scene {
                     }
                 }
             } else {
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                i = (i & 0xfff) + (k2 & 0xc0000);
-                j4 = k2 >> 20;
-                k2 += l2;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
-                i += k3;
-                j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
                 i = (i & 0xfff) + (k2 & 0xc0000);
                 j4 = k2 >> 20;
                 k2 += l2;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
                 i = (i & 0xfff) + (k2 & 0xc0000);
                 j4 = k2 >> 20;
                 k2 += l2;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
                 i += k3;
                 j += l3;
-                ai[j2++] = (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) + (ai[j2] >> 1 & 0x7f7f7f);
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                i = (i & 0xfff) + (k2 & 0xc0000);
+                j4 = k2 >> 20;
+                k2 += l2;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
+                i += k3;
+                j += l3;
+                ai[j2++] =
+                    (ai1[(j & 0xfc0) + (i >> 6)] >>> j4) +
+                    ((ai[j2] >> 1) & 0x7f7f7f);
             }
         }
     }
 
-    static textureBackTranslucentScanline2(ai, i, j, k, ai1, l, i1, j1, k1, l1, i2, j2, k2, l2, i3) {
+    static textureBackTranslucentScanline2(
+        ai,
+        i,
+        j,
+        k,
+        ai1,
+        l,
+        i1,
+        j1,
+        k1,
+        l1,
+        i2,
+        j2,
+        k2,
+        l2,
+        i3
+    ) {
         if (j2 <= 0) {
             return;
         }
@@ -822,8 +983,8 @@ class Scene {
         i3 <<= 2;
 
         if (j1 !== 0) {
-            j3 = l / j1 << 6;
-            k3 = i1 / j1 << 6;
+            j3 = (l / j1) << 6;
+            k3 = (i1 / j1) << 6;
         }
 
         if (j3 < 0) {
@@ -840,8 +1001,8 @@ class Scene {
             k = k3;
 
             if (j1 !== 0) {
-                j3 = l / j1 << 6;
-                k3 = i1 / j1 << 6;
+                j3 = (l / j1) << 6;
+                k3 = (i1 / j1) << 6;
             }
 
             if (j3 < 0) {
@@ -850,8 +1011,8 @@ class Scene {
                 j3 = 4032;
             }
 
-            let l3 = j3 - j >> 4;
-            let i4 = k3 - k >> 4;
+            let l3 = (j3 - j) >> 4;
+            let i4 = (k3 - k) >> 4;
             let k4 = l2 >> 20;
             j += l2 & 0xc0000;
             l2 += i3;
@@ -1017,26 +1178,26 @@ class Scene {
         }
 
         i1 <<= 1;
-        k = ai1[l >> 8 & 0xff];
+        k = ai1[(l >> 8) & 0xff];
         l += i1;
         let j1 = (i / 8) | 0;
 
         for (let k1 = j1; k1 < 0; k1++) {
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
 
@@ -1046,7 +1207,7 @@ class Scene {
             ai[j++] = k;
 
             if ((l1 & 1) === 1) {
-                k = ai1[l >> 8 & 0xff];
+                k = ai1[(l >> 8) & 0xff];
                 l += i1;
             }
         }
@@ -1058,49 +1219,48 @@ class Scene {
         }
 
         i1 <<= 2;
-        k = ai1[l >> 8 & 0xff];
+        k = ai1[(l >> 8) & 0xff];
         l += i1;
         let j1 = (i / 16) | 0;
 
         for (let k1 = j1; k1 < 0; k1++) {
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
-            k = ai1[l >> 8 & 0xff];
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
 
         j1 = -(i % 16);
 
         for (let l1 = 0; l1 < j1; l1++) {
-            ai[j++] = k + (ai[j] >> 1 & 0x7f7f7f);
+            ai[j++] = k + ((ai[j] >> 1) & 0x7f7f7f);
 
             if ((l1 & 3) === 3) {
-                k = ai1[l >> 8 & 0xff];
+                k = ai1[(l >> 8) & 0xff];
                 l += i1;
                 l += i1;
             }
         }
-
     }
 
     static gradientScanline2(ai, i, j, k, ai1, l, i1) {
@@ -1109,7 +1269,7 @@ class Scene {
         }
 
         i1 <<= 2;
-        k = ai1[l >> 8 & 0xff];
+        k = ai1[(l >> 8) & 0xff];
         l += i1;
         let j1 = (i / 16) | 0;
 
@@ -1118,25 +1278,25 @@ class Scene {
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
             ai[j++] = k;
-            k = ai1[l >> 8 & 0xff];
+            k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
 
@@ -1146,7 +1306,7 @@ class Scene {
             ai[j++] = k;
 
             if ((l1 & 3) === 3) {
-                k = ai1[l >> 8 & 0xff];
+                k = ai1[(l >> 8) & 0xff];
                 l += i1;
             }
         }
@@ -1211,11 +1371,11 @@ class Scene {
         this.spriteHeight[this.spriteCount] = h;
         this.spriteTranslateX[this.spriteCount] = 0;
 
-        let l1 = this.view.createVertex(x, z, y);
-        let i2 = this.view.createVertex(x, z - h, y);
-        let vs = new Int32Array([l1, i2]);
+        const bottomVert = this.view.createVertex(x, z, y);
+        const topVert = this.view.createVertex(x, z - h, y);
+        const vertexes = new Int32Array([bottomVert, topVert]);
 
-        this.view.createFace(2, vs, 0, 0);
+        this.view.createFace(2, vertexes, 0, 0);
         this.view.faceTag[this.spriteCount] = tag;
         this.view.isLocalPlayer[this.spriteCount++] = 0;
 
@@ -1324,7 +1484,15 @@ class Scene {
             for (let k1 = j1; k1 >= i1 + 1; k1--) {
                 let other = polygons[k1];
 
-                if (polygon.minPlaneX < other.maxPlaneX && other.minPlaneX < polygon.maxPlaneX && polygon.minPlaneY < other.maxPlaneY && other.minPlaneY < polygon.maxPlaneY && polygon.index !== other.index2 && !this.separatePolygon(polygon, other) && this.heuristicPolygon(other, polygon)) {
+                if (
+                    polygon.minPlaneX < other.maxPlaneX &&
+                    other.minPlaneX < polygon.maxPlaneX &&
+                    polygon.minPlaneY < other.maxPlaneY &&
+                    other.minPlaneY < polygon.maxPlaneY &&
+                    polygon.index !== other.index2 &&
+                    !this.separatePolygon(polygon, other) &&
+                    this.heuristicPolygon(other, polygon)
+                ) {
                     this.polygonsOrder(polygons, i1, k1);
 
                     if (polygons[k1] !== other) {
@@ -1400,31 +1568,31 @@ class Scene {
     }
 
     setFrustum(i, j, k) {
-        let l = -this.cameraYaw + 1024 & 0x3ff;
-        let i1 = -this.cameraPitch + 1024 & 0x3ff;
-        let j1 = -this.cameraRoll + 1024 & 0x3ff;
+        let l = (-this.cameraYaw + 1024) & 0x3ff;
+        let i1 = (-this.cameraPitch + 1024) & 0x3ff;
+        let j1 = (-this.cameraRoll + 1024) & 0x3ff;
 
         if (j1 !== 0) {
             let k1 = Scene.sinCosCache[j1];
             let j2 = Scene.sinCosCache[j1 + 1024];
-            let i3 = j * k1 + i * j2 >> 15;
-            j = j * j2 - i * k1 >> 15;
+            let i3 = (j * k1 + i * j2) >> 15;
+            j = (j * j2 - i * k1) >> 15;
             i = i3;
         }
 
         if (l !== 0) {
             let l1 = Scene.sinCosCache[l];
             let k2 = Scene.sinCosCache[l + 1024];
-            let j3 = j * k2 - k * l1 >> 15;
-            k = j * l1 + k * k2 >> 15;
+            let j3 = (j * k2 - k * l1) >> 15;
+            k = (j * l1 + k * k2) >> 15;
             j = j3;
         }
 
         if (i1 !== 0) {
             let i2 = Scene.sinCosCache[i1];
             let l2 = Scene.sinCosCache[i1 + 1024];
-            let k3 = k * i2 + i * l2 >> 15;
-            k = k * l2 - i * i2 >> 15;
+            let k3 = (k * i2 + i * l2) >> 15;
+            k = (k * l2 - i * i2) >> 15;
             i = k3;
         }
 
@@ -1455,8 +1623,8 @@ class Scene {
 
     render() {
         this.interlace = this.surface.interlace;
-        let i3 = this.clipX * this.clipFar3d >> this.viewDistance;
-        let j3 = this.clipY * this.clipFar3d >> this.viewDistance;
+        let i3 = (this.clipX * this.clipFar3d) >> this.viewDistance;
+        let j3 = (this.clipY * this.clipFar3d) >> this.viewDistance;
 
         Scene.frustumMaxX = 0;
         Scene.frustumMinX = 0;
@@ -1485,10 +1653,28 @@ class Scene {
         this.view.transformState = 2;
 
         for (let i = 0; i < this.modelCount; i++) {
-            this.models[i].project(this.cameraX, this.cameraY, this.cameraZ, this.cameraYaw, this.cameraPitch, this.cameraRoll, this.viewDistance, this.clipNear);
+            this.models[i].project(
+                this.cameraX,
+                this.cameraY,
+                this.cameraZ,
+                this.cameraYaw,
+                this.cameraPitch,
+                this.cameraRoll,
+                this.viewDistance,
+                this.clipNear
+            );
         }
 
-        this.models[this.modelCount].project(this.cameraX, this.cameraY, this.cameraZ, this.cameraYaw, this.cameraPitch, this.cameraRoll, this.viewDistance, this.clipNear);
+        this.models[this.modelCount].project(
+            this.cameraX,
+            this.cameraY,
+            this.cameraZ,
+            this.cameraYaw,
+            this.cameraPitch,
+            this.cameraRoll,
+            this.viewDistance,
+            this.clipNear
+        );
         this.visiblePolygonsCount = 0;
 
         for (let count = 0; count < this.modelCount; count++) {
@@ -1533,8 +1719,13 @@ class Scene {
                         if (viewXCount === 3) {
                             let viewYCount = 0;
 
-                            for (let vertex = 0; vertex < num_vertices; vertex++) {
-                                let k1 = gameModel.vertexViewY[vertices[vertex]];
+                            for (
+                                let vertex = 0;
+                                vertex < num_vertices;
+                                vertex++
+                            ) {
+                                let k1 =
+                                    gameModel.vertexViewY[vertices[vertex]];
 
                                 if (k1 > -this.clipY) {
                                     viewYCount |= 1;
@@ -1550,10 +1741,14 @@ class Scene {
                             }
 
                             if (viewYCount === 3) {
-                                let polygon_1 = this.visiblePolygons[this.visiblePolygonsCount];
+                                let polygon_1 = this.visiblePolygons[
+                                    this.visiblePolygonsCount
+                                ];
                                 polygon_1.model = gameModel;
                                 polygon_1.face = face;
-                                this.initialisePolygon3D(this.visiblePolygonsCount);
+                                this.initialisePolygon3D(
+                                    this.visiblePolygonsCount
+                                );
 
                                 let faceFill = 0;
 
@@ -1566,11 +1761,20 @@ class Scene {
                                 if (faceFill !== COLOUR_TRANSPARENT) {
                                     let h = 0;
 
-                                    for (let vertex = 0; vertex < num_vertices; vertex++) {
-                                        h += gameModel.projectVertexZ[vertices[vertex]];
+                                    for (
+                                        let vertex = 0;
+                                        vertex < num_vertices;
+                                        vertex++
+                                    ) {
+                                        h +=
+                                            gameModel.projectVertexZ[
+                                                vertices[vertex]
+                                            ];
                                     }
 
-                                    polygon_1.depth = ((h / num_vertices) | 0) + gameModel.depth;
+                                    polygon_1.depth =
+                                        ((h / num_vertices) | 0) +
+                                        gameModel.depth;
                                     polygon_1.facefill = faceFill;
                                     this.visiblePolygonsCount++;
                                 }
@@ -1592,17 +1796,31 @@ class Scene {
                 let vz = model_2d.projectVertexZ[vertex0];
 
                 if (vz > this.clipNear && vz < this.clipFar2d) {
-                    let vw = ((this.spriteWidth[face] << this.viewDistance) / vz) | 0;
-                    let vh = ((this.spriteHeight[face] << this.viewDistance) / vz) | 0;
+                    let vw =
+                        ((this.spriteWidth[face] << this.viewDistance) / vz) |
+                        0;
+                    let vh =
+                        ((this.spriteHeight[face] << this.viewDistance) / vz) |
+                        0;
 
-                    if (vx - ((vw / 2) | 0) <= this.clipX && vx + ((vw / 2) | 0) >= -this.clipX && vy - vh <= this.clipY && vy >= -this.clipY) {
-                        let polygon_2 = this.visiblePolygons[this.visiblePolygonsCount];
+                    if (
+                        vx - ((vw / 2) | 0) <= this.clipX &&
+                        vx + ((vw / 2) | 0) >= -this.clipX &&
+                        vy - vh <= this.clipY &&
+                        vy >= -this.clipY
+                    ) {
+                        let polygon_2 = this.visiblePolygons[
+                            this.visiblePolygonsCount
+                        ];
                         polygon_2.model = model_2d;
                         polygon_2.face = face;
 
                         this.initialisePolygon2D(this.visiblePolygonsCount);
 
-                        polygon_2.depth = ((vz + model_2d.projectVertexZ[faceVertices[1]]) / 2) | 0;
+                        polygon_2.depth =
+                            ((vz + model_2d.projectVertexZ[faceVertices[1]]) /
+                                2) |
+                            0;
                         this.visiblePolygonsCount++;
                     }
                 }
@@ -1614,8 +1832,16 @@ class Scene {
         }
 
         this.lastVisiblePolygonsCount = this.visiblePolygonsCount;
-        this.polygonsQSort(this.visiblePolygons, 0, this.visiblePolygonsCount - 1);
-        this.polygonsIntersectSort(100, this.visiblePolygons, this.visiblePolygonsCount);
+        this.polygonsQSort(
+            this.visiblePolygons,
+            0,
+            this.visiblePolygonsCount - 1
+        );
+        this.polygonsIntersectSort(
+            100,
+            this.visiblePolygons,
+            this.visiblePolygonsCount
+        );
 
         for (let model = 0; model < this.visiblePolygonsCount; model++) {
             let polygon = this.visiblePolygons[model];
@@ -1632,15 +1858,37 @@ class Scene {
                 let h = ((this.spriteHeight[l] << this.viewDistance) / vz) | 0;
                 let tx = gameModel_2.vertexViewX[faceverts[1]] - vx;
                 let x = vx - ((w / 2) | 0);
-                let y = (this.baseY + vy) - h;
+                let y = this.baseY + vy - h;
 
-                this.surface._spriteClipping_from7(x + this.baseX, y, w, h, this.spriteId[l], tx, ((256 << this.viewDistance) / vz) | 0);
+                this.surface._spriteClipping_from7(
+                    x + this.baseX,
+                    y,
+                    w,
+                    h,
+                    this.spriteId[l],
+                    tx,
+                    ((256 << this.viewDistance) / vz) | 0
+                );
 
-                if (this.mousePickingActive && this.mousePickedCount < this.mousePickedMax) {
-                    x += ((this.spriteTranslateX[l] << this.viewDistance) / vz) | 0;
+                if (
+                    this.mousePickingActive &&
+                    this.mousePickedCount < this.mousePickedMax
+                ) {
+                    x +=
+                        ((this.spriteTranslateX[l] << this.viewDistance) / vz) |
+                        0;
 
-                    if (this.mouseY >= y && this.mouseY <= y + h && this.mouseX >= x && this.mouseX <= x + w && !gameModel_2.unpickable && gameModel_2.isLocalPlayer[l] === 0) {
-                        this.mousePickedModels[this.mousePickedCount] = gameModel_2;
+                    if (
+                        this.mouseY >= y &&
+                        this.mouseY <= y + h &&
+                        this.mouseX >= x &&
+                        this.mouseX <= x + w &&
+                        !gameModel_2.unpickable &&
+                        gameModel_2.isLocalPlayer[l] === 0
+                    ) {
+                        this.mousePickedModels[
+                            this.mousePickedCount
+                        ] = gameModel_2;
                         this.mousePickedFaces[this.mousePickedCount] = l;
                         this.mousePickedCount++;
                     }
@@ -1653,9 +1901,13 @@ class Scene {
 
                 if (gameModel_2.faceIntensity[l] !== COLOUR_TRANSPARENT) {
                     if (polygon.visibility < 0) {
-                        j10 = gameModel_2.lightAmbience - gameModel_2.faceIntensity[l];
+                        j10 =
+                            gameModel_2.lightAmbience -
+                            gameModel_2.faceIntensity[l];
                     } else {
-                        j10 = gameModel_2.lightAmbience + gameModel_2.faceIntensity[l];
+                        j10 =
+                            gameModel_2.lightAmbience +
+                            gameModel_2.faceIntensity[l];
                     }
                 }
 
@@ -1668,9 +1920,15 @@ class Scene {
 
                     if (gameModel_2.faceIntensity[l] === COLOUR_TRANSPARENT) {
                         if (polygon.visibility < 0) {
-                            j10 = (gameModel_2.lightAmbience - gameModel_2.vertexIntensity[k2]) + gameModel_2.vertexAmbience[k2];
+                            j10 =
+                                gameModel_2.lightAmbience -
+                                gameModel_2.vertexIntensity[k2] +
+                                gameModel_2.vertexAmbience[k2];
                         } else {
-                            j10 = gameModel_2.lightAmbience + gameModel_2.vertexIntensity[k2] + gameModel_2.vertexAmbience[k2];
+                            j10 =
+                                gameModel_2.lightAmbience +
+                                gameModel_2.vertexIntensity[k2] +
+                                gameModel_2.vertexAmbience[k2];
                         }
                     }
 
@@ -1679,8 +1937,14 @@ class Scene {
                         this.planeY[k8] = gameModel_2.vertexViewY[k2];
                         this.vertexShade[k8] = j10;
 
-                        if (gameModel_2.projectVertexZ[k2] > this.fogZDistance) {
-                            this.vertexShade[k8] += ((gameModel_2.projectVertexZ[k2] - this.fogZDistance) / this.fogZFalloff) | 0;
+                        if (
+                            gameModel_2.projectVertexZ[k2] > this.fogZDistance
+                        ) {
+                            this.vertexShade[k8] +=
+                                ((gameModel_2.projectVertexZ[k2] -
+                                    this.fogZDistance) /
+                                    this.fogZFalloff) |
+                                0;
                         }
 
                         k8++;
@@ -1694,11 +1958,29 @@ class Scene {
                         }
 
                         if (gameModel_2.projectVertexZ[k9] >= this.clipNear) {
-                            let k7 = gameModel_2.projectVertexZ[k2] - gameModel_2.projectVertexZ[k9];
-                            let i5 = gameModel_2.projectVertexX[k2] - ((((gameModel_2.projectVertexX[k2] - gameModel_2.projectVertexX[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / k7) | 0);
-                            let j6 = gameModel_2.projectVertexY[k2] - ((((gameModel_2.projectVertexY[k2] - gameModel_2.projectVertexY[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / k7) | 0);
-                            this.planeX[k8] = ((i5 << this.viewDistance) / this.clipNear) | 0;
-                            this.planeY[k8] = ((j6 << this.viewDistance) / this.clipNear) | 0;
+                            let k7 =
+                                gameModel_2.projectVertexZ[k2] -
+                                gameModel_2.projectVertexZ[k9];
+                            let i5 =
+                                gameModel_2.projectVertexX[k2] -
+                                ((((gameModel_2.projectVertexX[k2] -
+                                    gameModel_2.projectVertexX[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    k7) |
+                                    0);
+                            let j6 =
+                                gameModel_2.projectVertexY[k2] -
+                                ((((gameModel_2.projectVertexY[k2] -
+                                    gameModel_2.projectVertexY[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    k7) |
+                                    0);
+                            this.planeX[k8] =
+                                ((i5 << this.viewDistance) / this.clipNear) | 0;
+                            this.planeY[k8] =
+                                ((j6 << this.viewDistance) / this.clipNear) | 0;
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -1710,11 +1992,29 @@ class Scene {
                         }
 
                         if (gameModel_2.projectVertexZ[k9] >= this.clipNear) {
-                            let l7 = gameModel_2.projectVertexZ[k2] - gameModel_2.projectVertexZ[k9];
-                            let j5 = gameModel_2.projectVertexX[k2] - ((((gameModel_2.projectVertexX[k2] - gameModel_2.projectVertexX[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / l7) | 0);
-                            let k6 = gameModel_2.projectVertexY[k2] - ((((gameModel_2.projectVertexY[k2] - gameModel_2.projectVertexY[k9]) * (gameModel_2.projectVertexZ[k2] - this.clipNear)) / l7) | 0);
-                            this.planeX[k8] = ((j5 << this.viewDistance) / this.clipNear) | 0;
-                            this.planeY[k8] = ((k6 << this.viewDistance) / this.clipNear) | 0;
+                            let l7 =
+                                gameModel_2.projectVertexZ[k2] -
+                                gameModel_2.projectVertexZ[k9];
+                            let j5 =
+                                gameModel_2.projectVertexX[k2] -
+                                ((((gameModel_2.projectVertexX[k2] -
+                                    gameModel_2.projectVertexX[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    l7) |
+                                    0);
+                            let k6 =
+                                gameModel_2.projectVertexY[k2] -
+                                ((((gameModel_2.projectVertexY[k2] -
+                                    gameModel_2.projectVertexY[k9]) *
+                                    (gameModel_2.projectVertexZ[k2] -
+                                        this.clipNear)) /
+                                    l7) |
+                                    0);
+                            this.planeX[k8] =
+                                ((j5 << this.viewDistance) / this.clipNear) | 0;
+                            this.planeY[k8] =
+                                ((k6 << this.viewDistance) / this.clipNear) | 0;
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -1737,10 +2037,30 @@ class Scene {
                     }
                 }
 
-                this.generateScanlines(0, 0, 0, 0, k8, this.planeX, this.planeY, this.vertexShade, gameModel_2, l);
+                this.generateScanlines(
+                    0,
+                    0,
+                    0,
+                    0,
+                    k8,
+                    this.planeX,
+                    this.planeY,
+                    this.vertexShade,
+                    gameModel_2,
+                    l
+                );
 
                 if (this.maxY > this.minY) {
-                    this.rasterize(0, 0, l10, this.vertexX, this.vertexY, this.vertexZ, polygon.facefill, gameModel_2);
+                    this.rasterize(
+                        0,
+                        0,
+                        l10,
+                        this.vertexX,
+                        this.vertexY,
+                        this.vertexZ,
+                        polygon.facefill,
+                        gameModel_2
+                    );
                 }
             }
         }
@@ -1759,7 +2079,7 @@ class Scene {
             let l8 = ai2[0];
             let j10 = ai2[1];
             let j11 = ai2[2];
-            let j12 = (this.baseY + this.clipY) - 1;
+            let j12 = this.baseY + this.clipY - 1;
             let l12 = 0;
             let j13 = 0;
             let l13 = 0;
@@ -1768,8 +2088,8 @@ class Scene {
             let j15 = -COLOUR_TRANSPARENT;
 
             if (k3 !== k1) {
-                j13 = ((j7 - k4 << 8) / (k3 - k1)) | 0;
-                j14 = ((j11 - l8 << 8) / (k3 - k1)) | 0;
+                j13 = (((j7 - k4) << 8) / (k3 - k1)) | 0;
+                j14 = (((j11 - l8) << 8) / (k3 - k1)) | 0;
 
                 if (k1 < k3) {
                     l12 = k4 << 8;
@@ -1802,8 +2122,8 @@ class Scene {
             let j18 = -COLOUR_TRANSPARENT;
 
             if (k2 !== k1) {
-                j16 = ((l5 - k4 << 8) / (k2 - k1)) | 0;
-                j17 = ((j10 - l8 << 8) / (k2 - k1)) | 0;
+                j16 = (((l5 - k4) << 8) / (k2 - k1)) | 0;
+                j17 = (((j10 - l8) << 8) / (k2 - k1)) | 0;
 
                 if (k1 < k2) {
                     l15 = k4 << 8;
@@ -1836,8 +2156,8 @@ class Scene {
             let j21 = -COLOUR_TRANSPARENT;
 
             if (k3 !== k2) {
-                j19 = ((j7 - l5 << 8) / (k3 - k2)) | 0;
-                j20 = ((j11 - j10 << 8) / (k3 - k2)) | 0;
+                j19 = (((j7 - l5) << 8) / (k3 - k2)) | 0;
+                j20 = (((j11 - j10) << 8) / (k3 - k2)) | 0;
 
                 if (k2 < k3) {
                     l18 = l5 << 8;
@@ -1948,7 +2268,7 @@ class Scene {
             let k12 = ai2[1];
             let i13 = ai2[2];
             let k13 = ai2[3];
-            let i14 = (this.baseY + this.clipY) - 1;
+            let i14 = this.baseY + this.clipY - 1;
             let k14 = 0;
             let i15 = 0;
             let k15 = 0;
@@ -1957,8 +2277,8 @@ class Scene {
             let i17 = -COLOUR_TRANSPARENT;
 
             if (l4 !== l1) {
-                i15 = ((k10 - i6 << 8) / (l4 - l1)) | 0;
-                i16 = ((k13 - k11 << 8) / (l4 - l1)) | 0;
+                i15 = (((k10 - i6) << 8) / (l4 - l1)) | 0;
+                i16 = (((k13 - k11) << 8) / (l4 - l1)) | 0;
 
                 if (l1 < l4) {
                     k14 = i6 << 8;
@@ -1991,8 +2311,8 @@ class Scene {
             let i20 = -COLOUR_TRANSPARENT;
 
             if (l2 !== l1) {
-                i18 = ((k7 - i6 << 8) / (l2 - l1)) | 0;
-                i19 = ((k12 - k11 << 8) / (l2 - l1)) | 0;
+                i18 = (((k7 - i6) << 8) / (l2 - l1)) | 0;
+                i19 = (((k12 - k11) << 8) / (l2 - l1)) | 0;
 
                 if (l1 < l2) {
                     k17 = i6 << 8;
@@ -2025,8 +2345,8 @@ class Scene {
             let k22 = -COLOUR_TRANSPARENT;
 
             if (l3 !== l2) {
-                i21 = ((i9 - k7 << 8) / (l3 - l2)) | 0;
-                i22 = ((i13 - k12 << 8) / (l3 - l2)) | 0;
+                i21 = (((i9 - k7) << 8) / (l3 - l2)) | 0;
+                i22 = (((i13 - k12) << 8) / (l3 - l2)) | 0;
 
                 if (l2 < l3) {
                     k20 = k7 << 8;
@@ -2059,8 +2379,8 @@ class Scene {
             let i24 = -COLOUR_TRANSPARENT;
 
             if (l4 !== l3) {
-                i23 = ((k10 - i9 << 8) / (l4 - l3)) | 0;
-                k23 = ((k13 - i13 << 8) / (l4 - l3)) | 0;
+                i23 = (((k10 - i9) << 8) / (l4 - l3)) | 0;
+                k23 = (((k13 - i13) << 8) / (l4 - l3)) | 0;
 
                 if (l3 < l4) {
                     l22 = i9 << 8;
@@ -2199,7 +2519,7 @@ class Scene {
             }
 
             if (this.maxY >= this.baseY + this.clipY) {
-                this.maxY = (this.baseY + this.clipY) - 1;
+                this.maxY = this.baseY + this.clipY - 1;
             }
 
             if (this.minY >= this.maxY) {
@@ -2218,9 +2538,9 @@ class Scene {
 
             if (i3 < i4) {
                 let i5 = ai[0] << 8;
-                let j6 = ((ai[j2] - ai[0] << 8) / (i4 - i3)) | 0;
+                let j6 = (((ai[j2] - ai[0]) << 8) / (i4 - i3)) | 0;
                 let l7 = ai2[0] << 8;
-                let j9 = ((ai2[j2] - ai2[0] << 8) / (i4 - i3)) | 0;
+                let j9 = (((ai2[j2] - ai2[0]) << 8) / (i4 - i3)) | 0;
 
                 if (i3 < 0) {
                     i5 -= j6 * i3;
@@ -2241,9 +2561,9 @@ class Scene {
                 }
             } else if (i3 > i4) {
                 let j5 = ai[j2] << 8;
-                let k6 = ((ai[0] - ai[j2] << 8) / (i3 - i4)) | 0;
+                let k6 = (((ai[0] - ai[j2]) << 8) / (i3 - i4)) | 0;
                 let i8 = ai2[j2] << 8;
-                let k9 = ((ai2[0] - ai2[j2] << 8) / (i3 - i4)) | 0;
+                let k9 = (((ai2[0] - ai2[j2]) << 8) / (i3 - i4)) | 0;
 
                 if (i4 < 0) {
                     j5 -= k6 * i4;
@@ -2271,9 +2591,9 @@ class Scene {
 
                 if (j3 < j4) {
                     let l6 = ai[k] << 8;
-                    let j8 = ((ai[k5] - ai[k] << 8) / (j4 - j3)) | 0;
+                    let j8 = (((ai[k5] - ai[k]) << 8) / (j4 - j3)) | 0;
                     let l9 = ai2[k] << 8;
-                    let l10 = ((ai2[k5] - ai2[k] << 8) / (j4 - j3)) | 0;
+                    let l10 = (((ai2[k5] - ai2[k]) << 8) / (j4 - j3)) | 0;
 
                     if (j3 < 0) {
                         l6 -= j8 * j3;
@@ -2303,9 +2623,9 @@ class Scene {
                     }
                 } else if (j3 > j4) {
                     let i7 = ai[k5] << 8;
-                    let k8 = ((ai[k] - ai[k5] << 8) / (j3 - j4)) | 0;
+                    let k8 = (((ai[k] - ai[k5]) << 8) / (j3 - j4)) | 0;
                     let i10 = ai2[k5] << 8;
-                    let i11 = ((ai2[k] - ai2[k5] << 8) / (j3 - j4)) | 0;
+                    let i11 = (((ai2[k] - ai2[k5]) << 8) / (j3 - j4)) | 0;
 
                     if (j4 < 0) {
                         i7 -= k8 * j4;
@@ -2341,10 +2661,21 @@ class Scene {
             }
         }
 
-        if (this.mousePickingActive && this.mousePickedCount < this.mousePickedMax && this.mouseY >= this.minY && this.mouseY < this.maxY) {
+        if (
+            this.mousePickingActive &&
+            this.mousePickedCount < this.mousePickedMax &&
+            this.mouseY >= this.minY &&
+            this.mouseY < this.maxY
+        ) {
             let scanline_1 = this.scanlines[this.mouseY];
 
-            if (this.mouseX >= scanline_1.startX >> 8 && this.mouseX <= scanline_1.endX >> 8 && scanline_1.startX <= scanline_1.endX && !gameModel.unpickable && gameModel.isLocalPlayer[pid] === 0) {
+            if (
+                this.mouseX >= scanline_1.startX >> 8 &&
+                this.mouseX <= scanline_1.endX >> 8 &&
+                scanline_1.startX <= scanline_1.endX &&
+                !gameModel.unpickable &&
+                gameModel.isLocalPlayer[pid] === 0
+            ) {
                 this.mousePickedModels[this.mousePickedCount] = gameModel;
                 this.mousePickedFaces[this.mousePickedCount] = pid;
                 this.mousePickedCount++;
@@ -2376,15 +2707,17 @@ class Scene {
             let k8 = ai2[k] - j2;
 
             if (this.textureDimension[l] === 1) {
-                let l9 = i6 * k1 - j7 * i1 << 12;
-                let k10 = j7 * j2 - k8 * k1 << (5 - this.viewDistance) + 7 + 4;
-                let i11 = k8 * i1 - i6 * j2 << (5 - this.viewDistance) + 7;
-                let k11 = i3 * k1 - k3 * i1 << 12;
-                let i12 = k3 * j2 - i4 * k1 << (5 - this.viewDistance) + 7 + 4;
-                let k12 = i4 * i1 - i3 * j2 << (5 - this.viewDistance) + 7;
-                let i13 = k3 * i6 - i3 * j7 << 5;
-                let k13 = i4 * j7 - k3 * k8 << (5 - this.viewDistance) + 4;
-                let i14 = i3 * k8 - i4 * i6 >> this.viewDistance - 5;
+                let l9 = (i6 * k1 - j7 * i1) << 12;
+                let k10 =
+                    (j7 * j2 - k8 * k1) << (5 - this.viewDistance + 7 + 4);
+                let i11 = (k8 * i1 - i6 * j2) << (5 - this.viewDistance + 7);
+                let k11 = (i3 * k1 - k3 * i1) << 12;
+                let i12 =
+                    (k3 * j2 - i4 * k1) << (5 - this.viewDistance + 7 + 4);
+                let k12 = (i4 * i1 - i3 * j2) << (5 - this.viewDistance + 7);
+                let i13 = (k3 * i6 - i3 * j7) << 5;
+                let k13 = (i4 * j7 - k3 * k8) << (5 - this.viewDistance + 4);
+                let i14 = (i3 * k8 - i4 * i6) >> (this.viewDistance - 5);
                 let k14 = k10 >> 4;
                 let i15 = i12 >> 4;
                 let k15 = k13 >> 4;
@@ -2439,7 +2772,22 @@ class Scene {
                                 k20 = l17 - j;
                             }
 
-                            Scene.textureTranslucentScanline(this.raster, this.texturePixels[l], 0, 0, l9 + k14 * j, k11 + i15 * j, i13 + k15 * j, k10, i12, k13, k20, i17 + j, i22, k23 << 2);
+                            Scene.textureTranslucentScanline(
+                                this.raster,
+                                this.texturePixels[l],
+                                0,
+                                0,
+                                l9 + k14 * j,
+                                k11 + i15 * j,
+                                i13 + k15 * j,
+                                k10,
+                                i12,
+                                k13,
+                                k20,
+                                i17 + j,
+                                i22,
+                                k23 << 2
+                            );
 
                             l9 += i11;
                             k11 += k12;
@@ -2478,7 +2826,22 @@ class Scene {
                                 l20 = j18 - j;
                             }
 
-                            Scene.textureScanline(this.raster, this.texturePixels[l], 0, 0, l9 + k14 * j, k11 + i15 * j, i13 + k15 * j, k10, i12, k13, l20, i17 + j, j22, l23 << 2);
+                            Scene.textureScanline(
+                                this.raster,
+                                this.texturePixels[l],
+                                0,
+                                0,
+                                l9 + k14 * j,
+                                k11 + i15 * j,
+                                i13 + k15 * j,
+                                k10,
+                                i12,
+                                k13,
+                                l20,
+                                i17 + j,
+                                j22,
+                                l23 << 2
+                            );
 
                             l9 += i11;
                             k11 += k12;
@@ -2516,7 +2879,23 @@ class Scene {
                             i21 = l18 - j;
                         }
 
-                        Scene.textureBackTranslucentScanline(this.raster, 0, 0, 0, this.texturePixels[l], l9 + k14 * j, k11 + i15 * j, i13 + k15 * j, k10, i12, k13, i21, i17 + j, k22, i24);
+                        Scene.textureBackTranslucentScanline(
+                            this.raster,
+                            0,
+                            0,
+                            0,
+                            this.texturePixels[l],
+                            l9 + k14 * j,
+                            k11 + i15 * j,
+                            i13 + k15 * j,
+                            k10,
+                            i12,
+                            k13,
+                            i21,
+                            i17 + j,
+                            k22,
+                            i24
+                        );
 
                         l9 += i11;
                         k11 += k12;
@@ -2528,15 +2907,15 @@ class Scene {
                 return;
             }
 
-            let i10 = i6 * k1 - j7 * i1 << 11;
-            let l10 = j7 * j2 - k8 * k1 << (5 - this.viewDistance) + 6 + 4;
-            let j11 = k8 * i1 - i6 * j2 << (5 - this.viewDistance) + 6;
-            let l11 = i3 * k1 - k3 * i1 << 11;
-            let j12 = k3 * j2 - i4 * k1 << (5 - this.viewDistance) + 6 + 4;
-            let l12 = i4 * i1 - i3 * j2 << (5 - this.viewDistance) + 6;
-            let j13 = k3 * i6 - i3 * j7 << 5;
-            let l13 = i4 * j7 - k3 * k8 << (5 - this.viewDistance) + 4;
-            let j14 = i3 * k8 - i4 * i6 >> this.viewDistance - 5;
+            let i10 = (i6 * k1 - j7 * i1) << 11;
+            let l10 = (j7 * j2 - k8 * k1) << (5 - this.viewDistance + 6 + 4);
+            let j11 = (k8 * i1 - i6 * j2) << (5 - this.viewDistance + 6);
+            let l11 = (i3 * k1 - k3 * i1) << 11;
+            let j12 = (k3 * j2 - i4 * k1) << (5 - this.viewDistance + 6 + 4);
+            let l12 = (i4 * i1 - i3 * j2) << (5 - this.viewDistance + 6);
+            let j13 = (k3 * i6 - i3 * j7) << 5;
+            let l13 = (i4 * j7 - k3 * k8) << (5 - this.viewDistance + 4);
+            let j14 = (i3 * k8 - i4 * i6) >> (this.viewDistance - 5);
             let l14 = l10 >> 4;
             let j15 = j12 >> 4;
             let l15 = l13 >> 4;
@@ -2591,7 +2970,22 @@ class Scene {
                             j21 = j19 - j;
                         }
 
-                        Scene.textureTranslucentScanline2(this.raster, this.texturePixels[l], 0, 0, i10 + l14 * j, l11 + j15 * j, j13 + l15 * j, l10, j12, l13, j21, j17 + j, l22, j24);
+                        Scene.textureTranslucentScanline2(
+                            this.raster,
+                            this.texturePixels[l],
+                            0,
+                            0,
+                            i10 + l14 * j,
+                            l11 + j15 * j,
+                            j13 + l15 * j,
+                            l10,
+                            j12,
+                            l13,
+                            j21,
+                            j17 + j,
+                            l22,
+                            j24
+                        );
 
                         i10 += j11;
                         l11 += l12;
@@ -2629,7 +3023,22 @@ class Scene {
                             k21 = l19 - j;
                         }
 
-                        Scene.textureScanline2(this.raster, this.texturePixels[l], 0, 0, i10 + l14 * j, l11 + j15 * j, j13 + l15 * j, l10, j12, l13, k21, j17 + j, i23, k24);
+                        Scene.textureScanline2(
+                            this.raster,
+                            this.texturePixels[l],
+                            0,
+                            0,
+                            i10 + l14 * j,
+                            l11 + j15 * j,
+                            j13 + l15 * j,
+                            l10,
+                            j12,
+                            l13,
+                            k21,
+                            j17 + j,
+                            i23,
+                            k24
+                        );
 
                         i10 += j11;
                         l11 += l12;
@@ -2667,7 +3076,23 @@ class Scene {
                         l21 = j20 - j;
                     }
 
-                    Scene.textureBackTranslucentScanline2(this.raster, 0, 0, 0, this.texturePixels[l], i10 + l14 * j, l11 + j15 * j, j13 + l15 * j, l10, j12, l13, l21, j17 + j, j23, l24);
+                    Scene.textureBackTranslucentScanline2(
+                        this.raster,
+                        0,
+                        0,
+                        0,
+                        this.texturePixels[l],
+                        i10 + l14 * j,
+                        l11 + j15 * j,
+                        j13 + l15 * j,
+                        l10,
+                        j12,
+                        l13,
+                        l21,
+                        j17 + j,
+                        j23,
+                        l24
+                    );
 
                     i10 += j11;
                     l11 += l12;
@@ -2689,8 +3114,8 @@ class Scene {
                 let l1 = (Math.random() * this.rampCount) | 0;
                 this.gradientBase[l1] = l;
                 l = -1 - l;
-                let k2 = (l >> 10 & 0x1f) * 8;
-                let j3 = (l >> 5 & 0x1f) * 8;
+                let k2 = ((l >> 10) & 0x1f) * 8;
+                let j3 = ((l >> 5) & 0x1f) * 8;
                 let l3 = (l & 0x1f) * 8;
 
                 for (let j4 = 0; j4 < 256; j4++) {
@@ -2698,7 +3123,8 @@ class Scene {
                     let k7 = ((k2 * j6) / 0x10000) | 0;
                     let l8 = ((j3 * j6) / 0x10000) | 0;
                     let j10 = ((l3 * j6) / 0x10000) | 0;
-                    this.gradientRamps[l1][255 - j4] = (k7 << 16) + (l8 << 8) + j10;
+                    this.gradientRamps[l1][255 - j4] =
+                        (k7 << 16) + (l8 << 8) + j10;
                 }
 
                 this.anIntArray377 = this.gradientRamps[l1];
@@ -2743,7 +3169,15 @@ class Scene {
                         k6 = l4 - j;
                     }
 
-                    Scene.textureGradientScanline(this.raster, -k6, l2 + j, 0, this.anIntArray377, l7, i9);
+                    Scene.textureGradientScanline(
+                        this.raster,
+                        -k6,
+                        l2 + j,
+                        0,
+                        this.anIntArray377,
+                        l7,
+                        i9
+                    );
                     l2 += i2;
                 }
             }
@@ -2775,7 +3209,15 @@ class Scene {
                         l6 = j5 - j;
                     }
 
-                    Scene.gradientScanline(this.raster, -l6, l2 + j, 0, this.anIntArray377, i8, j9);
+                    Scene.gradientScanline(
+                        this.raster,
+                        -l6,
+                        l2 + j,
+                        0,
+                        this.anIntArray377,
+                        i8,
+                        j9
+                    );
                     l2 += i2;
                 }
             }
@@ -2806,7 +3248,15 @@ class Scene {
                     i7 = l5 - j;
                 }
 
-                Scene.gradientScanline2(this.raster, -i7, l2 + j, 0, this.anIntArray377, j8, k9);
+                Scene.gradientScanline2(
+                    this.raster,
+                    -i7,
+                    l2 + j,
+                    0,
+                    this.anIntArray377,
+                    j8,
+                    k9
+                );
                 l2 += i2;
             }
         }
@@ -2816,9 +3266,9 @@ class Scene {
         pitch &= 0x3ff;
         yaw &= 0x3ff;
         roll &= 0x3ff;
-        this.cameraYaw = 1024 - pitch & 0x3ff;
-        this.cameraPitch = 1024 - yaw & 0x3ff;
-        this.cameraRoll = 1024 - roll & 0x3ff;
+        this.cameraYaw = (1024 - pitch) & 0x3ff;
+        this.cameraPitch = (1024 - yaw) & 0x3ff;
+        this.cameraRoll = (1024 - roll) & 0x3ff;
 
         let l1 = 0;
         let i2 = 0;
@@ -2827,24 +3277,24 @@ class Scene {
         if (pitch !== 0) {
             let k2 = Scene.sinCosCache[pitch];
             let j3 = Scene.sinCosCache[pitch + 1024];
-            let i4 = i2 * j3 - j2 * k2 >> 15;
-            j2 = i2 * k2 + j2 * j3 >> 15;
+            let i4 = (i2 * j3 - j2 * k2) >> 15;
+            j2 = (i2 * k2 + j2 * j3) >> 15;
             i2 = i4;
         }
 
         if (yaw !== 0) {
             let l2 = Scene.sinCosCache[yaw];
             let k3 = Scene.sinCosCache[yaw + 1024];
-            let j4 = j2 * l2 + l1 * k3 >> 15;
-            j2 = j2 * k3 - l1 * l2 >> 15;
+            let j4 = (j2 * l2 + l1 * k3) >> 15;
+            j2 = (j2 * k3 - l1 * l2) >> 15;
             l1 = j4;
         }
 
         if (roll !== 0) {
             let i3 = Scene.sinCosCache[roll];
             let l3 = Scene.sinCosCache[roll + 1024];
-            let k4 = i2 * i3 + l1 * l3 >> 15;
-            i2 = i2 * l3 - l1 * i3 >> 15;
+            let k4 = (i2 * i3 + l1 * l3) >> 15;
+            i2 = (i2 * l3 - l1 * i3) >> 15;
             l1 = k4;
         }
 
@@ -2876,14 +3326,26 @@ class Scene {
         if (faceCameraNormalScale === -1) {
             faceCameraNormalScale = 0;
 
-            for (; t1 > 25000 || t2 > 25000 || t3 > 25000 || t1 < -25000 || t2 < -25000 || t3 < -25000; t3 >>= 1) {
+            for (
+                ;
+                t1 > 25000 ||
+                t2 > 25000 ||
+                t3 > 25000 ||
+                t1 < -25000 ||
+                t2 < -25000 ||
+                t3 < -25000;
+                t3 >>= 1
+            ) {
                 faceCameraNormalScale++;
                 t1 >>= 1;
                 t2 >>= 1;
             }
 
             gameModel.normalScale[face] = faceCameraNormalScale;
-            gameModel.normalMagnitude[face] = (this.normalMagnitude * Math.sqrt(t1 * t1 + t2 * t2 + t3 * t3)) | 0;
+            gameModel.normalMagnitude[face] =
+                (this.normalMagnitude *
+                    Math.sqrt(t1 * t1 + t2 * t2 + t3 * t3)) |
+                0;
         } else {
             t1 >>= faceCameraNormalScale;
             t2 >>= faceCameraNormalScale;
@@ -3045,7 +3507,10 @@ class Scene {
 
         for (let k4 = 0; k4 < k; k4++) {
             let i1 = ai[k4];
-            let i2 = (k2 - gameModel.projectVertexX[i1]) * j3 + (l2 - gameModel.projectVertexY[i1]) * k3 + (i3 - gameModel.projectVertexZ[i1]) * l3;
+            let i2 =
+                (k2 - gameModel.projectVertexX[i1]) * j3 +
+                (l2 - gameModel.projectVertexY[i1]) * k3 +
+                (i3 - gameModel.projectVertexZ[i1]) * l3;
 
             if ((i2 >= -i4 || j4 >= 0) && (i2 <= i4 || j4 <= 0)) {
                 continue;
@@ -3071,7 +3536,10 @@ class Scene {
 
         for (let l4 = 0; l4 < l; l4++) {
             let j1 = ai1[l4];
-            let j2 = (k2 - gameModel_1.projectVertexX[j1]) * j3 + (l2 - gameModel_1.projectVertexY[j1]) * k3 + (i3 - gameModel_1.projectVertexZ[j1]) * l3;
+            let j2 =
+                (k2 - gameModel_1.projectVertexX[j1]) * j3 +
+                (l2 - gameModel_1.projectVertexY[j1]) * k3 +
+                (i3 - gameModel_1.projectVertexZ[j1]) * l3;
 
             if ((j2 >= -i4 || j4 <= 0) && (j2 <= i4 || j4 >= 0)) {
                 continue;
@@ -3108,7 +3576,6 @@ class Scene {
                 ai2[j5] = gameModel.vertexViewX[i6];
                 ai3[j5] = gameModel.vertexViewY[i6];
             }
-
         }
 
         let ai4 = null;
@@ -3160,7 +3627,10 @@ class Scene {
 
         for (let i4 = 0; i4 < k; i4++) {
             let i1 = ai[i4];
-            let k1 = (i2 - gameModel.projectVertexX[i1]) * l2 + (j2 - gameModel.projectVertexY[i1]) * i3 + (k2 - gameModel.projectVertexZ[i1]) * j3;
+            let k1 =
+                (i2 - gameModel.projectVertexX[i1]) * l2 +
+                (j2 - gameModel.projectVertexY[i1]) * i3 +
+                (k2 - gameModel.projectVertexZ[i1]) * j3;
             if ((k1 >= -k3 || l3 >= 0) && (k1 <= k3 || l3 <= 0)) {
                 continue;
             }
@@ -3184,7 +3654,10 @@ class Scene {
 
         for (let j4 = 0; j4 < l; j4++) {
             let j1 = ai1[j4];
-            let l1 = (i2 - gameModel_1.projectVertexX[j1]) * l2 + (j2 - gameModel_1.projectVertexY[j1]) * i3 + (k2 - gameModel_1.projectVertexZ[j1]) * j3;
+            let l1 =
+                (i2 - gameModel_1.projectVertexX[j1]) * l2 +
+                (j2 - gameModel_1.projectVertexY[j1]) * i3 +
+                (k2 - gameModel_1.projectVertexZ[j1]) * j3;
 
             if ((l1 >= -k3 || l3 <= 0) && (l1 <= k3 || l3 >= 0)) {
                 continue;
@@ -3233,8 +3706,10 @@ class Scene {
     defineTexture(id, usedColours, colours, wide128) {
         this.textureColoursUsed[id] = usedColours;
         this.textureColourList[id] = colours;
-        this.textureDimension[id] = wide128; // is 1 if the this.texture is 128+ pixels wide, 0 if <128
-        this.textureLoadedNumber[id] = new Long(0); // as in the current loaded this.texture count when its loaded
+        // is 1 if the this.texture is 128+ pixels wide, 0 if <128
+        this.textureDimension[id] = wide128;
+        // as in the current loaded this.texture count when its loaded
+        this.textureLoadedNumber[id] = new Long(0);
         this.textureBackTransparent[id] = false;
         this.texturePixels[id] = null;
         this.prepareTexture(id);
@@ -3252,7 +3727,8 @@ class Scene {
             return;
         }
 
-        if (this.textureDimension[id] === 0) { // is 64 pixels wide
+        if (this.textureDimension[id] === 0) {
+            // is 64 pixels wide
             for (let j = 0; j < this.textureColours64.length; j++) {
                 if (this.textureColours64[j] === null) {
                     this.textureColours64[j] = new Int32Array(16384);
@@ -3262,11 +3738,17 @@ class Scene {
                 }
             }
 
-            let GIGALONG = new Long(1).shiftLeft(30); // almost as large as exemplar's nas storage
+            // almost as large as exemplar's nas storage
+            let GIGALONG = new Long(1).shiftLeft(30);
             let wut = 0;
 
             for (let k1 = 0; k1 < this.textureCount; k1++) {
-                if (k1 !== id && this.textureDimension[k1] === 0 && this.texturePixels[k1] !== null && this.textureLoadedNumber[k1].lessThan(GIGALONG)) {
+                if (
+                    k1 !== id &&
+                    this.textureDimension[k1] === 0 &&
+                    this.texturePixels[k1] !== null &&
+                    this.textureLoadedNumber[k1].lessThan(GIGALONG)
+                ) {
                     GIGALONG = this.textureLoadedNumber[k1];
                     wut = k1;
                 }
@@ -3288,11 +3770,17 @@ class Scene {
             }
         }
 
-        let GIGALONG = new Long(1).shiftLeft(30); // 1G 2G 3G... 4G?
+        // 1G 2G 3G... 4G?
+        let GIGALONG = new Long(1).shiftLeft(30);
         let wat = 0;
 
         for (let i2 = 0; i2 < this.textureCount; i2++) {
-            if (i2 !== id && this.textureDimension[i2] === 1 && this.texturePixels[i2] !== null && this.textureLoadedNumber[i2].lessThan(GIGALONG)) {
+            if (
+                i2 !== id &&
+                this.textureDimension[i2] === 1 &&
+                this.texturePixels[i2] !== null &&
+                this.textureLoadedNumber[i2].lessThan(GIGALONG)
+            ) {
                 GIGALONG = this.textureLoadedNumber[i2];
                 wat = i2;
             }
@@ -3317,7 +3805,9 @@ class Scene {
 
         for (let x = 0; x < textureWidth; x++) {
             for (let y = 0; y < textureWidth; y++) {
-                let colour = this.textureColourList[id][this.textureColoursUsed[id][y + x * textureWidth] & 0xff];
+                let colour = this.textureColourList[id][
+                    this.textureColoursUsed[id][y + x * textureWidth] & 0xff
+                ];
                 colour &= 0xf8f8ff;
 
                 if (colour === 0) {
@@ -3333,9 +3823,11 @@ class Scene {
 
         for (let i1 = 0; i1 < colourCount; i1++) {
             let colour = colours[i1]; // ??
-            colours[colourCount + i1] = colour - (colour >>> 3) & 0xf8f8ff;
-            colours[colourCount * 2 + i1] = colour - (colour >>> 2) & 0xf8f8ff;
-            colours[colourCount * 3 + i1] = colour - (colour >>> 2) - (colour >>> 3) & 0xf8f8ff;
+            colours[colourCount + i1] = (colour - (colour >>> 3)) & 0xf8f8ff;
+            colours[colourCount * 2 + i1] =
+                (colour - (colour >>> 2)) & 0xf8f8ff;
+            colours[colourCount * 3 + i1] =
+                (colour - (colour >>> 2) - (colour >>> 3)) & 0xf8f8ff;
         }
     }
 
@@ -3362,9 +3854,9 @@ class Scene {
 
         for (let i1 = 0; i1 < c; i1++) {
             let k1 = colours[i1];
-            colours[c + i1] = k1 - (k1 >>> 3) & 0xf8f8ff;
-            colours[c * 2 + i1] = k1 - (k1 >>> 2) & 0xf8f8ff;
-            colours[c * 3 + i1] = k1 - (k1 >>> 2) - (k1 >>> 3) & 0xf8f8ff;
+            colours[c + i1] = (k1 - (k1 >>> 3)) & 0xf8f8ff;
+            colours[c * 2 + i1] = (k1 - (k1 >>> 2)) & 0xf8f8ff;
+            colours[c * 3 + i1] = (k1 - (k1 >>> 2) - (k1 >>> 3)) & 0xf8f8ff;
         }
     }
 
@@ -3382,8 +3874,8 @@ class Scene {
         if (i < 0) {
             i = -(i + 1);
 
-            let j = i >> 10 & 0x1f;
-            let k = i >> 5 & 0x1f;
+            let j = (i >> 10) & 0x1f;
+            let k = (i >> 5) & 0x1f;
             let l = i & 0x1f;
 
             return (j << 19) + (k << 11) + (l << 3);
@@ -3414,10 +3906,10 @@ class Scene {
 
     setLight(...args) {
         switch (args.length) {
-        case 3:
-            return this._setLight_from3(...args);
-        case 5:
-            return this._setLight_from5(...args);
+            case 3:
+                return this._setLight_from3(...args);
+            case 5:
+                return this._setLight_from5(...args);
         }
     }
 
@@ -3430,7 +3922,7 @@ class Scene {
     }
 
     method307(i, j, k, l, flag) {
-        if (flag && i <= k || i < k) {
+        if ((flag && i <= k) || i < k) {
             if (i > l) {
                 return true;
             }
@@ -3462,7 +3954,7 @@ class Scene {
     }
 
     method308(i, j, k, flag) {
-        if (flag && i <= k || i < k) {
+        if ((flag && i <= k) || i < k) {
             if (j > k) {
                 return true;
             }
@@ -3482,10 +3974,10 @@ class Scene {
         let j = ai2.length;
         let byte0 = 0;
         let i20;
-        let k20 = i20 = ai1[0];
+        let k20 = (i20 = ai1[0]);
         let k = 0;
         let j20;
-        let l20 = j20 = ai3[0];
+        let l20 = (j20 = ai3[0]);
         let i1 = 0;
 
         for (let i21 = 1; i21 < i; i21++) {
@@ -3520,9 +4012,21 @@ class Scene {
 
         if (ai1[k] < ai3[i1]) {
             for (l = k; ai1[l] < ai3[i1]; l = (l + 1) % i);
-            for (; ai1[k] < ai3[i1]; k = ((k - 1) + i) % i);
-            let k1 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-            let k6 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+            for (; ai1[k] < ai3[i1]; k = (k - 1 + i) % i);
+            let k1 = this.method306(
+                ai[(k + 1) % i],
+                ai1[(k + 1) % i],
+                ai[k],
+                ai1[k],
+                ai3[i1]
+            );
+            let k6 = this.method306(
+                ai[(l - 1 + i) % i],
+                ai1[(l - 1 + i) % i],
+                ai[l],
+                ai1[l],
+                ai3[i1]
+            );
             let l10 = ai2[i1];
             flag = (k1 < l10) | (k6 < l10);
 
@@ -3531,17 +4035,29 @@ class Scene {
             }
 
             j1 = (i1 + 1) % j;
-            i1 = ((i1 - 1) + j) % j;
+            i1 = (i1 - 1 + j) % j;
 
             if (k === l) {
                 byte0 = 1;
             }
         } else {
             for (j1 = i1; ai3[j1] < ai1[k]; j1 = (j1 + 1) % j);
-            for (; ai3[i1] < ai1[k]; i1 = ((i1 - 1) + j) % j);
+            for (; ai3[i1] < ai1[k]; i1 = (i1 - 1 + j) % j);
             let l1 = ai[k];
-            let i11 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-            let l15 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+            let i11 = this.method306(
+                ai2[(i1 + 1) % j],
+                ai3[(i1 + 1) % j],
+                ai2[i1],
+                ai3[i1],
+                ai1[k]
+            );
+            let l15 = this.method306(
+                ai2[(j1 - 1 + j) % j],
+                ai3[(j1 - 1 + j) % j],
+                ai2[j1],
+                ai3[j1],
+                ai1[k]
+            );
             flag = (l1 < i11) | (l1 < l15);
 
             if (this.method308(i11, l15, l1, !flag)) {
@@ -3549,7 +4065,7 @@ class Scene {
             }
 
             l = (k + 1) % i;
-            k = ((k - 1) + i) % i;
+            k = (k - 1 + i) % i;
 
             if (i1 === j1) {
                 byte0 = 2;
@@ -3561,23 +4077,59 @@ class Scene {
                 if (ai1[k] < ai3[i1]) {
                     if (ai1[k] < ai3[j1]) {
                         let i2 = ai[k];
-                        let l6 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai1[k]);
-                        let j11 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-                        let i16 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+                        let l6 = this.method306(
+                            ai[(l - 1 + i) % i],
+                            ai1[(l - 1 + i) % i],
+                            ai[l],
+                            ai1[l],
+                            ai1[k]
+                        );
+                        let j11 = this.method306(
+                            ai2[(i1 + 1) % j],
+                            ai3[(i1 + 1) % j],
+                            ai2[i1],
+                            ai3[i1],
+                            ai1[k]
+                        );
+                        let i16 = this.method306(
+                            ai2[(j1 - 1 + j) % j],
+                            ai3[(j1 - 1 + j) % j],
+                            ai2[j1],
+                            ai3[j1],
+                            ai1[k]
+                        );
 
                         if (this.method307(i2, l6, j11, i16, flag)) {
                             return true;
                         }
 
-                        k = ((k - 1) + i) % i;
+                        k = (k - 1 + i) % i;
 
                         if (k === l) {
                             byte0 = 1;
                         }
                     } else {
-                        let j2 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                        let i7 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                        let k11 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                        let j2 = this.method306(
+                            ai[(k + 1) % i],
+                            ai1[(k + 1) % i],
+                            ai[k],
+                            ai1[k],
+                            ai3[j1]
+                        );
+                        let i7 = this.method306(
+                            ai[(l - 1 + i) % i],
+                            ai1[(l - 1 + i) % i],
+                            ai[l],
+                            ai1[l],
+                            ai3[j1]
+                        );
+                        let k11 = this.method306(
+                            ai2[(i1 + 1) % j],
+                            ai3[(i1 + 1) % j],
+                            ai2[i1],
+                            ai3[i1],
+                            ai3[j1]
+                        );
                         let j16 = ai2[j1];
 
                         if (this.method307(j2, i7, k11, j16, flag)) {
@@ -3591,24 +4143,60 @@ class Scene {
                         }
                     }
                 } else if (ai3[i1] < ai3[j1]) {
-                    let k2 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                    let j7 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                    let k2 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[i1]
+                    );
+                    let j7 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[i1]
+                    );
                     let l11 = ai2[i1];
-                    let k16 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai3[i1]);
+                    let k16 = this.method306(
+                        ai2[(j1 - 1 + j) % j],
+                        ai3[(j1 - 1 + j) % j],
+                        ai2[j1],
+                        ai3[j1],
+                        ai3[i1]
+                    );
 
                     if (this.method307(k2, j7, l11, k16, flag)) {
                         return true;
                     }
 
-                    i1 = ((i1 - 1) + j) % j;
+                    i1 = (i1 - 1 + j) % j;
 
                     if (i1 === j1) {
                         byte0 = 2;
                     }
                 } else {
-                    let l2 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                    let k7 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                    let i12 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                    let l2 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[j1]
+                    );
+                    let k7 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[j1]
+                    );
+                    let i12 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai3[j1]
+                    );
                     let l16 = ai2[j1];
 
                     if (this.method307(l2, k7, i12, l16, flag)) {
@@ -3623,10 +4211,28 @@ class Scene {
                 }
             } else if (ai1[l] < ai3[i1]) {
                 if (ai1[l] < ai3[j1]) {
-                    let i3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai1[l]);
+                    let i3 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai1[l]
+                    );
                     let l7 = ai[l];
-                    let j12 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[l]);
-                    let i17 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[l]);
+                    let j12 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai1[l]
+                    );
+                    let i17 = this.method306(
+                        ai2[(j1 - 1 + j) % j],
+                        ai3[(j1 - 1 + j) % j],
+                        ai2[j1],
+                        ai3[j1],
+                        ai1[l]
+                    );
 
                     if (this.method307(i3, l7, j12, i17, flag)) {
                         return true;
@@ -3638,9 +4244,27 @@ class Scene {
                         byte0 = 1;
                     }
                 } else {
-                    let j3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                    let i8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                    let k12 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                    let j3 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[j1]
+                    );
+                    let i8 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[j1]
+                    );
+                    let k12 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai3[j1]
+                    );
                     let j17 = ai2[j1];
 
                     if (this.method307(j3, i8, k12, j17, flag)) {
@@ -3654,24 +4278,60 @@ class Scene {
                     }
                 }
             } else if (ai3[i1] < ai3[j1]) {
-                let k3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                let j8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                let k3 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[i1]
+                );
+                let j8 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[i1]
+                );
                 let l12 = ai2[i1];
-                let k17 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai3[i1]);
+                let k17 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai3[i1]
+                );
 
                 if (this.method307(k3, j8, l12, k17, flag)) {
                     return true;
                 }
 
-                i1 = ((i1 - 1) + j) % j;
+                i1 = (i1 - 1 + j) % j;
 
                 if (i1 === j1) {
                     byte0 = 2;
                 }
             } else {
-                let l3 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                let k8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                let i13 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                let l3 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[j1]
+                );
+                let k8 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[j1]
+                );
+                let i13 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai3[j1]
+                );
                 let l17 = ai2[j1];
 
                 if (this.method307(l3, k8, i13, l17, flag)) {
@@ -3690,13 +4350,43 @@ class Scene {
             if (ai1[k] < ai3[i1]) {
                 if (ai1[k] < ai3[j1]) {
                     let i4 = ai[k];
-                    let j13 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-                    let i18 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+                    let j13 = this.method306(
+                        ai2[(i1 + 1) % j],
+                        ai3[(i1 + 1) % j],
+                        ai2[i1],
+                        ai3[i1],
+                        ai1[k]
+                    );
+                    let i18 = this.method306(
+                        ai2[(j1 - 1 + j) % j],
+                        ai3[(j1 - 1 + j) % j],
+                        ai2[j1],
+                        ai3[j1],
+                        ai1[k]
+                    );
                     return this.method308(j13, i18, i4, !flag);
                 }
-                let j4 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                let l8 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                let k13 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                let j4 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[j1]
+                );
+                let l8 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[j1]
+                );
+                let k13 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai3[j1]
+                );
                 let j18 = ai2[j1];
 
                 if (this.method307(j4, l8, k13, j18, flag)) {
@@ -3709,24 +4399,60 @@ class Scene {
                     byte0 = 0;
                 }
             } else if (ai3[i1] < ai3[j1]) {
-                let k4 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                let i9 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                let k4 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[i1]
+                );
+                let i9 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[i1]
+                );
                 let l13 = ai2[i1];
-                let k18 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai3[i1]);
+                let k18 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai3[i1]
+                );
 
                 if (this.method307(k4, i9, l13, k18, flag)) {
                     return true;
                 }
 
-                i1 = ((i1 - 1) + j) % j;
+                i1 = (i1 - 1 + j) % j;
 
                 if (i1 === j1) {
                     byte0 = 0;
                 }
             } else {
-                let l4 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[j1]);
-                let j9 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[j1]);
-                let i14 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai3[j1]);
+                let l4 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai3[j1]
+                );
+                let j9 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai3[j1]
+                );
+                let i14 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai3[j1]
+                );
                 let l18 = ai2[j1];
 
                 if (this.method307(l4, j9, i14, l18, flag)) {
@@ -3744,17 +4470,47 @@ class Scene {
         while (byte0 === 2) {
             if (ai3[i1] < ai1[k]) {
                 if (ai3[i1] < ai1[l]) {
-                    let i5 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-                    let k9 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+                    let i5 = this.method306(
+                        ai[(k + 1) % i],
+                        ai1[(k + 1) % i],
+                        ai[k],
+                        ai1[k],
+                        ai3[i1]
+                    );
+                    let k9 = this.method306(
+                        ai[(l - 1 + i) % i],
+                        ai1[(l - 1 + i) % i],
+                        ai[l],
+                        ai1[l],
+                        ai3[i1]
+                    );
                     let j14 = ai2[i1];
 
                     return this.method308(i5, k9, j14, flag);
                 }
 
-                let j5 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai1[l]);
+                let j5 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai1[l]
+                );
                 let l9 = ai[l];
-                let k14 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[l]);
-                let i19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[l]);
+                let k14 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai1[l]
+                );
+                let i19 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai1[l]
+                );
 
                 if (this.method307(j5, l9, k14, i19, flag)) {
                     return true;
@@ -3767,24 +4523,60 @@ class Scene {
                 }
             } else if (ai1[k] < ai1[l]) {
                 let k5 = ai[k];
-                let i10 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai1[k]);
-                let l14 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-                let j19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+                let i10 = this.method306(
+                    ai[(l - 1 + i) % i],
+                    ai1[(l - 1 + i) % i],
+                    ai[l],
+                    ai1[l],
+                    ai1[k]
+                );
+                let l14 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai1[k]
+                );
+                let j19 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai1[k]
+                );
 
                 if (this.method307(k5, i10, l14, j19, flag)) {
                     return true;
                 }
 
-                k = ((k - 1) + i) % i;
+                k = (k - 1 + i) % i;
 
                 if (k === l) {
                     byte0 = 0;
                 }
             } else {
-                let l5 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai1[l]);
+                let l5 = this.method306(
+                    ai[(k + 1) % i],
+                    ai1[(k + 1) % i],
+                    ai[k],
+                    ai1[k],
+                    ai1[l]
+                );
                 let j10 = ai[l];
-                let i15 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[l]);
-                let k19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[l]);
+                let i15 = this.method306(
+                    ai2[(i1 + 1) % j],
+                    ai3[(i1 + 1) % j],
+                    ai2[i1],
+                    ai3[i1],
+                    ai1[l]
+                );
+                let k19 = this.method306(
+                    ai2[(j1 - 1 + j) % j],
+                    ai3[(j1 - 1 + j) % j],
+                    ai2[j1],
+                    ai3[j1],
+                    ai1[l]
+                );
 
                 if (this.method307(l5, j10, i15, k19, flag)) {
                     return true;
@@ -3800,29 +4592,53 @@ class Scene {
 
         if (ai1[k] < ai3[i1]) {
             let i6 = ai[k];
-            let j15 = this.method306(ai2[(i1 + 1) % j], ai3[(i1 + 1) % j], ai2[i1], ai3[i1], ai1[k]);
-            let l19 = this.method306(ai2[((j1 - 1) + j) % j], ai3[((j1 - 1) + j) % j], ai2[j1], ai3[j1], ai1[k]);
+            let j15 = this.method306(
+                ai2[(i1 + 1) % j],
+                ai3[(i1 + 1) % j],
+                ai2[i1],
+                ai3[i1],
+                ai1[k]
+            );
+            let l19 = this.method306(
+                ai2[(j1 - 1 + j) % j],
+                ai3[(j1 - 1 + j) % j],
+                ai2[j1],
+                ai3[j1],
+                ai1[k]
+            );
 
             return this.method308(j15, l19, i6, !flag);
         }
 
-        let j6 = this.method306(ai[(k + 1) % i], ai1[(k + 1) % i], ai[k], ai1[k], ai3[i1]);
-        let k10 = this.method306(ai[((l - 1) + i) % i], ai1[((l - 1) + i) % i], ai[l], ai1[l], ai3[i1]);
+        let j6 = this.method306(
+            ai[(k + 1) % i],
+            ai1[(k + 1) % i],
+            ai[k],
+            ai1[k],
+            ai3[i1]
+        );
+        let k10 = this.method306(
+            ai[(l - 1 + i) % i],
+            ai1[(l - 1 + i) % i],
+            ai[l],
+            ai1[l],
+            ai3[i1]
+        );
         let k15 = ai2[i1];
 
         return this.method308(j6, k10, k15, flag);
     }
 }
 
-Scene.sinCosCache = new Int32Array(2048);
-Scene.frustumMaxX = 0;
-Scene.frustumMinX = 0;
-Scene.frustumMaxY = 0;
-Scene.frustumMinY = 0;
+Scene.aByteArray434 = null;
 Scene.frustumFarZ = 0;
+Scene.frustumMaxX = 0;
+Scene.frustumMaxY = 0;
+Scene.frustumMinX = 0;
+Scene.frustumMinY = 0;
 Scene.frustumNearZ = 0;
 Scene.sin512Cache = new Int32Array(512);
+Scene.sinCosCache = new Int32Array(2048);
 Scene.textureCountLoaded = new Long(0);
-Scene.aByteArray434 = null;
 
 module.exports = Scene;

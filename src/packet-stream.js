@@ -1,7 +1,7 @@
 const Long = require('long');
 
 function toCharArray(s) {
-    let a = new Uint16Array(s.length);
+    const a = new Uint16Array(s.length);
 
     for (let i = 0; i < s.length; i += 1) {
         a[i] = s.charCodeAt(i);
@@ -12,24 +12,23 @@ function toCharArray(s) {
 
 class PacketStream {
     constructor(socket) {
-        this.readTries = 0;
-        this.maxReadTries = 0;
-        this.packetStart = 0;
-        this.packetData = null;
+        this.socket = socket;
+
+        this.closed = false;
+        this.closing = false;
+        this.delay = 0;
         this.isaacIncoming = null;
         this.isaacOutgoing = null;
         this.length = 0;
-        this.socketException = false;
-        this.delay = 0;
-
-        this.packetEnd = 3;
+        this.maxReadTries = 0;
         this.packet8Check = 8;
+        this.packetData = null;
+        this.packetEnd = 3;
         this.packetMaxLength = 5000;
+        this.packetStart = 0;
+        this.readTries = 0;
+        this.socketException = false;
         this.socketExceptionMessage = '';
-
-        this.closing = false;
-        this.closed = false;
-        this.socket = socket;
     }
 
     // TODO toggle ISAAC
@@ -58,7 +57,8 @@ class PacketStream {
                 this.length = await this.readStream();
 
                 if (this.length >= 160) {
-                    this.length = (this.length - 160) * 256 + await this.readStream();
+                    this.length =
+                        (this.length - 160) * 256 + (await this.readStream());
                 }
             }
 
@@ -66,7 +66,7 @@ class PacketStream {
                 if (this.length >= 160) {
                     await this.readBytes(this.length, buff);
                 } else {
-                    buff[this.length - 1] = await this.readStream() & 0xff;
+                    buff[this.length - 1] = (await this.readStream()) & 0xff;
 
                     if (this.length > 1) {
                         await this.readBytes(this.length - 1, buff);
@@ -119,11 +119,12 @@ class PacketStream {
     sendPacket() {
         if (this.isaacOutgoing !== null) {
             let i = this.packetData[this.packetStart + 2] & 0xff;
-            this.packetData[this.packetStart + 2] = (i + this.isaacOutgoing.getNextValue()) & 0xff;
+            this.packetData[this.packetStart + 2] =
+                (i + this.isaacOutgoing.getNextValue()) & 0xff;
         }
 
         // what the fuck is this even for? legacy?
-        if (this.packet8Check !== 8)  {
+        if (this.packet8Check !== 8) {
             this.packetEnd++;
         }
 
@@ -131,11 +132,13 @@ class PacketStream {
 
         if (j >= 160) {
             this.packetData[this.packetStart] = (160 + ((j / 256) | 0)) & 0xff;
-            this.packetData[this.packetStart + 1] = (j & 0xff);
+            this.packetData[this.packetStart + 1] = j & 0xff;
         } else {
             this.packetData[this.packetStart] = j & 0xff;
             this.packetEnd--;
-            this.packetData[this.packetStart + 1] = this.packetData[this.packetEnd];
+            this.packetData[this.packetStart + 1] = this.packetData[
+                this.packetEnd
+            ];
         }
 
         // this seems largely useless and doesn't appear to do anything
@@ -186,7 +189,11 @@ class PacketStream {
         let l2 = await this.getShort();
         let l3 = await this.getShort();
 
-        return Long.fromInt(l).shiftLeft(48).add(Long.fromInt(l1).shiftLeft(32)).add(l2 << 16).add(l3);
+        return Long.fromInt(l)
+            .shiftLeft(48)
+            .add(Long.fromInt(l1).shiftLeft(32))
+            .add(l2 << 16)
+            .add(l3);
     }
 
     putShort(i) {
@@ -223,7 +230,7 @@ class PacketStream {
     }
 
     async getByte() {
-        return await this.readStream() & 0xff;
+        return (await this.readStream()) & 0xff;
     }
 
     flushPacket() {

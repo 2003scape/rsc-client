@@ -10,6 +10,9 @@ const keycodes = require('./lib/keycodes');
 const version = require('./version');
 const zzz = require('sleep-promise');
 
+const CHAR_MAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456' +
+    '789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
+
 class GameShell {
     constructor(canvas) {
         this._canvas = canvas;
@@ -79,10 +82,10 @@ class GameShell {
         this.appletWidth = width;
         this.appletHeight = height;
 
-        GameShell.gameFrame = this._canvas.getContext('2d');
-
-        this._canvas.addEventListener('mousedown', this.mousePressed.bind(this));
-        this._canvas.addEventListener('contextmenu', this.mousePressed.bind(this));
+        this._canvas.addEventListener('mousedown',
+            this.mousePressed.bind(this));
+        this._canvas.addEventListener('contextmenu',
+            this.mousePressed.bind(this));
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
         this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
         this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
@@ -109,10 +112,10 @@ class GameShell {
     keyPressed(e) {
         e.preventDefault();
 
-        let code = e.keyCode;
+        const code = e.keyCode;
         let chr = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
-        if ([8, 10, 13, 9].indexOf(code) > -1 ) {
+        if ([8, 10, 13, 9].indexOf(code) > -1) {
             chr = code;
         }
 
@@ -140,8 +143,8 @@ class GameShell {
 
         let foundText = false;
 
-        for (let i = 0; i < GameShell.charMap.length; i++) {
-            if (GameShell.charMap.charCodeAt(i) === chr) {
+        for (let i = 0; i < CHAR_MAP.length; i++) {
+            if (CHAR_MAP.charCodeAt(i) === chr) {
                 foundText = true;
                 break;
             }
@@ -164,11 +167,13 @@ class GameShell {
 
         if (code === keycodes.BACKSPACE) {
             if (this.inputTextCurrent.length > 0) {
-                this.inputTextCurrent = this.inputTextCurrent.substring(0, this.inputTextCurrent.length - 1);
+                this.inputTextCurrent = this.inputTextCurrent.substring(0,
+                    this.inputTextCurrent.length - 1);
             }
 
             if (this.inputPMCurrent.length > 0) {
-                this.inputPMCurrent = this.inputPMCurrent.substring(0, this.inputPMCurrent.length - 1);
+                this.inputPMCurrent = this.inputPMCurrent.substring(0,
+                    this.inputPMCurrent.length - 1);
             }
         }
 
@@ -178,7 +183,7 @@ class GameShell {
     keyReleased(e) {
         e.preventDefault();
 
-        let code = e.keyCode;
+        const code = e.keyCode;
 
         if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = false;
@@ -380,13 +385,14 @@ class GameShell {
         }
     }
 
-    update(g) {
-        this.paint(g);
+    update(graphics) {
+        this.paint(graphics);
     }
 
     paint() {
         if (this.loadingStep === 2 && this.imageLogo !== null) {
-            this.drawLoadingScreen(this.loadingProgressPercent, this.loadingProgessText);
+            this.drawLoadingScreen(this.loadingProgressPercent,
+                this.loadingProgessText);
         }
     }
 
@@ -394,40 +400,42 @@ class GameShell {
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);
 
-        let buff = await this.readDataFile('jagex.jag', 'Jagex library', 0);
+        const jagexJag = await this.readDataFile('jagex.jag', 'Jagex library',
+            0);
 
-        if (buff !== null) {
-            let logo = Utility.loadData('logo.tga', 0, buff);
-            this.imageLogo = this.createImage(logo);
+        if (jagexJag) {
+            const logoTga = Utility.loadData('logo.tga', 0, jagexJag);
+            this.imageLogo = this.createImage(logoTga);
         }
 
-        buff = await this.readDataFile(`fonts${version.FONTS}.jag`, 'Game fonts', 5);
+        const fontsJag = await this.readDataFile(`fonts${version.FONTS}.jag`,
+            'Game fonts', 5);
 
-        if (buff !== null) {
-            Surface.createFont(Utility.loadData('h11p.jf', 0, buff), 0);
-            Surface.createFont(Utility.loadData('h12b.jf', 0, buff), 1);
-            Surface.createFont(Utility.loadData('h12p.jf', 0, buff), 2);
-            Surface.createFont(Utility.loadData('h13b.jf', 0, buff), 3);
-            Surface.createFont(Utility.loadData('h14b.jf', 0, buff), 4);
-            Surface.createFont(Utility.loadData('h16b.jf', 0, buff), 5);
-            Surface.createFont(Utility.loadData('h20b.jf', 0, buff), 6);
-            Surface.createFont(Utility.loadData('h24b.jf', 0, buff), 7);
+        if (jagexJag !== null) {
+            Surface.createFont(Utility.loadData('h11p.jf', 0, fontsJag), 0);
+            Surface.createFont(Utility.loadData('h12b.jf', 0, fontsJag), 1);
+            Surface.createFont(Utility.loadData('h12p.jf', 0, fontsJag), 2);
+            Surface.createFont(Utility.loadData('h13b.jf', 0, fontsJag), 3);
+            Surface.createFont(Utility.loadData('h14b.jf', 0, fontsJag), 4);
+            Surface.createFont(Utility.loadData('h16b.jf', 0, fontsJag), 5);
+            Surface.createFont(Utility.loadData('h20b.jf', 0, fontsJag), 6);
+            Surface.createFont(Utility.loadData('h24b.jf', 0, fontsJag), 7);
         }
     }
 
     drawLoadingScreen(percent, text) {
-        let midX = ((this.appletWidth - 281) / 2) | 0;
-        let midY = ((this.appletHeight - 148) / 2) | 0;
+        let x = ((this.appletWidth - 281) / 2) | 0;
+        let y = ((this.appletHeight - 148) / 2) | 0;
 
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);
 
         if (!this.hasRefererLogoNotUsed) {
-            this.graphics.drawImage(this.imageLogo, midX, midY/*, this*/);
+            this.graphics.drawImage(this.imageLogo, x, y/*, this*/);
         }
 
-        midX += 2;
-        midY += 90;
+        x += 2;
+        y += 90;
 
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;
@@ -437,69 +445,77 @@ class GameShell {
             this.graphics.setColor(new Color(220, 0, 0));
         }
 
-        this.graphics.drawRect(midX - 2, midY - 2, 280, 23);
-        this.graphics.fillRect(midX, midY, ((277 * percent) / 100) | 0, 20);
+        this.graphics.drawRect(x - 2, y - 2, 280, 23);
+        this.graphics.fillRect(x, y, ((277 * percent) / 100) | 0, 20);
         this.graphics.setColor(new Color(198, 198, 198));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(255, 255, 255));
         }
 
-        this.drawString(this.graphics, text, this.fontTimesRoman15, midX + 138, midY + 10);
+        this.drawString(this.graphics, text, this.fontTimesRoman15, x + 138,
+            y + 10);
 
         if (!this.hasRefererLogoNotUsed) {
-            this.drawString(this.graphics, 'Created by JAGeX - visit www.jagex.com', this.fontHelvetica13b, midX + 138, midY + 30);
-            this.drawString(this.graphics, '\u00a92001-2002 Andrew Gower and Jagex Ltd', this.fontHelvetica13b, midX + 138, midY + 44);
+            this.drawString(this.graphics, 'Created by JAGeX - visit ' +
+                'www.jagex.com', this.fontHelvetica13b, x + 138, y + 30);
+            this.drawString(this.graphics, '\u00a92001-2002 Andrew Gower and ' +
+                'Jagex Ltd', this.fontHelvetica13b, x + 138, y + 44);
         } else {
             this.graphics.setColor(new Color(132, 132, 152));
-            this.drawString(this.graphics, '\u00a92001-2002 Andrew Gower and Jagex Ltd', this.fontHelvetica12, midX + 138, this.appletHeight - 20);
+            this.drawString(this.graphics,
+                '\u00a92001-2002 Andrew Gower and Jagex Ltd',
+                this.fontHelvetica12, x + 138, this.appletHeight - 20);
         }
 
-        // not sure where this would have been used. maybe to indicate a special client?
+        // not sure where this would have been used. maybe to indicate a
+        // special client?
         if (this.logoHeaderText !== null) {
             this.graphics.setColor(Color.white);
-            this.drawString(this.graphics, this.logoHeaderText, this.fontHelvetica13b, midX + 138, midY - 120);
+            this.drawString(this.graphics, this.logoHeaderText,
+                this.fontHelvetica13b, x + 138, y - 120);
         }
     }
 
-    showLoadingProgress(i, s) {
-        let j = ((this.appletWidth - 281) / 2) | 0;
-        let k = ((this.appletHeight - 148) / 2) | 0;
-        j += 2;
-        k += 90;
+    showLoadingProgress(percent, text) {
+        let x = ((this.appletWidth - 281) / 2) | 0;
+        let y = ((this.appletHeight - 148) / 2) | 0;
+        x += 2;
+        y += 90;
 
-        this.loadingProgressPercent = i;
-        this.loadingProgessText = s;
+        this.loadingProgressPercent = percent;
+        this.loadingProgessText = text;
 
-        let l = ((277 * i) / 100) | 0;
+        const progressWidth = ((277 * percent) / 100) | 0;
         this.graphics.setColor(new Color(132, 132, 132));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(220, 0, 0));
         }
 
-        this.graphics.fillRect(j, k, l, 20);
+        this.graphics.fillRect(x, y, progressWidth, 20);
         this.graphics.setColor(Color.black);
-        this.graphics.fillRect(j + l, k, 277 - l, 20);
+        this.graphics.fillRect(x + progressWidth, y, 277 - progressWidth, 20);
         this.graphics.setColor(new Color(198, 198, 198));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(255, 255, 255));
         }
 
-        this.drawString(this.graphics, s, this.fontTimesRoman15, j + 138, k + 10);
+        this.drawString(this.graphics, text, this.fontTimesRoman15,
+            x + 138, y + 10);
     }
 
-    drawString(g, s, font, i, j) {
-        g.setFont(font);
-        const { width, height } = g.ctx.measureText(s);
-        g.drawString(s, i - ((width / 2) | 0), j + ((height / 4) | 0));
+    drawString(graphics, string, font, x, y) {
+        graphics.setFont(font);
+        const { width, height } = graphics.ctx.measureText(string);
+        graphics.drawString(string, x - ((width / 2) | 0), y +
+            ((height / 4) | 0));
     }
 
-    createImage(buff) {
+    createImage(tgaBuffer) {
         const tgaImage = new TGA();
-
-        tgaImage.load(new Uint8Array(buff.buffer));
+        tgaImage.load(new Uint8Array(tgaBuffer.buffer));
 
         const canvas = tgaImage.getCanvas();
         const ctx = canvas.getContext('2d');
@@ -511,24 +527,22 @@ class GameShell {
     async readDataFile(file, description, percent) {
         file = './data204/' + file;
 
-        let archiveSize = 0;
-        let archiveSizeCompressed = 0;
-        let archiveData = null;
+        this.showLoadingProgress(percent, `Loading ${description} - 0%`);
 
-        this.showLoadingProgress(percent, 'Loading ' + description + ' - 0%');
+        const fileDownloadStream = Utility.openFile(file);
 
-        let fileDownloadStream = Utility.openFile(file);
-        let header = new Int8Array(6);
-
+        const header = new Int8Array(6);
         await fileDownloadStream.readFully(header, 0, 6);
 
-        archiveSize = ((header[0] & 0xff) << 16) + ((header[1] & 0xff) << 8) + (header[2] & 0xff);
-        archiveSizeCompressed = ((header[3] & 0xff) << 16) + ((header[4] & 0xff) << 8) + (header[5] & 0xff);
+        const archiveSize = ((header[0] & 0xff) << 16) +
+            ((header[1] & 0xff) << 8) + (header[2] & 0xff);
+        const archiveSizeCompressed = ((header[3] & 0xff) << 16) +
+            ((header[4] & 0xff) << 8) + (header[5] & 0xff);
 
-        this.showLoadingProgress(percent, 'Loading ' + description + ' - 5%');
+        this.showLoadingProgress(percent, `Loading ${description} - 5%`);
 
         let read = 0;
-        archiveData = new Int8Array(archiveSizeCompressed);
+        const archiveData = new Int8Array(archiveSizeCompressed);
 
         while (read < archiveSizeCompressed) {
             let length = archiveSizeCompressed - read;
@@ -539,18 +553,22 @@ class GameShell {
 
             await fileDownloadStream.readFully(archiveData, read, length);
             read += length;
-            this.showLoadingProgress(percent, 'Loading ' + description + ' - ' + ((5 + (read * 95) / archiveSizeCompressed) | 0) + '%');
+
+            this.showLoadingProgress(percent, `Loading ${description} - ` +
+                ((5 + (read * 95) / archiveSizeCompressed) | 0) + '%');
         }
 
-        this.showLoadingProgress(percent, 'Unpacking ' + description);
+        this.showLoadingProgress(percent, `Unpacking ${description}`);
 
         if (archiveSizeCompressed !== archiveSize) {
-            let decompressed = new Int8Array(archiveSize);
-            BZLib.decompress(decompressed, archiveSize, archiveData, archiveSizeCompressed, 0);
+            const decompressed = new Int8Array(archiveSize);
+            BZLib.decompress(decompressed, archiveSize, archiveData,
+                archiveSizeCompressed, 0);
+
             return decompressed;
-        } else {
-            return archiveData;
         }
+
+        return archiveData;
     }
 
     getGraphics() {
@@ -563,8 +581,5 @@ class GameShell {
         return socket;
     }
 }
-
-GameShell.gameFrame = null;
-GameShell.charMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
 
 module.exports = GameShell;

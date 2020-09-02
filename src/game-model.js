@@ -246,13 +246,18 @@ class GameModel {
         }
 
         for (let l2 = 0; l2 < k; l2++) {
-            gameModel.faceVertices[l2] = new Int32Array(gameModel.faceNumVertices[l2]);
+            gameModel.faceVertices[l2] = new Int32Array(
+                gameModel.faceNumVertices[l2]
+            );
 
             for (let i3 = 0; i3 < gameModel.faceNumVertices[l2]; i3++) {
                 if (j < 256) {
                     gameModel.faceVertices[l2][i3] = data[offset++] & 0xff;
                 } else {
-                    gameModel.faceVertices[l2][i3] = Utility.getUnsignedShort(data, offset);
+                    gameModel.faceVertices[l2][i3] = Utility.getUnsignedShort(
+                        data,
+                        offset
+                    );
                     offset += 2;
                 }
             }
@@ -291,7 +296,15 @@ class GameModel {
         return gameModel;
     }
 
-    static _from7(numVertices, numFaces, autocommit, isolated, unlit, unpickable, projected) {
+    static _from7(
+        numVertices,
+        numFaces,
+        autocommit,
+        isolated,
+        unlit,
+        unpickable,
+        projected
+    ) {
         let gameModel = new GameModel();
 
         gameModel.transformState = 1;
@@ -443,27 +456,50 @@ class GameModel {
                 let srcVs = source.faceVertices[srcF];
 
                 for (let v = 0; v < source.faceNumVertices[srcF]; v++) {
-                    dstVs[v] = this.vertexAt(source.vertexX[srcVs[v]], source.vertexY[srcVs[v]], source.vertexZ[srcVs[v]]);
+                    dstVs[v] = this.vertexAt(
+                        source.vertexX[srcVs[v]],
+                        source.vertexY[srcVs[v]],
+                        source.vertexZ[srcVs[v]]
+                    );
                 }
 
-                let dstF = this.createFace(source.faceNumVertices[srcF], dstVs, source.faceFillFront[srcF], source.faceFillBack[srcF]);
+                let dstF = this.createFace(
+                    source.faceNumVertices[srcF],
+                    dstVs,
+                    source.faceFillFront[srcF],
+                    source.faceFillBack[srcF]
+                );
                 this.faceIntensity[dstF] = source.faceIntensity[srcF];
                 this.normalScale[dstF] = source.normalScale[srcF];
                 this.normalMagnitude[dstF] = source.normalMagnitude[srcF];
 
                 if (transState) {
                     if (count > 1) {
-                        this.faceTransStateThing[dstF] = new Int32Array(source.faceTransStateThing[srcF].length + 1);
+                        this.faceTransStateThing[dstF] = new Int32Array(
+                            source.faceTransStateThing[srcF].length + 1
+                        );
                         this.faceTransStateThing[dstF][0] = i;
 
-                        for (let i2 = 0; i2 < source.faceTransStateThing[srcF].length; i2++) {
-                            this.faceTransStateThing[dstF][i2 + 1] = source.faceTransStateThing[srcF][i2];
+                        for (
+                            let i2 = 0;
+                            i2 < source.faceTransStateThing[srcF].length;
+                            i2++
+                        ) {
+                            this.faceTransStateThing[dstF][i2 + 1] =
+                                source.faceTransStateThing[srcF][i2];
                         }
                     } else {
-                        this.faceTransStateThing[dstF] = new Int32Array(source.faceTransStateThing[srcF].length);
+                        this.faceTransStateThing[dstF] = new Int32Array(
+                            source.faceTransStateThing[srcF].length
+                        );
 
-                        for (let j2 = 0; j2 < source.faceTransStateThing[srcF].length; j2++) {
-                            this.faceTransStateThing[dstF][j2] = source.faceTransStateThing[srcF][j2];
+                        for (
+                            let j2 = 0;
+                            j2 < source.faceTransStateThing[srcF].length;
+                            j2++
+                        ) {
+                            this.faceTransStateThing[dstF][j2] =
+                                source.faceTransStateThing[srcF][j2];
                         }
                     }
                 }
@@ -473,10 +509,13 @@ class GameModel {
         this.transformState = 1;
     }
 
-
     vertexAt(x, y, z) {
         for (let l = 0; l < this.numVertices; l++) {
-            if (this.vertexX[l] === x && this.vertexY[l] === y && this.vertexZ[l] === z) {
+            if (
+                this.vertexX[l] === x &&
+                this.vertexY[l] === y &&
+                this.vertexZ[l] === z
+            ) {
                 return l;
             }
         }
@@ -518,7 +557,16 @@ class GameModel {
         }
     }
 
-    split(unused1, unused2, pieceDx, pieceDz, rows, count, pieceMaxVertices, pickable) {
+    split(
+        unused1,
+        unused2,
+        pieceDx,
+        pieceDz,
+        rows,
+        count,
+        pieceMaxVertices,
+        pickable
+    ) {
         this.commit();
 
         let pieceNV = new Int32Array(count);
@@ -540,7 +588,9 @@ class GameModel {
                 sumZ += this.vertexZ[vs[i]];
             }
 
-            let p = ((sumX / (n * pieceDx)) | 0) + ((sumZ / (n * pieceDz)) | 0) * rows;
+            let p =
+                ((sumX / (n * pieceDx)) | 0) +
+                ((sumZ / (n * pieceDz)) | 0) * rows;
             pieceNV[p] += n;
             pieceNF[p]++;
         }
@@ -552,7 +602,17 @@ class GameModel {
                 pieceNV[i] = pieceMaxVertices;
             }
 
-            pieces.push(GameModel._from7(pieceNV[i], pieceNF[i], true, true, true, pickable, true));
+            pieces.push(
+                GameModel._from7(
+                    pieceNV[i],
+                    pieceNF[i],
+                    true,
+                    true,
+                    true,
+                    pickable,
+                    true
+                )
+            );
             pieces[i].lightDiffuse = this.lightDiffuse;
             pieces[i].lightAmbience = this.lightAmbience;
         }
@@ -568,7 +628,9 @@ class GameModel {
                 sumZ += this.vertexZ[vs[i]];
             }
 
-            let p = ((sumX / (n * pieceDx)) | 0) + ((sumZ / (n * pieceDz)) | 0) * rows;
+            let p =
+                ((sumX / (n * pieceDx)) | 0) +
+                ((sumZ / (n * pieceDz)) | 0) * rows;
             this.copyLighting(pieces[p], vs, n, f);
         }
 
@@ -583,12 +645,21 @@ class GameModel {
         let dstVs = new Int32Array(nV);
 
         for (let inV = 0; inV < nV; inV++) {
-            let outV = dstVs[inV] = model.vertexAt(this.vertexX[srcVs[inV]], this.vertexY[srcVs[inV]], this.vertexZ[srcVs[inV]]);
+            let outV = (dstVs[inV] = model.vertexAt(
+                this.vertexX[srcVs[inV]],
+                this.vertexY[srcVs[inV]],
+                this.vertexZ[srcVs[inV]]
+            ));
             model.vertexIntensity[outV] = this.vertexIntensity[srcVs[inV]];
             model.vertexAmbience[outV] = this.vertexAmbience[srcVs[inV]];
         }
 
-        let outF = model.createFace(nV, dstVs, this.faceFillFront[inF], this.faceFillBack[inF]);
+        let outF = model.createFace(
+            nV,
+            dstVs,
+            this.faceFillFront[inF],
+            this.faceFillBack[inF]
+        );
 
         if (!model.unpickable && !this.unpickable) {
             model.faceTag[outF] = this.faceTag[inF];
@@ -648,12 +719,12 @@ class GameModel {
 
     setLight(...args) {
         switch (args.length) {
-        case 6:
-            return this._setLight_from6(...args);
-        case 5:
-            return this._setLight_from5(...args);
-        case 3:
-            return this._setLight_from3(...args);
+            case 6:
+                return this._setLight_from6(...args);
+            case 5:
+                return this._setLight_from5(...args);
+            case 3:
+                return this._setLight_from3(...args);
         }
     }
 
@@ -662,9 +733,9 @@ class GameModel {
     }
 
     rotate(yaw, pitch, roll) {
-        this.orientationYaw = this.orientationYaw + yaw & 0xff;
-        this.orientationPitch = this.orientationPitch + pitch & 0xff;
-        this.orientationRoll = this.orientationRoll + roll & 0xff;
+        this.orientationYaw = (this.orientationYaw + yaw) & 0xff;
+        this.orientationPitch = (this.orientationPitch + pitch) & 0xff;
+        this.orientationRoll = (this.orientationRoll + roll) & 0xff;
         this.determineTransformKind();
         this.transformState = 1;
     }
@@ -694,11 +765,26 @@ class GameModel {
     }
 
     determineTransformKind() {
-        if (this.shearXy !== 256 || this.shearXz !== 256 || this.shearYx !== 256 || this.shearYz !== 256 || this.shearZx !== 256 || this.shearZy !== 256) {
+        if (
+            this.shearXy !== 256 ||
+            this.shearXz !== 256 ||
+            this.shearYx !== 256 ||
+            this.shearYz !== 256 ||
+            this.shearZx !== 256 ||
+            this.shearZy !== 256
+        ) {
             this.transformKind = 4;
-        } else if (this.scaleFx !== 256 || this.scaleFy !== 256 || this.scaleFz !== 256) {
+        } else if (
+            this.scaleFx !== 256 ||
+            this.scaleFy !== 256 ||
+            this.scaleFz !== 256
+        ) {
             this.transformKind = 3;
-        } else if (this.orientationYaw !== 0 || this.orientationPitch !== 0 || this.orientationRoll !== 0) {
+        } else if (
+            this.orientationYaw !== 0 ||
+            this.orientationPitch !== 0 ||
+            this.orientationRoll !== 0
+        ) {
             this.transformKind = 2;
         } else if (this.baseX !== 0 || this.baseY !== 0 || this.baseZ !== 0) {
             this.transformKind = 1;
@@ -720,27 +806,45 @@ class GameModel {
             if (pitch !== 0) {
                 let sin = GameModel.sine9[pitch];
                 let cos = GameModel.sine9[pitch + 256];
-                let x = this.vertexTransformedY[v] * sin + this.vertexTransformedX[v] * cos >> 15;
+                let x =
+                    (this.vertexTransformedY[v] * sin +
+                        this.vertexTransformedX[v] * cos) >>
+                    15;
 
-                this.vertexTransformedY[v] = this.vertexTransformedY[v] * cos - this.vertexTransformedX[v] * sin >> 15;
+                this.vertexTransformedY[v] =
+                    (this.vertexTransformedY[v] * cos -
+                        this.vertexTransformedX[v] * sin) >>
+                    15;
                 this.vertexTransformedX[v] = x;
             }
 
             if (yaw !== 0) {
                 let sin = GameModel.sine9[yaw];
                 let cos = GameModel.sine9[yaw + 256];
-                let y = this.vertexTransformedY[v] * cos - this.vertexTransformedZ[v] * sin >> 15;
+                let y =
+                    (this.vertexTransformedY[v] * cos -
+                        this.vertexTransformedZ[v] * sin) >>
+                    15;
 
-                this.vertexTransformedZ[v] = this.vertexTransformedY[v] * sin + this.vertexTransformedZ[v] * cos >> 15;
+                this.vertexTransformedZ[v] =
+                    (this.vertexTransformedY[v] * sin +
+                        this.vertexTransformedZ[v] * cos) >>
+                    15;
                 this.vertexTransformedY[v] = y;
             }
 
             if (roll !== 0) {
                 let sin = GameModel.sine9[roll];
                 let cos = GameModel.sine9[roll + 256];
-                let x = this.vertexTransformedZ[v] * sin + this.vertexTransformedX[v] * cos >> 15;
+                let x =
+                    (this.vertexTransformedZ[v] * sin +
+                        this.vertexTransformedX[v] * cos) >>
+                    15;
 
-                this.vertexTransformedZ[v] = this.vertexTransformedZ[v] * cos - this.vertexTransformedX[v] * sin >> 15;
+                this.vertexTransformedZ[v] =
+                    (this.vertexTransformedZ[v] * cos -
+                        this.vertexTransformedX[v] * sin) >>
+                    15;
                 this.vertexTransformedX[v] = x;
             }
         }
@@ -749,36 +853,42 @@ class GameModel {
     applyShear(xy, xz, yx, yz, zx, zy) {
         for (let idx = 0; idx < this.numVertices; idx++) {
             if (xy !== 0) {
-                this.vertexTransformedX[idx] += this.vertexTransformedY[idx] * xy >> 8;
+                this.vertexTransformedX[idx] +=
+                    (this.vertexTransformedY[idx] * xy) >> 8;
             }
 
             if (xz !== 0) {
-                this.vertexTransformedZ[idx] += this.vertexTransformedY[idx] * xz >> 8;
+                this.vertexTransformedZ[idx] +=
+                    (this.vertexTransformedY[idx] * xz) >> 8;
             }
 
             if (yx !== 0) {
-                this.vertexTransformedX[idx] += this.vertexTransformedZ[idx] * yx >> 8;
+                this.vertexTransformedX[idx] +=
+                    (this.vertexTransformedZ[idx] * yx) >> 8;
             }
 
             if (yz !== 0) {
-                this.vertexTransformedY[idx] += this.vertexTransformedZ[idx] * yz >> 8;
+                this.vertexTransformedY[idx] +=
+                    (this.vertexTransformedZ[idx] * yz) >> 8;
             }
 
             if (zx !== 0) {
-                this.vertexTransformedZ[idx] += this.vertexTransformedX[idx] * zx >> 8;
+                this.vertexTransformedZ[idx] +=
+                    (this.vertexTransformedX[idx] * zx) >> 8;
             }
 
             if (zy !== 0) {
-                this.vertexTransformedY[idx] += this.vertexTransformedX[idx] * zy >> 8;
+                this.vertexTransformedY[idx] +=
+                    (this.vertexTransformedX[idx] * zy) >> 8;
             }
         }
     }
 
     applyScale(fx, fy, fz) {
         for (let v = 0; v < this.numVertices; v++) {
-            this.vertexTransformedX[v] = this.vertexTransformedX[v] * fx >> 8;
-            this.vertexTransformedY[v] = this.vertexTransformedY[v] * fy >> 8;
-            this.vertexTransformedZ[v] = this.vertexTransformedZ[v] * fz >> 8;
+            this.vertexTransformedX[v] = (this.vertexTransformedX[v] * fx) >> 8;
+            this.vertexTransformedY[v] = (this.vertexTransformedY[v] * fy) >> 8;
+            this.vertexTransformedZ[v] = (this.vertexTransformedZ[v] * fz) >> 8;
         }
     }
 
@@ -791,11 +901,11 @@ class GameModel {
             let v = vs[0];
             let n = this.faceNumVertices[face];
             let x1 = 0;
-            let x2 = x1 = this.vertexTransformedX[v];
+            let x2 = (x1 = this.vertexTransformedX[v]);
             let y1 = 0;
-            let y2 = y1 = this.vertexTransformedY[v];
+            let y2 = (y1 = this.vertexTransformedY[v]);
             let z1 = 0;
-            let z2 = z1 = this.vertexTransformedZ[v];
+            let z2 = (z1 = this.vertexTransformedZ[v]);
 
             for (let i = 0; i < n; i++) {
                 v = vs[i];
@@ -871,11 +981,16 @@ class GameModel {
             return;
         }
 
-        let divisor = this.lightDiffuse * this.lightDirectionMagnitude >> 8;
+        let divisor = (this.lightDiffuse * this.lightDirectionMagnitude) >> 8;
 
         for (let face = 0; face < this.numFaces; face++) {
             if (this.faceIntensity[this.face] !== this.magic) {
-                this.faceIntensity[this.face] = ((this.faceNormalX[face] * this.lightDirectionX + this.faceNormalY[face] * this.lightDirectionY + this.faceNormalZ[face] * this.lightDirectionZ) / divisor) | 0;
+                this.faceIntensity[this.face] =
+                    ((this.faceNormalX[face] * this.lightDirectionX +
+                        this.faceNormalY[face] * this.lightDirectionY +
+                        this.faceNormalZ[face] * this.lightDirectionZ) /
+                        divisor) |
+                    0;
             }
         }
 
@@ -906,7 +1021,12 @@ class GameModel {
 
         for (let v = 0; v < this.numVertices; v++) {
             if (normalMagnitude[v] > 0) {
-                this.vertexIntensity[v] = ((normalX[v] * this.lightDirectionX + normalY[v] * this.lightDirectionY + normalZ[v] * this.lightDirectionZ) / (divisor * normalMagnitude[v])) | 0;
+                this.vertexIntensity[v] =
+                    ((normalX[v] * this.lightDirectionX +
+                        normalY[v] * this.lightDirectionY +
+                        normalZ[v] * this.lightDirectionZ) /
+                        (divisor * normalMagnitude[v])) |
+                    0;
             }
         }
     }
@@ -933,12 +1053,24 @@ class GameModel {
             let normY = bZ * cX - cZ * bX;
             let normZ;
 
-            for (normZ = bX * cY - cX * bY; normX > 8192 || normY > 8192 || normZ > 8192 || normX < -8192 || normY < -8192 || normZ < -8192; normZ >>= 1) {
+            for (
+                normZ = bX * cY - cX * bY;
+                normX > 8192 ||
+                normY > 8192 ||
+                normZ > 8192 ||
+                normX < -8192 ||
+                normY < -8192 ||
+                normZ < -8192;
+                normZ >>= 1
+            ) {
                 normX >>= 1;
                 normY >>= 1;
             }
 
-            let normMag = (256 * Math.sqrt(normX * normX + normY * normY + normZ * normZ)) | 0;
+            let normMag =
+                (256 *
+                    Math.sqrt(normX * normX + normY * normY + normZ * normZ)) |
+                0;
 
             if (normMag <= 0) {
                 normMag = 1;
@@ -979,7 +1111,11 @@ class GameModel {
             }
 
             if (this.transformKind >= 2) {
-                this.applyRotation(this.orientationYaw, this.orientationPitch, this.orientationRoll);
+                this.applyRotation(
+                    this.orientationYaw,
+                    this.orientationPitch,
+                    this.orientationRoll
+                );
             }
 
             if (this.transformKind >= 3) {
@@ -987,7 +1123,14 @@ class GameModel {
             }
 
             if (this.transformKind >= 4) {
-                this.applyShear(this.shearXy, this.shearXz, this.shearYx, this.shearYz, this.shearZx, this.shearZy);
+                this.applyShear(
+                    this.shearXy,
+                    this.shearXz,
+                    this.shearYx,
+                    this.shearYz,
+                    this.shearZx,
+                    this.shearZy
+                );
             }
 
             if (this.transformKind >= 1) {
@@ -999,10 +1142,26 @@ class GameModel {
         }
     }
 
-    project(cameraX, cameraY, cameraZ, cameraPitch, cameraRoll, cameraYaw, viewDist, clipNear) {
+    project(
+        cameraX,
+        cameraY,
+        cameraZ,
+        cameraPitch,
+        cameraRoll,
+        cameraYaw,
+        viewDist,
+        clipNear
+    ) {
         this.apply();
 
-        if (this.z1 > Scene.frustumNearZ || this.z2 < Scene.frustumFarZ || this.x1 > Scene.frustumMinX || this.x2 < Scene.frustumMaxX || this.y1 > Scene.frustumMinY || this.y2 < Scene.frustumMaxY) {
+        if (
+            this.z1 > Scene.frustumNearZ ||
+            this.z2 < Scene.frustumFarZ ||
+            this.x1 > Scene.frustumMinX ||
+            this.x2 < Scene.frustumMaxX ||
+            this.y1 > Scene.frustumMinY ||
+            this.y2 < Scene.frustumMaxY
+        ) {
             this.visible = false;
             return;
         }
@@ -1037,20 +1196,20 @@ class GameModel {
             let z = this.vertexTransformedZ[v] - cameraZ;
 
             if (cameraYaw !== 0) {
-                let X = y * yawSin + x * yawCos >> 15;
-                y = y * yawCos - x * yawSin >> 15;
+                let X = (y * yawSin + x * yawCos) >> 15;
+                y = (y * yawCos - x * yawSin) >> 15;
                 x = X;
             }
 
             if (cameraRoll !== 0) {
-                let X = z * rollSin + x * rollCos >> 15;
-                z = z * rollCos - x * rollSin >> 15;
+                let X = (z * rollSin + x * rollCos) >> 15;
+                z = (z * rollCos - x * rollSin) >> 15;
                 x = X;
             }
 
             if (cameraPitch !== 0) {
-                let Y = y * pitchCos - z * pitchSin >> 15;
-                z = y * pitchSin + z * pitchCos >> 15;
+                let Y = (y * pitchCos - z * pitchSin) >> 15;
+                z = (y * pitchSin + z * pitchCos) >> 15;
                 y = Y;
             }
 
@@ -1088,7 +1247,6 @@ class GameModel {
         this.transformKind = 0;
     }
 
-    // TODO see if we have to call .slice() anywhere here
     copy(...args) {
         if (!args || !args.length) {
             let pieces = [this];
@@ -1102,7 +1260,14 @@ class GameModel {
         const [autocommit, isolated, unlit, pickable] = args;
 
         let pieces = [this];
-        let gameModel = GameModel._from6(pieces, 1, autocommit, isolated, unlit, pickable);
+        let gameModel = GameModel._from6(
+            pieces,
+            1,
+            autocommit,
+            isolated,
+            unlit,
+            pickable
+        );
         gameModel.depth = this.depth;
 
         return gameModel;
@@ -1120,12 +1285,16 @@ class GameModel {
     }
 
     readBase64(buff) {
-        for (; buff[this.dataPtr] === 10 || buff[this.dataPtr] === 13; this.dataPtr++) ;
+        for (
+            ;
+            buff[this.dataPtr] === 10 || buff[this.dataPtr] === 13;
+            this.dataPtr++
+        );
 
         let hi = GameModel.base64Alphabet[buff[this.dataPtr++] & 0xff];
         let mid = GameModel.base64Alphabet[buff[this.dataPtr++] & 0xff];
         let lo = GameModel.base64Alphabet[buff[this.dataPtr++] & 0xff];
-        let val = ((hi * 4096 + mid * 64 + lo) - 0x20000) | 0;
+        let val = (hi * 4096 + mid * 64 + lo - 0x20000) | 0;
 
         if (val === 123456) {
             val = this.magic;

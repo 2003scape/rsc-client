@@ -1,18 +1,11 @@
-const components = [
-    require('./combat-style'),
-    require('./inventory-tab'),
-    require('./magic-tab'),
-    require('./minimap-tab'),
-    require('./options-tab'),
-    require('./player-info-tab'),
-    require('./report-dialog'),
-    require('./social-dialog'),
-    require('./social-tab'),
-    require('./wilderness-dialog')
-];
+const bulk = require('bulk-require');
 
 function applyUI(mudclient) {
-    for (const component of components) {
+    const components = bulk(__dirname, ['*.js']);
+
+    for (const componentName of Object.keys(components)) {
+        const component = components[componentName];
+
         for (const propertyName of Object.keys(component)) {
             let member = component[propertyName];
 

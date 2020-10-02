@@ -11738,7 +11738,9 @@ const serverOpcodes = require('./opcodes/server');
 const sleep = require('sleep-promise');
 
 function fromCharArray(a) {
-    return Array.from(a).map(c => String.fromCharCode(c)).join('');
+    return Array.from(a)
+        .map((c) => String.fromCharCode(c))
+        .join('');
 }
 
 class GameConnection extends GameShell {
@@ -11757,7 +11759,7 @@ class GameConnection extends GameShell {
         this.moderatorLevel = 0;
         this.autoLoginTImeout = 0;
         this.packetLastRead = 0;
-        this.anInt630 = 0;
+        this.messageIndex = 0;
 
         this.server = '127.0.0.1';
         this.port = 43594;
@@ -11779,16 +11781,22 @@ class GameConnection extends GameShell {
             this.ignoreList.push(new Long(0));
         }
 
-        this.anIntArray629 = new Int32Array(GameConnection.maxSocialListSize);
+        this.messageTokens = new Int32Array(GameConnection.maxSocialListSize);
     }
 
     async login(username, password, reconnecting) {
         if (this.worldFullTimeout > 0) {
-            this.showLoginScreenStatus('Please wait...',
-                'Connecting to server');
+            this.showLoginScreenStatus(
+                'Please wait...',
+                'Connecting to server'
+            );
+
             await sleep(2000);
-            this.showLoginScreenStatus('Sorry! The server is currently full.',
-                'Please try again later');
+
+            this.showLoginScreenStatus(
+                'Sorry! The server is currently full.',
+                'Please try again later'
+            );
             return;
         }
 
@@ -11800,36 +11808,47 @@ class GameConnection extends GameShell {
             password = Utility.formatAuthString(password, 20);
 
             if (username.trim().length === 0) {
-                this.showLoginScreenStatus('You must enter both a username',
-                    'and a password - Please try again');
+                this.showLoginScreenStatus(
+                    'You must enter both a username',
+                    'and a password - Please try again'
+                );
                 return;
             }
 
             if (reconnecting) {
-                this.drawTextBox('Connection lost! Please wait...',
-                    'Attempting to re-establish');
+                this.drawTextBox(
+                    'Connection lost! Please wait...',
+                    'Attempting to re-establish'
+                );
             } else {
-                this.showLoginScreenStatus('Please wait...',
-                    'Connecting to server');
+                this.showLoginScreenStatus(
+                    'Please wait...',
+                    'Connecting to server'
+                );
             }
 
             this.packetStream = new PacketStream(
-                await this.createSocket(this.server, this.port), this);
+                await this.createSocket(this.server, this.port),
+                this
+            );
             this.packetStream.maxReadTries = GameConnection.maxReadTries;
 
             const encodedUsername = Utility.usernameToHash(username);
 
             this.packetStream.newPacket(clientOpcodes.SESSION);
             this.packetStream.putByte(
-                encodedUsername.shiftRight(16).and(31).toInt());
+                encodedUsername.shiftRight(16).and(31).toInt()
+            );
             this.packetStream.flushPacket();
 
             const sessionID = await this.packetStream.getLong();
             this.sessionID = sessionID;
 
             if (sessionID.equals(0)) {
-                this.showLoginScreenStatus('Login server offline.',
-                    'Please try again in a few mins');
+                this.showLoginScreenStatus(
+                    'Login server offline.',
+                    'Please try again in a few mins'
+                );
                 return;
             }
 
@@ -11890,88 +11909,127 @@ class GameConnection extends GameShell {
             }
 
             switch (response) {
-            case -1:
-                this.showLoginScreenStatus('Error unable to login.',
-                    'Server timed out');
-                return;
-            case 3:
-                this.showLoginScreenStatus('Invalid username or password.',
-                    'Try again, or create a new account');
-                return;
-            case 4:
-                this.showLoginScreenStatus('That username is already logged ' +
-                    'in.', 'Wait 60 seconds then retry');
-                return;
-            case 5:
-                this.showLoginScreenStatus('The client has been updated.',
-                    'Please reload this page');
-                return;
-            case 6:
-                this.showLoginScreenStatus('You may only use 1 character at ' +
-                    'once.', 'Your ip-address is already in use');
-                return;
-            case 7:
-                this.showLoginScreenStatus('Login attempts exceeded!',
-                    'Please try again in 5 minutes');
-                return;
-            case 8:
-                this.showLoginScreenStatus('Error unable to login.',
-                    'Server rejected session');
-                return;
-            case 9:
-                this.showLoginScreenStatus('Error unable to login.',
-                    'Loginserver rejected session');
-                return;
-            case 10:
-                this.showLoginScreenStatus('That username is already in use.',
-                    'Wait 60 seconds then retry');
-                return;
-            case 11:
-                this.showLoginScreenStatus('Account temporarily disabled.',
-                    'Check your message inbox for details');
-                return;
-            case 12:
-                this.showLoginScreenStatus('Account permanently disabled.',
-                    'Check your message inbox for details');
-                return;
-            case 14:
-                this.showLoginScreenStatus('Sorry! This world is currently ' +
-                    'full.', 'Please try a different world');
-                this.worldFullTimeout = 1500;
-                return;
-            case 15:
-                this.showLoginScreenStatus('You need a members account',
-                    'to login to this world');
-                return;
-            case 16:
-                this.showLoginScreenStatus('Error - no reply from loginserver.',
-                    'Please try again');
-                return;
-            case 17:
-                this.showLoginScreenStatus('Error - failed to decode profile.',
-                    'Contact customer support');
-                return;
-            case 18:
-                this.showLoginScreenStatus('Account suspected stolen.',
-                    'Press \'recover a locked account\' on front page.');
-                return;
-            case 20:
-                this.showLoginScreenStatus('Error - loginserver mismatch',
-                    'Please try a different world');
-                return;
-            case 21:
-                this.showLoginScreenStatus('Unable to login.',
-                    'That is not an RS-Classic account');
-                return;
-
-            case 22:
-                this.showLoginScreenStatus('Password suspected stolen.',
-                    'Press \'change your password\' on front page.');
-                return;
-            default:
-                this.showLoginScreenStatus('Error unable to login.',
-                    'Unrecognised response code');
-                return;
+                case -1:
+                    this.showLoginScreenStatus(
+                        'Error unable to login.',
+                        'Server timed out'
+                    );
+                    return;
+                case 3:
+                    this.showLoginScreenStatus(
+                        'Invalid username or password.',
+                        'Try again, or create a new account'
+                    );
+                    return;
+                case 4:
+                    this.showLoginScreenStatus(
+                        'That username is already logged in.',
+                        'Wait 60 seconds then retry'
+                    );
+                    return;
+                case 5:
+                    this.showLoginScreenStatus(
+                        'The client has been updated.',
+                        'Please reload this page'
+                    );
+                    return;
+                case 6:
+                    this.showLoginScreenStatus(
+                        'You may only use 1 character at once.',
+                        'Your ip-address is already in use'
+                    );
+                    return;
+                case 7:
+                    this.showLoginScreenStatus(
+                        'Login attempts exceeded!',
+                        'Please try again in 5 minutes'
+                    );
+                    return;
+                case 8:
+                    this.showLoginScreenStatus(
+                        'Error unable to login.',
+                        'Server rejected session'
+                    );
+                    return;
+                case 9:
+                    this.showLoginScreenStatus(
+                        'Error unable to login.',
+                        'Loginserver rejected session'
+                    );
+                    return;
+                case 10:
+                    this.showLoginScreenStatus(
+                        'That username is already in use.',
+                        'Wait 60 seconds then retry'
+                    );
+                    return;
+                case 11:
+                    this.showLoginScreenStatus(
+                        'Account temporarily disabled.',
+                        'Check your message inbox for details'
+                    );
+                    return;
+                case 12:
+                    this.showLoginScreenStatus(
+                        'Account permanently disabled.',
+                        'Check your message inbox for details'
+                    );
+                    return;
+                case 14:
+                    this.showLoginScreenStatus(
+                        'Sorry! This world is currently full.',
+                        'Please try a different world'
+                    );
+                    this.worldFullTimeout = 1500;
+                    return;
+                case 15:
+                    this.showLoginScreenStatus(
+                        'You need a members account',
+                        'to login to this world'
+                    );
+                    return;
+                case 16:
+                    this.showLoginScreenStatus(
+                        'Error - no reply from loginserver.',
+                        'Please try again'
+                    );
+                    return;
+                case 17:
+                    this.showLoginScreenStatus(
+                        'Error - failed to decode profile.',
+                        'Contact customer support'
+                    );
+                    return;
+                case 18:
+                    this.showLoginScreenStatus(
+                        'Account suspected stolen.',
+                        "Press 'recover a locked account' on front page."
+                    );
+                    return;
+                case 20:
+                    this.showLoginScreenStatus(
+                        'Error - loginserver mismatch',
+                        'Please try a different world'
+                    );
+                    return;
+                case 21:
+                    this.showLoginScreenStatus(
+                        'Unable to login.',
+                        'That is not an RS-Classic account'
+                    );
+                    return;
+                case 22:
+                    this.showLoginScreenStatus(
+                        'Password suspected stolen.',
+                        "Press 'change your password' on front page."
+                    );
+                    return;
+                default:
+                    this.showLoginScreenStatus(
+                        'Error unable to login.',
+                        'Unrecognised response code'
+                    );
+                    return;
             }
         } catch (e) {
             console.error(e);
@@ -11988,8 +12046,10 @@ class GameConnection extends GameShell {
             this.password = '';
             this.resetLoginVars();
         } else {
-            this.showLoginScreenStatus('Sorry! Unable to connect.',
-                'Check internet settings or try another world');
+            this.showLoginScreenStatus(
+                'Sorry! Unable to connect.',
+                'Check internet settings or try another world'
+            );
         }
     }
 
@@ -12027,16 +12087,34 @@ class GameConnection extends GameShell {
         const height = 344;
 
         graphics.setColor(Color.black);
-        graphics.fillRect(((width / 2) | 0) - 140, ((height / 2) | 0) - 25, 280,
-            50);
+        graphics.fillRect(
+            ((width / 2) | 0) - 140,
+            ((height / 2) | 0) - 25,
+            280,
+            50
+        );
         graphics.setColor(Color.white);
-        graphics.drawRect(((width / 2) | 0) - 140, ((height / 2) | 0) - 25, 280,
-            50);
+        graphics.drawRect(
+            ((width / 2) | 0) - 140,
+            ((height / 2) | 0) - 25,
+            280,
+            50
+        );
 
-        this.drawString(graphics, s, font, (width / 2) | 0,
-            ((height / 2) | 0) - 10);
-        this.drawString(graphics, s1, font, (width / 2) | 0,
-            ((height / 2) | 0) + 10);
+        this.drawString(
+            graphics,
+            s,
+            font,
+            (width / 2) | 0,
+            ((height / 2) | 0) - 10
+        );
+        this.drawString(
+            graphics,
+            s1,
+            font,
+            (width / 2) | 0,
+            ((height / 2) | 0) + 10
+        );
     }
 
     async checkConnection() {
@@ -12062,7 +12140,9 @@ class GameConnection extends GameShell {
         let psize = await this.packetStream.readPacket(this.incomingPacket);
 
         if (psize > 0) {
-            let ptype = this.packetStream.isaacCommand(this.incomingPacket[0] & 0xff);
+            let ptype = this.packetStream.isaacCommand(
+                this.incomingPacket[0] & 0xff
+            );
             this.handlePacket(ptype, ptype, psize);
         }
     }
@@ -12071,8 +12151,8 @@ class GameConnection extends GameShell {
         console.log('opcode:' + opcode + ' psize:' + psize);
 
         if (opcode === serverOpcodes.MESSAGE) {
-            let s = fromCharArray(this.incomingPacket.slice(1, psize));
-            this.showServerMessage(s);
+            const message = fromCharArray(this.incomingPacket.slice(1, psize));
+            this.showServerMessage(message);
         }
 
         if (opcode === serverOpcodes.CLOSE_CONNECTION) {
@@ -12085,50 +12165,73 @@ class GameConnection extends GameShell {
         }
 
         if (opcode === serverOpcodes.FRIEND_LIST) {
-            this.friendListCount = Utility.getUnsignedByte(this.incomingPacket[1]);
+            this.friendListCount = Utility.getUnsignedByte(
+                this.incomingPacket[1]
+            );
 
-            for (let k = 0; k < this.friendListCount; k++) {
-                this.friendListHashes[k] = Utility.getUnsignedLong(this.incomingPacket, 2 + k * 9);
-                this.friendListOnline[k] = Utility.getUnsignedByte(this.incomingPacket[10 + k * 9]);
+            for (let i = 0; i < this.friendListCount; i++) {
+                this.friendListHashes[i] = Utility.getUnsignedLong(
+                    this.incomingPacket,
+                    2 + i * 9
+                );
+                this.friendListOnline[i] = Utility.getUnsignedByte(
+                    this.incomingPacket[10 + i * 9]
+                );
             }
 
             this.sortFriendsList();
+
             return;
         }
 
         if (opcode === serverOpcodes.FRIEND_STATUS_CHANGE) {
-            let hash = Utility.getUnsignedLong(this.incomingPacket, 1);
-            let online = this.incomingPacket[9] & 0xff;
+            const encodedUsername = Utility.getUnsignedLong(
+                this.incomingPacket,
+                1
+            );
+            const world = this.incomingPacket[9] & 0xff;
 
-            for (let i2 = 0; i2 < this.friendListCount; i2++) {
-                if (this.friendListHashes[i2].equals(hash)) {
-                    if (this.friendListOnline[i2] === 0 && online !== 0) {
-                        this.showServerMessage('@pri@' + Utility.hashToUsername(hash) + ' has logged in');
+            for (let i = 0; i < this.friendListCount; i++) {
+                if (this.friendListHashes[i].equals(encodedUsername)) {
+                    if (this.friendListOnline[i] === 0 && world !== 0) {
+                        this.showServerMessage(
+                            `@pri@${Utility.hashToUsername(encodedUsername)} ` +
+                                'has logged in'
+                        );
                     }
 
-                    if (this.friendListOnline[i2] !== 0 && online === 0) {
-                        this.showServerMessage('@pri@' + Utility.hashToUsername(hash) + ' has logged out');
+                    if (this.friendListOnline[i] !== 0 && world === 0) {
+                        this.showServerMessage(
+                            `@pri@${Utility.hashToUsername(encodedUsername)} ` +
+                                'has logged out'
+                        );
                     }
 
-                    this.friendListOnline[i2] = online;
+                    this.friendListOnline[i] = world;
                     psize = 0; // not sure what this is for
                     this.sortFriendsList();
                     return;
                 }
             }
 
-            this.friendListHashes[this.friendListCount] = hash;
-            this.friendListOnline[this.friendListCount] = online;
+            this.friendListHashes[this.friendListCount] = encodedUsername;
+            this.friendListOnline[this.friendListCount] = world;
             this.friendListCount++;
             this.sortFriendsList();
+
             return;
         }
 
         if (opcode === serverOpcodes.IGNORE_LIST) {
-            this.ignoreListCount = Utility.getUnsignedByte(this.incomingPacket[1]);
+            this.ignoreListCount = Utility.getUnsignedByte(
+                this.incomingPacket[1]
+            );
 
             for (let i1 = 0; i1 < this.ignoreListCount; i1++) {
-                this.ignoreList[i1] = Utility.getUnsignedLong(this.incomingPacket, 2 + i1 * 8);
+                this.ignoreList[i1] = Utility.getUnsignedLong(
+                    this.incomingPacket,
+                    2 + i1 * 8
+                );
             }
 
             return;
@@ -12139,27 +12242,40 @@ class GameConnection extends GameShell {
             this.settingsBlockPrivate = this.incomingPacket[2];
             this.settingsBlockTrade = this.incomingPacket[3];
             this.settingsBlockDuel = this.incomingPacket[4];
+
             return;
         }
 
         if (opcode === serverOpcodes.FRIEND_MESSAGE) {
-            let from = Utility.getUnsignedLong(this.incomingPacket, 1);
-            // is this some sort of message id ?
-            let k1 = Utility.getUnsignedInt(this.incomingPacket, 9);
+            const from = Utility.getUnsignedLong(this.incomingPacket, 1);
+            const token = Utility.getUnsignedInt(this.incomingPacket, 9);
 
-            for (let j2 = 0; j2 < this.maxSocialListSize; j2++) {
-                if (this.anIntArray629[j2] === k1) {
+            for (let i = 0; i < this.maxSocialListSize; i++) {
+                if (this.messageTokens[i] === token) {
                     return;
                 }
             }
 
-            this.anIntArray629[this.anInt630] = k1;
-            this.anInt630 = (this.anInt630 + 1) % GameConnection.maxSocialListSize;
-            let msg = WordFilter.filter(ChatMessage.descramble(this.incomingPacket, 13, psize - 13));
-            this.showServerMessage('@pri@' + Utility.hashToUsername(from) + ': tells you ' + msg);
+            this.messageTokens[this.messageIndex] = token;
+            this.messageIndex =
+                (this.messageIndex + 1) % GameConnection.maxSocialListSize;
+
+            const message = WordFilter.filter(
+                ChatMessage.descramble(this.incomingPacket, 13, psize - 13)
+            );
+
+            this.showServerMessage(
+                `@pri@${Utility.hashToUsername(from)}: tells you ${message}`
+            );
+
             return;
         } else {
-            this.handleIncomingPacket(opcode, ptype, psize, this.incomingPacket);
+            this.handleIncomingPacket(
+                opcode,
+                ptype,
+                psize,
+                this.incomingPacket
+            );
             return;
         }
     }
@@ -12171,10 +12287,12 @@ class GameConnection extends GameShell {
             flag = false;
 
             for (let i = 0; i < this.friendListCount - 1; i++) {
-                if (this.friendListOnline[i] !== 255 &&
-                    this.friendListOnline[i + 1] === 255 ||
-                    this.friendListOnline[i] === 0 &&
-                    this.friendListOnline[i + 1] !== 0) {
+                if (
+                    (this.friendListOnline[i] !== 255 &&
+                        this.friendListOnline[i + 1] === 255) ||
+                    (this.friendListOnline[i] === 0 &&
+                        this.friendListOnline[i + 1] !== 0)
+                ) {
                     let j = this.friendListOnline[i];
                     this.friendListOnline[i] = this.friendListOnline[i + 1];
                     this.friendListOnline[i + 1] = j;
@@ -12280,7 +12398,10 @@ class GameConnection extends GameShell {
             break;
         }
 
-        this.showServerMessage('@pri@' + Utility.hashToUsername(encodedUsername) + ' has been removed from your friends list');
+        this.showServerMessage(
+            `@pri@${Utility.hashToUsername(encodedUsername)} has been ` +
+                'removed from your friends list'
+        );
     }
 
     sendPrivateMessage(username, message, length) {
@@ -12357,7 +12478,15 @@ class GameData {
 
     static getString() {
         let s = '';
-        for (s = ''; GameData.dataString[GameData.stringOffset] !== 0; s = s + String.fromCharCode(GameData.dataString[GameData.stringOffset++])) ;
+        for (
+            s = '';
+            GameData.dataString[GameData.stringOffset] !== 0;
+            s =
+                s +
+                String.fromCharCode(
+                    GameData.dataString[GameData.stringOffset++]
+                )
+        );
         GameData.stringOffset++;
 
         return s;
@@ -12435,7 +12564,8 @@ class GameData {
         for (i = 0; i < GameData.itemCount; i++) {
             if (!isMembers && GameData.itemMembers[i] === 1) {
                 GameData.itemName[i] = 'Members object';
-                GameData.itemDescription[i] = 'You need to be a member to use this object';
+                GameData.itemDescription[i] =
+                    'You need to be a member to use this object';
                 GameData.itemBasePrice[i] = 0;
                 GameData.itemCommand[i] = '';
                 GameData.itemUnused[0] = 0;
@@ -12453,7 +12583,10 @@ class GameData {
         GameData.npcHits = new Int32Array(GameData.npcCount);
         GameData.npcDefense = new Int32Array(GameData.npcCount);
         GameData.npcAttackable = new Int32Array(GameData.npcCount);
-        GameData.npcSprite = ndarray(new Int32Array(GameData.npcCount * 12), [GameData.npcCount, 12]);
+        GameData.npcSprite = ndarray(new Int32Array(GameData.npcCount * 12), [
+            GameData.npcCount,
+            12
+        ]);
         GameData.npcColourHair = new Int32Array(GameData.npcCount);
         GameData.npcColourTop = new Int32Array(GameData.npcCount);
         GameData.npcColorBottom = new Int32Array(GameData.npcCount);
@@ -12556,7 +12689,9 @@ class GameData {
 
         GameData.animationCount = GameData.getUnsignedShort();
         GameData.animationName = [];
-        GameData.animationCharacterColour = new Int32Array(GameData.animationCount);
+        GameData.animationCharacterColour = new Int32Array(
+            GameData.animationCount
+        );
         GameData.animationSomething = new Int32Array(GameData.animationCount);
         GameData.animationHasA = new Int32Array(GameData.animationCount);
         GameData.animationHasF = new Int32Array(GameData.animationCount);
@@ -12614,7 +12749,9 @@ class GameData {
         }
 
         for (i = 0; i < GameData.objectCount; i++) {
-            GameData.objectModelIndex[i] = GameData.getModelIndex(GameData.getString());
+            GameData.objectModelIndex[i] = GameData.getModelIndex(
+                GameData.getString()
+            );
         }
 
         for (i = 0; i < GameData.objectCount; i++) {
@@ -12639,8 +12776,12 @@ class GameData {
         GameData.wallObjectCommand1 = [];
         GameData.wallObjectCommand2 = [];
         GameData.wallObjectHeight = new Int32Array(GameData.wallObjectCount);
-        GameData.wallObjectTextureFront = new Int32Array(GameData.wallObjectCount);
-        GameData.wallObjectTextureBack = new Int32Array(GameData.wallObjectCount);
+        GameData.wallObjectTextureFront = new Int32Array(
+            GameData.wallObjectCount
+        );
+        GameData.wallObjectTextureBack = new Int32Array(
+            GameData.wallObjectCount
+        );
         GameData.wallObjectAdjacent = new Int32Array(GameData.wallObjectCount);
         GameData.wallObjectInvisible = new Int32Array(GameData.wallObjectCount);
 
@@ -12673,14 +12814,17 @@ class GameData {
         }
 
         for (i = 0; i < GameData.wallObjectCount; i++) {
-            GameData.wallObjectAdjacent[i] = GameData.getUnsignedByte(); // what's this?
+            // what's this?
+            GameData.wallObjectAdjacent[i] = GameData.getUnsignedByte();
         }
 
         for (i = 0; i < GameData.wallObjectCount; i++) {
-            GameData.wallObjectInvisible[i] = GameData.getUnsignedByte(); // value is 0 if visible
+            // value is 0 if visible
+            GameData.wallObjectInvisible[i] = GameData.getUnsignedByte();
         }
 
-        GameData.roofCount = GameData.getUnsignedShort(); // the World class does something with these
+        // the World class does something with these
+        GameData.roofCount = GameData.getUnsignedShort();
         GameData.roofHeight = new Int32Array(GameData.roofCount);
         GameData.roofNumVertices = new Int32Array(GameData.roofCount);
 
@@ -14884,6 +15028,8 @@ class Font {
 
 module.exports = Font;
 },{}],49:[function(require,module,exports){
+// shims https://docs.oracle.com/javase/7/docs/api/java/awt/Graphics.html
+
 class Graphics {
     constructor(canvas) {
         this.canvas = canvas;
@@ -15089,7 +15235,7 @@ class Socket {
         this.connected = false;
 
         // amount of bytes are left to read since last read call (in total)
-        this.bytesAvailable = 0; 
+        this.bytesAvailable = 0;
         // the message buffers that arrive from the websocket
         this.buffers = [];
         // the current buffer we're reading
@@ -15102,10 +15248,13 @@ class Socket {
 
     connect() {
         return new Promise((resolve, reject) => {
-            this.client = new WebSocket(`ws://${this.host}:${this.port}`, 'binary');
+            this.client = new WebSocket(
+                `ws://${this.host}:${this.port}`,
+                'binary'
+            );
             this.client.binaryType = 'arraybuffer';
 
-            const onError = err => {
+            const onError = (err) => {
                 this.client.removeEventListener('error', onError);
                 reject(err);
             };
@@ -15117,7 +15266,7 @@ class Socket {
                 this.clear();
             });
 
-            this.client.addEventListener('message', msg => {
+            this.client.addEventListener('message', (msg) => {
                 this.buffers.push(new Int8Array(msg.data));
                 this.bytesAvailable += msg.data.byteLength;
                 this.refreshCurrentBuffer();
@@ -15177,7 +15326,7 @@ class Socket {
                 resolve(-1);
             };
 
-            onError = err => {
+            onError = (err) => {
                 this.client.removeEventListener('error', onError);
                 this.client.removeEventListener('close', onClose);
                 this.client.removeEventListener('message', onNextMessage);
@@ -15199,7 +15348,7 @@ class Socket {
         });
     }
 
-    // read multiple bytes (specified by `len`) and put them into the `dest` 
+    // read multiple bytes (specified by `len`) and put them into the `dest`
     // array at specified `off` (0 by default).
     async readBytes(dest, off = 0, len = -1) {
         if (!this.connected) {
@@ -15233,7 +15382,7 @@ class Socket {
                 resolve(-1);
             };
 
-            onError = err => {
+            onError = (err) => {
                 this.client.removeEventListener('error', onError);
                 this.client.removeEventListener('close', onClose);
                 this.client.removeEventListener('message', onNextMessage);
@@ -15279,6 +15428,8 @@ class Socket {
 }
 
 module.exports = Socket;
+
+
 },{}],53:[function(require,module,exports){
 const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
@@ -15686,10 +15837,13 @@ class mudclient extends GameConnection {
             return;
         }
 
-        const fileName = `${soundName}.pcm`;
-        this.audioPlayer.writeStream(this.soundData,
-            Utility.getDataFileOffset(fileName, this.soundData),
-            Utility.getDataFileLength(fileName, this.soundData));
+        const filename = `${soundName}.pcm`;
+
+        this.audioPlayer.writeStream(
+            this.soundData,
+            Utility.getDataFileOffset(filename, this.soundData),
+            Utility.getDataFileLength(filename, this.soundData)
+        );
     }
 
     _walkToActionSource_from8(startX, startY, x1, y1, x2, y2, checkObjects, walkToAction) {
@@ -18729,15 +18883,15 @@ class mudclient extends GameConnection {
         }
 
         if (this.systemUpdate !== 0) {
-            let i6 = ((this.systemUpdate / 50) | 0);
-            let j8 = (i6 / 60) | 0;
+            let seconds = ((this.systemUpdate / 50) | 0);
+            const minutes = (seconds / 60) | 0;
 
-            i6 %= 60;
+            seconds %= 60;
 
-            if (i6 < 10) {
-                this.surface.drawStringCenter('System update in: ' + j8 + ':0' + i6, 256, this.gameHeight - 7, 1, 0xffff00);
+            if (seconds < 10) {
+                this.surface.drawStringCenter('System update in: ' + minutes + ':0' + seconds, 256, this.gameHeight - 7, 1, 0xffff00);
             } else {
-                this.surface.drawStringCenter('System update in: ' + j8 + ':' + i6, 256, this.gameHeight - 7, 1, 0xffff00);
+                this.surface.drawStringCenter('System update in: ' + minutes + ':' + seconds, 256, this.gameHeight - 7, 1, 0xffff00);
             }
         }
 
@@ -19330,7 +19484,7 @@ class mudclient extends GameConnection {
     }
 
     async loadTextures() {
-        const texturesJag = await this.readDataFile('textures' + version.TEXTURES + '.jag', 'Textures', 50);
+        const texturesJag = await this.readDataFile(`textures${version.TEXTURES}.jag`, 'Textures', 50);
 
         if (!texturesJag) {
             this.errorLoadingData = true;
@@ -19341,9 +19495,9 @@ class mudclient extends GameConnection {
         this.scene.allocateTextures(GameData.textureCount, 7, 11);
 
         for (let i = 0; i < GameData.textureCount; i++) {
-            let name = GameData.textureName[i];
+            const name = GameData.textureName[i];
 
-            let buff1 = Utility.loadData(name + '.dat', 0, texturesJag);
+            let buff1 = Utility.loadData(`${name}.dat`, 0, texturesJag);
 
             this.surface.parseSprite(this.spriteTexture, buff1, indexDat, 1);
             this.surface.drawBox(0, 0, 128, 128, 0xff00ff);
@@ -19353,7 +19507,7 @@ class mudclient extends GameConnection {
             let nameSub = GameData.textureSubtypeName[i];
 
             if (nameSub !== null && nameSub.length > 0) {
-                let buff2 = Utility.loadData(nameSub + '.dat', 0, texturesJag);
+                let buff2 = Utility.loadData(`${nameSub}.dat`, 0, texturesJag);
 
                 this.surface.parseSprite(this.spriteTexture, buff2, indexDat, 1);
                 this.surface._drawSprite_from3(0, 0, this.spriteTexture);
@@ -19407,60 +19561,52 @@ class mudclient extends GameConnection {
     }
 
     drawTeleportBubble(x, y, w, h, id) {
-        let type = this.teleportBubbleType[id];
-        let time = this.teleportBubbleTime[id];
+        const type = this.teleportBubbleType[id];
+        const time = this.teleportBubbleTime[id];
 
         if (type === 0) {
-            let j2 = 255 + time * 5 * 256;
-            this.surface.drawCircle(x + ((w / 2) | 0), y + ((h / 2) | 0), 20 + time * 2, j2, 255 - time * 5);
-        }
-
-        if (type === 1) {
-            let k2 = 0xff0000 + time * 5 * 256;
-            this.surface.drawCircle(x + ((w / 2) | 0), y + ((h / 2) | 0), 10 + time, k2, 255 - time * 5);
+            // blue bubble used for teleports
+            const colour = 255 + time * 5 * 256;
+            this.surface.drawCircle(x + ((w / 2) | 0), y + ((h / 2) | 0), 20 + time * 2, colour, 255 - time * 5);
+        } else if (type === 1) {
+            // red bubble used for telegrab
+            const colour = 0xff0000 + time * 5 * 256;
+            this.surface.drawCircle(x + ((w / 2) | 0), y + ((h / 2) | 0), 10 + time, colour, 255 - time * 5);
         }
     }
 
     showServerMessage(s) {
         if (/^@bor@/.test(s)) {
             this.showMessage(s, 4);
-            return;
-        }
-
-        if (/^@que@/.test(s)) {
-            this.showMessage('@whi@' + s, 5);
-            return;
-        }
-
-        if (/^@pri@/.test(s)) {
+        } else if (/^@que@/.test(s)) {
+            this.showMessage(`@whi@${s}`, 5);
+        } else if (/^@pri@/.test(s)) {
             this.showMessage(s, 6);
-            return;
         } else {
             this.showMessage(s, 3);
-            return;
         }
     }
 
     // looks like it just updates objects like torches etc to flip between the
     // different models and appear "animated"
-    updateObjectAnimation(i, s) {
-        let j = this.objectX[i];
-        let k = this.objectY[i];
-        let l = j - ((this.localPlayer.currentX / 128) | 0);
-        let i1 = k - ((this.localPlayer.currentY / 128) | 0);
-        let byte0 = 7;
+    updateObjectAnimation(objectIndex, modelName) {
+        const objectX = this.objectX[objectIndex];
+        const objectY = this.objectY[objectIndex];
+        const distanceX = objectX - ((this.localPlayer.currentX / 128) | 0);
+        const distanceY = objectY - ((this.localPlayer.currentY / 128) | 0);
+        const maxDistance = 7;
 
-        if (j >= 0 && k >= 0 && j < 96 && k < 96 && l > -byte0 && l < byte0 && i1 > -byte0 && i1 < byte0) {
-            this.scene.removeModel(this.objectModel[i]);
+        if (objectX >= 0 && objectY >= 0 && objectX < 96 && objectY < 96 && distanceX > -maxDistance && distanceX < maxDistance && distanceY > -maxDistance && distanceY < maxDistance) {
+            this.scene.removeModel(this.objectModel[objectIndex]);
 
-            let j1 = GameData.getModelIndex(s);
-            let gameModel = this.gameModels[j1].copy();
+            const modelIndex = GameData.getModelIndex(modelName);
+            const gameModel = this.gameModels[modelIndex].copy();
 
             this.scene.addModel(gameModel);
             gameModel._setLight_from6(true, 48, 48, -50, -10, -50);
-            gameModel.copyPosition(this.objectModel[i]);
-            gameModel.key = i;
-            this.objectModel[i] = gameModel;
+            gameModel.copyPosition(this.objectModel[objectIndex]);
+            gameModel.key = objectIndex;
+            this.objectModel[objectIndex] = gameModel;
         }
     }
 
@@ -19965,229 +20111,224 @@ class mudclient extends GameConnection {
             if (opcode === serverOpcodes.REGION_PLAYERS) {
                 this.knownPlayerCount = this.playerCount;
 
-                for (let k = 0; k < this.knownPlayerCount; k++) {
-                    this.knownPlayers[k] = this.players[k];
+                for (let i = 0; i < this.knownPlayerCount; i++) {
+                    this.knownPlayers[i] = this.players[i];
                 }
 
-                let k7 = 8;
+                let offset = 8;
 
-                this.localRegionX = Utility.getBitMask(pdata, k7, 11);
-                k7 += 11;
-                this.localRegionY = Utility.getBitMask(pdata, k7, 13);
-                k7 += 13;
+                this.localRegionX = Utility.getBitMask(pdata, offset, 11);
+                offset += 11;
 
-                let anim = Utility.getBitMask(pdata, k7, 4);
+                this.localRegionY = Utility.getBitMask(pdata, offset, 13);
+                offset += 13;
 
-                k7 += 4;
+                const sprite = Utility.getBitMask(pdata, offset, 4);
+                offset += 4;
 
-                let flag1 = this.loadNextRegion(this.localRegionX, this.localRegionY);
+                const hasLoadedRegion =
+                    this.loadNextRegion(this.localRegionX, this.localRegionY);
 
                 this.localRegionX -= this.regionX;
                 this.localRegionY -= this.regionY;
 
-                let l22 = this.localRegionX * this.magicLoc + 64;
-                let l25 = this.localRegionY * this.magicLoc + 64;
+                let playerX = this.localRegionX * this.magicLoc + 64;
+                let playerY = this.localRegionY * this.magicLoc + 64;
 
-                if (flag1) {
+                if (hasLoadedRegion) {
                     this.localPlayer.waypointCurrent = 0;
                     this.localPlayer.movingStep = 0;
-                    this.localPlayer.currentX = this.localPlayer.waypointsX[0] = l22;
-                    this.localPlayer.currentY = this.localPlayer.waypointsY[0] = l25;
+                    this.localPlayer.currentX = this.localPlayer.waypointsX[0] = playerX;
+                    this.localPlayer.currentY = this.localPlayer.waypointsY[0] = playerY;
                 }
 
                 this.playerCount = 0;
+                this.localPlayer = this.createPlayer(
+                    this.localPlayerServerIndex,
+                    playerX,
+                    playerY,
+                    sprite
+                );
 
-                this.localPlayer = this.createPlayer(this.localPlayerServerIndex, l22, l25, anim);
+                const length = Utility.getBitMask(pdata, offset, 8);
+                offset += 8;
 
-                let i29 = Utility.getBitMask(pdata, k7, 8);
+                for (let i = 0; i < length; i++) {
+                    const player = this.knownPlayers[i + 1];
+                    const hasUpdated = Utility.getBitMask(pdata, offset, 1);
+                    offset++;
 
-                k7 += 8;
-
-                for (let l33 = 0; l33 < i29; l33++) {
-                    let character_3 = this.knownPlayers[l33 + 1];
-                    let reqUpdate = Utility.getBitMask(pdata, k7, 1);
-
-                    k7++;
-
-                    if (reqUpdate !== 0) {
-                        let updateType = Utility.getBitMask(pdata, k7, 1);
-
-                        k7++;
+                    if (hasUpdated !== 0) {
+                        const updateType = Utility.getBitMask(pdata, offset, 1);
+                        offset++;
 
                         if (updateType === 0) {
-                            let nextAnim = Utility.getBitMask(pdata, k7, 3);
+                            const sprite = Utility.getBitMask(pdata, offset, 3);
+                            offset += 3;
 
-                            k7 += 3;
+                            let waypointCurrent = player.waypointCurrent;
+                            let playerX = player.waypointsX[waypointCurrent];
+                            let playerY = player.waypointsY[waypointCurrent];
 
-                            let l43 = character_3.waypointCurrent;
-                            let j44 = character_3.waypointsX[l43];
-                            let k44 = character_3.waypointsY[l43];
-
-                            if (nextAnim === 2 || nextAnim === 1 || nextAnim === 3) {
-                                j44 += this.magicLoc;
+                            if (sprite === 2 || sprite === 1 || sprite === 3) {
+                                playerX += this.magicLoc;
                             }
 
-                            if (nextAnim === 6 || nextAnim === 5 || nextAnim === 7) {
-                                j44 -= this.magicLoc;
+                            if (sprite === 6 || sprite === 5 || sprite === 7) {
+                                playerX -= this.magicLoc;
                             }
 
-                            if (nextAnim === 4 || nextAnim === 3 || nextAnim === 5) {
-                                k44 += this.magicLoc;
+                            if (sprite === 4 || sprite === 3 || sprite === 5) {
+                                playerY += this.magicLoc;
                             }
 
-                            if (nextAnim === 0 || nextAnim === 1 || nextAnim === 7) {
-                                k44 -= this.magicLoc;
+                            if (sprite === 0 || sprite === 1 || sprite === 7) {
+                                playerY -= this.magicLoc;
                             }
 
-                            character_3.animationNext = nextAnim;
-                            character_3.waypointCurrent = l43 = (l43 + 1) % 10;
-                            character_3.waypointsX[l43] = j44;
-                            character_3.waypointsY[l43] = k44;
+                            player.animationNext = sprite;
+                            player.waypointCurrent = waypointCurrent = (waypointCurrent + 1) % 10;
+                            player.waypointsX[waypointCurrent] = playerX;
+                            player.waypointsY[waypointCurrent] = playerY;
                         } else {
-                            let i43 = Utility.getBitMask(pdata, k7, 4);
+                            const sprite = Utility.getBitMask(pdata, offset, 4);
 
-                            if ((i43 & 12) === 12) {
-                                k7 += 2;
+                            if ((sprite & 12) === 12) {
+                                offset += 2;
                                 continue;
                             }
 
-                            character_3.animationNext = Utility.getBitMask(pdata, k7, 4);
-                            k7 += 4;
+                            player.animationNext = Utility.getBitMask(pdata, offset, 4);
+                            offset += 4;
                         }
                     }
 
-                    this.players[this.playerCount++] = character_3;
+                    this.players[this.playerCount++] = player;
                 }
 
-                let count = 0;
+                let playerCount = 0;
 
-                while (k7 + 24 < psize * 8) {
-                    let serverIndex = Utility.getBitMask(pdata, k7, 11);
+                while (offset + 24 < psize * 8) {
+                    const serverIndex = Utility.getBitMask(pdata, offset, 11);
+                    offset += 11;
 
-                    k7 += 11;
-
-                    let areaX = Utility.getBitMask(pdata, k7, 5);
-
-                    k7 += 5;
+                    let areaX = Utility.getBitMask(pdata, offset, 5);
+                    offset += 5;
 
                     if (areaX > 15) {
                         areaX -= 32;
                     }
 
-                    let areaY = Utility.getBitMask(pdata, k7, 5);
-
-                    k7 += 5;
+                    let areaY = Utility.getBitMask(pdata, offset, 5);
+                    offset += 5;
 
                     if (areaY > 15) {
                         areaY -= 32;
                     }
 
-                    let animation = Utility.getBitMask(pdata, k7, 4);
+                    const sprite = Utility.getBitMask(pdata, offset, 4);
+                    offset += 4;
 
-                    k7 += 4;
-                    let i44 = Utility.getBitMask(pdata, k7, 1);
-
-                    k7++;
+                    let isPlayerKnown = Utility.getBitMask(pdata, offset, 1);
+                    offset++;
 
                     let x = (this.localRegionX + areaX) * this.magicLoc + 64;
                     let y = (this.localRegionY + areaY) * this.magicLoc + 64;
 
-                    this.createPlayer(serverIndex, x, y, animation);
+                    this.createPlayer(serverIndex, x, y, sprite);
 
-                    if (i44 === 0) {
-                        this.playerServerIndexes[count++] = serverIndex;
+                    if (isPlayerKnown === 0) {
+                        this.playerServerIndexes[playerCount++] = serverIndex;
                     }
                 }
 
-                if (count > 0) {
+                if (playerCount > 0) {
                     this.packetStream.newPacket(clientOpcodes.KNOWN_PLAYERS);
-                    this.packetStream.putShort(count);
+                    this.packetStream.putShort(playerCount);
 
-                    for (let i = 0; i < count; i++) {
-                        let c = this.playerServer[this.playerServerIndexes[i]];
-
-                        this.packetStream.putShort(c.serverIndex);
-                        this.packetStream.putShort(c.serverId);
+                    for (let i = 0; i < playerCount; i++) {
+                        const player =
+                            this.playerServer[this.playerServerIndexes[i]];
+                        this.packetStream.putShort(player.serverIndex);
+                        this.packetStream.putShort(player.serverId);
                     }
 
                     this.packetStream.sendPacket();
-                    count = 0;
+                    playerCount = 0;
                 }
 
                 return;
             }
 
             if (opcode === serverOpcodes.REGION_GROUND_ITEMS) {
-                for (let l = 1; l < psize; )
-                    if (Utility.getUnsignedByte(pdata[l]) === 255) {
-                        let l7 = 0;
-                        let j14 = this.localRegionX + pdata[l + 1] >> 3;
-                        let i19 = this.localRegionY + pdata[l + 2] >> 3;
+                for (let offset = 1; offset < psize; )
+                    if (Utility.getUnsignedByte(pdata[offset]) === 255) {
+                        let itemIndex = 0;
+                        let j14 = this.localRegionX + pdata[offset + 1] >> 3;
+                        let i19 = this.localRegionY + pdata[offset + 2] >> 3;
+                        offset += 3;
 
-                        l += 3;
-
-                        for (let j23 = 0; j23 < this.groundItemCount; j23++) {
-                            let j26 = (this.groundItemX[j23] >> 3) - j14;
-                            let j29 = (this.groundItemY[j23] >> 3) - i19;
+                        for (let i = 0; i < this.groundItemCount; i++) {
+                            let j26 = (this.groundItemX[i] >> 3) - j14;
+                            let j29 = (this.groundItemY[i] >> 3) - i19;
 
                             if (j26 !== 0 || j29 !== 0) {
-                                if (j23 !== l7) {
-                                    this.groundItemX[l7] = this.groundItemX[j23];
-                                    this.groundItemY[l7] = this.groundItemY[j23];
-                                    this.groundItemId[l7] = this.groundItemId[j23];
-                                    this.groundItemZ[l7] = this.groundItemZ[j23];
+                                if (i !== itemIndex) {
+                                    this.groundItemX[itemIndex] = this.groundItemX[i];
+                                    this.groundItemY[itemIndex] = this.groundItemY[i];
+                                    this.groundItemId[itemIndex] = this.groundItemId[i];
+                                    this.groundItemZ[itemIndex] = this.groundItemZ[i];
                                 }
 
-                                l7++;
+                                itemIndex++;
                             }
                         }
 
-                        this.groundItemCount = l7;
+                        this.groundItemCount = itemIndex;
                     } else {
-                        let i8 = Utility.getUnsignedShort(pdata, l);
+                        let itemID = Utility.getUnsignedShort(pdata, offset);
+                        offset += 2;
 
-                        l += 2;
+                        let k14 = this.localRegionX + pdata[offset++];
+                        let j19 = this.localRegionY + pdata[offset++];
 
-                        let k14 = this.localRegionX + pdata[l++];
-                        let j19 = this.localRegionY + pdata[l++];
-
-                        if ((i8 & 32768) === 0) {
+                        if ((itemID & 32768) === 0) {
                             this.groundItemX[this.groundItemCount] = k14;
                             this.groundItemY[this.groundItemCount] = j19;
-                            this.groundItemId[this.groundItemCount] = i8;
+                            this.groundItemId[this.groundItemCount] = itemID;
                             this.groundItemZ[this.groundItemCount] = 0;
 
-                            for (let k23 = 0; k23 < this.objectCount; k23++) {
-                                if (this.objectX[k23] !== k14 || this.objectY[k23] !== j19) {
+                            for (let i = 0; i < this.objectCount; i++) {
+                                if (this.objectX[i] !== k14 || this.objectY[i] !== j19) {
                                     continue;
                                 }
 
-                                this.groundItemZ[this.groundItemCount] = GameData.objectElevation[this.objectId[k23]];
+                                this.groundItemZ[this.groundItemCount] = GameData.objectElevation[this.objectId[i]];
                                 break;
                             }
 
                             this.groundItemCount++;
                         } else {
-                            i8 &= 32767;
+                            itemID &= 32767;
 
-                            let l23 = 0;
+                            let itemIndex = 0;
 
-                            for (let k26 = 0; k26 < this.groundItemCount; k26++) {
-                                if (this.groundItemX[k26] !== k14 || this.groundItemY[k26] !== j19 || this.groundItemId[k26] !== i8) {
-                                    if (k26 !== l23) {
-                                        this.groundItemX[l23] = this.groundItemX[k26];
-                                        this.groundItemY[l23] = this.groundItemY[k26];
-                                        this.groundItemId[l23] = this.groundItemId[k26];
-                                        this.groundItemZ[l23] = this.groundItemZ[k26];
+                            for (let i = 0; i < this.groundItemCount; i++) {
+                                if (this.groundItemX[i] !== k14 || this.groundItemY[i] !== j19 || this.groundItemId[i] !== itemID) {
+                                    if (i !== itemIndex) {
+                                        this.groundItemX[itemIndex] = this.groundItemX[i];
+                                        this.groundItemY[itemIndex] = this.groundItemY[i];
+                                        this.groundItemId[itemIndex] = this.groundItemId[i];
+                                        this.groundItemZ[itemIndex] = this.groundItemZ[i];
                                     }
 
-                                    l23++;
+                                    itemIndex++;
                                 } else {
-                                    i8 = -123;
+                                    itemID = -123;
                                 }
                             }
 
-                            this.groundItemCount = l23;
+                            this.groundItemCount = itemIndex;
                         }
                     }
 
@@ -20195,81 +20336,79 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.REGION_OBJECTS) {
-                for (let i1 = 1; i1 < psize; ) {
-                    if (Utility.getUnsignedByte(pdata[i1]) === 255) {
-                        let j8 = 0;
-                        let l14 = this.localRegionX + pdata[i1 + 1] >> 3;
-                        let k19 = this.localRegionY + pdata[i1 + 2] >> 3;
+                for (let offset = 1; offset < psize; ) {
+                    if (Utility.getUnsignedByte(pdata[offset]) === 255) {
+                        let objectIndex = 0;
+                        let l14 = this.localRegionX + pdata[offset + 1] >> 3;
+                        let k19 = this.localRegionY + pdata[offset + 2] >> 3;
+                        offset += 3;
 
-                        i1 += 3;
-
-                        for (let i24 = 0; i24 < this.objectCount; i24++) {
-                            let l26 = (this.objectX[i24] >> 3) - l14;
-                            let k29 = (this.objectY[i24] >> 3) - k19;
+                        for (let i = 0; i < this.objectCount; i++) {
+                            let l26 = (this.objectX[i] >> 3) - l14;
+                            let k29 = (this.objectY[i] >> 3) - k19;
 
                             if (l26 !== 0 || k29 !== 0) {
-                                if (i24 !== j8) {
-                                    this.objectModel[j8] = this.objectModel[i24];
-                                    this.objectModel[j8].key = j8;
-                                    this.objectX[j8] = this.objectX[i24];
-                                    this.objectY[j8] = this.objectY[i24];
-                                    this.objectId[j8] = this.objectId[i24];
-                                    this.objectDirection[j8] = this.objectDirection[i24];
+                                if (i !== objectIndex) {
+                                    this.objectModel[objectIndex] = this.objectModel[i];
+                                    this.objectModel[objectIndex].key = objectIndex;
+                                    this.objectX[objectIndex] = this.objectX[i];
+                                    this.objectY[objectIndex] = this.objectY[i];
+                                    this.objectId[objectIndex] = this.objectId[i];
+                                    this.objectDirection[objectIndex] = this.objectDirection[i];
                                 }
 
-                                j8++;
+                                objectIndex++;
                             } else {
-                                this.scene.removeModel(this.objectModel[i24]);
-                                this.world.removeObject(this.objectX[i24], this.objectY[i24], this.objectId[i24]);
+                                this.scene.removeModel(this.objectModel[i]);
+                                this.world.removeObject(this.objectX[i], this.objectY[i], this.objectId[i]);
                             }
                         }
 
-                        this.objectCount = j8;
+                        this.objectCount = objectIndex;
                     } else {
-                        let id = Utility.getUnsignedShort(pdata, i1);
+                        let objectID = Utility.getUnsignedShort(pdata, offset);
+                        offset += 2;
 
-                        i1 += 2;
+                        let lX = this.localRegionX + pdata[offset++];
+                        let lY = this.localRegionY + pdata[offset++];
+                        let objectIndex = 0;
 
-                        let lX = this.localRegionX + pdata[i1++];
-                        let lY = this.localRegionY + pdata[i1++];
-                        let j24 = 0;
-
-                        for (let i27 = 0; i27 < this.objectCount; i27++) {
-                            if (this.objectX[i27] !== lX || this.objectY[i27] !== lY) {
-                                if (i27 !== j24) {
-                                    this.objectModel[j24] = this.objectModel[i27];
-                                    this.objectModel[j24].key = j24;
-                                    this.objectX[j24] = this.objectX[i27];
-                                    this.objectY[j24] = this.objectY[i27];
-                                    this.objectId[j24] = this.objectId[i27];
-                                    this.objectDirection[j24] = this.objectDirection[i27];
+                        for (let i = 0; i < this.objectCount; i++) {
+                            if (this.objectX[i] !== lX || this.objectY[i] !== lY) {
+                                if (i !== objectIndex) {
+                                    this.objectModel[objectIndex] = this.objectModel[i];
+                                    this.objectModel[objectIndex].key = objectIndex;
+                                    this.objectX[objectIndex] = this.objectX[i];
+                                    this.objectY[objectIndex] = this.objectY[i];
+                                    this.objectId[objectIndex] = this.objectId[i];
+                                    this.objectDirection[objectIndex] = this.objectDirection[i];
                                 }
 
-                                j24++;
+                                objectIndex++;
                             } else {
-                                this.scene.removeModel(this.objectModel[i27]);
-                                this.world.removeObject(this.objectX[i27], this.objectY[i27], this.objectId[i27]);
+                                this.scene.removeModel(this.objectModel[i]);
+                                this.world.removeObject(this.objectX[i], this.objectY[i], this.objectId[i]);
                             }
                         }
 
-                        this.objectCount = j24;
+                        this.objectCount = objectIndex;
 
-                        if (id !== 60000) {
+                        if (objectID !== 60000) {
                             let direction = this.world.getTileDirection(lX, lY);
                             let width = 0;
                             let height = 0;
 
                             if (direction === 0 || direction === 4) {
-                                width = GameData.objectWidth[id];
-                                height = GameData.objectHeight[id];
+                                width = GameData.objectWidth[objectID];
+                                height = GameData.objectHeight[objectID];
                             } else {
-                                height = GameData.objectWidth[id];
-                                width = GameData.objectHeight[id];
+                                height = GameData.objectWidth[objectID];
+                                width = GameData.objectHeight[objectID];
                             }
 
                             let mX = (((lX + lX + width) * this.magicLoc) / 2) | 0;
                             let mY = (((lY + lY + height) * this.magicLoc) / 2) | 0;
-                            let modelIdx = GameData.objectModelIndex[id];
+                            let modelIdx = GameData.objectModelIndex[objectID];
                             let model = this.gameModels[modelIdx].copy();
 
                             this.scene.addModel(model);
@@ -20279,15 +20418,15 @@ class mudclient extends GameConnection {
                             model.translate(mX, -this.world.getElevation(mX, mY), mY);
                             model._setLight_from6(true, 48, 48, -50, -10, -50);
 
-                            this.world.removeObject2(lX, lY, id);
+                            this.world.removeObject2(lX, lY, objectID);
 
-                            if (id === 74) {
+                            if (objectID === 74) {
                                 model.translate(0, -480, 0);
                             }
 
                             this.objectX[this.objectCount] = lX;
                             this.objectY[this.objectCount] = lY;
-                            this.objectId[this.objectCount] = id;
+                            this.objectId[this.objectCount] = objectID;
                             this.objectDirection[this.objectCount] = direction;
                             this.objectModel[this.objectCount++] = model;
                         }
@@ -20303,14 +20442,14 @@ class mudclient extends GameConnection {
                 this.inventoryItemsCount = pdata[offset++] & 0xff;
 
                 for (let i = 0; i < this.inventoryItemsCount; i++) {
-                    let idEquip = Utility.getUnsignedShort(pdata, offset);
+                    const idEquip = Utility.getUnsignedShort(pdata, offset);
 
                     offset += 2;
                     this.inventoryItemId[i] = idEquip & 32767;
                     this.inventoryEquipped[i] = (idEquip / 32768) | 0;
 
                     if (GameData.itemStackable[idEquip & 32767] === 0) {
-                        this.inventoryItemStackCount[i] = Utility.getUnsignedInt2(pdata, offset);
+                        this.inventoryItemStackCount[i] = Utility.getStackInt(pdata, offset);
 
                         if (this.inventoryItemStackCount[i] >= 128) {
                             offset += 4;
@@ -20331,12 +20470,10 @@ class mudclient extends GameConnection {
 
                 for (let k15 = 0; k15 < k1; k15++) {
                     let playerId = Utility.getUnsignedShort(pdata, offset);
-
                     offset += 2;
 
                     let character = this.playerServer[playerId];
                     let updateType = pdata[offset];
-
                     offset++;
 
                     // speech bubble with an item in it
@@ -20415,11 +20552,9 @@ class mudclient extends GameConnection {
                         }
                     } else if (updateType === 4) { // new incoming projectile from player
                         let projectileSprite = Utility.getUnsignedShort(pdata, offset);
-
                         offset += 2;
 
                         let playerIdx = Utility.getUnsignedShort(pdata, offset);
-
                         offset += 2;
 
                         if (character !== null) {
@@ -20437,7 +20572,6 @@ class mudclient extends GameConnection {
                             character.name = Utility.hashToUsername(character.hash);
 
                             let equippedCount = Utility.getUnsignedByte(pdata[offset]);
-
                             offset++;
 
                             for (let i = 0; i < equippedCount; i++) {
@@ -20458,23 +20592,24 @@ class mudclient extends GameConnection {
                         } else {
                             offset += 14;
 
-                            let unused = Utility.getUnsignedByte(pdata[offset]);
-
+                            const unused = Utility.getUnsignedByte(pdata[offset]);
                             offset += unused + 1;
                         }
                     } else if (updateType === 6) {
                         let mLen = pdata[offset];
-
                         offset++;
 
                         if (character !== null) {
-                            let msg = ChatMessage.descramble(pdata, offset, mLen);
+                            const message = ChatMessage.descramble(pdata, offset, mLen);
 
                             character.messageTimeout = 150;
-                            character.message = msg;
+                            character.message = message;
 
                             if (character === this.localPlayer) {
-                                this.showMessage(character.name + ': ' + character.message, 5);
+                                this.showMessage(
+                                    `${character.name}: ${character.message}`,
+                                    5
+                                );
                             }
                         }
 
@@ -20517,13 +20652,12 @@ class mudclient extends GameConnection {
 
                         this.wallObjectCount = count;
                     } else {
-                        let id = Utility.getUnsignedShort(pdata, offset);
-
+                        const id = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        let lX = this.localRegionX + pdata[offset++];
-                        let lY = this.localRegionY + pdata[offset++];
-                        let direction = pdata[offset++];
+                        const lX = this.localRegionX + pdata[offset++];
+                        const lY = this.localRegionY + pdata[offset++];
+                        const direction = pdata[offset++];
                         let count = 0;
 
                         for (let i = 0; i < this.wallObjectCount; i++) {
@@ -20564,78 +20698,72 @@ class mudclient extends GameConnection {
                 this.npcCacheCount = this.npcCount;
                 this.npcCount = 0;
 
-                for (let i2 = 0; i2 < this.npcCacheCount; i2++) {
-                    this.npcsCache[i2] = this.npcs[i2];
+                for (let i = 0; i < this.npcCacheCount; i++) {
+                    this.npcsCache[i] = this.npcs[i];
                 }
 
                 let offset = 8;
-                let j16 = Utility.getBitMask(pdata, offset, 8);
-
+                const length = Utility.getBitMask(pdata, offset, 8);
                 offset += 8;
 
-                for (let l20 = 0; l20 < j16; l20++) {
-                    let character_1 = this.npcsCache[l20];
-                    let l27 = Utility.getBitMask(pdata, offset, 1);
-
+                for (let i = 0; i < length; i++) {
+                    const npc = this.npcsCache[i];
+                    const hasUpdated = Utility.getBitMask(pdata, offset, 1);
                     offset++;
 
-                    if (l27 !== 0) {
-                        let i32 = Utility.getBitMask(pdata, offset, 1);
-
+                    if (hasUpdated !== 0) {
+                        const hasMoved = Utility.getBitMask(pdata, offset, 1);
                         offset++;
 
-                        if (i32 === 0) {
-                            let j35 = Utility.getBitMask(pdata, offset, 3);
-
+                        if (hasMoved === 0) {
+                            const sprite = Utility.getBitMask(pdata, offset, 3);
                             offset += 3;
 
-                            let i38 = character_1.waypointCurrent;
-                            let l40 = character_1.waypointsX[i38];
-                            let j42 = character_1.waypointsY[i38];
+                            let waypointCurrent = npc.waypointCurrent;
+                            let npcX = npc.waypointsX[waypointCurrent];
+                            let npcY = npc.waypointsY[waypointCurrent];
 
-                            if (j35 === 2 || j35 === 1 || j35 === 3) {
-                                l40 += this.magicLoc;
+                            if (sprite === 2 || sprite === 1 || sprite === 3) {
+                                npcX += this.magicLoc;
                             }
 
-                            if (j35 === 6 || j35 === 5 || j35 === 7) {
-                                l40 -= this.magicLoc;
+                            if (sprite === 6 || sprite === 5 || sprite === 7) {
+                                npcX -= this.magicLoc;
                             }
 
-                            if (j35 === 4 || j35 === 3 || j35 === 5) {
-                                j42 += this.magicLoc;
+                            if (sprite === 4 || sprite === 3 || sprite === 5) {
+                                npcY += this.magicLoc;
                             }
 
-                            if (j35 === 0 || j35 === 1 || j35 === 7) {
-                                j42 -= this.magicLoc;
+                            if (sprite === 0 || sprite === 1 || sprite === 7) {
+                                npcY -= this.magicLoc;
                             }
 
-                            character_1.animationNext = j35;
-                            character_1.waypointCurrent = i38 = (i38 + 1) % 10;
-                            character_1.waypointsX[i38] = l40;
-                            character_1.waypointsY[i38] = j42;
+                            npc.animationNext = sprite;
+                            npc.waypointCurrent = waypointCurrent = (waypointCurrent + 1) % 10;
+                            npc.waypointsX[waypointCurrent] = npcX;
+                            npc.waypointsY[waypointCurrent] = npcY;
                         } else {
-                            let k35 = Utility.getBitMask(pdata, offset, 4);
+                            const sprite = Utility.getBitMask(pdata, offset, 4);
 
-                            if ((k35 & 12) === 12) {
+                            if ((sprite & 12) === 12) {
                                 offset += 2;
                                 continue;
                             }
 
-                            character_1.animationNext = Utility.getBitMask(pdata, offset, 4);
+                            npc.animationNext = Utility.getBitMask(pdata, offset, 4);
                             offset += 4;
                         }
                     }
 
-                    this.npcs[this.npcCount++] = character_1;
+                    this.npcs[this.npcCount++] = npc;
                 }
 
                 while (offset + 34 < psize * 8) {
-                    let serverIndex = Utility.getBitMask(pdata, offset, 12);
-
+                    const serverIndex = Utility.getBitMask(pdata, offset, 12);
                     offset += 12;
 
                     let areaX = Utility.getBitMask(pdata, offset, 5);
-
                     offset += 5;
 
                     if (areaX > 15) {
@@ -20643,86 +20771,83 @@ class mudclient extends GameConnection {
                     }
 
                     let areaY = Utility.getBitMask(pdata, offset, 5);
-
                     offset += 5;
 
                     if (areaY > 15) {
                         areaY -= 32;
                     }
 
-                    let sprite = Utility.getBitMask(pdata, offset, 4);
-
+                    const sprite = Utility.getBitMask(pdata, offset, 4);
                     offset += 4;
 
-                    let x = (this.localRegionX + areaX) * this.magicLoc + 64;
-                    let y = (this.localRegionY + areaY) * this.magicLoc + 64;
-                    let type = Utility.getBitMask(pdata, offset, 10);
+                    const x = (this.localRegionX + areaX) * this.magicLoc + 64;
+                    const y = (this.localRegionY + areaY) * this.magicLoc + 64;
 
+                    let npcID = Utility.getBitMask(pdata, offset, 10);
                     offset += 10;
 
-                    if (type >= GameData.npcCount) {
-                        type = 24;
+                    if (npcID >= GameData.npcCount) {
+                        npcID = 24;
                     }
 
-                    this.addNpc(serverIndex, x, y, sprite, type);
+                    this.addNpc(serverIndex, x, y, sprite, npcID);
                 }
 
                 return;
             }
 
             if (opcode === serverOpcodes.REGION_NPC_UPDATE) {
-                let j2 = Utility.getUnsignedShort(pdata, 1);
-                let i10 = 3;
+                const length = Utility.getUnsignedShort(pdata, 1);
+                let offset = 3;
 
-                for (let k16 = 0; k16 < j2; k16++) {
-                    let i21 = Utility.getUnsignedShort(pdata, i10);
+                for (let i = 0; i < length; i++) {
+                    const serverIndex = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
 
-                    i10 += 2;
+                    const npc = this.npcsServer[serverIndex];
+                    const updateType = Utility.getUnsignedByte(pdata[offset]);
+                    offset++;
 
-                    let character = this.npcsServer[i21];
-                    let j28 = Utility.getUnsignedByte(pdata[i10]);
+                    if (updateType === 1) {
+                        let target = Utility.getUnsignedShort(pdata, offset);
+                        offset += 2;
 
-                    i10++;
+                        let scrambledLength = pdata[offset];
+                        offset++;
 
-                    if (j28 === 1) {
-                        let target = Utility.getUnsignedShort(pdata, i10);
+                        if (npc !== null) {
+                            const message =
+                                ChatMessage.descramble(pdata, offset, scrambledLength);
 
-                        i10 += 2;
-
-                        let byte9 = pdata[i10];
-
-                        i10++;
-
-                        if (character !== null) {
-                            let s4 = ChatMessage.descramble(pdata, i10, byte9);
-
-                            character.messageTimeout = 150;
-                            character.message = s4;
+                            npc.messageTimeout = 150;
+                            npc.message = message;
 
                             if (target === this.localPlayer.serverIndex) {
-                                this.showMessage('@yel@' + GameData.npcName[character.npcId] + ': ' + character.message, 5);
+                                this.showMessage(
+                                    '@yel@' +
+                                        GameData.npcName[npc.npcId] + ': ' +
+                                        npc.message,
+                                    5
+                                );
                             }
                         }
 
-                        i10 += byte9;
-                    } else if (j28 === 2) {
-                        let l32 = Utility.getUnsignedByte(pdata[i10]);
+                        offset += scrambledLength;
+                    } else if (updateType === 2) {
+                        const damageTaken = Utility.getUnsignedByte(pdata[offset]);
+                        offset++;
 
-                        i10++;
+                        const currentHealth = Utility.getUnsignedByte(pdata[offset]);
+                        offset++;
 
-                        let i36 = Utility.getUnsignedByte(pdata[i10]);
+                        const maxHealth = Utility.getUnsignedByte(pdata[offset]);
+                        offset++;
 
-                        i10++;
-
-                        let k38 = Utility.getUnsignedByte(pdata[i10]);
-
-                        i10++;
-
-                        if (character !== null) {
-                            character.damageTaken = l32;
-                            character.healthCurrent = i36;
-                            character.healthMax = k38;
-                            character.combatTimer = 200;
+                        if (npc !== null) {
+                            npc.damageTaken = damageTaken;
+                            npc.healthCurrent = currentHealth;
+                            npc.healthMax = maxHealth;
+                            npc.combatTimer = 200;
                         }
                     }
                 }
@@ -20734,15 +20859,14 @@ class mudclient extends GameConnection {
                 this.showOptionMenu = true;
 
                 let count = Utility.getUnsignedByte(pdata[1]);
-
                 this.optionMenuCount = count;
 
                 let offset = 2;
 
                 for (let i = 0; i < count; i++) {
                     let length = Utility.getUnsignedByte(pdata[offset]);
-
                     offset++;
+
                     this.optionMenuEntry[i] = fromCharArray(pdata.slice(offset, offset + length));
                     offset += length;
                 }
@@ -20801,78 +20925,78 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.REGION_ENTITY_UPDATE) {
-                let j3 = ((psize - 1) / 4) | 0;
+                const length = ((psize - 1) / 4) | 0;
 
-                for (let l10 = 0; l10 < j3; l10++) {
-                    let j17 = this.localRegionX + Utility.getSignedShort(pdata, 1 + l10 * 4) >> 3;
-                    let l21 = this.localRegionY + Utility.getSignedShort(pdata, 3 + l10 * 4) >> 3;
-                    let i25 = 0;
+                for (let i = 0; i < length; i++) {
+                    const deltaX = this.localRegionX + Utility.getSignedShort(pdata, 1 + i * 4) >> 3;
+                    const deltaY = this.localRegionY + Utility.getSignedShort(pdata, 3 + i * 4) >> 3;
+                    let entityCount = 0;
 
-                    for (let k28 = 0; k28 < this.groundItemCount; k28++) {
-                        let i33 = (this.groundItemX[k28] >> 3) - j17;
-                        let j36 = (this.groundItemY[k28] >> 3) - l21;
+                    for (let j = 0; j < this.groundItemCount; j++) {
+                        let i33 = (this.groundItemX[j] >> 3) - deltaX;
+                        let j36 = (this.groundItemY[j] >> 3) - deltaY;
 
                         if (i33 !== 0 || j36 !== 0) {
-                            if (k28 !== i25) {
-                                this.groundItemX[i25] = this.groundItemX[k28];
-                                this.groundItemY[i25] = this.groundItemY[k28];
-                                this.groundItemId[i25] = this.groundItemId[k28];
-                                this.groundItemZ[i25] = this.groundItemZ[k28];
+                            if (j !== entityCount) {
+                                this.groundItemX[entityCount] = this.groundItemX[j];
+                                this.groundItemY[entityCount] = this.groundItemY[j];
+                                this.groundItemId[entityCount] = this.groundItemId[j];
+                                this.groundItemZ[entityCount] = this.groundItemZ[j];
                             }
 
-                            i25++;
+                            entityCount++;
                         }
                     }
 
-                    this.groundItemCount = i25;
-                    i25 = 0;
+                    this.groundItemCount = entityCount;
+                    entityCount = 0;
 
-                    for (let j33 = 0; j33 < this.objectCount; j33++) {
-                        let k36 = (this.objectX[j33] >> 3) - j17;
-                        let l38 = (this.objectY[j33] >> 3) - l21;
+                    for (let j = 0; j < this.objectCount; j++) {
+                        let k36 = (this.objectX[j] >> 3) - deltaX;
+                        let l38 = (this.objectY[j] >> 3) - deltaY;
 
                         if (k36 !== 0 || l38 !== 0) {
-                            if (j33 !== i25) {
-                                this.objectModel[i25] = this.objectModel[j33];
-                                this.objectModel[i25].key = i25;
-                                this.objectX[i25] = this.objectX[j33];
-                                this.objectY[i25] = this.objectY[j33];
-                                this.objectId[i25] = this.objectId[j33];
-                                this.objectDirection[i25] = this.objectDirection[j33];
+                            if (j !== entityCount) {
+                                this.objectModel[entityCount] = this.objectModel[j];
+                                this.objectModel[entityCount].key = entityCount;
+                                this.objectX[entityCount] = this.objectX[j];
+                                this.objectY[entityCount] = this.objectY[j];
+                                this.objectId[entityCount] = this.objectId[j];
+                                this.objectDirection[entityCount] = this.objectDirection[j];
                             }
 
-                            i25++;
+                            entityCount++;
                         } else {
-                            this.scene.removeModel(this.objectModel[j33]);
-                            this.world.removeObject(this.objectX[j33], this.objectY[j33], this.objectId[j33]);
+                            this.scene.removeModel(this.objectModel[j]);
+                            this.world.removeObject(this.objectX[j], this.objectY[j], this.objectId[j]);
                         }
                     }
 
-                    this.objectCount = i25;
-                    i25 = 0;
+                    this.objectCount = entityCount;
+                    entityCount = 0;
 
-                    for (let l36 = 0; l36 < this.wallObjectCount; l36++) {
-                        let i39 = (this.wallObjectX[l36] >> 3) - j17;
-                        let j41 = (this.wallObjectY[l36] >> 3) - l21;
+                    for (let j = 0; j < this.wallObjectCount; j++) {
+                        let i39 = (this.wallObjectX[j] >> 3) - deltaX;
+                        let j41 = (this.wallObjectY[j] >> 3) - deltaY;
 
                         if (i39 !== 0 || j41 !== 0) {
-                            if (l36 !== i25) {
-                                this.wallObjectModel[i25] = this.wallObjectModel[l36];
-                                this.wallObjectModel[i25].key = i25 + 10000;
-                                this.wallObjectX[i25] = this.wallObjectX[l36];
-                                this.wallObjectY[i25] = this.wallObjectY[l36];
-                                this.wallObjectDirection[i25] = this.wallObjectDirection[l36];
-                                this.wallObjectId[i25] = this.wallObjectId[l36];
+                            if (j !== entityCount) {
+                                this.wallObjectModel[entityCount] = this.wallObjectModel[j];
+                                this.wallObjectModel[entityCount].key = entityCount + 10000;
+                                this.wallObjectX[entityCount] = this.wallObjectX[j];
+                                this.wallObjectY[entityCount] = this.wallObjectY[j];
+                                this.wallObjectDirection[entityCount] = this.wallObjectDirection[j];
+                                this.wallObjectId[entityCount] = this.wallObjectId[j];
                             }
 
-                            i25++;
+                            entityCount++;
                         } else {
-                            this.scene.removeModel(this.wallObjectModel[l36]);
-                            this.world.removeWallObject(this.wallObjectX[l36], this.wallObjectY[l36], this.wallObjectDirection[l36], this.wallObjectId[l36]);
+                            this.scene.removeModel(this.wallObjectModel[j]);
+                            this.world.removeWallObject(this.wallObjectX[j], this.wallObjectY[j], this.wallObjectDirection[j], this.wallObjectId[j]);
                         }
                     }
 
-                    this.wallObjectCount = i25;
+                    this.wallObjectCount = entityCount;
                 }
 
                 return;
@@ -20884,10 +21008,10 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.TRADE_OPEN) {
-                let k3 = Utility.getUnsignedShort(pdata, 1);
+                const playerIndex = Utility.getUnsignedShort(pdata, 1);
 
-                if (this.playerServer[k3] !== null) {
-                    this.tradeRecipientName = this.playerServer[k3].name;
+                if (this.playerServer[playerIndex] !== null) {
+                    this.tradeRecipientName = this.playerServer[playerIndex].name;
                 }
 
                 this.showDialogTrade = true;
@@ -20901,88 +21025,81 @@ class mudclient extends GameConnection {
             if (opcode === serverOpcodes.TRADE_CLOSE) {
                 this.showDialogTrade = false;
                 this.showDialogTradeConfirm = false;
-
                 return;
             }
 
             if (opcode === serverOpcodes.TRADE_ITEMS) {
                 this.tradeRecipientItemsCount = pdata[1] & 0xff;
 
-                let l3 = 2;
+                let offset = 2;
 
-                for (let i11 = 0; i11 < this.tradeRecipientItemsCount; i11++) {
-                    this.tradeRecipientItems[i11] = Utility.getUnsignedShort(pdata, l3);
-                    l3 += 2;
-                    this.tradeRecipientItemCount[i11] = Utility.getUnsignedInt(pdata, l3);
-                    l3 += 4;
+                for (let i = 0; i < this.tradeRecipientItemsCount; i++) {
+                    this.tradeRecipientItems[i] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+
+                    this.tradeRecipientItemCount[i] = Utility.getUnsignedInt(pdata, offset);
+                    offset += 4;
                 }
 
                 this.tradeRecipientAccepted = false;
                 this.tradeAccepted = false;
-
                 return;
             }
 
             if (opcode === serverOpcodes.TRADE_RECIPIENT_STATUS) {
-                let byte0 = pdata[1];
-
-                if (byte0 === 1) {
-                    this.tradeRecipientAccepted = true;
-                    return;
-                } else {
-                    this.tradeRecipientAccepted = false;
-                    return;
-                }
+                this.tradeRecipientAccepted = !!pdata[1];
+                return;
             }
 
             if (opcode === serverOpcodes.SHOP_OPEN) {
                 this.showDialogShop = true;
 
-                let off = 1;
-                let newItemCount = pdata[off++] & 0xff;
-                let shopType = pdata[off++];
+                let offset = 1;
+                const newItemCount = pdata[offset++] & 0xff;
+                const isGeneral = pdata[offset++];
 
-                this.shopSellPriceMod = pdata[off++] & 0xff;
-                this.shopBuyPriceMod = pdata[off++] & 0xff;
+                this.shopSellPriceMod = pdata[offset++] & 0xff;
+                this.shopBuyPriceMod = pdata[offset++] & 0xff;
 
                 for (let itemIndex = 0; itemIndex < 40; itemIndex++) {
                     this.shopItem[itemIndex] = -1;
                 }
 
                 for (let itemIndex = 0; itemIndex < newItemCount; itemIndex++) {
-                    this.shopItem[itemIndex] = Utility.getUnsignedShort(pdata, off);
-                    off += 2;
-                    this.shopItemCount[itemIndex] = Utility.getUnsignedShort(pdata, off);
-                    off += 2;
-                    this.shopItemPrice[itemIndex] = pdata[off++];
+                    this.shopItem[itemIndex] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+
+                    this.shopItemCount[itemIndex] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+
+                    this.shopItemPrice[itemIndex] = pdata[offset++];
                 }
 
-                // shopType === 1 -> is a general shop
-                if (shopType === 1) {
+                if (isGeneral === 1) {
                     let l28 = 39;
 
-                    for (let k33 = 0; k33 < this.inventoryItemsCount; k33++) {
+                    for (let i = 0; i < this.inventoryItemsCount; i++) {
                         if (l28 < newItemCount) {
                             break;
                         }
 
-                        let flag2 = false;
+                        let unsellable = false;
 
-                        for (let j39 = 0; j39 < 40; j39++) {
-                            if (this.shopItem[j39] !== this.inventoryItemId[k33]) {
+                        for (let j = 0; j < 40; j++) {
+                            if (this.shopItem[j] !== this.inventoryItemId[i]) {
                                 continue;
                             }
 
-                            flag2 = true;
+                            unsellable = true;
                             break;
                         }
 
-                        if (this.inventoryItemId[k33] === 10) {
-                            flag2 = true;
+                        if (this.inventoryItemId[i] === 10) {
+                            unsellable = true;
                         }
 
-                        if (!flag2) {
-                            this.shopItem[l28] = this.inventoryItemId[k33] & 32767;
+                        if (!unsellable) {
+                            this.shopItem[l28] = this.inventoryItemId[i] & 32767;
                             this.shopItemCount[l28] = 0;
                             this.shopItemPrice[l28] = 0;
                             l28--;
@@ -21005,46 +21122,38 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.TRADE_STATUS) {
-                let byte1 = pdata[1];
-
-                if (byte1 === 1) {
-                    this.tradeAccepted = true;
-                    return;
-                } else {
-                    this.tradeAccepted = false;
-                    return;
-                }
+                this.tradeAccepted = !!pdata[1];
+                return;
             }
 
             if (opcode === serverOpcodes.GAME_SETTINGS) {
-                this.optionCameraModeAuto = Utility.getUnsignedByte(pdata[1]) === 1;
-                this.optionMouseButtonOne = Utility.getUnsignedByte(pdata[2]) === 1;
-                this.optionSoundDisabled = Utility.getUnsignedByte(pdata[3]) === 1;
-
+                this.optionCameraModeAuto = !!Utility.getUnsignedByte(pdata[1]);
+                this.optionMouseButtonOne = !!Utility.getUnsignedByte(pdata[2]);
+                this.optionSoundDisabled = !!Utility.getUnsignedByte(pdata[3]);
                 return;
             }
 
             if (opcode === serverOpcodes.PRAYER_STATUS) {
-                for (let j4 = 0; j4 < psize - 1; j4++) {
-                    let on = pdata[j4 + 1] === 1;
+                for (let i = 0; i < psize - 1; i++) {
+                    const on = pdata[i + 1] === 1;
 
-                    if (!this.prayerOn[j4] && on) {
+                    if (!this.prayerOn[i] && on) {
                         this.playSoundFile('prayeron');
                     }
 
-                    if (this.prayerOn[j4] && !on) {
+                    if (this.prayerOn[i] && !on) {
                         this.playSoundFile('prayeroff');
                     }
 
-                    this.prayerOn[j4] = on;
+                    this.prayerOn[i] = on;
                 }
 
                 return;
             }
 
             if (opcode === serverOpcodes.PLAYER_QUEST_LIST) {
-                for (let k4 = 0; k4 < QUEST_COUNT; k4++) {
-                    this.questComplete[k4] = pdata[k4 + 1] === 1;
+                for (let i = 0; i < QUEST_COUNT; i++) {
+                    this.questComplete[i] = pdata[i + 1] === 1;
                 }
 
                 return;
@@ -21053,20 +21162,21 @@ class mudclient extends GameConnection {
             if (opcode === serverOpcodes.BANK_OPEN) {
                 this.showDialogBank = true;
 
-                let l4 = 1;
+                let offset = 1;
 
-                this.newBankItemCount = pdata[l4++] & 0xff;
-                this.bankItemsMax = pdata[l4++] & 0xff;
+                this.newBankItemCount = pdata[offset++] & 0xff;
+                this.bankItemsMax = pdata[offset++] & 0xff;
 
-                for (let k11 = 0; k11 < this.newBankItemCount; k11++) {
-                    this.newBankItems[k11] = Utility.getUnsignedShort(pdata, l4);
-                    l4 += 2;
-                    this.newBankItemsCount[k11] = Utility.getUnsignedInt2(pdata, l4);
+                for (let i = 0; i < this.newBankItemCount; i++) {
+                    this.newBankItems[i] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
 
-                    if (this.newBankItemsCount[k11] >= 128) {
-                        l4 += 4;
+                    this.newBankItemsCount[i] = Utility.getStackInt(pdata, offset);
+
+                    if (this.newBankItemsCount[i] >= 128) {
+                        offset += 4;
                     } else {
-                        l4++;
+                        offset++;
                     }
                 }
 
@@ -21080,16 +21190,16 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.PLAYER_STAT_EXPERIENCE_UPDATE) {
-                let i5 = pdata[1] & 0xff;
-                this.playerExperience[i5] = Utility.getUnsignedInt(pdata, 2);
+                const skillIndex = pdata[1] & 0xff;
+                this.playerExperience[skillIndex] = Utility.getUnsignedInt(pdata, 2);
                 return;
             }
 
             if (opcode === serverOpcodes.DUEL_OPEN) {
-                let j5 = Utility.getUnsignedShort(pdata, 1);
+                const playerIndex = Utility.getUnsignedShort(pdata, 1);
 
-                if (this.playerServer[j5] !== null) {
-                    this.duelOpponentName = this.playerServer[j5].name;
+                if (this.playerServer[playerIndex] !== null) {
+                    this.duelOpponentName = this.playerServer[playerIndex].name;
                 }
 
                 this.showDialogDuel = true;
@@ -21101,7 +21211,6 @@ class mudclient extends GameConnection {
                 this.duelSettingsMagic = false;
                 this.duelSettingsPrayer = false;
                 this.duelSettingsWeapons = false;
-
                 return;
             }
 
@@ -21116,26 +21225,29 @@ class mudclient extends GameConnection {
                 this.tradeConfirmAccepted = false;
                 this.showDialogTrade = false;
 
-                let k5 = 1;
+                let offset = 1;
 
-                this.tradeRecipientConfirmHash = Utility.getUnsignedLong(pdata, k5);
-                k5 += 8;
-                this.tradeRecipientConfirmItemsCount = pdata[k5++] & 0xff;
+                this.tradeRecipientConfirmHash = Utility.getUnsignedLong(pdata, offset);
+                offset += 8;
 
-                for (let l11 = 0; l11 < this.tradeRecipientConfirmItemsCount; l11++) {
-                    this.tradeRecipientConfirmItems[l11] = Utility.getUnsignedShort(pdata, k5);
-                    k5 += 2;
-                    this.tradeRecipientConfirmItemCount[l11] = Utility.getUnsignedInt(pdata, k5);
-                    k5 += 4;
+                this.tradeRecipientConfirmItemsCount = pdata[offset++] & 0xff;
+
+                for (let i = 0; i < this.tradeRecipientConfirmItemsCount; i++) {
+                    this.tradeRecipientConfirmItems[i] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+
+                    this.tradeRecipientConfirmItemCount[i] = Utility.getUnsignedInt(pdata, offset);
+                    offset += 4;
                 }
 
-                this.tradeConfirmItemsCount = pdata[k5++] & 0xff;
+                this.tradeConfirmItemsCount = pdata[offset++] & 0xff;
 
-                for (let k17 = 0; k17 < this.tradeConfirmItemsCount; k17++) {
-                    this.tradeConfirmItems[k17] = Utility.getUnsignedShort(pdata, k5);
-                    k5 += 2;
-                    this.tradeConfirmItemCount[k17] = Utility.getUnsignedInt(pdata, k5);
-                    k5 += 4;
+                for (let i = 0; i < this.tradeConfirmItemsCount; i++) {
+                    this.tradeConfirmItems[i] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+
+                    this.tradeConfirmItemCount[i] = Utility.getUnsignedInt(pdata, offset);
+                    offset += 4;
                 }
 
                 return;
@@ -21144,80 +21256,58 @@ class mudclient extends GameConnection {
             if (opcode === serverOpcodes.DUEL_UPDATE) {
                 this.duelOfferOpponentItemCount = pdata[1] & 0xff;
 
-                let l5 = 2;
+                let offset = 2;
 
-                for (let i12 = 0; i12 < this.duelOfferOpponentItemCount; i12++) {
-                    this.duelOfferOpponentItemId[i12] = Utility.getUnsignedShort(pdata, l5);
-                    l5 += 2;
-                    this.duelOfferOpponentItemStack[i12] = Utility.getUnsignedInt(pdata, l5);
-                    l5 += 4;
+                for (let i = 0; i < this.duelOfferOpponentItemCount; i++) {
+                    this.duelOfferOpponentItemId[i] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+                    this.duelOfferOpponentItemStack[i] = Utility.getUnsignedInt(pdata, offset);
+                    offset += 4;
                 }
 
                 this.duelOfferOpponentAccepted = false;
                 this.duelOfferAccepted = false;
-
                 return;
             }
 
             if (opcode === serverOpcodes.DUEL_SETTINGS) {
-                if (pdata[1] === 1) {
-                    this.duelSettingsRetreat = true;
-                } else {
-                    this.duelSettingsRetreat = false;
-                }
-
-                if (pdata[2] === 1) {
-                    this.duelSettingsMagic = true;
-                } else {
-                    this.duelSettingsMagic = false;
-                }
-
-                if (pdata[3] === 1) {
-                    this.duelSettingsPrayer = true;
-                } else {
-                    this.duelSettingsPrayer = false;
-                }
-
-                if (pdata[4] === 1) {
-                    this.duelSettingsWeapons = true;
-                } else {
-                    this.duelSettingsWeapons = false;
-                }
-
+                this.duelSettingsRetreat = !!pdata[1];
+                this.duelSettingsMagic = !!pdata[2];
+                this.duelSettingsPrayer = !!pdata[3];
+                this.duelSettingsWeapons = !!pdata[4];
                 this.duelOfferOpponentAccepted = false;
                 this.duelOfferAccepted = false;
-
                 return;
             }
 
             if (opcode === serverOpcodes.BANK_UPDATE) {
-                let i6 = 1;
-                let itemsCountOld = pdata[i6++] & 0xff;
-                let item = Utility.getUnsignedShort(pdata, i6);
+                let offset = 1;
+                const itemIndex = pdata[offset++] & 0xff;
+                const item = Utility.getUnsignedShort(pdata, offset);
 
-                i6 += 2;
+                offset += 2;
 
-                let itemCount = Utility.getUnsignedInt2(pdata, i6);
+                const itemCount = Utility.getStackInt(pdata, offset);
 
                 if (itemCount >= 128) {
-                    i6 += 4;
+                    offset += 4;
                 } else {
-                    i6++;
+                    offset++;
                 }
 
                 if (itemCount === 0) {
                     this.newBankItemCount--;
 
-                    for (let k25 = itemsCountOld; k25 < this.newBankItemCount; k25++) {
-                        this.newBankItems[k25] = this.newBankItems[k25 + 1];
-                        this.newBankItemsCount[k25] = this.newBankItemsCount[k25 + 1];
+                    for (let i = itemIndex; i < this.newBankItemCount; i++) {
+                        this.newBankItems[i] = this.newBankItems[i + 1];
+                        this.newBankItemsCount[i] = this.newBankItemsCount[i + 1];
                     }
                 } else {
-                    this.newBankItems[itemsCountOld] = item;
-                    this.newBankItemsCount[itemsCountOld] = itemCount;
+                    this.newBankItems[itemIndex] = item;
+                    this.newBankItemsCount[itemIndex] = itemCount;
 
-                    if (itemsCountOld >= this.newBankItemCount) {
-                        this.newBankItemCount = itemsCountOld + 1;
+                    if (itemIndex >= this.newBankItemCount) {
+                        this.newBankItemCount = itemIndex + 1;
                     }
                 }
 
@@ -21228,13 +21318,13 @@ class mudclient extends GameConnection {
             if (opcode === serverOpcodes.INVENTORY_ITEM_UPDATE) {
                 let offset = 1;
                 let stack = 1;
-                let index = pdata[offset++] & 0xff;
-                let id = Utility.getUnsignedShort(pdata, offset);
+                const index = pdata[offset++] & 0xff;
+                const id = Utility.getUnsignedShort(pdata, offset);
 
                 offset += 2;
 
                 if (GameData.itemStackable[id & 32767] === 0) {
-                    stack = Utility.getUnsignedInt2(pdata, offset);
+                    stack = Utility.getStackInt(pdata, offset);
 
                     if (stack >= 128) {
                         offset += 4;
@@ -21255,53 +21345,39 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.INVENTORY_ITEM_REMOVE) {
-                let index = pdata[1] & 0xff;
+                const index = pdata[1] & 0xff;
 
                 this.inventoryItemsCount--;
 
-                for (let l12 = index; l12 < this.inventoryItemsCount; l12++) {
-                    this.inventoryItemId[l12] = this.inventoryItemId[l12 + 1];
-                    this.inventoryItemStackCount[l12] = this.inventoryItemStackCount[l12 + 1];
-                    this.inventoryEquipped[l12] = this.inventoryEquipped[l12 + 1];
+                for (let i = index; i < this.inventoryItemsCount; i++) {
+                    this.inventoryItemId[i] = this.inventoryItemId[i + 1];
+                    this.inventoryItemStackCount[i] = this.inventoryItemStackCount[i + 1];
+                    this.inventoryEquipped[i] = this.inventoryEquipped[i + 1];
                 }
 
                 return;
             }
 
             if (opcode === serverOpcodes.PLAYER_STAT_UPDATE) {
-                let l6 = 1;
-                let i13 = pdata[l6++] & 0xff;
+                let offset = 1;
+                let skillIndex = pdata[offset++] & 0xff;
 
-                this.playerStatCurrent[i13] = Utility.getUnsignedByte(pdata[l6++]);
-                this.playerStatBase[i13] = Utility.getUnsignedByte(pdata[l6++]);
-                this.playerExperience[i13] = Utility.getUnsignedInt(pdata, l6);
-                l6 += 4;
+                this.playerStatCurrent[skillIndex] = Utility.getUnsignedByte(pdata[offset++]);
+                this.playerStatBase[skillIndex] = Utility.getUnsignedByte(pdata[offset++]);
+                this.playerExperience[skillIndex] = Utility.getUnsignedInt(pdata, offset);
+                offset += 4;
 
                 return;
             }
 
             if (opcode === serverOpcodes.DUEL_OPPONENT_ACCEPTED) {
-                let byte2 = pdata[1];
-
-                if (byte2 === 1) {
-                    this.duelOfferOpponentAccepted = true;
-                    return;
-                } else {
-                    this.duelOfferOpponentAccepted = false;
-                    return;
-                }
+                this.duelOfferOpponentAccepted = !!pdata[1];
+                return;
             }
 
             if (opcode === serverOpcodes.DUEL_ACCEPTED) {
-                let byte3 = pdata[1];
-
-                if (byte3 === 1) {
-                    this.duelOfferAccepted = true;
-                    return;
-                } else {
-                    this.duelOfferAccepted = false;
-                    return;
-                }
+                this.duelOfferAccepted = !!pdata[1];
+                return;
             }
 
             if (opcode === serverOpcodes.DUEL_CONFIRM_OPEN) {
@@ -21309,47 +21385,49 @@ class mudclient extends GameConnection {
                 this.duelAccepted = false;
                 this.showDialogDuel = false;
 
-                let off = 1;
+                let offset = 1;
 
-                this.duelOpponentNameHash = Utility.getUnsignedLong(pdata, off);
-                off += 8;
-                this.duelOpponentItemsCount = pdata[off++] & 0xff;
+                this.duelOpponentNameHash = Utility.getUnsignedLong(pdata, offset);
+                offset += 8;
 
-                for (let j13 = 0; j13 < this.duelOpponentItemsCount; j13++) {
-                    this.duelOpponentItems[j13] = Utility.getUnsignedShort(pdata, off);
-                    off += 2;
-                    this.duelOpponentItemCount[j13] = Utility.getUnsignedInt(pdata, off);
-                    off += 4;
+                this.duelOpponentItemsCount = pdata[offset++] & 0xff;
+
+                for (let i = 0; i < this.duelOpponentItemsCount; i++) {
+                    this.duelOpponentItems[i] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+
+                    this.duelOpponentItemCount[i] = Utility.getUnsignedInt(pdata, offset);
+                    offset += 4;
                 }
 
-                this.duelItemsCount = pdata[off++] & 0xff;
+                this.duelItemsCount = pdata[offset++] & 0xff;
 
-                for (let j18 = 0; j18 < this.duelItemsCount; j18++) {
-                    this.duelItems[j18] = Utility.getUnsignedShort(pdata, off);
-                    off += 2;
-                    this.duelItemCount[j18] = Utility.getUnsignedInt(pdata, off);
-                    off += 4;
+                for (let i = 0; i < this.duelItemsCount; i++) {
+                    this.duelItems[i] = Utility.getUnsignedShort(pdata, offset);
+                    offset += 2;
+
+                    this.duelItemCount[i] = Utility.getUnsignedInt(pdata, offset);
+                    offset += 4;
                 }
 
-                this.duelOptionRetreat = pdata[off++] & 0xff;
-                this.duelOptionMagic = pdata[off++] & 0xff;
-                this.duelOptionPrayer = pdata[off++] & 0xff;
-                this.duelOptionWeapons = pdata[off++] & 0xff;
-
+                this.duelOptionRetreat = pdata[offset++] & 0xff;
+                this.duelOptionMagic = pdata[offset++] & 0xff;
+                this.duelOptionPrayer = pdata[offset++] & 0xff;
+                this.duelOptionWeapons = pdata[offset++] & 0xff;
                 return;
             }
 
             if (opcode === serverOpcodes.SOUND) {
-                let s = fromCharArray(pdata.slice(1, psize));
-                this.playSoundFile(s);
+                const soundName = fromCharArray(pdata.slice(1, psize));
+                this.playSoundFile(soundName);
                 return;
             }
 
             if (opcode === serverOpcodes.TELEPORT_BUBBLE) {
                 if (this.teleportBubbleCount < 50) {
-                    let type = pdata[1] & 0xff;
-                    let x = pdata[2] + this.localRegionX;
-                    let y = pdata[3] + this.localRegionY;
+                    const type = pdata[1] & 0xff;
+                    const x = pdata[2] + this.localRegionX;
+                    const y = pdata[3] + this.localRegionY;
                     this.teleportBubbleType[this.teleportBubbleCount] = type;
                     this.teleportBubbleTime[this.teleportBubbleCount] = 0;
                     this.teleportBubbleX[this.teleportBubbleCount] = x;
@@ -21378,7 +21456,6 @@ class mudclient extends GameConnection {
                 this.serverMessage = fromCharArray(pdata.slice(1, psize));
                 this.showDialogServerMessage = true;
                 this.serverMessageBoxTop = false;
-
                 return;
             }
 
@@ -21386,7 +21463,6 @@ class mudclient extends GameConnection {
                 this.serverMessage = fromCharArray(pdata.slice(1, psize));
                 this.showDialogServerMessage = true;
                 this.serverMessageBoxTop = true;
-
                 return;
             }
 
@@ -21405,7 +21481,6 @@ class mudclient extends GameConnection {
                 this.inputTextFinal = '';
                 this.surface.readSleepWord(this.spriteTexture + 1, pdata);
                 this.sleepingStatusText = null;
-
                 return;
             }
 
@@ -21432,25 +21507,25 @@ class mudclient extends GameConnection {
             console.error(e);
 
             if (this.packetErrorCount < 3) {
-                let s1 = e.stack;
-                let slen = s1.length;
+                let errorMessage = e.stack;
+                let messageLength = errorMessage.length;
 
                 this.packetStream.newPacket(clientOpcodes.PACKET_EXCEPTION);
-                this.packetStream.putShort(slen);
-                this.packetStream.putString(s1);
-                this.packetStream.putShort(slen = (s1 = 'p-type: ' + opcode + '(' + ptype + ') p-size:' + psize).length);
-                this.packetStream.putString(s1);
-                this.packetStream.putShort(slen = (s1 = 'rx:' + this.localRegionX + ' ry:' + this.localRegionY + ' num3l:' + this.objectCount).length);
-                this.packetStream.putString(s1);
+                this.packetStream.putShort(messageLength);
+                this.packetStream.putString(errorMessage);
+                this.packetStream.putShort(messageLength = (errorMessage = 'p-type: ' + opcode + '(' + ptype + ') p-size:' + psize).length);
+                this.packetStream.putString(errorMessage);
+                this.packetStream.putShort(messageLength = (errorMessage = 'rx:' + this.localRegionX + ' ry:' + this.localRegionY + ' num3l:' + this.objectCount).length);
+                this.packetStream.putString(errorMessage);
 
-                s1 = '';
+                errorMessage = '';
 
-                for (let l18 = 0; l18 < 80 && l18 < psize; l18++) {
-                    s1 = s1 + pdata[l18] + ' ';
+                for (let i = 0; i < 80 && i < psize; i++) {
+                    errorMessage = errorMessage + pdata[i] + ' ';
                 }
 
-                this.packetStream.putShort(s1.length);
-                this.packetStream.putString(s1);
+                this.packetStream.putShort(errorMessage.length);
+                this.packetStream.putString(errorMessage);
                 this.packetStream.sendPacket();
                 this.packetErrorCount++;
             }
@@ -22293,13 +22368,14 @@ class PacketStream {
             this.packetEnd++;
         }
 
-        let j = this.packetEnd - this.packetStart - 2;
+        const length = this.packetEnd - this.packetStart - 2;
 
-        if (j >= 160) {
-            this.packetData[this.packetStart] = (160 + ((j / 256) | 0)) & 0xff;
-            this.packetData[this.packetStart + 1] = j & 0xff;
+        if (length >= 160) {
+            this.packetData[this.packetStart] =
+                (160 + ((length / 256) | 0)) & 0xff;
+            this.packetData[this.packetStart + 1] = length & 0xff;
         } else {
-            this.packetData[this.packetStart] = j & 0xff;
+            this.packetData[this.packetStart] = length & 0xff;
             this.packetEnd--;
             this.packetData[this.packetStart + 1] = this.packetData[
                 this.packetEnd
@@ -22328,7 +22404,7 @@ class PacketStream {
         this.putInt(l.toInt());
     }
 
-    newPacket(i) {
+    newPacket(opcode) {
         if (this.packetStart > (((this.packetMaxLength * 4) / 5) | 0)) {
             try {
                 this.writePacket(0);
@@ -22342,7 +22418,7 @@ class PacketStream {
             this.packetData = new Int8Array(this.packetMaxLength);
         }
 
-        this.packetData[this.packetStart + 2] = i & 0xff;
+        this.packetData[this.packetStart + 2] = opcode & 0xff;
         this.packetData[this.packetStart + 3] = 0;
         this.packetEnd = this.packetStart + 3;
         this.packet8Check = 8;
@@ -28576,7 +28652,7 @@ class Surface {
     }
 
     readSleepWord(spriteId, spriteData) {
-        let pixels = (this.surfacePixels[spriteId] = new Int32Array(10200));
+        const pixels = (this.surfacePixels[spriteId] = new Int32Array(10200));
 
         this.spriteWidth[spriteId] = 255;
         this.spriteHeight[spriteId] = 40;
@@ -28586,33 +28662,34 @@ class Surface {
         this.spriteHeightFull[spriteId] = 40;
         this.spriteTranslate[spriteId] = false;
 
-        let j = 0;
-        let k = 1;
-        let l = 0;
+        let colour = 0;
+        let packetOffset = 1;
+        let pixelOffset = 0;
 
-        for (l = 0; l < 255; ) {
-            let i1 = spriteData[k++] & 0xff;
+        for (pixelOffset = 0; pixelOffset < 255; ) {
+            const length = spriteData[packetOffset++] & 0xff;
 
-            for (let k1 = 0; k1 < i1; k1++) {
-                pixels[l++] = j;
+            for (let i = 0; i < length; i++) {
+                pixels[pixelOffset++] = colour;
             }
 
-            j = 0xffffff - j;
+            // alternate between black and white
+            colour = 0xffffff - colour;
         }
 
         for (let y = 1; y < 40; y++) {
             for (let x = 0; x < 255; ) {
-                let i2 = spriteData[k++] & 0xff;
+                const length = spriteData[packetOffset++] & 0xff;
 
-                for (let j2 = 0; j2 < i2; j2++) {
-                    pixels[l] = pixels[l - 255];
-                    l++;
+                for (let i = 0; i < length; i++) {
+                    pixels[pixelOffset] = pixels[pixelOffset - 255];
+                    pixelOffset++;
                     x++;
                 }
 
                 if (x < 255) {
-                    pixels[l] = 0xffffff - pixels[l - 255];
-                    l++;
+                    pixels[pixelOffset] = 0xffffff - pixels[pixelOffset - 255];
+                    pixelOffset++;
                     x++;
                 }
             }
@@ -31429,7 +31506,7 @@ function createLoginPanels() {
         this.panelLoginWelcome.addText(
             x,
             215 + y,
-            'You need a member account to use this server',
+            'You need a members account to use this server',
             4,
             true
         );
@@ -33611,6 +33688,7 @@ const clientOpcodes = require('../opcodes/client');
 const GREY = 0x989898;
 const WHITE = 0xffffff;
 const RED = 0xff0000;
+const YELLOW = 0xffff00;
 
 function drawDialogShop() {
     if (this.mouseButtonClick !== 0) {
@@ -33711,8 +33789,8 @@ function drawDialogShop() {
         }
     }
 
-    let dialogX = 52;
-    let dialogY = 44;
+    const dialogX = 52;
+    const dialogY = 44;
 
     this.surface.drawBox(dialogX, dialogY, 408, 12, 192);
     this.surface.drawBoxAlpha(dialogX, dialogY + 12, 408, 17, GREY, 160);
@@ -33771,7 +33849,7 @@ function drawDialogShop() {
         dialogX + 280,
         dialogY + 24,
         1,
-        0xffff00
+        YELLOW
     );
     let itemIndex = 0;
 
@@ -33829,7 +33907,7 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 214,
             3,
-            0xffff00
+            YELLOW
         );
         return;
     }
@@ -33859,7 +33937,7 @@ function drawDialogShop() {
                 dialogX + 2,
                 dialogY + 214,
                 1,
-                0xffff00
+                YELLOW
             );
 
             textColour = WHITE;
@@ -33886,7 +33964,7 @@ function drawDialogShop() {
                 dialogX + 204,
                 dialogY + 214,
                 3,
-                0xffff00
+                YELLOW
             );
         }
 
@@ -33909,7 +33987,7 @@ function drawDialogShop() {
                 dialogX + 405,
                 dialogY + 239,
                 1,
-                0xffff00
+                YELLOW
             );
 
             textColour = WHITE;
@@ -33939,7 +34017,7 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 239,
             3,
-            0xffff00
+            YELLOW
         );
     }
 }
@@ -35499,24 +35577,38 @@ class Utility {
         return new FileDownloadStream(s);
     }
 
-    static getUnsignedByte(byte0) {
-        return byte0 & 0xff;
+    static getUnsignedByte(i) {
+        return i & 0xff;
     }
 
-    static getUnsignedShort(abyte0, i) {
-        return ((abyte0[i] & 0xff) << 8) + (abyte0[i + 1] & 0xff);
+    static getUnsignedShort(buffer, i) {
+        return ((buffer[i] & 0xff) << 8) + (buffer[i + 1] & 0xff);
     }
 
-    static getUnsignedInt(abyte0, i) {
-        return ((abyte0[i] & 0xff) << 24) + ((abyte0[i + 1] & 0xff) << 16) + ((abyte0[i + 2] & 0xff) << 8) + (abyte0[i + 3] & 0xff);
+    static getUnsignedInt(buffer, i) {
+        return (
+            ((buffer[i] & 0xff) << 24) +
+            ((buffer[i + 1] & 0xff) << 16) +
+            ((buffer[i + 2] & 0xff) << 8) +
+            (buffer[i + 3] & 0xff)
+        );
     }
 
-    static getUnsignedLong(buff, off) {
-        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(new Long(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff));
+    static getUnsignedLong(buffer, offset) {
+        return Long.fromInt(Utility.getUnsignedInt(buffer, offset) & 0xffffffff)
+            .shiftLeft(32)
+            .add(
+                new Long(
+                    Utility.getUnsignedInt(buffer, offset + 4) & 0xffffffff
+                )
+            );
     }
 
-    static getSignedShort(abyte0, i) {
-        let j = (Utility.getUnsignedByte(abyte0[i]) * 256 + Utility.getUnsignedByte(abyte0[i + 1])) | 0;
+    static getSignedShort(buffer, i) {
+        let j =
+            (Utility.getUnsignedByte(buffer[i]) * 256 +
+                Utility.getUnsignedByte(buffer[i + 1])) |
+            0;
 
         if (j > 32767) {
             j -= 0x10000;
@@ -35525,95 +35617,112 @@ class Utility {
         return j;
     }
 
-    static getUnsignedInt2(abyte0, i) {
-        if ((abyte0[i] & 0xff) < 128) {
-            return abyte0[i];
+    static getStackInt(buffer, i) {
+        if ((buffer[i] & 0xff) < 128) {
+            return buffer[i];
         } else {
-            return ((abyte0[i] & 0xff) - 128 << 24) + ((abyte0[i + 1] & 0xff) << 16) + ((abyte0[i + 2] & 0xff) << 8) + (abyte0[i + 3] & 0xff);
+            return (
+                (((buffer[i] & 0xff) - 128) << 24) +
+                ((buffer[i + 1] & 0xff) << 16) +
+                ((buffer[i + 2] & 0xff) << 8) +
+                (buffer[i + 3] & 0xff)
+            );
         }
     }
 
-    static getBitMask(buff, off, len) {
-        let k = off >> 3;
-        let l = 8 - (off & 7);
-        let i1 = 0;
+    static getBitMask(buffer, start, length) {
+        let byteOffset = start >> 3;
+        let bitOffset = 8 - (start & 7);
+        let bits = 0;
 
-        for (; len > l; l = 8) {
-            i1 += (buff[k++] & Utility.bitmask[l]) << len - l;
-            len -= l;
+        for (; length > bitOffset; bitOffset = 8) {
+            bits +=
+                (buffer[byteOffset++] & Utility.bitmask[bitOffset]) <<
+                (length - bitOffset);
+            length -= bitOffset;
         }
 
-        if (len === l) {
-            i1 += buff[k] & Utility.bitmask[l];
+        if (length === bitOffset) {
+            bits += buffer[byteOffset] & Utility.bitmask[bitOffset];
         } else {
-            i1 += buff[k] >> l - len & Utility.bitmask[len];
+            bits +=
+                (buffer[byteOffset] >> (bitOffset - length)) &
+                Utility.bitmask[length];
         }
 
-        return i1;
+        return bits;
     }
 
-    static formatAuthString(s, maxLen) {
-        let s1 = '';
+    static formatAuthString(raw, maxLength) {
+        let formatted = '';
 
-        for (let j = 0; j < maxLen; j++) {
-            if (j >= s.length) {
-                s1 = s1 + ' ';
+        for (let i = 0; i < maxLength; i++) {
+            if (i >= raw.length) {
+                formatted = formatted + ' ';
             } else {
-                let c = s.charCodeAt(j);
+                let charCode = raw.charCodeAt(i);
 
-                if (c >= C_A && c <= C_Z) {
-                    s1 = s1 + String.fromCharCode(c);
-                } else if (c >= C_BIG_A && c <= C_BIG_Z) {
-                    s1 = s1 + String.fromCharCode(c);
-                } else if (c >= C_0 && c <= C_9) {
-                    s1 = s1 + String.fromCharCode(c);
+                if (charCode >= C_A && charCode <= C_Z) {
+                    formatted = formatted + String.fromCharCode(charCode);
+                } else if (charCode >= C_BIG_A && charCode <= C_BIG_Z) {
+                    formatted = formatted + String.fromCharCode(charCode);
+                } else if (charCode >= C_0 && charCode <= C_9) {
+                    formatted = formatted + String.fromCharCode(charCode);
                 } else {
-                    s1 = s1 + '_';
+                    formatted = formatted + '_';
                 }
             }
         }
 
-        return s1;
+        return formatted;
     }
 
-    static ipToString(i) {
-        return (i >> 24 & 0xff) + '.' + (i >> 16 & 0xff) + '.' + (i >> 8 & 0xff) + '.' + (i & 0xff);
+    static ipToString(ip) {
+        return (
+            ((ip >> 24) & 0xff) +
+            '.' +
+            ((ip >> 16) & 0xff) +
+            '.' +
+            ((ip >> 8) & 0xff) +
+            '.' +
+            (ip & 0xff)
+        );
     }
 
-    static usernameToHash(s) {
-        let s1 = '';
+    static usernameToHash(username) {
+        let cleaned = '';
 
-        for (let i = 0; i < s.length; i++) {
-            let c = s.charCodeAt(i);
+        for (let i = 0; i < username.length; i++) {
+            let c = username.charCodeAt(i);
 
             if (c >= C_A && c <= C_Z) {
-                s1 = s1 + String.fromCharCode(c);
+                cleaned = cleaned + String.fromCharCode(c);
             } else if (c >= C_BIG_A && c <= C_BIG_Z) {
-                s1 = s1 + String.fromCharCode((c + 97) - 65);
+                cleaned = cleaned + String.fromCharCode(c + 97 - 65);
             } else if (c >= C_0 && c <= C_9) {
-                s1 = s1 + String.fromCharCode(c);
+                cleaned = cleaned + String.fromCharCode(c);
             } else {
-                s1 = s1 + ' ';
+                cleaned = cleaned + ' ';
             }
         }
 
-        s1 = s1.trim();
+        cleaned = cleaned.trim();
 
-        if (s1.length > 12) {
-            s1 = s1.slice(0, 12);
+        if (cleaned.length > 12) {
+            cleaned = cleaned.slice(0, 12);
         }
 
         let hash = new Long(0);
 
-        for (let j = 0; j < s1.length; j++) {
-            let c1 = s1.charCodeAt(j);
+        for (let j = 0; j < cleaned.length; j++) {
+            let charCode = cleaned.charCodeAt(j);
 
             hash = hash.multiply(37);
 
-            if (c1 >= C_A && c1 <= C_Z) {
-                hash = hash.add((1 + c1) - 97);
-            } else if (c1 >= C_0 && c1 <= C_9) {
-                hash = hash.add((27 + c1) - 48);
+            if (charCode >= C_A && charCode <= C_Z) {
+                hash = hash.add(1 + charCode - 97);
+            } else if (charCode >= C_0 && charCode <= C_9) {
+                hash = hash.add(27 + charCode - 48);
             }
         }
 
@@ -35625,43 +35734,55 @@ class Utility {
             return 'invalidName';
         }
 
-        let s = '';
+        let username = '';
 
         while (!hash.equals(0)) {
-            let i = hash.modulo(37).toInt();
+            let charCode = hash.modulo(37).toInt();
             hash = hash.divide(37);
 
-            if (i === 0) {
-                s = ' ' + s;
-            } else if (i < 27) {
+            if (charCode === 0) {
+                username = ' ' + username;
+            } else if (charCode < 27) {
                 if (hash.modulo(37).equals(0)) {
-                    s = String.fromCharCode((i + 65) - 1) + s;
+                    username =
+                        String.fromCharCode(charCode + 65 - 1) + username;
                 } else {
-                    s = String.fromCharCode((i + 97) - 1) + s;
+                    username =
+                        String.fromCharCode(charCode + 97 - 1) + username;
                 }
             } else {
-                s = String.fromCharCode((i + 48) - 27) + s;
+                username = String.fromCharCode(charCode + 48 - 27) + username;
             }
         }
 
-        return s;
+        return username;
     }
 
-    static getDataFileOffset(filename, data) {
+    static getDataFileOffset(fileName, data) {
         let numEntries = Utility.getUnsignedShort(data, 0);
         let wantedHash = 0;
 
-        filename = filename.toUpperCase();
+        fileName = fileName.toUpperCase();
 
-        for (let k = 0; k < filename.length; k++) {
-            wantedHash = (((wantedHash * 61) | 0) + filename.charCodeAt(k)) - 32;
+        for (let k = 0; k < fileName.length; k++) {
+            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(k) - 32;
         }
 
         let offset = 2 + numEntries * 10;
 
         for (let entry = 0; entry < numEntries; entry++) {
-            let fileHash = ((data[entry * 10 + 2] & 0xff) * 0x1000000 + (data[entry * 10 + 3] & 0xff) * 0x10000 + (data[entry * 10 + 4] & 0xff) * 256 + (data[entry * 10 + 5] & 0xff)) | 0;
-            let fileSize = ((data[entry * 10 + 9] & 0xff) * 0x10000 + (data[entry * 10 + 10] & 0xff) * 256 + (data[entry * 10 + 11] & 0xff)) | 0;
+            let fileHash =
+                ((data[entry * 10 + 2] & 0xff) * 0x1000000 +
+                    (data[entry * 10 + 3] & 0xff) * 0x10000 +
+                    (data[entry * 10 + 4] & 0xff) * 256 +
+                    (data[entry * 10 + 5] & 0xff)) |
+                0;
+
+            let fileSize =
+                ((data[entry * 10 + 9] & 0xff) * 0x10000 +
+                    (data[entry * 10 + 10] & 0xff) * 256 +
+                    (data[entry * 10 + 11] & 0xff)) |
+                0;
 
             if (fileHash === wantedHash) {
                 return offset;
@@ -35673,19 +35794,29 @@ class Utility {
         return 0;
     }
 
-    static getDataFileLength(filename, data) {
-        let numEntries = Utility.getUnsignedShort(data, 0);
+    static getDataFileLength(fileName, buffer) {
+        const numEntries = Utility.getUnsignedShort(buffer, 0);
         let wantedHash = 0;
 
-        filename = filename.toUpperCase();
+        fileName = fileName.toUpperCase();
 
-        for (let k = 0; k < filename.length; k++) {
-            wantedHash = (((wantedHash * 61) | 0) + filename.charCodeAt(k)) - 32;
+        for (let i = 0; i < fileName.length; i++) {
+            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(i) - 32;
         }
 
-        for (let i1 = 0; i1 < numEntries; i1++) {
-            let fileHash = ((data[i1 * 10 + 2] & 0xff) * 0x1000000 + (data[i1 * 10 + 3] & 0xff) * 0x10000 + (data[i1 * 10 + 4] & 0xff) * 256 + (data[i1 * 10 + 5] & 0xff)) | 0;
-            let fileSize = ((data[i1 * 10 + 6] & 0xff) * 0x10000 + (data[i1 * 10 + 7] & 0xff) * 256 + (data[i1 * 10 + 8] & 0xff)) | 0;
+        for (let i = 0; i < numEntries; i++) {
+            let fileHash =
+                ((buffer[i * 10 + 2] & 0xff) * 0x1000000 +
+                    (buffer[i * 10 + 3] & 0xff) * 0x10000 +
+                    (buffer[i * 10 + 4] & 0xff) * 256 +
+                    (buffer[i * 10 + 5] & 0xff)) |
+                0;
+
+            let fileSize =
+                ((buffer[i * 10 + 6] & 0xff) * 0x10000 +
+                    (buffer[i * 10 + 7] & 0xff) * 256 +
+                    (buffer[i * 10 + 8] & 0xff)) |
+                0;
 
             if (fileHash === wantedHash) {
                 return fileSize;
@@ -35695,35 +35826,54 @@ class Utility {
         return 0;
     }
 
-    static loadData(s, i, abyte0) {
-        let b = Utility.unpackData(s, i, abyte0, null);
-        return b;
+    static loadData(fileName, extraSize, archiveData) {
+        return Utility.unpackData(fileName, extraSize, archiveData, null);
     }
 
-    static unpackData(filename, i, archiveData, fileData) {
-        let numEntries = ((archiveData[0] & 0xff) * 256 + (archiveData[1] & 0xff)) | 0;
+    static unpackData(fileName, extraSize, archiveData, fileData) {
+        const numEntries =
+            ((archiveData[0] & 0xff) * 256 + (archiveData[1] & 0xff)) | 0;
         let wantedHash = 0;
 
-        filename = filename.toUpperCase();
+        fileName = fileName.toUpperCase();
 
-        for (let l = 0; l < filename.length; l++) {
-            wantedHash = (((wantedHash * 61) | 0) + filename.charCodeAt(l)) - 32;
+        for (let l = 0; l < fileName.length; l++) {
+            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(l) - 32;
         }
 
         let offset = 2 + numEntries * 10;
 
         for (let entry = 0; entry < numEntries; entry++) {
-            let fileHash = ((archiveData[entry * 10 + 2] & 0xff) * 0x1000000 + (archiveData[entry * 10 + 3] & 0xff) * 0x10000 + (archiveData[entry * 10 + 4] & 0xff) * 256 + (archiveData[entry * 10 + 5] & 0xff)) | 0;
-            let fileSize = ((archiveData[entry * 10 + 6] & 0xff) * 0x10000 + (archiveData[entry * 10 + 7] & 0xff) * 256 + (archiveData[entry * 10 + 8] & 0xff)) | 0;
-            let fileSizeCompressed = ((archiveData[entry * 10 + 9] & 0xff) * 0x10000 + (archiveData[entry * 10 + 10] & 0xff) * 256 + (archiveData[entry * 10 + 11] & 0xff)) | 0;
+            const fileHash =
+                ((archiveData[entry * 10 + 2] & 0xff) * 0x1000000 +
+                    (archiveData[entry * 10 + 3] & 0xff) * 0x10000 +
+                    (archiveData[entry * 10 + 4] & 0xff) * 256 +
+                    (archiveData[entry * 10 + 5] & 0xff)) |
+                0;
+            const fileSize =
+                ((archiveData[entry * 10 + 6] & 0xff) * 0x10000 +
+                    (archiveData[entry * 10 + 7] & 0xff) * 256 +
+                    (archiveData[entry * 10 + 8] & 0xff)) |
+                0;
+            const fileSizeCompressed =
+                ((archiveData[entry * 10 + 9] & 0xff) * 0x10000 +
+                    (archiveData[entry * 10 + 10] & 0xff) * 256 +
+                    (archiveData[entry * 10 + 11] & 0xff)) |
+                0;
 
             if (fileHash === wantedHash) {
                 if (fileData === null) {
-                    fileData = new Int8Array(fileSize + i);
+                    fileData = new Int8Array(fileSize + extraSize);
                 }
 
                 if (fileSize !== fileSizeCompressed) {
-                    BZLib.decompress(fileData, fileSize, archiveData, fileSizeCompressed, offset);
+                    BZLib.decompress(
+                        fileData,
+                        fileSize,
+                        archiveData,
+                        fileSizeCompressed,
+                        offset
+                    );
                 } else {
                     for (let j = 0; j < fileSize; j++) {
                         fileData[j] = archiveData[offset + j];
@@ -35743,15 +35893,17 @@ class Utility {
         let formatted = amount.toString();
 
         for (let i = formatted.length - 3; i > 0; i -= 3) {
-            formatted = formatted.substring(0, i) + ',' +
-                formatted.substring(i);
+            formatted =
+                formatted.substring(0, i) + ',' + formatted.substring(i);
         }
 
         if (formatted.length > 8) {
-            formatted = `@gre@${formatted.substring(0, formatted.length - 8)}` +
+            formatted =
+                `@gre@${formatted.substring(0, formatted.length - 8)}` +
                 ` million @whi@(${formatted})`;
         } else if (formatted.length > 4) {
-            formatted = `@cya@${formatted.substring(0, formatted.length - 4)}` +
+            formatted =
+                `@cya@${formatted.substring(0, formatted.length - 4)}` +
                 `K @whi@(${formatted})`;
         }
 
@@ -35759,12 +35911,40 @@ class Utility {
     }
 }
 
-Utility.aBoolean546 = false;
 Utility.bitmask = new Int32Array([
-    0, 1, 3, 7, 15, 31, 63, 127, 255, 511,
-    1023, 2047, 4095, 8191, 16383, 32767, 65535, 0x1ffff, 0x3ffff, 0x7ffff,
-    0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff, 0x1ffffff, 0x3ffffff,
-    0x7ffffff, 0xfffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff, -1
+    0,
+    1,
+    3,
+    7,
+    15,
+    31,
+    63,
+    127,
+    255,
+    511,
+    1023,
+    2047,
+    4095,
+    8191,
+    16383,
+    32767,
+    65535,
+    0x1ffff,
+    0x3ffff,
+    0x7ffff,
+    0xfffff,
+    0x1fffff,
+    0x3fffff,
+    0x7fffff,
+    0xffffff,
+    0x1ffffff,
+    0x3ffffff,
+    0x7ffffff,
+    0xfffffff,
+    0x1fffffff,
+    0x3fffffff,
+    0x7fffffff,
+    -1
 ]);
 
 module.exports = Utility;

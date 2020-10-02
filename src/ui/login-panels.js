@@ -47,7 +47,7 @@ function createLoginPanels() {
         this.panelLoginWelcome.addText(
             x,
             215 + y,
-            'You need a member account to use this server',
+            'You need a members account to use this server',
             4,
             true
         );

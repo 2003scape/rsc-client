@@ -1,3 +1,5 @@
+// shims https://docs.oracle.com/javase/7/docs/api/java/awt/Graphics.html
+
 class Graphics {
     constructor(canvas) {
         this.canvas = canvas;

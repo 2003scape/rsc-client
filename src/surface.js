@@ -543,7 +543,7 @@ class Surface {
     }
 
     readSleepWord(spriteId, spriteData) {
-        let pixels = (this.surfacePixels[spriteId] = new Int32Array(10200));
+        const pixels = (this.surfacePixels[spriteId] = new Int32Array(10200));
 
         this.spriteWidth[spriteId] = 255;
         this.spriteHeight[spriteId] = 40;
@@ -553,33 +553,34 @@ class Surface {
         this.spriteHeightFull[spriteId] = 40;
         this.spriteTranslate[spriteId] = false;
 
-        let j = 0;
-        let k = 1;
-        let l = 0;
+        let colour = 0;
+        let packetOffset = 1;
+        let pixelOffset = 0;
 
-        for (l = 0; l < 255; ) {
-            let i1 = spriteData[k++] & 0xff;
+        for (pixelOffset = 0; pixelOffset < 255; ) {
+            const length = spriteData[packetOffset++] & 0xff;
 
-            for (let k1 = 0; k1 < i1; k1++) {
-                pixels[l++] = j;
+            for (let i = 0; i < length; i++) {
+                pixels[pixelOffset++] = colour;
             }
 
-            j = 0xffffff - j;
+            // alternate between black and white
+            colour = 0xffffff - colour;
         }
 
         for (let y = 1; y < 40; y++) {
             for (let x = 0; x < 255; ) {
-                let i2 = spriteData[k++] & 0xff;
+                const length = spriteData[packetOffset++] & 0xff;
 
-                for (let j2 = 0; j2 < i2; j2++) {
-                    pixels[l] = pixels[l - 255];
-                    l++;
+                for (let i = 0; i < length; i++) {
+                    pixels[pixelOffset] = pixels[pixelOffset - 255];
+                    pixelOffset++;
                     x++;
                 }
 
                 if (x < 255) {
-                    pixels[l] = 0xffffff - pixels[l - 255];
-                    l++;
+                    pixels[pixelOffset] = 0xffffff - pixels[pixelOffset - 255];
+                    pixelOffset++;
                     x++;
                 }
             }

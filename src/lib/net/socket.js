@@ -7,7 +7,7 @@ class Socket {
         this.connected = false;
 
         // amount of bytes are left to read since last read call (in total)
-        this.bytesAvailable = 0; 
+        this.bytesAvailable = 0;
         // the message buffers that arrive from the websocket
         this.buffers = [];
         // the current buffer we're reading
@@ -20,10 +20,13 @@ class Socket {
 
     connect() {
         return new Promise((resolve, reject) => {
-            this.client = new WebSocket(`ws://${this.host}:${this.port}`, 'binary');
+            this.client = new WebSocket(
+                `ws://${this.host}:${this.port}`,
+                'binary'
+            );
             this.client.binaryType = 'arraybuffer';
 
-            const onError = err => {
+            const onError = (err) => {
                 this.client.removeEventListener('error', onError);
                 reject(err);
             };
@@ -35,7 +38,7 @@ class Socket {
                 this.clear();
             });
 
-            this.client.addEventListener('message', msg => {
+            this.client.addEventListener('message', (msg) => {
                 this.buffers.push(new Int8Array(msg.data));
                 this.bytesAvailable += msg.data.byteLength;
                 this.refreshCurrentBuffer();
@@ -95,7 +98,7 @@ class Socket {
                 resolve(-1);
             };
 
-            onError = err => {
+            onError = (err) => {
                 this.client.removeEventListener('error', onError);
                 this.client.removeEventListener('close', onClose);
                 this.client.removeEventListener('message', onNextMessage);
@@ -117,7 +120,7 @@ class Socket {
         });
     }
 
-    // read multiple bytes (specified by `len`) and put them into the `dest` 
+    // read multiple bytes (specified by `len`) and put them into the `dest`
     // array at specified `off` (0 by default).
     async readBytes(dest, off = 0, len = -1) {
         if (!this.connected) {
@@ -151,7 +154,7 @@ class Socket {
                 resolve(-1);
             };
 
-            onError = err => {
+            onError = (err) => {
                 this.client.removeEventListener('error', onError);
                 this.client.removeEventListener('close', onClose);
                 this.client.removeEventListener('message', onNextMessage);
@@ -197,3 +200,4 @@ class Socket {
 }
 
 module.exports = Socket;
+

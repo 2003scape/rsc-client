@@ -128,13 +128,14 @@ class PacketStream {
             this.packetEnd++;
         }
 
-        let j = this.packetEnd - this.packetStart - 2;
+        const length = this.packetEnd - this.packetStart - 2;
 
-        if (j >= 160) {
-            this.packetData[this.packetStart] = (160 + ((j / 256) | 0)) & 0xff;
-            this.packetData[this.packetStart + 1] = j & 0xff;
+        if (length >= 160) {
+            this.packetData[this.packetStart] =
+                (160 + ((length / 256) | 0)) & 0xff;
+            this.packetData[this.packetStart + 1] = length & 0xff;
         } else {
-            this.packetData[this.packetStart] = j & 0xff;
+            this.packetData[this.packetStart] = length & 0xff;
             this.packetEnd--;
             this.packetData[this.packetStart + 1] = this.packetData[
                 this.packetEnd
@@ -163,7 +164,7 @@ class PacketStream {
         this.putInt(l.toInt());
     }
 
-    newPacket(i) {
+    newPacket(opcode) {
         if (this.packetStart > (((this.packetMaxLength * 4) / 5) | 0)) {
             try {
                 this.writePacket(0);
@@ -177,7 +178,7 @@ class PacketStream {
             this.packetData = new Int8Array(this.packetMaxLength);
         }
 
-        this.packetData[this.packetStart + 2] = i & 0xff;
+        this.packetData[this.packetStart + 2] = opcode & 0xff;
         this.packetData[this.packetStart + 3] = 0;
         this.packetEnd = this.packetStart + 3;
         this.packet8Check = 8;

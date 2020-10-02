@@ -4,6 +4,7 @@ const clientOpcodes = require('../opcodes/client');
 const GREY = 0x989898;
 const WHITE = 0xffffff;
 const RED = 0xff0000;
+const YELLOW = 0xffff00;
 
 function drawDialogShop() {
     if (this.mouseButtonClick !== 0) {
@@ -104,8 +105,8 @@ function drawDialogShop() {
         }
     }
 
-    let dialogX = 52;
-    let dialogY = 44;
+    const dialogX = 52;
+    const dialogY = 44;
 
     this.surface.drawBox(dialogX, dialogY, 408, 12, 192);
     this.surface.drawBoxAlpha(dialogX, dialogY + 12, 408, 17, GREY, 160);
@@ -164,7 +165,7 @@ function drawDialogShop() {
         dialogX + 280,
         dialogY + 24,
         1,
-        0xffff00
+        YELLOW
     );
     let itemIndex = 0;
 
@@ -222,7 +223,7 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 214,
             3,
-            0xffff00
+            YELLOW
         );
         return;
     }
@@ -252,7 +253,7 @@ function drawDialogShop() {
                 dialogX + 2,
                 dialogY + 214,
                 1,
-                0xffff00
+                YELLOW
             );
 
             textColour = WHITE;
@@ -279,7 +280,7 @@ function drawDialogShop() {
                 dialogX + 204,
                 dialogY + 214,
                 3,
-                0xffff00
+                YELLOW
             );
         }
 
@@ -302,7 +303,7 @@ function drawDialogShop() {
                 dialogX + 405,
                 dialogY + 239,
                 1,
-                0xffff00
+                YELLOW
             );
 
             textColour = WHITE;
@@ -332,7 +333,7 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 239,
             3,
-            0xffff00
+            YELLOW
         );
     }
 }

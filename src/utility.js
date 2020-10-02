@@ -14,24 +14,38 @@ class Utility {
         return new FileDownloadStream(s);
     }
 
-    static getUnsignedByte(byte0) {
-        return byte0 & 0xff;
+    static getUnsignedByte(i) {
+        return i & 0xff;
     }
 
-    static getUnsignedShort(abyte0, i) {
-        return ((abyte0[i] & 0xff) << 8) + (abyte0[i + 1] & 0xff);
+    static getUnsignedShort(buffer, i) {
+        return ((buffer[i] & 0xff) << 8) + (buffer[i + 1] & 0xff);
     }
 
-    static getUnsignedInt(abyte0, i) {
-        return ((abyte0[i] & 0xff) << 24) + ((abyte0[i + 1] & 0xff) << 16) + ((abyte0[i + 2] & 0xff) << 8) + (abyte0[i + 3] & 0xff);
+    static getUnsignedInt(buffer, i) {
+        return (
+            ((buffer[i] & 0xff) << 24) +
+            ((buffer[i + 1] & 0xff) << 16) +
+            ((buffer[i + 2] & 0xff) << 8) +
+            (buffer[i + 3] & 0xff)
+        );
     }
 
-    static getUnsignedLong(buff, off) {
-        return Long.fromInt(Utility.getUnsignedInt(buff, off) & 0xffffffff).shiftLeft(32).add(new Long(Utility.getUnsignedInt(buff, off + 4) & 0xffffffff));
+    static getUnsignedLong(buffer, offset) {
+        return Long.fromInt(Utility.getUnsignedInt(buffer, offset) & 0xffffffff)
+            .shiftLeft(32)
+            .add(
+                new Long(
+                    Utility.getUnsignedInt(buffer, offset + 4) & 0xffffffff
+                )
+            );
     }
 
-    static getSignedShort(abyte0, i) {
-        let j = (Utility.getUnsignedByte(abyte0[i]) * 256 + Utility.getUnsignedByte(abyte0[i + 1])) | 0;
+    static getSignedShort(buffer, i) {
+        let j =
+            (Utility.getUnsignedByte(buffer[i]) * 256 +
+                Utility.getUnsignedByte(buffer[i + 1])) |
+            0;
 
         if (j > 32767) {
             j -= 0x10000;
@@ -40,95 +54,112 @@ class Utility {
         return j;
     }
 
-    static getUnsignedInt2(abyte0, i) {
-        if ((abyte0[i] & 0xff) < 128) {
-            return abyte0[i];
+    static getStackInt(buffer, i) {
+        if ((buffer[i] & 0xff) < 128) {
+            return buffer[i];
         } else {
-            return ((abyte0[i] & 0xff) - 128 << 24) + ((abyte0[i + 1] & 0xff) << 16) + ((abyte0[i + 2] & 0xff) << 8) + (abyte0[i + 3] & 0xff);
+            return (
+                (((buffer[i] & 0xff) - 128) << 24) +
+                ((buffer[i + 1] & 0xff) << 16) +
+                ((buffer[i + 2] & 0xff) << 8) +
+                (buffer[i + 3] & 0xff)
+            );
         }
     }
 
-    static getBitMask(buff, off, len) {
-        let k = off >> 3;
-        let l = 8 - (off & 7);
-        let i1 = 0;
+    static getBitMask(buffer, start, length) {
+        let byteOffset = start >> 3;
+        let bitOffset = 8 - (start & 7);
+        let bits = 0;
 
-        for (; len > l; l = 8) {
-            i1 += (buff[k++] & Utility.bitmask[l]) << len - l;
-            len -= l;
+        for (; length > bitOffset; bitOffset = 8) {
+            bits +=
+                (buffer[byteOffset++] & Utility.bitmask[bitOffset]) <<
+                (length - bitOffset);
+            length -= bitOffset;
         }
 
-        if (len === l) {
-            i1 += buff[k] & Utility.bitmask[l];
+        if (length === bitOffset) {
+            bits += buffer[byteOffset] & Utility.bitmask[bitOffset];
         } else {
-            i1 += buff[k] >> l - len & Utility.bitmask[len];
+            bits +=
+                (buffer[byteOffset] >> (bitOffset - length)) &
+                Utility.bitmask[length];
         }
 
-        return i1;
+        return bits;
     }
 
-    static formatAuthString(s, maxLen) {
-        let s1 = '';
+    static formatAuthString(raw, maxLength) {
+        let formatted = '';
 
-        for (let j = 0; j < maxLen; j++) {
-            if (j >= s.length) {
-                s1 = s1 + ' ';
+        for (let i = 0; i < maxLength; i++) {
+            if (i >= raw.length) {
+                formatted = formatted + ' ';
             } else {
-                let c = s.charCodeAt(j);
+                let charCode = raw.charCodeAt(i);
 
-                if (c >= C_A && c <= C_Z) {
-                    s1 = s1 + String.fromCharCode(c);
-                } else if (c >= C_BIG_A && c <= C_BIG_Z) {
-                    s1 = s1 + String.fromCharCode(c);
-                } else if (c >= C_0 && c <= C_9) {
-                    s1 = s1 + String.fromCharCode(c);
+                if (charCode >= C_A && charCode <= C_Z) {
+                    formatted = formatted + String.fromCharCode(charCode);
+                } else if (charCode >= C_BIG_A && charCode <= C_BIG_Z) {
+                    formatted = formatted + String.fromCharCode(charCode);
+                } else if (charCode >= C_0 && charCode <= C_9) {
+                    formatted = formatted + String.fromCharCode(charCode);
                 } else {
-                    s1 = s1 + '_';
+                    formatted = formatted + '_';
                 }
             }
         }
 
-        return s1;
+        return formatted;
     }
 
-    static ipToString(i) {
-        return (i >> 24 & 0xff) + '.' + (i >> 16 & 0xff) + '.' + (i >> 8 & 0xff) + '.' + (i & 0xff);
+    static ipToString(ip) {
+        return (
+            ((ip >> 24) & 0xff) +
+            '.' +
+            ((ip >> 16) & 0xff) +
+            '.' +
+            ((ip >> 8) & 0xff) +
+            '.' +
+            (ip & 0xff)
+        );
     }
 
-    static usernameToHash(s) {
-        let s1 = '';
+    static usernameToHash(username) {
+        let cleaned = '';
 
-        for (let i = 0; i < s.length; i++) {
-            let c = s.charCodeAt(i);
+        for (let i = 0; i < username.length; i++) {
+            let c = username.charCodeAt(i);
 
             if (c >= C_A && c <= C_Z) {
-                s1 = s1 + String.fromCharCode(c);
+                cleaned = cleaned + String.fromCharCode(c);
             } else if (c >= C_BIG_A && c <= C_BIG_Z) {
-                s1 = s1 + String.fromCharCode((c + 97) - 65);
+                cleaned = cleaned + String.fromCharCode(c + 97 - 65);
             } else if (c >= C_0 && c <= C_9) {
-                s1 = s1 + String.fromCharCode(c);
+                cleaned = cleaned + String.fromCharCode(c);
             } else {
-                s1 = s1 + ' ';
+                cleaned = cleaned + ' ';
             }
         }
 
-        s1 = s1.trim();
+        cleaned = cleaned.trim();
 
-        if (s1.length > 12) {
-            s1 = s1.slice(0, 12);
+        if (cleaned.length > 12) {
+            cleaned = cleaned.slice(0, 12);
         }
 
         let hash = new Long(0);
 
-        for (let j = 0; j < s1.length; j++) {
-            let c1 = s1.charCodeAt(j);
+        for (let j = 0; j < cleaned.length; j++) {
+            let charCode = cleaned.charCodeAt(j);
 
             hash = hash.multiply(37);
 
-            if (c1 >= C_A && c1 <= C_Z) {
-                hash = hash.add((1 + c1) - 97);
-            } else if (c1 >= C_0 && c1 <= C_9) {
-                hash = hash.add((27 + c1) - 48);
+            if (charCode >= C_A && charCode <= C_Z) {
+                hash = hash.add(1 + charCode - 97);
+            } else if (charCode >= C_0 && charCode <= C_9) {
+                hash = hash.add(27 + charCode - 48);
             }
         }
 
@@ -140,43 +171,55 @@ class Utility {
             return 'invalidName';
         }
 
-        let s = '';
+        let username = '';
 
         while (!hash.equals(0)) {
-            let i = hash.modulo(37).toInt();
+            let charCode = hash.modulo(37).toInt();
             hash = hash.divide(37);
 
-            if (i === 0) {
-                s = ' ' + s;
-            } else if (i < 27) {
+            if (charCode === 0) {
+                username = ' ' + username;
+            } else if (charCode < 27) {
                 if (hash.modulo(37).equals(0)) {
-                    s = String.fromCharCode((i + 65) - 1) + s;
+                    username =
+                        String.fromCharCode(charCode + 65 - 1) + username;
                 } else {
-                    s = String.fromCharCode((i + 97) - 1) + s;
+                    username =
+                        String.fromCharCode(charCode + 97 - 1) + username;
                 }
             } else {
-                s = String.fromCharCode((i + 48) - 27) + s;
+                username = String.fromCharCode(charCode + 48 - 27) + username;
             }
         }
 
-        return s;
+        return username;
     }
 
-    static getDataFileOffset(filename, data) {
+    static getDataFileOffset(fileName, data) {
         let numEntries = Utility.getUnsignedShort(data, 0);
         let wantedHash = 0;
 
-        filename = filename.toUpperCase();
+        fileName = fileName.toUpperCase();
 
-        for (let k = 0; k < filename.length; k++) {
-            wantedHash = (((wantedHash * 61) | 0) + filename.charCodeAt(k)) - 32;
+        for (let k = 0; k < fileName.length; k++) {
+            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(k) - 32;
         }
 
         let offset = 2 + numEntries * 10;
 
         for (let entry = 0; entry < numEntries; entry++) {
-            let fileHash = ((data[entry * 10 + 2] & 0xff) * 0x1000000 + (data[entry * 10 + 3] & 0xff) * 0x10000 + (data[entry * 10 + 4] & 0xff) * 256 + (data[entry * 10 + 5] & 0xff)) | 0;
-            let fileSize = ((data[entry * 10 + 9] & 0xff) * 0x10000 + (data[entry * 10 + 10] & 0xff) * 256 + (data[entry * 10 + 11] & 0xff)) | 0;
+            let fileHash =
+                ((data[entry * 10 + 2] & 0xff) * 0x1000000 +
+                    (data[entry * 10 + 3] & 0xff) * 0x10000 +
+                    (data[entry * 10 + 4] & 0xff) * 256 +
+                    (data[entry * 10 + 5] & 0xff)) |
+                0;
+
+            let fileSize =
+                ((data[entry * 10 + 9] & 0xff) * 0x10000 +
+                    (data[entry * 10 + 10] & 0xff) * 256 +
+                    (data[entry * 10 + 11] & 0xff)) |
+                0;
 
             if (fileHash === wantedHash) {
                 return offset;
@@ -188,19 +231,29 @@ class Utility {
         return 0;
     }
 
-    static getDataFileLength(filename, data) {
-        let numEntries = Utility.getUnsignedShort(data, 0);
+    static getDataFileLength(fileName, buffer) {
+        const numEntries = Utility.getUnsignedShort(buffer, 0);
         let wantedHash = 0;
 
-        filename = filename.toUpperCase();
+        fileName = fileName.toUpperCase();
 
-        for (let k = 0; k < filename.length; k++) {
-            wantedHash = (((wantedHash * 61) | 0) + filename.charCodeAt(k)) - 32;
+        for (let i = 0; i < fileName.length; i++) {
+            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(i) - 32;
         }
 
-        for (let i1 = 0; i1 < numEntries; i1++) {
-            let fileHash = ((data[i1 * 10 + 2] & 0xff) * 0x1000000 + (data[i1 * 10 + 3] & 0xff) * 0x10000 + (data[i1 * 10 + 4] & 0xff) * 256 + (data[i1 * 10 + 5] & 0xff)) | 0;
-            let fileSize = ((data[i1 * 10 + 6] & 0xff) * 0x10000 + (data[i1 * 10 + 7] & 0xff) * 256 + (data[i1 * 10 + 8] & 0xff)) | 0;
+        for (let i = 0; i < numEntries; i++) {
+            let fileHash =
+                ((buffer[i * 10 + 2] & 0xff) * 0x1000000 +
+                    (buffer[i * 10 + 3] & 0xff) * 0x10000 +
+                    (buffer[i * 10 + 4] & 0xff) * 256 +
+                    (buffer[i * 10 + 5] & 0xff)) |
+                0;
+
+            let fileSize =
+                ((buffer[i * 10 + 6] & 0xff) * 0x10000 +
+                    (buffer[i * 10 + 7] & 0xff) * 256 +
+                    (buffer[i * 10 + 8] & 0xff)) |
+                0;
 
             if (fileHash === wantedHash) {
                 return fileSize;
@@ -210,35 +263,54 @@ class Utility {
         return 0;
     }
 
-    static loadData(s, i, abyte0) {
-        let b = Utility.unpackData(s, i, abyte0, null);
-        return b;
+    static loadData(fileName, extraSize, archiveData) {
+        return Utility.unpackData(fileName, extraSize, archiveData, null);
     }
 
-    static unpackData(filename, i, archiveData, fileData) {
-        let numEntries = ((archiveData[0] & 0xff) * 256 + (archiveData[1] & 0xff)) | 0;
+    static unpackData(fileName, extraSize, archiveData, fileData) {
+        const numEntries =
+            ((archiveData[0] & 0xff) * 256 + (archiveData[1] & 0xff)) | 0;
         let wantedHash = 0;
 
-        filename = filename.toUpperCase();
+        fileName = fileName.toUpperCase();
 
-        for (let l = 0; l < filename.length; l++) {
-            wantedHash = (((wantedHash * 61) | 0) + filename.charCodeAt(l)) - 32;
+        for (let l = 0; l < fileName.length; l++) {
+            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(l) - 32;
         }
 
         let offset = 2 + numEntries * 10;
 
         for (let entry = 0; entry < numEntries; entry++) {
-            let fileHash = ((archiveData[entry * 10 + 2] & 0xff) * 0x1000000 + (archiveData[entry * 10 + 3] & 0xff) * 0x10000 + (archiveData[entry * 10 + 4] & 0xff) * 256 + (archiveData[entry * 10 + 5] & 0xff)) | 0;
-            let fileSize = ((archiveData[entry * 10 + 6] & 0xff) * 0x10000 + (archiveData[entry * 10 + 7] & 0xff) * 256 + (archiveData[entry * 10 + 8] & 0xff)) | 0;
-            let fileSizeCompressed = ((archiveData[entry * 10 + 9] & 0xff) * 0x10000 + (archiveData[entry * 10 + 10] & 0xff) * 256 + (archiveData[entry * 10 + 11] & 0xff)) | 0;
+            const fileHash =
+                ((archiveData[entry * 10 + 2] & 0xff) * 0x1000000 +
+                    (archiveData[entry * 10 + 3] & 0xff) * 0x10000 +
+                    (archiveData[entry * 10 + 4] & 0xff) * 256 +
+                    (archiveData[entry * 10 + 5] & 0xff)) |
+                0;
+            const fileSize =
+                ((archiveData[entry * 10 + 6] & 0xff) * 0x10000 +
+                    (archiveData[entry * 10 + 7] & 0xff) * 256 +
+                    (archiveData[entry * 10 + 8] & 0xff)) |
+                0;
+            const fileSizeCompressed =
+                ((archiveData[entry * 10 + 9] & 0xff) * 0x10000 +
+                    (archiveData[entry * 10 + 10] & 0xff) * 256 +
+                    (archiveData[entry * 10 + 11] & 0xff)) |
+                0;
 
             if (fileHash === wantedHash) {
                 if (fileData === null) {
-                    fileData = new Int8Array(fileSize + i);
+                    fileData = new Int8Array(fileSize + extraSize);
                 }
 
                 if (fileSize !== fileSizeCompressed) {
-                    BZLib.decompress(fileData, fileSize, archiveData, fileSizeCompressed, offset);
+                    BZLib.decompress(
+                        fileData,
+                        fileSize,
+                        archiveData,
+                        fileSizeCompressed,
+                        offset
+                    );
                 } else {
                     for (let j = 0; j < fileSize; j++) {
                         fileData[j] = archiveData[offset + j];
@@ -258,15 +330,17 @@ class Utility {
         let formatted = amount.toString();
 
         for (let i = formatted.length - 3; i > 0; i -= 3) {
-            formatted = formatted.substring(0, i) + ',' +
-                formatted.substring(i);
+            formatted =
+                formatted.substring(0, i) + ',' + formatted.substring(i);
         }
 
         if (formatted.length > 8) {
-            formatted = `@gre@${formatted.substring(0, formatted.length - 8)}` +
+            formatted =
+                `@gre@${formatted.substring(0, formatted.length - 8)}` +
                 ` million @whi@(${formatted})`;
         } else if (formatted.length > 4) {
-            formatted = `@cya@${formatted.substring(0, formatted.length - 4)}` +
+            formatted =
+                `@cya@${formatted.substring(0, formatted.length - 4)}` +
                 `K @whi@(${formatted})`;
         }
 
@@ -274,12 +348,40 @@ class Utility {
     }
 }
 
-Utility.aBoolean546 = false;
 Utility.bitmask = new Int32Array([
-    0, 1, 3, 7, 15, 31, 63, 127, 255, 511,
-    1023, 2047, 4095, 8191, 16383, 32767, 65535, 0x1ffff, 0x3ffff, 0x7ffff,
-    0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff, 0x1ffffff, 0x3ffffff,
-    0x7ffffff, 0xfffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff, -1
+    0,
+    1,
+    3,
+    7,
+    15,
+    31,
+    63,
+    127,
+    255,
+    511,
+    1023,
+    2047,
+    4095,
+    8191,
+    16383,
+    32767,
+    65535,
+    0x1ffff,
+    0x3ffff,
+    0x7ffff,
+    0xfffff,
+    0x1fffff,
+    0x3fffff,
+    0x7fffff,
+    0xffffff,
+    0x1ffffff,
+    0x3ffffff,
+    0x7ffffff,
+    0xfffffff,
+    0x1fffffff,
+    0x3fffffff,
+    0x7fffffff,
+    -1
 ]);
 
 module.exports = Utility;

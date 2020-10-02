@@ -45,7 +45,15 @@ class GameData {
 
     static getString() {
         let s = '';
-        for (s = ''; GameData.dataString[GameData.stringOffset] !== 0; s = s + String.fromCharCode(GameData.dataString[GameData.stringOffset++])) ;
+        for (
+            s = '';
+            GameData.dataString[GameData.stringOffset] !== 0;
+            s =
+                s +
+                String.fromCharCode(
+                    GameData.dataString[GameData.stringOffset++]
+                )
+        );
         GameData.stringOffset++;
 
         return s;
@@ -123,7 +131,8 @@ class GameData {
         for (i = 0; i < GameData.itemCount; i++) {
             if (!isMembers && GameData.itemMembers[i] === 1) {
                 GameData.itemName[i] = 'Members object';
-                GameData.itemDescription[i] = 'You need to be a member to use this object';
+                GameData.itemDescription[i] =
+                    'You need to be a member to use this object';
                 GameData.itemBasePrice[i] = 0;
                 GameData.itemCommand[i] = '';
                 GameData.itemUnused[0] = 0;
@@ -141,7 +150,10 @@ class GameData {
         GameData.npcHits = new Int32Array(GameData.npcCount);
         GameData.npcDefense = new Int32Array(GameData.npcCount);
         GameData.npcAttackable = new Int32Array(GameData.npcCount);
-        GameData.npcSprite = ndarray(new Int32Array(GameData.npcCount * 12), [GameData.npcCount, 12]);
+        GameData.npcSprite = ndarray(new Int32Array(GameData.npcCount * 12), [
+            GameData.npcCount,
+            12
+        ]);
         GameData.npcColourHair = new Int32Array(GameData.npcCount);
         GameData.npcColourTop = new Int32Array(GameData.npcCount);
         GameData.npcColorBottom = new Int32Array(GameData.npcCount);
@@ -244,7 +256,9 @@ class GameData {
 
         GameData.animationCount = GameData.getUnsignedShort();
         GameData.animationName = [];
-        GameData.animationCharacterColour = new Int32Array(GameData.animationCount);
+        GameData.animationCharacterColour = new Int32Array(
+            GameData.animationCount
+        );
         GameData.animationSomething = new Int32Array(GameData.animationCount);
         GameData.animationHasA = new Int32Array(GameData.animationCount);
         GameData.animationHasF = new Int32Array(GameData.animationCount);
@@ -302,7 +316,9 @@ class GameData {
         }
 
         for (i = 0; i < GameData.objectCount; i++) {
-            GameData.objectModelIndex[i] = GameData.getModelIndex(GameData.getString());
+            GameData.objectModelIndex[i] = GameData.getModelIndex(
+                GameData.getString()
+            );
         }
 
         for (i = 0; i < GameData.objectCount; i++) {
@@ -327,8 +343,12 @@ class GameData {
         GameData.wallObjectCommand1 = [];
         GameData.wallObjectCommand2 = [];
         GameData.wallObjectHeight = new Int32Array(GameData.wallObjectCount);
-        GameData.wallObjectTextureFront = new Int32Array(GameData.wallObjectCount);
-        GameData.wallObjectTextureBack = new Int32Array(GameData.wallObjectCount);
+        GameData.wallObjectTextureFront = new Int32Array(
+            GameData.wallObjectCount
+        );
+        GameData.wallObjectTextureBack = new Int32Array(
+            GameData.wallObjectCount
+        );
         GameData.wallObjectAdjacent = new Int32Array(GameData.wallObjectCount);
         GameData.wallObjectInvisible = new Int32Array(GameData.wallObjectCount);
 
@@ -361,14 +381,17 @@ class GameData {
         }
 
         for (i = 0; i < GameData.wallObjectCount; i++) {
-            GameData.wallObjectAdjacent[i] = GameData.getUnsignedByte(); // what's this?
+            // what's this?
+            GameData.wallObjectAdjacent[i] = GameData.getUnsignedByte();
         }
 
         for (i = 0; i < GameData.wallObjectCount; i++) {
-            GameData.wallObjectInvisible[i] = GameData.getUnsignedByte(); // value is 0 if visible
+            // value is 0 if visible
+            GameData.wallObjectInvisible[i] = GameData.getUnsignedByte();
         }
 
-        GameData.roofCount = GameData.getUnsignedShort(); // the World class does something with these
+        // the World class does something with these
+        GameData.roofCount = GameData.getUnsignedShort();
         GameData.roofHeight = new Int32Array(GameData.roofCount);
         GameData.roofNumVertices = new Int32Array(GameData.roofCount);
 

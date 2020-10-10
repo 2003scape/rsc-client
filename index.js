@@ -15,6 +15,7 @@ if (typeof window === 'undefined') {
     mc.options.mouseWheel = true;
     mc.options.resetCompass = true;
     mc.options.zoomCamera = true;
+    mc.options.accountManagement = true;
 
     mc.members = args[0] === 'members';
     mc.server = args[1] ? args[1] : '127.0.0.1';

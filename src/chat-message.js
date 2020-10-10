@@ -53,22 +53,22 @@ class ChatMessage {
             let flag = true;
 
             for (let l1 = 0; l1 < newLen; l1++) {
-                let c = ChatMessage.chars[l1];
+                let currentChar = ChatMessage.chars[l1];
 
-                if (l1 > 4 && c === C_AT) {
+                if (l1 > 4 && currentChar === C_AT) {
                     ChatMessage.chars[l1] = C_SPACE;
                 }
 
-                if (c === C_PRCNT) {
+                if (currentChar === C_PRCNT) {
                     ChatMessage.chars[l1] = C_SPACE;
                 }
 
-                if (flag && c >= C_A && c <= C_Z) {
+                if (flag && currentChar >= C_A && currentChar <= C_Z) {
                     ChatMessage.chars[l1] += C_CENT;
                     flag = false;
                 }
 
-                if (c === C_DOT || c === C_EXCLM) {
+                if (currentChar === C_DOT || currentChar === C_EXCLM) {
                     flag = true;
                 }
             }

@@ -10,8 +10,20 @@ const keycodes = require('./lib/keycodes');
 const version = require('./version');
 const zzz = require('sleep-promise');
 
-const CHAR_MAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456' +
-    '789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
+const CHAR_MAP =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
+    "*()-_=+[{]};:'@#~,<.>/?\\| ";
+
+const FONTS = [
+    'h11p.jf',
+    'h12b.jf',
+    'h12p.jf',
+    'h13b.jf',
+    'h14b.jf',
+    'h16b.jf',
+    'h20b.jf',
+    'h24b.jf'
+];
 
 class GameShell {
     constructor(canvas) {
@@ -24,8 +36,10 @@ class GameShell {
             resetCompass: false,
             zoomCamera: false,
             showRoofs: true,
-            remainingXp: false,
-            wordFilter: true
+            remainingExperience: false,
+            totalExperience: false,
+            wordFilter: true,
+            accountManagement: true
         };
 
         this.middleButtonDown = false;
@@ -79,13 +93,20 @@ class GameShell {
         this._canvas.height = height;
 
         console.log('Started application');
+
         this.appletWidth = width;
         this.appletHeight = height;
 
-        this._canvas.addEventListener('mousedown',
-            this.mousePressed.bind(this));
-        this._canvas.addEventListener('contextmenu',
-            this.mousePressed.bind(this));
+        this._canvas.addEventListener(
+            'mousedown',
+            this.mousePressed.bind(this)
+        );
+
+        this._canvas.addEventListener(
+            'contextmenu',
+            this.mousePressed.bind(this)
+        );
+
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
         this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
         this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
@@ -93,6 +114,8 @@ class GameShell {
 
         window.addEventListener('keydown', this.keyPressed.bind(this));
         window.addEventListener('keyup', this.keyReleased.bind(this));
+
+        window.addEventListener('beforeunload', () => this.onClosing());
 
         this.loadingStep = 1;
 
@@ -167,13 +190,17 @@ class GameShell {
 
         if (code === keycodes.BACKSPACE) {
             if (this.inputTextCurrent.length > 0) {
-                this.inputTextCurrent = this.inputTextCurrent.substring(0,
-                    this.inputTextCurrent.length - 1);
+                this.inputTextCurrent = this.inputTextCurrent.substring(
+                    0,
+                    this.inputTextCurrent.length - 1
+                );
             }
 
             if (this.inputPMCurrent.length > 0) {
-                this.inputPMCurrent = this.inputPMCurrent.substring(0,
-                    this.inputPMCurrent.length - 1);
+                this.inputPMCurrent = this.inputPMCurrent.substring(
+                    0,
+                    this.inputPMCurrent.length - 1
+                );
             }
         }
 
@@ -391,8 +418,10 @@ class GameShell {
 
     paint() {
         if (this.loadingStep === 2 && this.imageLogo !== null) {
-            this.drawLoadingScreen(this.loadingProgressPercent,
-                this.loadingProgessText);
+            this.drawLoadingScreen(
+                this.loadingProgressPercent,
+                this.loadingProgessText
+            );
         }
     }
 
@@ -400,26 +429,28 @@ class GameShell {
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);
 
-        const jagexJag = await this.readDataFile('jagex.jag', 'Jagex library',
-            0);
+        const jagexJag = await this.readDataFile(
+            'jagex.jag',
+            'Jagex library',
+            0
+        );
 
         if (jagexJag) {
             const logoTga = Utility.loadData('logo.tga', 0, jagexJag);
             this.imageLogo = this.createImage(logoTga);
         }
 
-        const fontsJag = await this.readDataFile(`fonts${version.FONTS}.jag`,
-            'Game fonts', 5);
+        const fontsJag = await this.readDataFile(
+            `fonts${version.FONTS}.jag`,
+            'Game fonts',
+            5
+        );
 
         if (jagexJag !== null) {
-            Surface.createFont(Utility.loadData('h11p.jf', 0, fontsJag), 0);
-            Surface.createFont(Utility.loadData('h12b.jf', 0, fontsJag), 1);
-            Surface.createFont(Utility.loadData('h12p.jf', 0, fontsJag), 2);
-            Surface.createFont(Utility.loadData('h13b.jf', 0, fontsJag), 3);
-            Surface.createFont(Utility.loadData('h14b.jf', 0, fontsJag), 4);
-            Surface.createFont(Utility.loadData('h16b.jf', 0, fontsJag), 5);
-            Surface.createFont(Utility.loadData('h20b.jf', 0, fontsJag), 6);
-            Surface.createFont(Utility.loadData('h24b.jf', 0, fontsJag), 7);
+            for (let i = 0; i < FONTS.length; i += 1) {
+                const fontName = FONTS[i];
+                Surface.createFont(Utility.loadData(fontName, 0, fontsJag), i);
+            }
         }
     }
 
@@ -431,7 +462,7 @@ class GameShell {
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);
 
         if (!this.hasRefererLogoNotUsed) {
-            this.graphics.drawImage(this.imageLogo, x, y/*, this*/);
+            this.graphics.drawImage(this.imageLogo, x, y /*, this*/);
         }
 
         x += 2;
@@ -453,27 +484,51 @@ class GameShell {
             this.graphics.setColor(new Color(255, 255, 255));
         }
 
-        this.drawString(this.graphics, text, this.fontTimesRoman15, x + 138,
-            y + 10);
+        this.drawString(
+            this.graphics,
+            text,
+            this.fontTimesRoman15,
+            x + 138,
+            y + 10
+        );
 
         if (!this.hasRefererLogoNotUsed) {
-            this.drawString(this.graphics, 'Created by JAGeX - visit ' +
-                'www.jagex.com', this.fontHelvetica13b, x + 138, y + 30);
-            this.drawString(this.graphics, '\u00a92001-2002 Andrew Gower and ' +
-                'Jagex Ltd', this.fontHelvetica13b, x + 138, y + 44);
+            this.drawString(
+                this.graphics,
+                'Created by JAGeX - visit ' + 'www.jagex.com',
+                this.fontHelvetica13b,
+                x + 138,
+                y + 30
+            );
+            this.drawString(
+                this.graphics,
+                '\u00a92001-2002 Andrew Gower and ' + 'Jagex Ltd',
+                this.fontHelvetica13b,
+                x + 138,
+                y + 44
+            );
         } else {
             this.graphics.setColor(new Color(132, 132, 152));
-            this.drawString(this.graphics,
+            this.drawString(
+                this.graphics,
                 '\u00a92001-2002 Andrew Gower and Jagex Ltd',
-                this.fontHelvetica12, x + 138, this.appletHeight - 20);
+                this.fontHelvetica12,
+                x + 138,
+                this.appletHeight - 20
+            );
         }
 
         // not sure where this would have been used. maybe to indicate a
         // special client?
         if (this.logoHeaderText !== null) {
             this.graphics.setColor(Color.white);
-            this.drawString(this.graphics, this.logoHeaderText,
-                this.fontHelvetica13b, x + 138, y - 120);
+            this.drawString(
+                this.graphics,
+                this.logoHeaderText,
+                this.fontHelvetica13b,
+                x + 138,
+                y - 120
+            );
         }
     }
 
@@ -502,15 +557,23 @@ class GameShell {
             this.graphics.setColor(new Color(255, 255, 255));
         }
 
-        this.drawString(this.graphics, text, this.fontTimesRoman15,
-            x + 138, y + 10);
+        this.drawString(
+            this.graphics,
+            text,
+            this.fontTimesRoman15,
+            x + 138,
+            y + 10
+        );
     }
 
     drawString(graphics, string, font, x, y) {
         graphics.setFont(font);
         const { width, height } = graphics.ctx.measureText(string);
-        graphics.drawString(string, x - ((width / 2) | 0), y +
-            ((height / 4) | 0));
+        graphics.drawString(
+            string,
+            x - ((width / 2) | 0),
+            y + ((height / 4) | 0)
+        );
     }
 
     createImage(tgaBuffer) {
@@ -525,7 +588,7 @@ class GameShell {
     }
 
     async readDataFile(file, description, percent) {
-        file = './data204/' + file;
+        file = `./data204/${file}`;
 
         this.showLoadingProgress(percent, `Loading ${description} - 0%`);
 
@@ -534,10 +597,14 @@ class GameShell {
         const header = new Int8Array(6);
         await fileDownloadStream.readFully(header, 0, 6);
 
-        const archiveSize = ((header[0] & 0xff) << 16) +
-            ((header[1] & 0xff) << 8) + (header[2] & 0xff);
-        const archiveSizeCompressed = ((header[3] & 0xff) << 16) +
-            ((header[4] & 0xff) << 8) + (header[5] & 0xff);
+        const archiveSize =
+            ((header[0] & 0xff) << 16) +
+            ((header[1] & 0xff) << 8) +
+            (header[2] & 0xff);
+        const archiveSizeCompressed =
+            ((header[3] & 0xff) << 16) +
+            ((header[4] & 0xff) << 8) +
+            (header[5] & 0xff);
 
         this.showLoadingProgress(percent, `Loading ${description} - 5%`);
 
@@ -554,16 +621,25 @@ class GameShell {
             await fileDownloadStream.readFully(archiveData, read, length);
             read += length;
 
-            this.showLoadingProgress(percent, `Loading ${description} - ` +
-                ((5 + (read * 95) / archiveSizeCompressed) | 0) + '%');
+            this.showLoadingProgress(
+                percent,
+                `Loading ${description} - ` +
+                    ((5 + (read * 95) / archiveSizeCompressed) | 0) +
+                    '%'
+            );
         }
 
         this.showLoadingProgress(percent, `Unpacking ${description}`);
 
         if (archiveSizeCompressed !== archiveSize) {
             const decompressed = new Int8Array(archiveSize);
-            BZLib.decompress(decompressed, archiveSize, archiveData,
-                archiveSizeCompressed, 0);
+            BZLib.decompress(
+                decompressed,
+                archiveSize,
+                archiveData,
+                archiveSizeCompressed,
+                0
+            );
 
             return decompressed;
         }

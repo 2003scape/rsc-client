@@ -1,7 +1,7 @@
 # rsc-client
 a port of the
-[runescape classic](https://en.wikipedia.org/wiki/RuneScape#History_and_development)
-client ([*mudclient revision 204*](https://github.com/2003scape/mudclient204))
+[runescape classic](https://classic.runescape.wiki/w/RuneScape_Classic) client
+([*mudclient revision 204*](https://github.com/2003scape/mudclient204))
 from java to javascript.
 
 this client is designed to work with
@@ -39,21 +39,42 @@ present are features from earlier mudclients and/or inspired by modern
 third-party clients:
 
 ```javascript
-// hold down middle click and move the mouse to rotate the camera
+// hold down middle click and move the mouse to rotate the camera (only when
+// camera is type manual)
 mc.options.middleClickCamera = true;
-// scroll panel lists and chatbox with the mouse wheel
+
+// scroll panel lists and chatbox with the mouse wheel (and camera if zoom
+// enabled)
 mc.options.mouseWheel = true;
+
 // click the compas to face north
 mc.options.resetCompass = true;
+
 // show roofs unless inside buildings
 mc.options.showRoofs = false;
+
 // use arrow keys (and mouse wheel if enabled) to zoom in and out
 mc.options.zoomCamera = true;
+
+// show the remaining experience until next level in skills tab
+mc.options.remainingExperience = false;
+
+// show your total experience in the skills tab
+mc.options.totalExperience = false;
+
+// censor chat and private messages
+mc.options.wordFilter = true;
+
+// support account registration, password changes and recovery within the
+// client using jagex's older UIs
+mc.options.accountManagement = true;
 ```
 
 ## assets
 make sure that wherever you host it, it's able to access
-`./data204/` via XHR for its cache files.
+`./data204/` via
+[XHR](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest)
+for its cache files.
 
 ## license
 Copyright 2020  2003Scape Team

@@ -34,6 +34,7 @@ module.exports = {
             {
                 'checkLoops': false
             }
-        ]
+        ],
+        'prefer-const': 'warn'
     }
 };

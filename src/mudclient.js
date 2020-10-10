@@ -147,7 +147,6 @@ class mudclient extends GameConnection {
             new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 4, 3])];
         this.npcWalkModel = new Int32Array([0, 1, 2, 1]);
         this.referID = 0;
-        this.controlRegisterStatus = 0;
         this.combatTimeout = 0;
         this.optionMenuCount = 0;
         this.errorLoadingCodebase = false;
@@ -316,7 +315,7 @@ class mudclient extends GameConnection {
         this.npcsCache.fill(null);
         this.groundItemX = new Int32Array(GROUND_ITEMS_MAX);
         this.groundItemY = new Int32Array(GROUND_ITEMS_MAX);
-        this.groundItemId = new Int32Array(GROUND_ITEMS_MAX);
+        this.groundItemID = new Int32Array(GROUND_ITEMS_MAX);
         this.groundItemZ = new Int32Array(GROUND_ITEMS_MAX);
         this.bankSelectedItemSlot = -1;
         this.bankSelectedItem = -2;
@@ -397,6 +396,33 @@ class mudclient extends GameConnection {
         this.objectModel = [];
         this.objectModel.length = OBJECTS_MAX;
         this.objectModel.fill(null);
+
+        this.recoveryQuestions = [
+            'Where were you born?',
+            'What was your first teachers name?',
+            'What is your fathers middle name?',
+            'Who was your first best friend?',
+            'What is your favourite vacation spot?',
+            'What is your mothers middle name?',
+            'What was your first pets name?',
+            'What was the name of your first school?',
+            'What is your mothers maiden name?',
+            'Who was your first boyfriend/girlfriend?',
+            'What was the first computer game you purchased?',
+            'Who is your favourite actor/actress?',
+            'Who is your favourite author?',
+            'Who is your favourite musician?',
+            'Who is your favourite cartoon character?',
+            'What is your favourite book?',
+            'What is your favourite food?',
+            'What is your favourite movie?'
+        ];
+        this.showRecoverChange = false;
+        this.recoverCustomQuestionIndex = -1;
+        this.showChangePasswordStep = 0;
+        this.changePasswordOld = '';
+        this.changePasswordNew = '';
+        this.welcomeTipDay = 0;
     }
 
     playSoundFile(soundName) {
@@ -444,9 +470,9 @@ class mudclient extends GameConnection {
             steps = 0;
         }
 
-        for (let l1 = steps; l1 >= 0 && l1 > steps - 25; l1--) {
-            this.packetStream.putByte(this.walkPathX[l1] - startX);
-            this.packetStream.putByte(this.walkPathY[l1] - startY);
+        for (let i = steps; i >= 0 && i > steps - 25; i--) {
+            this.packetStream.putByte(this.walkPathX[i] - startX);
+            this.packetStream.putByte(this.walkPathY[i] - startY);
         }
 
         this.packetStream.sendPacket();
@@ -483,9 +509,9 @@ class mudclient extends GameConnection {
             steps = 0;
         }
 
-        for (let l1 = steps; l1 >= 0 && l1 > steps - 25; l1--) {
-            this.packetStream.putByte(this.walkPathX[l1] - startX);
-            this.packetStream.putByte(this.walkPathY[l1] - startY);
+        for (let i = steps; i >= 0 && i > steps - 25; i--) {
+            this.packetStream.putByte(this.walkPathX[i] - startX);
+            this.packetStream.putByte(this.walkPathY[i] - startY);
         }
 
         this.packetStream.sendPacket();
@@ -555,25 +581,25 @@ class mudclient extends GameConnection {
         }
 
         for (let i = 0; i < this.itemsAboveHeadCount; i++) {
-            let x = this.actionBubbleX[i];
-            let y = this.actionBubbleY[i];
-            let scale = this.actionBubbleScale[i];
-            let id = this.actionBubbleItem[i];
-            let scaleX = ((39 * scale) / 100) | 0;
-            let scaleY = ((27 * scale) / 100) | 0;
+            const x = this.actionBubbleX[i];
+            const y = this.actionBubbleY[i];
+            const scale = this.actionBubbleScale[i];
+            const id = this.actionBubbleItem[i];
+            const scaleX = ((39 * scale) / 100) | 0;
+            const scaleY = ((27 * scale) / 100) | 0;
 
             this.surface.drawActionBubble(x - ((scaleX / 2) | 0), y - scaleY, scaleX, scaleY, this.spriteMedia + 9, 85);
 
-            let scaleXClip = ((36 * scale) / 100) | 0;
-            let scaleYClip = ((24 * scale) / 100) | 0;
+            const scaleXClip = ((36 * scale) / 100) | 0;
+            const scaleYClip = ((24 * scale) / 100) | 0;
 
             this.surface._spriteClipping_from9(x - ((scaleXClip / 2) | 0), (y - scaleY + ((scaleY / 2) | 0)) - ((scaleYClip / 2) | 0), scaleXClip, scaleYClip, GameData.itemPicture[id] + this.spriteItem, GameData.itemMask[id], 0, 0, false);
         }
 
         for (let i = 0; i < this.healthBarCount; i++) {
-            let x = this.healthBarX[i];
-            let y = this.healthBarY[i];
-            let missing = this.healthBarMissing[i];
+            const x = this.healthBarX[i];
+            const y = this.healthBarY[i];
+            const missing = this.healthBarMissing[i];
 
             this.surface.drawBoxAlpha(x - 15, y - 3, missing, 5, 65280, 192);
             this.surface.drawBoxAlpha((x - 15) + missing, y - 3, 30 - missing,
@@ -729,22 +755,22 @@ class mudclient extends GameConnection {
             this.playerServer[i] = null;
         }
 
-        for (let l = 0; l < PLAYERS_MAX; l++) {
-            this.players[l] = null;
+        for (let i = 0; i < PLAYERS_MAX; i++) {
+            this.players[i] = null;
         }
 
         this.npcCount = 0;
 
-        for (let i1 = 0; i1 < NPCS_SERVER_MAX; i1++) {
-            this.npcsServer[i1] = null;
+        for (let i = 0; i < NPCS_SERVER_MAX; i++) {
+            this.npcsServer[i] = null;
         }
 
-        for (let j1 = 0; j1 < NPCS_MAX; j1++) {
-            this.npcs[j1] = null;
+        for (let i = 0; i < NPCS_MAX; i++) {
+            this.npcs[i] = null;
         }
 
-        for (let k1 = 0; k1 < 50; k1++) {
-            this.prayerOn[k1] = false;
+        for (let i = 0; i < 50; i++) {
+            this.prayerOn[i] = false;
         }
 
         this.mouseButtonClick = 0;
@@ -758,16 +784,20 @@ class mudclient extends GameConnection {
 
     handleKeyPress(i) {
         if (this.loggedIn === 0) {
-            if (this.loginScreen === 0 && this.panelLoginWelcome !== null) {
+            if (this.loginScreen === 0 && this.panelLoginWelcome) {
                 this.panelLoginWelcome.keyPress(i);
             }
 
-            if (this.loginScreen === 1 && this.panelLoginNewUser !== null) {
+            if (this.loginScreen === 1 && this.panelLoginNewUser) {
                 this.panelLoginNewUser.keyPress(i);
             }
 
-            if (this.loginScreen === 2 && this.panelLoginExistingUser !== null) {
+            if (this.loginScreen === 2 && this.panelLoginExistingUser) {
                 this.panelLoginExistingUser.keyPress(i);
+            }
+
+            if (this.loginScreen === 3 && this.panelRecoverUser) {
+                this.panelRecoverUser.keyPress(i);
             }
         }
 
@@ -811,11 +841,11 @@ class mudclient extends GameConnection {
             this.playerServer[serverIndex].serverId = 0;
         }
 
-        let character = this.playerServer[serverIndex];
+        const player = this.playerServer[serverIndex];
         let flag = false;
 
-        for (let i1 = 0; i1 < this.knownPlayerCount; i1++) {
-            if (this.knownPlayers[i1].serverIndex !== serverIndex) {
+        for (let i = 0; i < this.knownPlayerCount; i++) {
+            if (this.knownPlayers[i].serverIndex !== serverIndex) {
                 continue;
             }
 
@@ -824,32 +854,32 @@ class mudclient extends GameConnection {
         }
 
         if (flag) {
-            character.animationNext = anim;
-            let j1 = character.waypointCurrent;
+            player.animationNext = anim;
+            let j1 = player.waypointCurrent;
 
-            if (x !== character.waypointsX[j1] || y !== character.waypointsY[j1]) {
-                character.waypointCurrent = j1 = (j1 + 1) % 10;
-                character.waypointsX[j1] = x;
-                character.waypointsY[j1] = y;
+            if (x !== player.waypointsX[j1] || y !== player.waypointsY[j1]) {
+                player.waypointCurrent = j1 = (j1 + 1) % 10;
+                player.waypointsX[j1] = x;
+                player.waypointsY[j1] = y;
             }
         } else {
-            character.serverIndex = serverIndex;
-            character.movingStep = 0;
-            character.waypointCurrent = 0;
-            character.waypointsX[0] = character.currentX = x;
-            character.waypointsY[0] = character.currentY = y;
-            character.animationNext = character.animationCurrent = anim;
-            character.stepCount = 0;
+            player.serverIndex = serverIndex;
+            player.movingStep = 0;
+            player.waypointCurrent = 0;
+            player.waypointsX[0] = player.currentX = x;
+            player.waypointsY[0] = player.currentY = y;
+            player.animationNext = player.animationCurrent = anim;
+            player.stepCount = 0;
         }
 
-        this.players[this.playerCount++] = character;
+        this.players[this.playerCount++] = player;
 
-        return character;
+        return player;
     }
 
     createAppearancePanel() {
         this.panelAppearance = new Panel(this.surface, 100);
-        this.panelAppearance.addText(256, 10, 'Please design Your Character', 4, true);
+        this.panelAppearance.addTextCentre(256, 10, 'Please design Your Character', 4, true);
 
         let x = 140;
         let y = 34;
@@ -857,53 +887,53 @@ class mudclient extends GameConnection {
         x += 116;
         y -= 10;
 
-        this.panelAppearance.addText(x - 55, y + 110, 'Front', 3, true);
-        this.panelAppearance.addText(x, y + 110, 'Side', 3, true);
-        this.panelAppearance.addText(x + 55, y + 110, 'Back', 3, true);
+        this.panelAppearance.addTextCentre(x - 55, y + 110, 'Front', 3, true);
+        this.panelAppearance.addTextCentre(x, y + 110, 'Side', 3, true);
+        this.panelAppearance.addTextCentre(x + 55, y + 110, 'Back', 3, true);
 
         let xOff = 54;
 
         y += 145;
 
         this.panelAppearance.addBoxRounded(x - xOff, y, 53, 41);
-        this.panelAppearance.addText(x - xOff, y - 8, 'Head', 1, true);
-        this.panelAppearance.addText(x - xOff, y + 8, 'Type', 1, true);
+        this.panelAppearance.addTextCentre(x - xOff, y - 8, 'Head', 1, true);
+        this.panelAppearance.addTextCentre(x - xOff, y + 8, 'Type', 1, true);
         this.panelAppearance.addSprite(x - xOff - 40, y, Panel.baseSpriteStart + 7);
         this.controlButtonAppearanceHead1 = this.panelAppearance.addButton(x - xOff - 40, y, 20, 20);
         this.panelAppearance.addSprite((x - xOff) + 40, y, Panel.baseSpriteStart + 6);
         this.controlButtonAppearanceHead2 = this.panelAppearance.addButton((x - xOff) + 40, y, 20, 20);
         this.panelAppearance.addBoxRounded(x + xOff, y, 53, 41);
-        this.panelAppearance.addText(x + xOff, y - 8, 'Hair', 1, true);
-        this.panelAppearance.addText(x + xOff, y + 8, 'Color', 1, true);
+        this.panelAppearance.addTextCentre(x + xOff, y - 8, 'Hair', 1, true);
+        this.panelAppearance.addTextCentre(x + xOff, y + 8, 'Color', 1, true);
         this.panelAppearance.addSprite((x + xOff) - 40, y, Panel.baseSpriteStart + 7);
         this.controlButtonAppearanceHair1 = this.panelAppearance.addButton((x + xOff) - 40, y, 20, 20);
         this.panelAppearance.addSprite(x + xOff + 40, y, Panel.baseSpriteStart + 6);
         this.controlButtonAppearanceHair2 = this.panelAppearance.addButton(x + xOff + 40, y, 20, 20);
         y += 50;
         this.panelAppearance.addBoxRounded(x - xOff, y, 53, 41);
-        this.panelAppearance.addText(x - xOff, y, 'Gender', 1, true);
+        this.panelAppearance.addTextCentre(x - xOff, y, 'Gender', 1, true);
         this.panelAppearance.addSprite(x - xOff - 40, y, Panel.baseSpriteStart + 7);
         this.controlButtonAppearanceGender1 = this.panelAppearance.addButton(x - xOff - 40, y, 20, 20);
         this.panelAppearance.addSprite((x - xOff) + 40, y, Panel.baseSpriteStart + 6);
         this.controlButtonAppearanceGender2 = this.panelAppearance.addButton((x - xOff) + 40, y, 20, 20);
         this.panelAppearance.addBoxRounded(x + xOff, y, 53, 41);
-        this.panelAppearance.addText(x + xOff, y - 8, 'Top', 1, true);
-        this.panelAppearance.addText(x + xOff, y + 8, 'Color', 1, true);
+        this.panelAppearance.addTextCentre(x + xOff, y - 8, 'Top', 1, true);
+        this.panelAppearance.addTextCentre(x + xOff, y + 8, 'Color', 1, true);
         this.panelAppearance.addSprite((x + xOff) - 40, y, Panel.baseSpriteStart + 7);
         this.controlButtonAppearanceTop1 = this.panelAppearance.addButton((x + xOff) - 40, y, 20, 20);
         this.panelAppearance.addSprite(x + xOff + 40, y, Panel.baseSpriteStart + 6);
         this.controlButtonAppearanceTop2 = this.panelAppearance.addButton(x + xOff + 40, y, 20, 20);
         y += 50;
         this.panelAppearance.addBoxRounded(x - xOff, y, 53, 41);
-        this.panelAppearance.addText(x - xOff, y - 8, 'Skin', 1, true);
-        this.panelAppearance.addText(x - xOff, y + 8, 'Color', 1, true);
+        this.panelAppearance.addTextCentre(x - xOff, y - 8, 'Skin', 1, true);
+        this.panelAppearance.addTextCentre(x - xOff, y + 8, 'Color', 1, true);
         this.panelAppearance.addSprite(x - xOff - 40, y, Panel.baseSpriteStart + 7);
         this.controlButtonAppearanceSkin1 = this.panelAppearance.addButton(x - xOff - 40, y, 20, 20);
         this.panelAppearance.addSprite((x - xOff) + 40, y, Panel.baseSpriteStart + 6);
         this.controlButtonAppearanceSkin2 = this.panelAppearance.addButton((x - xOff) + 40, y, 20, 20);
         this.panelAppearance.addBoxRounded(x + xOff, y, 53, 41);
-        this.panelAppearance.addText(x + xOff, y - 8, 'Bottom', 1, true);
-        this.panelAppearance.addText(x + xOff, y + 8, 'Color', 1, true);
+        this.panelAppearance.addTextCentre(x + xOff, y - 8, 'Bottom', 1, true);
+        this.panelAppearance.addTextCentre(x + xOff, y + 8, 'Color', 1, true);
         this.panelAppearance.addSprite((x + xOff) - 40, y, Panel.baseSpriteStart + 7);
         this.controlButtonAppearanceBottom1 = this.panelAppearance.addButton((x + xOff) - 40, y, 20, 20);
         this.panelAppearance.addSprite(x + xOff + 40, y, Panel.baseSpriteStart + 6);
@@ -911,7 +941,7 @@ class mudclient extends GameConnection {
         y += 82;
         y -= 35;
         this.panelAppearance.addButtonBackground(x, y, 200, 30);
-        this.panelAppearance.addText(x, y, 'Accept', 4, false);
+        this.panelAppearance.addTextCentre(x, y, 'Accept', 4, false);
         this.controlButtonAppearanceAccept = this.panelAppearance.addButton(x, y, 200, 30);
     }
 
@@ -919,19 +949,19 @@ class mudclient extends GameConnection {
         this.surface.interlace = false;
         this.surface.blackScreen();
         this.panelAppearance.drawPanel();
-        let i = 140;
-        let j = 50;
-        i += 116;
-        j -= 25;
-        this.surface._spriteClipping_from6(i - 32 - 55, j, 64, 102, GameData.animationNumber[this.appearance2Colour], this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9(i - 32 - 55, j, 64, 102, GameData.animationNumber[this.appearanceBodyGender], this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9(i - 32 - 55, j, 64, 102, GameData.animationNumber[this.appearanceHeadType], this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from6(i - 32, j, 64, 102, GameData.animationNumber[this.appearance2Colour] + 6, this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9(i - 32, j, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 6, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9(i - 32, j, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 6, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from6((i - 32) + 55, j, 64, 102, GameData.animationNumber[this.appearance2Colour] + 12, this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9((i - 32) + 55, j, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 12, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9((i - 32) + 55, j, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 12, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
+        let x = 140;
+        let y = 50;
+        x += 116;
+        y -= 25;
+        this.surface._spriteClipping_from6(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearance2Colour], this.characterTopBottomColours[this.appearanceBottomColour]);
+        this.surface._spriteClipping_from9(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender], this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
+        this.surface._spriteClipping_from9(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearanceHeadType], this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
+        this.surface._spriteClipping_from6(x - 32, y, 64, 102, GameData.animationNumber[this.appearance2Colour] + 6, this.characterTopBottomColours[this.appearanceBottomColour]);
+        this.surface._spriteClipping_from9(x - 32, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 6, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
+        this.surface._spriteClipping_from9(x - 32, y, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 6, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
+        this.surface._spriteClipping_from6((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearance2Colour] + 12, this.characterTopBottomColours[this.appearanceBottomColour]);
+        this.surface._spriteClipping_from9((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 12, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
+        this.surface._spriteClipping_from9((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 12, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
         this.surface._drawSprite_from3(0, this.gameHeight, this.spriteMedia + 22);
         this.surface.draw(this.graphics, 0, 0);
     }
@@ -1084,8 +1114,8 @@ class mudclient extends GameConnection {
             }
         }
 
-        for (let j = 0; j < this.npcCount; j++) {
-            let character_1 = this.npcs[j];
+        for (let i = 0; i < this.npcCount; i++) {
+            let character_1 = this.npcs[i];
             let j1 = (character_1.waypointCurrent + 1) % 10;
 
             if (character_1.movingStep !== j1) {
@@ -1193,11 +1223,11 @@ class mudclient extends GameConnection {
             Surface.anInt347 = 0;
         }
 
-        for (let l = 0; l < this.playerCount; l++) {
-            let character = this.players[l];
+        for (let i = 0; i < this.playerCount; i++) {
+            const player = this.players[i];
 
-            if (character.projectileRange > 0) {
-                character.projectileRange--;
+            if (player.projectileRange > 0) {
+                player.projectileRange--;
             }
         }
 
@@ -1270,6 +1300,7 @@ class mudclient extends GameConnection {
                     }
 
                     this.packetStream.sendPacket();
+
                     this.inputTextCurrent = '';
                     this.inputTextFinal = '';
                     this.sleepingStatusText = 'Please wait...';
@@ -1286,6 +1317,7 @@ class mudclient extends GameConnection {
                 }
 
                 this.packetStream.sendPacket();
+
                 this.inputTextCurrent = '';
                 this.inputTextFinal = '';
                 this.sleepingStatusText = 'Please wait...';
@@ -1333,27 +1365,31 @@ class mudclient extends GameConnection {
         }
 
         if (this.panelMessageTabs.isClicked(this.controlTextListAll)) {
-            let s = this.panelMessageTabs.getText(this.controlTextListAll);
+            let message = this.panelMessageTabs.getText(this.controlTextListAll);
             this.panelMessageTabs.updateText(this.controlTextListAll, '');
 
-            if (/^::/.test(s)) {
-                if (/^::closecon$/i.test(s)) {
+            if (/^::/.test(message)) {
+                if (/^::closecon$/i.test(message)) {
                     this.packetStream.closeStream();
-                } else if (/^::logout/i.test(s)) {
+                } else if (/^::logout/i.test(message)) {
                     this.closeConnection();
-                } else if (/^::lostcon$/i.test(s)) {
+                } else if (/^::lostcon$/i.test(message)) {
                     await this.lostConnection();
                 } else {
-                    this.sendCommandString(s.substring(2));
+                    this.sendCommandString(message.substring(2));
                 }
             } else {
-                let k3 = ChatMessage.scramble(s);
-                this.sendChatMessage(ChatMessage.scrambledBytes, k3);
-                s = ChatMessage.descramble(ChatMessage.scrambledBytes, 0, k3);
-                s = WordFilter.filter(s);
+                const encodedMessage = ChatMessage.scramble(message);
+                this.sendChatMessage(ChatMessage.scrambledBytes, encodedMessage);
+                message = ChatMessage.descramble(ChatMessage.scrambledBytes, 0, encodedMessage);
+
+                if (this.options.wordFilter) {
+                    message = WordFilter.filter(message);
+                }
+
                 this.localPlayer.messageTimeout = 150;
-                this.localPlayer.message = s;
-                this.showMessage(this.localPlayer.name + ': ' + s, 2);
+                this.localPlayer.message = message;
+                this.showMessage(`${this.localPlayer.name}: ${message}`, 2);
             }
         }
 
@@ -1469,7 +1505,6 @@ class mudclient extends GameConnection {
             this.mouseClickXStep++;
         }
 
-        // 17 is fountain
         this.scene.doSOemthingWithTheFuckinFountainFuck(17);
         this.objectAnimationCount++;
 
@@ -1480,26 +1515,26 @@ class mudclient extends GameConnection {
             this.objectAnimationNumberClaw = (this.objectAnimationNumberClaw + 1) % 5;
         }
 
-        for (let k2 = 0; k2 < this.objectCount; k2++) {
-            let l3 = this.objectX[k2];
-            let l4 = this.objectY[k2];
+        for (let i = 0; i < this.objectCount; i++) {
+            const x = this.objectX[i];
+            const y = this.objectY[i];
 
-            if (l3 >= 0 && l4 >= 0 && l3 < 96 && l4 < 96 && this.objectId[k2] === 74) {
-                this.objectModel[k2].rotate(1, 0, 0);
+            if (x >= 0 && y >= 0 && x < 96 && y < 96 && this.objectId[i] === 74) {
+                this.objectModel[i].rotate(1, 0, 0);
             }
         }
 
-        for (let i4 = 0; i4 < this.teleportBubbleCount; i4++) {
-            this.teleportBubbleTime[i4]++;
+        for (let i = 0; i < this.teleportBubbleCount; i++) {
+            this.teleportBubbleTime[i]++;
 
-            if (this.teleportBubbleTime[i4] > 50) {
+            if (this.teleportBubbleTime[i] > 50) {
                 this.teleportBubbleCount--;
 
-                for (let i5 = i4; i5 < this.teleportBubbleCount; i5++) {
-                    this.teleportBubbleX[i5] = this.teleportBubbleX[i5 + 1];
-                    this.teleportBubbleY[i5] = this.teleportBubbleY[i5 + 1];
-                    this.teleportBubbleTime[i5] = this.teleportBubbleTime[i5 + 1];
-                    this.teleportBubbleType[i5] = this.teleportBubbleType[i5 + 1];
+                for (let j = i; j < this.teleportBubbleCount; j++) {
+                    this.teleportBubbleX[j] = this.teleportBubbleX[j + 1];
+                    this.teleportBubbleY[j] = this.teleportBubbleY[j + 1];
+                    this.teleportBubbleTime[j] = this.teleportBubbleTime[j + 1];
+                    this.teleportBubbleType[j] = this.teleportBubbleType[j + 1];
                 }
             }
         }
@@ -2934,82 +2969,87 @@ class mudclient extends GameConnection {
         this.surface.parseSprite(this.spriteUtil + 6, Utility.loadData('arrows.dat', 0, mediaJag), indexDat, 2);
         this.surface.parseSprite(this.spriteProjectile, Utility.loadData('projectile.dat', 0, mediaJag), indexDat, GameData.projectileSprite);
 
-        let i = GameData.itemSpriteCount;
+        let spriteCount = GameData.itemSpriteCount;
 
-        for (let j = 1; i > 0; j++) {
-            let k = i;
-            i -= 30;
+        for (let i = 1; spriteCount > 0; i++) {
+            let currentSpriteCount = spriteCount;
+            spriteCount -= 30;
 
-            if (k > 30) {
-                k = 30;
+            if (currentSpriteCount > 30) {
+                currentSpriteCount = 30;
             }
 
-            this.surface.parseSprite(this.spriteItem + (j - 1) * 30, Utility.loadData('objects' + j + '.dat', 0, mediaJag), indexDat, k);
+            this.surface.parseSprite(
+                this.spriteItem + (i - 1) * 30,
+                Utility.loadData(`objects${i}.dat`, 0, mediaJag),
+                indexDat,
+                currentSpriteCount
+            );
         }
 
         this.surface.loadSprite(this.spriteMedia);
         this.surface.loadSprite(this.spriteMedia + 9);
 
-        for (let l = 11; l <= 26; l++) {
-            this.surface.loadSprite(this.spriteMedia + l);
+        for (let i = 11; i <= 26; i++) {
+            this.surface.loadSprite(this.spriteMedia + i);
         }
 
-        for (let i1 = 0; i1 < GameData.projectileSprite; i1++) {
-            this.surface.loadSprite(this.spriteProjectile + i1);
+        for (let i = 0; i < GameData.projectileSprite; i++) {
+            this.surface.loadSprite(this.spriteProjectile + i);
         }
 
-        for (let j1 = 0; j1 < GameData.itemSpriteCount; j1++) {
-            this.surface.loadSprite(this.spriteItem + j1);
+        for (let i = 0; i < GameData.itemSpriteCount; i++) {
+            this.surface.loadSprite(this.spriteItem + i);
         }
     }
 
     drawChatMessageTabs() {
         this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 23);
 
-        let col = Surface.rgbToLong(200, 200, 255);
+        let colour = Surface.rgbToInt(200, 200, 255);
 
         if (this.messageTabSelected === 0) {
-            col = Surface.rgbToLong(255, 200, 50);
+            colour = Surface.rgbToInt(255, 200, 50);
         }
 
         if (this.messageTabFlashAll % 30 > 15) {
-            col = Surface.rgbToLong(255, 50, 50);
+            colour = Surface.rgbToInt(255, 50, 50);
         }
 
-        this.surface.drawStringCenter('All messages', 54, this.gameHeight + 6, 0, col);
-        col = Surface.rgbToLong(200, 200, 255);
+        this.surface.drawStringCenter('All messages', 54, this.gameHeight + 6, 0, colour);
+        colour = Surface.rgbToInt(200, 200, 255);
 
         if (this.messageTabSelected === 1) {
-            col = Surface.rgbToLong(255, 200, 50);
+            colour = Surface.rgbToInt(255, 200, 50);
         }
 
         if (this.messageTabFlashHistory % 30 > 15) {
-            col = Surface.rgbToLong(255, 50, 50);
+            colour = Surface.rgbToInt(255, 50, 50);
         }
 
-        this.surface.drawStringCenter('Chat history', 155, this.gameHeight + 6, 0, col);
-        col = Surface.rgbToLong(200, 200, 255);
+        this.surface.drawStringCenter('Chat history', 155, this.gameHeight + 6, 0, colour);
+        colour = Surface.rgbToInt(200, 200, 255);
 
         if (this.messageTabSelected === 2) {
-            col = Surface.rgbToLong(255, 200, 50);
+            colour = Surface.rgbToInt(255, 200, 50);
         }
 
         if (this.messageTabFlashQuest % 30 > 15) {
-            col = Surface.rgbToLong(255, 50, 50);
+            colour = Surface.rgbToInt(255, 50, 50);
         }
 
-        this.surface.drawStringCenter('Quest history', 255, this.gameHeight + 6, 0, col);
-        col = Surface.rgbToLong(200, 200, 255);
+        this.surface.drawStringCenter('Quest history', 255, this.gameHeight + 6, 0, colour);
+        colour = Surface.rgbToInt(200, 200, 255);
 
         if (this.messageTabSelected === 3) {
-            col = Surface.rgbToLong(255, 200, 50);
+            colour = Surface.rgbToInt(255, 200, 50);
         }
 
         if (this.messageTabFlashPrivate % 30 > 15) {
-            col = Surface.rgbToLong(255, 50, 50);
+            colour = Surface.rgbToInt(255, 50, 50);
         }
 
-        this.surface.drawStringCenter('Private history', 355, this.gameHeight + 6, 0, col);
+        this.surface.drawStringCenter('Private history', 355, this.gameHeight + 6, 0, colour);
         this.surface.drawStringCenter('Report abuse', 457, this.gameHeight + 6, 0, 0xffffff);
     }
 
@@ -3068,8 +3108,6 @@ class mudclient extends GameConnection {
         }
 
         this.scene = new Scene(this.surface, 15000, 15000, 1000);
-
-        // this used to be in scene's constructor
         this.scene.view = GameModel._from2(1000 * 1000, 1000);
 
         this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, this.const_9);
@@ -3225,25 +3263,25 @@ class mudclient extends GameConnection {
         if (this.objectAnimationNumberFireLightningSpell !== this.lastObjectAnimationNumberFireLightningSpell) {
             this.lastObjectAnimationNumberFireLightningSpell = this.objectAnimationNumberFireLightningSpell;
 
-            for (let j = 0; j < this.objectCount; j++) {
-                if (this.objectId[j] === 97) {
-                    this.updateObjectAnimation(j, 'firea' + (this.objectAnimationNumberFireLightningSpell + 1));
+            for (let i = 0; i < this.objectCount; i++) {
+                if (this.objectId[i] === 97) {
+                    this.updateObjectAnimation(i, 'firea' + (this.objectAnimationNumberFireLightningSpell + 1));
                 }
 
-                if (this.objectId[j] === 274) {
-                    this.updateObjectAnimation(j, 'fireplacea' + (this.objectAnimationNumberFireLightningSpell + 1));
+                if (this.objectId[i] === 274) {
+                    this.updateObjectAnimation(i, 'fireplacea' + (this.objectAnimationNumberFireLightningSpell + 1));
                 }
 
-                if (this.objectId[j] === 1031) {
-                    this.updateObjectAnimation(j, 'lightning' + (this.objectAnimationNumberFireLightningSpell + 1));
+                if (this.objectId[i] === 1031) {
+                    this.updateObjectAnimation(i, 'lightning' + (this.objectAnimationNumberFireLightningSpell + 1));
                 }
 
-                if (this.objectId[j] === 1036) {
-                    this.updateObjectAnimation(j, 'firespell' + (this.objectAnimationNumberFireLightningSpell + 1));
+                if (this.objectId[i] === 1036) {
+                    this.updateObjectAnimation(i, 'firespell' + (this.objectAnimationNumberFireLightningSpell + 1));
                 }
 
-                if (this.objectId[j] === 1147) {
-                    this.updateObjectAnimation(j, 'spellcharge' + (this.objectAnimationNumberFireLightningSpell + 1));
+                if (this.objectId[i] === 1147) {
+                    this.updateObjectAnimation(i, 'spellcharge' + (this.objectAnimationNumberFireLightningSpell + 1));
                 }
             }
         }
@@ -3251,13 +3289,13 @@ class mudclient extends GameConnection {
         if (this.objectAnimationNumberTorch !== this.lastObjectAnimationNumberTorch) {
             this.lastObjectAnimationNumberTorch = this.objectAnimationNumberTorch;
 
-            for (let k = 0; k < this.objectCount; k++) {
-                if (this.objectId[k] === 51) {
-                    this.updateObjectAnimation(k, 'torcha' + (this.objectAnimationNumberTorch + 1));
+            for (let i = 0; i < this.objectCount; i++) {
+                if (this.objectId[i] === 51) {
+                    this.updateObjectAnimation(i, 'torcha' + (this.objectAnimationNumberTorch + 1));
                 }
 
-                if (this.objectId[k] === 143) {
-                    this.updateObjectAnimation(k, 'skulltorcha' + (this.objectAnimationNumberTorch + 1));
+                if (this.objectId[i] === 143) {
+                    this.updateObjectAnimation(i, 'skulltorcha' + (this.objectAnimationNumberTorch + 1));
                 }
             }
         }
@@ -3265,9 +3303,9 @@ class mudclient extends GameConnection {
         if (this.objectAnimationNumberClaw !== this.lastObjectAnimationNumberClaw) {
             this.lastObjectAnimationNumberClaw = this.objectAnimationNumberClaw;
 
-            for (let l = 0; l < this.objectCount; l++) {
-                if (this.objectId[l] === 1142) {
-                    this.updateObjectAnimation(l, 'clawspell' + (this.objectAnimationNumberClaw + 1));
+            for (let i = 0; i < this.objectCount; i++) {
+                if (this.objectId[i] === 1142) {
+                    this.updateObjectAnimation(i, 'clawspell' + (this.objectAnimationNumberClaw + 1));
                 }
             }
 
@@ -3277,32 +3315,32 @@ class mudclient extends GameConnection {
         this.spriteCount = 0;
 
         for (let i = 0; i < this.playerCount; i++) {
-            let character = this.players[i];
+            const player = this.players[i];
 
-            if (character.colourBottom !== 255) {
-                let x = character.currentX;
-                let y = character.currentY;
-                let elev = -this.world.getElevation(x, y);
-                let id = this.scene.addSprite(5000 + i, x, elev, y, 145, 220, i + 10000);
+            if (player.colourBottom !== 255) {
+                const x = player.currentX;
+                const y = player.currentY;
+                const elevation = -this.world.getElevation(x, y);
+                const id = this.scene.addSprite(5000 + i, x, elevation, y, 145, 220, i + 10000);
 
                 this.spriteCount++;
 
-                if (character === this.localPlayer) {
+                if (player === this.localPlayer) {
                     this.scene.setLocalPlayer(id);
                 }
 
-                if (character.animationCurrent === 8) {
+                if (player.animationCurrent === 8) {
                     this.scene.setSpriteTranslateX(id, -30);
                 }
 
-                if (character.animationCurrent === 9) {
+                if (player.animationCurrent === 9) {
                     this.scene.setSpriteTranslateX(id, 30);
                 }
             }
         }
 
         for (let i = 0; i < this.playerCount; i++) {
-            let player = this.players[i];
+            const player = this.players[i];
 
             if (player.projectileRange > 0) {
                 let character = null;
@@ -3314,15 +3352,15 @@ class mudclient extends GameConnection {
                 }
 
                 if (character !== null) {
-                    let sx = player.currentX;
-                    let sy = player.currentY;
-                    let selev = -this.world.getElevation(sx, sy) - 110;
-                    let dx = character.currentX;
-                    let dy = character.currentY;
-                    let delev = -((this.world.getElevation(dx, dy) - GameData.npcHeight[character.npcId] / 2) | 0);
-                    let rx = ((sx * player.projectileRange + dx * (this.projectileMaxRange - player.projectileRange)) / this.projectileMaxRange) | 0;
-                    let rz = ((selev * player.projectileRange + delev * (this.projectileMaxRange - player.projectileRange)) / this.projectileMaxRange) | 0;
-                    let ry = ((sy * player.projectileRange + dy * (this.projectileMaxRange - player.projectileRange)) / this.projectileMaxRange) | 0;
+                    const sx = player.currentX;
+                    const sy = player.currentY;
+                    const selev = -this.world.getElevation(sx, sy) - 110;
+                    const dx = character.currentX;
+                    const dy = character.currentY;
+                    const delev = -((this.world.getElevation(dx, dy) - GameData.npcHeight[character.npcId] / 2) | 0);
+                    const rx = ((sx * player.projectileRange + dx * (this.projectileMaxRange - player.projectileRange)) / this.projectileMaxRange) | 0;
+                    const rz = ((selev * player.projectileRange + delev * (this.projectileMaxRange - player.projectileRange)) / this.projectileMaxRange) | 0;
+                    const ry = ((sy * player.projectileRange + dy * (this.projectileMaxRange - player.projectileRange)) / this.projectileMaxRange) | 0;
 
                     this.scene.addSprite(this.spriteProjectile + player.incomingProjectileSprite, rx, rz, ry, 32, 32, 0);
                     this.spriteCount++;
@@ -3331,43 +3369,43 @@ class mudclient extends GameConnection {
         }
 
         for (let i = 0; i < this.npcCount; i++) {
-            let character_3 = this.npcs[i];
-            let i3 = character_3.currentX;
-            let j4 = character_3.currentY;
-            let i7 = -this.world.getElevation(i3, j4);
-            let i9 = this.scene.addSprite(20000 + i, i3, i7, j4, GameData.npcWidth[character_3.npcId], GameData.npcHeight[character_3.npcId], i + 30000);
+            const npc = this.npcs[i];
+            const i3 = npc.currentX;
+            const j4 = npc.currentY;
+            const i7 = -this.world.getElevation(i3, j4);
+            const i9 = this.scene.addSprite(20000 + i, i3, i7, j4, GameData.npcWidth[npc.npcId], GameData.npcHeight[npc.npcId], i + 30000);
 
             this.spriteCount++;
 
-            if (character_3.animationCurrent === 8) {
+            if (npc.animationCurrent === 8) {
                 this.scene.setSpriteTranslateX(i9, -30);
             }
 
-            if (character_3.animationCurrent === 9) {
+            if (npc.animationCurrent === 9) {
                 this.scene.setSpriteTranslateX(i9, 30);
             }
         }
 
         for (let i = 0; i < this.groundItemCount; i++) {
-            let x = this.groundItemX[i] * this.magicLoc + 64;
-            let y = this.groundItemY[i] * this.magicLoc + 64;
+            const x = this.groundItemX[i] * this.magicLoc + 64;
+            const y = this.groundItemY[i] * this.magicLoc + 64;
 
-            this.scene.addSprite(40000 + this.groundItemId[i], x, -this.world.getElevation(x, y) - this.groundItemZ[i], y, 96, 64, i + 20000);
+            this.scene.addSprite(40000 + this.groundItemID[i], x, -this.world.getElevation(x, y) - this.groundItemZ[i], y, 96, 64, i + 20000);
             this.spriteCount++;
         }
 
         for (let i = 0; i < this.teleportBubbleCount; i++) {
-            let l4 = this.teleportBubbleX[i] * this.magicLoc + 64;
-            let j7 = this.teleportBubbleY[i] * this.magicLoc + 64;
-            let j9 = this.teleportBubbleType[i];
+            const x = this.teleportBubbleX[i] * this.magicLoc + 64;
+            const y = this.teleportBubbleY[i] * this.magicLoc + 64;
+            const type = this.teleportBubbleType[i];
 
-            if (j9 === 0) {
-                this.scene.addSprite(50000 + i, l4, -this.world.getElevation(l4, j7), j7, 128, 256, i + 50000);
+            if (type === 0) {
+                this.scene.addSprite(50000 + i, x, -this.world.getElevation(x, y), y, 128, 256, i + 50000);
                 this.spriteCount++;
             }
 
-            if (j9 === 1) {
-                this.scene.addSprite(50000 + i, l4, -this.world.getElevation(l4, j7), j7, 128, 64, i + 50000);
+            if (type === 1) {
+                this.scene.addSprite(50000 + i, x, -this.world.getElevation(x, y), y, 128, 64, i + 50000);
                 this.spriteCount++;
             }
         }
@@ -3377,8 +3415,8 @@ class mudclient extends GameConnection {
         this.surface.interlace = this.interlace;
 
         if (this.lastHeightOffset === 3) {
-            let i5 = 40 + ((Math.random() * 3) | 0);
-            let k7 = 40 + ((Math.random() * 7) | 0);
+            const i5 = 40 + ((Math.random() * 3) | 0);
+            const k7 = 40 + ((Math.random() * 7) | 0);
 
             this.scene._setLight_from5(i5, k7, -50, -10, -50);
         }
@@ -3389,11 +3427,11 @@ class mudclient extends GameConnection {
 
         if (this.cameraAutoAngleDebug) {
             if (this.optionCameraModeAuto && !this.fogOfWar) {
-                let j5 = this.cameraAngle;
+                const oldAngle = this.cameraAngle;
 
                 this.autoRotateCamera();
 
-                if (this.cameraAngle !== j5) {
+                if (this.cameraAngle !== oldAngle) {
                     this.cameraAutoRotatePlayerX = this.localPlayer.currentX;
                     this.cameraAutoRotatePlayerY = this.localPlayer.currentY;
                 }
@@ -3405,8 +3443,8 @@ class mudclient extends GameConnection {
             this.scene.fogZDistance = 2800;
             this.cameraRotation = this.cameraAngle * 32;
 
-            let x = this.cameraAutoRotatePlayerX + this.cameraRotationX;
-            let y = this.cameraAutoRotatePlayerY + this.cameraRotationY;
+            const x = this.cameraAutoRotatePlayerX + this.cameraRotationX;
+            const y = this.cameraAutoRotatePlayerY + this.cameraRotationY;
 
             this.scene.setCamera(x, -this.world.getElevation(x, y), y, 912, this.cameraRotation * 4, 0, 2000);
         } else {
@@ -3692,6 +3730,7 @@ class mudclient extends GameConnection {
             this.packetStream.putByte(this.appearanceBottomColour);
             this.packetStream.putByte(this.appearanceSkinColour);
             this.packetStream.sendPacket();
+
             this.surface.blackScreen();
             this.showAppearanceChange = false;
         }
@@ -4446,8 +4485,11 @@ class mudclient extends GameConnection {
                 this.packetStream.sendPacket();
                 this.selectedItemInventoryIndex = -1;
                 this.showUiTab = 0;
-                this.showMessage('Dropping ' +
-                    GameData.itemName[this.inventoryItemId[menuIndex]], 4);
+                this.showMessage(
+                    'Dropping ' +
+                        GameData.itemName[this.inventoryItemId[menuIndex]],
+                    4
+                );
                 break;
             case 3600:
                 this.showMessage(GameData.itemDescription[menuIndex], 3);
@@ -4621,40 +4663,40 @@ class mudclient extends GameConnection {
         }
     }
 
-    isValidCameraAngle(i) {
-        let j = (this.localPlayer.currentX / 128) | 0;
-        let k = (this.localPlayer.currentY / 128) | 0;
+    isValidCameraAngle(angle) {
+        const x = (this.localPlayer.currentX / 128) | 0;
+        const y = (this.localPlayer.currentY / 128) | 0;
 
         for (let l = 2; l >= 1; l--) {
-            if (i === 1 && ((this.world.objectAdjacency.get(j, k - l) & 128) === 128 || (this.world.objectAdjacency.get(j - l, k) & 128) === 128 || (this.world.objectAdjacency.get(j - l, k - l) & 128) === 128)) {
+            if (angle === 1 && ((this.world.objectAdjacency.get(x, y - l) & 128) === 128 || (this.world.objectAdjacency.get(x - l, y) & 128) === 128 || (this.world.objectAdjacency.get(x - l, y - l) & 128) === 128)) {
                 return false;
             }
 
-            if (i === 3 && ((this.world.objectAdjacency.get(j, k + l) & 128) === 128 || (this.world.objectAdjacency.get(j - l, k) & 128) === 128 || (this.world.objectAdjacency.get(j - l, k + l) & 128) === 128)) {
+            if (angle === 3 && ((this.world.objectAdjacency.get(x, y + l) & 128) === 128 || (this.world.objectAdjacency.get(x - l, y) & 128) === 128 || (this.world.objectAdjacency.get(x - l, y + l) & 128) === 128)) {
                 return false;
             }
 
-            if (i === 5 && ((this.world.objectAdjacency.get(j, k + l) & 128) === 128 || (this.world.objectAdjacency.get(j + l, k) & 128) === 128 || (this.world.objectAdjacency.get(j + l, k + l) & 128) === 128)) {
+            if (angle === 5 && ((this.world.objectAdjacency.get(x, y + l) & 128) === 128 || (this.world.objectAdjacency.get(x + l, y) & 128) === 128 || (this.world.objectAdjacency.get(x + l, y + l) & 128) === 128)) {
                 return false;
             }
 
-            if (i === 7 && ((this.world.objectAdjacency.get(j, k - l) & 128) === 128 || (this.world.objectAdjacency.get(j + l, k) & 128) === 128 || (this.world.objectAdjacency.get(j + l, k - l) & 128) === 128)) {
+            if (angle === 7 && ((this.world.objectAdjacency.get(x, y - l) & 128) === 128 || (this.world.objectAdjacency.get(x + l, y) & 128) === 128 || (this.world.objectAdjacency.get(x + l, y - l) & 128) === 128)) {
                 return false;
             }
 
-            if (i === 0 && (this.world.objectAdjacency.get(j, k - l) & 128) === 128) {
+            if (angle === 0 && (this.world.objectAdjacency.get(x, y - l) & 128) === 128) {
                 return false;
             }
 
-            if (i === 2 && (this.world.objectAdjacency.get(j - l, k) & 128) === 128) {
+            if (angle === 2 && (this.world.objectAdjacency.get(x - l, y) & 128) === 128) {
                 return false;
             }
 
-            if (i === 4 && (this.world.objectAdjacency.get(j, k + l) & 128) === 128) {
+            if (angle === 4 && (this.world.objectAdjacency.get(x, y + l) & 128) === 128) {
                 return false;
             }
 
-            if (i === 6 && (this.world.objectAdjacency.get(j + l, k) & 128) === 128) {
+            if (angle === 6 && (this.world.objectAdjacency.get(x + l, y) & 128) === 128) {
                 return false;
             }
         }
@@ -4699,8 +4741,8 @@ class mudclient extends GameConnection {
                 this.localRegionX -= this.regionX;
                 this.localRegionY -= this.regionY;
 
-                let playerX = this.localRegionX * this.magicLoc + 64;
-                let playerY = this.localRegionY * this.magicLoc + 64;
+                const playerX = this.localRegionX * this.magicLoc + 64;
+                const playerY = this.localRegionY * this.magicLoc + 64;
 
                 if (hasLoadedRegion) {
                     this.localPlayer.waypointCurrent = 0;
@@ -4796,11 +4838,11 @@ class mudclient extends GameConnection {
                     const sprite = Utility.getBitMask(pdata, offset, 4);
                     offset += 4;
 
-                    let isPlayerKnown = Utility.getBitMask(pdata, offset, 1);
+                    const isPlayerKnown = Utility.getBitMask(pdata, offset, 1);
                     offset++;
 
-                    let x = (this.localRegionX + areaX) * this.magicLoc + 64;
-                    let y = (this.localRegionY + areaY) * this.magicLoc + 64;
+                    const x = (this.localRegionX + areaX) * this.magicLoc + 64;
+                    const y = (this.localRegionY + areaY) * this.magicLoc + 64;
 
                     this.createPlayer(serverIndex, x, y, sprite);
 
@@ -4843,7 +4885,7 @@ class mudclient extends GameConnection {
                                 if (i !== itemIndex) {
                                     this.groundItemX[itemIndex] = this.groundItemX[i];
                                     this.groundItemY[itemIndex] = this.groundItemY[i];
-                                    this.groundItemId[itemIndex] = this.groundItemId[i];
+                                    this.groundItemID[itemIndex] = this.groundItemID[i];
                                     this.groundItemZ[itemIndex] = this.groundItemZ[i];
                                 }
 
@@ -4862,7 +4904,7 @@ class mudclient extends GameConnection {
                         if ((itemID & 32768) === 0) {
                             this.groundItemX[this.groundItemCount] = k14;
                             this.groundItemY[this.groundItemCount] = j19;
-                            this.groundItemId[this.groundItemCount] = itemID;
+                            this.groundItemID[this.groundItemCount] = itemID;
                             this.groundItemZ[this.groundItemCount] = 0;
 
                             for (let i = 0; i < this.objectCount; i++) {
@@ -4881,11 +4923,11 @@ class mudclient extends GameConnection {
                             let itemIndex = 0;
 
                             for (let i = 0; i < this.groundItemCount; i++) {
-                                if (this.groundItemX[i] !== k14 || this.groundItemY[i] !== j19 || this.groundItemId[i] !== itemID) {
+                                if (this.groundItemX[i] !== k14 || this.groundItemY[i] !== j19 || this.groundItemID[i] !== itemID) {
                                     if (i !== itemIndex) {
                                         this.groundItemX[itemIndex] = this.groundItemX[i];
                                         this.groundItemY[itemIndex] = this.groundItemY[i];
-                                        this.groundItemId[itemIndex] = this.groundItemId[i];
+                                        this.groundItemID[itemIndex] = this.groundItemID[i];
                                         this.groundItemZ[itemIndex] = this.groundItemZ[i];
                                     }
 
@@ -5057,7 +5099,16 @@ class mudclient extends GameConnection {
                         offset++;
 
                         if (character !== null) {
-                            let filtered = WordFilter.filter(ChatMessage.descramble(pdata, offset, messageLength));
+                            let message =
+                                ChatMessage.descramble(
+                                    pdata,
+                                    offset,
+                                    messageLength
+                                );
+
+                            if (this.options.wordFilter) {
+                                message = WordFilter.filter(message);
+                            }
 
                             let ignored = false;
 
@@ -5070,7 +5121,7 @@ class mudclient extends GameConnection {
 
                             if (!ignored) {
                                 character.messageTimeout = 150;
-                                character.message = filtered;
+                                character.message = message;
                                 this.showMessage(character.name + ': ' + character.message, 2);
                             }
                         }
@@ -5078,15 +5129,12 @@ class mudclient extends GameConnection {
                         offset += messageLength;
                     } else if (updateType === 2) { // combat damage and hp
                         let damage = Utility.getUnsignedByte(pdata[offset]);
-
                         offset++;
 
                         let current = Utility.getUnsignedByte(pdata[offset]);
-
                         offset++;
 
                         let max = Utility.getUnsignedByte(pdata[offset]);
-
                         offset++;
 
                         if (character !== null) {
@@ -5104,11 +5152,9 @@ class mudclient extends GameConnection {
                         }
                     } else if (updateType === 3) { // new incoming projectile from npc?
                         let projectileSprite = Utility.getUnsignedShort(pdata, offset);
-
                         offset += 2;
 
                         let npcIdx = Utility.getUnsignedShort(pdata, offset);
-
                         offset += 2;
 
                         if (character !== null) {
@@ -5500,14 +5546,14 @@ class mudclient extends GameConnection {
                     let entityCount = 0;
 
                     for (let j = 0; j < this.groundItemCount; j++) {
-                        let i33 = (this.groundItemX[j] >> 3) - deltaX;
-                        let j36 = (this.groundItemY[j] >> 3) - deltaY;
+                        const x = (this.groundItemX[j] >> 3) - deltaX;
+                        const y = (this.groundItemY[j] >> 3) - deltaY;
 
-                        if (i33 !== 0 || j36 !== 0) {
+                        if (x !== 0 || y !== 0) {
                             if (j !== entityCount) {
                                 this.groundItemX[entityCount] = this.groundItemX[j];
                                 this.groundItemY[entityCount] = this.groundItemY[j];
-                                this.groundItemId[entityCount] = this.groundItemId[j];
+                                this.groundItemID[entityCount] = this.groundItemID[j];
                                 this.groundItemZ[entityCount] = this.groundItemZ[j];
                             }
 
@@ -5519,10 +5565,10 @@ class mudclient extends GameConnection {
                     entityCount = 0;
 
                     for (let j = 0; j < this.objectCount; j++) {
-                        let k36 = (this.objectX[j] >> 3) - deltaX;
-                        let l38 = (this.objectY[j] >> 3) - deltaY;
+                        const x = (this.objectX[j] >> 3) - deltaX;
+                        const y = (this.objectY[j] >> 3) - deltaY;
 
-                        if (k36 !== 0 || l38 !== 0) {
+                        if (x !== 0 || y !== 0) {
                             if (j !== entityCount) {
                                 this.objectModel[entityCount] = this.objectModel[j];
                                 this.objectModel[entityCount].key = entityCount;
@@ -5543,10 +5589,10 @@ class mudclient extends GameConnection {
                     entityCount = 0;
 
                     for (let j = 0; j < this.wallObjectCount; j++) {
-                        let i39 = (this.wallObjectX[j] >> 3) - deltaX;
-                        let j41 = (this.wallObjectY[j] >> 3) - deltaY;
+                        const x = (this.wallObjectX[j] >> 3) - deltaX;
+                        const y = (this.wallObjectY[j] >> 3) - deltaY;
 
-                        if (i39 !== 0 || j41 !== 0) {
+                        if (x !== 0 || y !== 0) {
                             if (j !== entityCount) {
                                 this.wallObjectModel[entityCount] = this.wallObjectModel[j];
                                 this.wallObjectModel[entityCount].key = entityCount + 10000;
@@ -5927,7 +5973,7 @@ class mudclient extends GameConnection {
 
             if (opcode === serverOpcodes.PLAYER_STAT_UPDATE) {
                 let offset = 1;
-                let skillIndex = pdata[offset++] & 0xff;
+                const skillIndex = pdata[offset++] & 0xff;
 
                 this.playerStatCurrent[skillIndex] = Utility.getUnsignedByte(pdata[offset++]);
                 this.playerStatBase[skillIndex] = Utility.getUnsignedByte(pdata[offset++]);
@@ -6238,45 +6284,45 @@ class mudclient extends GameConnection {
                         if (this.selectedSpell >= 0) {
                             if (GameData.spellType[this.selectedSpell] === 3) {
                                 this.menuItemText1[this.menuItemsCount] = 'Cast ' + GameData.spellName[this.selectedSpell] + ' on';
-                                this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemId[idx]];
+                                this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemID[idx]];
                                 this.menuType[this.menuItemsCount] = 200;
                                 this.menuItemX[this.menuItemsCount] = this.groundItemX[idx];
                                 this.menuItemY[this.menuItemsCount] = this.groundItemY[idx];
-                                this.menuIndex[this.menuItemsCount] = this.groundItemId[idx];
+                                this.menuIndex[this.menuItemsCount] = this.groundItemID[idx];
                                 this.menuSourceIndex[this.menuItemsCount] = this.selectedSpell;
                                 this.menuItemsCount++;
                             }
                         } else if (this.selectedItemInventoryIndex >= 0) {
                             this.menuItemText1[this.menuItemsCount] = 'Use ' + this.selectedItemName + ' with';
-                            this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemId[idx]];
+                            this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemID[idx]];
                             this.menuType[this.menuItemsCount] = 210;
                             this.menuItemX[this.menuItemsCount] = this.groundItemX[idx];
                             this.menuItemY[this.menuItemsCount] = this.groundItemY[idx];
-                            this.menuIndex[this.menuItemsCount] = this.groundItemId[idx];
+                            this.menuIndex[this.menuItemsCount] = this.groundItemID[idx];
                             this.menuSourceIndex[this.menuItemsCount] = this.selectedItemInventoryIndex;
                             this.menuItemsCount++;
                         } else {
                             this.menuItemText1[this.menuItemsCount] = 'Take';
-                            this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemId[idx]];
+                            this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemID[idx]];
                             this.menuType[this.menuItemsCount] = 220;
                             this.menuItemX[this.menuItemsCount] = this.groundItemX[idx];
                             this.menuItemY[this.menuItemsCount] = this.groundItemY[idx];
-                            this.menuIndex[this.menuItemsCount] = this.groundItemId[idx];
+                            this.menuIndex[this.menuItemsCount] = this.groundItemID[idx];
                             this.menuItemsCount++;
                             this.menuItemText1[this.menuItemsCount] = 'Examine';
-                            this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemId[idx]];
+                            this.menuItemText2[this.menuItemsCount] = '@lre@' + GameData.itemName[this.groundItemID[idx]];
                             this.menuType[this.menuItemsCount] = 3200;
-                            this.menuIndex[this.menuItemsCount] = this.groundItemId[idx];
+                            this.menuIndex[this.menuItemsCount] = this.groundItemID[idx];
                             this.menuItemsCount++;
                         }
                     } else if (type === 3) {
                         let menuText = '';
                         let levelDiff = -1;
-                        let id = this.npcs[idx].npcId;
+                        const id = this.npcs[idx].npcId;
 
                         if (GameData.npcAttackable[id] > 0) {
-                            let npcLevel = ((GameData.npcAttack[id] + GameData.npcDefense[id] + GameData.npcStrength[id] + GameData.npcHits[id]) / 4) | 0;
-                            let playerLevel = ((this.playerStatBase[0] + this.playerStatBase[1] + this.playerStatBase[2] + this.playerStatBase[3] + 27) / 4) | 0;
+                            const npcLevel = ((GameData.npcAttack[id] + GameData.npcDefense[id] + GameData.npcStrength[id] + GameData.npcHits[id]) / 4) | 0;
+                            const playerLevel = ((this.playerStatBase[0] + this.playerStatBase[1] + this.playerStatBase[2] + this.playerStatBase[3] + 27) / 4) | 0;
 
                             levelDiff = playerLevel - npcLevel;
                             menuText = '@yel@';
@@ -6379,18 +6425,18 @@ class mudclient extends GameConnection {
                         }
                     }
                 } else if (gameModel !== null && gameModel.key >= 10000) {
-                    let idx = gameModel.key - 10000;
-                    let id = this.wallObjectId[idx];
+                    const index = gameModel.key - 10000;
+                    const id = this.wallObjectId[index];
 
-                    if (!this.wallObjectAlreadyInMenu[idx]) {
+                    if (!this.wallObjectAlreadyInMenu[index]) {
                         if (this.selectedSpell >= 0) {
                             if (GameData.spellType[this.selectedSpell] === 4) {
                                 this.menuItemText1[this.menuItemsCount] = 'Cast ' + GameData.spellName[this.selectedSpell] + ' on';
                                 this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.wallObjectName[id];
                                 this.menuType[this.menuItemsCount] = 300;
-                                this.menuItemX[this.menuItemsCount] = this.wallObjectX[idx];
-                                this.menuItemY[this.menuItemsCount] = this.wallObjectY[idx];
-                                this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[idx];
+                                this.menuItemX[this.menuItemsCount] = this.wallObjectX[index];
+                                this.menuItemY[this.menuItemsCount] = this.wallObjectY[index];
+                                this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[index];
                                 this.menuSourceIndex[this.menuItemsCount] = this.selectedSpell;
                                 this.menuItemsCount++;
                             }
@@ -6398,9 +6444,9 @@ class mudclient extends GameConnection {
                             this.menuItemText1[this.menuItemsCount] = 'Use ' + this.selectedItemName + ' with';
                             this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.wallObjectName[id];
                             this.menuType[this.menuItemsCount] = 310;
-                            this.menuItemX[this.menuItemsCount] = this.wallObjectX[idx];
-                            this.menuItemY[this.menuItemsCount] = this.wallObjectY[idx];
-                            this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[idx];
+                            this.menuItemX[this.menuItemsCount] = this.wallObjectX[index];
+                            this.menuItemY[this.menuItemsCount] = this.wallObjectY[index];
+                            this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[index];
                             this.menuSourceIndex[this.menuItemsCount] = this.selectedItemInventoryIndex;
                             this.menuItemsCount++;
                         } else {
@@ -6408,9 +6454,9 @@ class mudclient extends GameConnection {
                                 this.menuItemText1[this.menuItemsCount] = GameData.wallObjectCommand1[id];
                                 this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.wallObjectName[id];
                                 this.menuType[this.menuItemsCount] = 320;
-                                this.menuItemX[this.menuItemsCount] = this.wallObjectX[idx];
-                                this.menuItemY[this.menuItemsCount] = this.wallObjectY[idx];
-                                this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[idx];
+                                this.menuItemX[this.menuItemsCount] = this.wallObjectX[index];
+                                this.menuItemY[this.menuItemsCount] = this.wallObjectY[index];
+                                this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[index];
                                 this.menuItemsCount++;
                             }
 
@@ -6418,9 +6464,9 @@ class mudclient extends GameConnection {
                                 this.menuItemText1[this.menuItemsCount] = GameData.wallObjectCommand2[id];
                                 this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.wallObjectName[id];
                                 this.menuType[this.menuItemsCount] = 2300;
-                                this.menuItemX[this.menuItemsCount] = this.wallObjectX[idx];
-                                this.menuItemY[this.menuItemsCount] = this.wallObjectY[idx];
-                                this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[idx];
+                                this.menuItemX[this.menuItemsCount] = this.wallObjectX[index];
+                                this.menuItemY[this.menuItemsCount] = this.wallObjectY[index];
+                                this.menuIndex[this.menuItemsCount] = this.wallObjectDirection[index];
                                 this.menuItemsCount++;
                             }
 
@@ -6431,22 +6477,22 @@ class mudclient extends GameConnection {
                             this.menuItemsCount++;
                         }
 
-                        this.wallObjectAlreadyInMenu[idx] = true;
+                        this.wallObjectAlreadyInMenu[index] = true;
                     }
                 } else if (gameModel !== null && gameModel.key >= 0) {
-                    let idx = gameModel.key;
-                    let id = this.objectId[idx];
+                    const index = gameModel.key;
+                    const id = this.objectId[index];
 
-                    if (!this.objectAlreadyInMenu[idx]) {
+                    if (!this.objectAlreadyInMenu[index]) {
                         if (this.selectedSpell >= 0) {
                             if (GameData.spellType[this.selectedSpell] === 5) {
                                 this.menuItemText1[this.menuItemsCount] = 'Cast ' + GameData.spellName[this.selectedSpell] + ' on';
                                 this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.objectName[id];
                                 this.menuType[this.menuItemsCount] = 400;
-                                this.menuItemX[this.menuItemsCount] = this.objectX[idx];
-                                this.menuItemY[this.menuItemsCount] = this.objectY[idx];
-                                this.menuIndex[this.menuItemsCount] = this.objectDirection[idx];
-                                this.menuSourceIndex[this.menuItemsCount] = this.objectId[idx];
+                                this.menuItemX[this.menuItemsCount] = this.objectX[index];
+                                this.menuItemY[this.menuItemsCount] = this.objectY[index];
+                                this.menuIndex[this.menuItemsCount] = this.objectDirection[index];
+                                this.menuSourceIndex[this.menuItemsCount] = this.objectId[index];
                                 this.menuTargetIndex[this.menuItemsCount] = this.selectedSpell;
                                 this.menuItemsCount++;
                             }
@@ -6454,10 +6500,10 @@ class mudclient extends GameConnection {
                             this.menuItemText1[this.menuItemsCount] = 'Use ' + this.selectedItemName + ' with';
                             this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.objectName[id];
                             this.menuType[this.menuItemsCount] = 410;
-                            this.menuItemX[this.menuItemsCount] = this.objectX[idx];
-                            this.menuItemY[this.menuItemsCount] = this.objectY[idx];
-                            this.menuIndex[this.menuItemsCount] = this.objectDirection[idx];
-                            this.menuSourceIndex[this.menuItemsCount] = this.objectId[idx];
+                            this.menuItemX[this.menuItemsCount] = this.objectX[index];
+                            this.menuItemY[this.menuItemsCount] = this.objectY[index];
+                            this.menuIndex[this.menuItemsCount] = this.objectDirection[index];
+                            this.menuSourceIndex[this.menuItemsCount] = this.objectId[index];
                             this.menuTargetIndex[this.menuItemsCount] = this.selectedItemInventoryIndex;
                             this.menuItemsCount++;
                         } else {
@@ -6465,10 +6511,10 @@ class mudclient extends GameConnection {
                                 this.menuItemText1[this.menuItemsCount] = GameData.objectCommand1[id];
                                 this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.objectName[id];
                                 this.menuType[this.menuItemsCount] = 420;
-                                this.menuItemX[this.menuItemsCount] = this.objectX[idx];
-                                this.menuItemY[this.menuItemsCount] = this.objectY[idx];
-                                this.menuIndex[this.menuItemsCount] = this.objectDirection[idx];
-                                this.menuSourceIndex[this.menuItemsCount] = this.objectId[idx];
+                                this.menuItemX[this.menuItemsCount] = this.objectX[index];
+                                this.menuItemY[this.menuItemsCount] = this.objectY[index];
+                                this.menuIndex[this.menuItemsCount] = this.objectDirection[index];
+                                this.menuSourceIndex[this.menuItemsCount] = this.objectId[index];
                                 this.menuItemsCount++;
                             }
 
@@ -6476,10 +6522,10 @@ class mudclient extends GameConnection {
                                 this.menuItemText1[this.menuItemsCount] = GameData.objectCommand2[id];
                                 this.menuItemText2[this.menuItemsCount] = '@cya@' + GameData.objectName[id];
                                 this.menuType[this.menuItemsCount] = 2400;
-                                this.menuItemX[this.menuItemsCount] = this.objectX[idx];
-                                this.menuItemY[this.menuItemsCount] = this.objectY[idx];
-                                this.menuIndex[this.menuItemsCount] = this.objectDirection[idx];
-                                this.menuSourceIndex[this.menuItemsCount] = this.objectId[idx];
+                                this.menuItemX[this.menuItemsCount] = this.objectX[index];
+                                this.menuItemY[this.menuItemsCount] = this.objectY[index];
+                                this.menuIndex[this.menuItemsCount] = this.objectDirection[index];
+                                this.menuSourceIndex[this.menuItemsCount] = this.objectId[index];
                                 this.menuItemsCount++;
                             }
 
@@ -6490,7 +6536,7 @@ class mudclient extends GameConnection {
                             this.menuItemsCount++;
                         }
 
-                        this.objectAlreadyInMenu[idx] = true;
+                        this.objectAlreadyInMenu[index] = true;
                     }
                 } else {
                     if (pid >= 0) {
@@ -6522,7 +6568,6 @@ class mudclient extends GameConnection {
                     this.menuItemY[this.menuItemsCount] = this.world.localY[j];
                     this.menuIndex[this.menuItemsCount] = this.selectedSpell;
                     this.menuItemsCount++;
-
                     return;
                 }
             } else if (this.selectedItemInventoryIndex < 0) {
@@ -6559,13 +6604,13 @@ class mudclient extends GameConnection {
             if (this.cameraRotationTime > 500) {
                 this.cameraRotationTime = 0;
 
-                let i = (Math.random() * 4) | 0;
+                const roll = (Math.random() * 4) | 0;
 
-                if ((i & 1) === 1) {
+                if ((roll & 1) === 1) {
                     this.cameraRotationX += this.cameraRotationXIncrement;
                 }
 
-                if ((i & 2) === 2) {
+                if ((roll & 2) === 2) {
                     this.cameraRotationY += this.cameraRotationYIncrement;
                 }
             }
@@ -6607,16 +6652,28 @@ class mudclient extends GameConnection {
     }
 
     async loadMaps() {
-        this.world.mapPack = await this.readDataFile('maps' + version.MAPS + '.jag', 'map', 70);
+        this.world.mapPack =
+            await this.readDataFile(`maps${version.MAPS}.jag`, 'map', 70);
 
         if (this.members) {
-            this.world.memberMapPack = await this.readDataFile('maps' + version.MAPS + '.mem', 'members map', 75);
+            this.world.memberMapPack =
+                await this.readDataFile(
+                    `maps${version.MAPS}.mem`,
+                    'members map',
+                    75
+                );
         }
 
-        this.world.landscapePack = await this.readDataFile('land' + version.MAPS + '.jag', 'landscape', 80);
+        this.world.landscapePack =
+            await this.readDataFile(`land${version.MAPS}.jag`, 'landscape', 80);
 
         if (this.members) {
-            this.world.memberLandscapePack = await this.readDataFile('land' + version.MAPS + '.mem', 'members landscape', 85);
+            this.world.memberLandscapePack =
+                await this.readDataFile(
+                    `land${version.MAPS}.mem`,
+                    'members landscape',
+                    85
+                );
         }
     }
 
@@ -6625,10 +6682,11 @@ class mudclient extends GameConnection {
         let y1 = y;
         let x2 = x;
         let y2 = y;
-        let j2 = GameData.wallObjectTextureFront[id];
-        let k2 = GameData.wallObjectTextureBack[id];
-        let l2 = GameData.wallObjectHeight[id];
-        let gameModel = GameModel._from2(4, 1);
+
+        const frontTexture = GameData.wallObjectTextureFront[id];
+        const backTexture = GameData.wallObjectTextureBack[id];
+        const height = GameData.wallObjectHeight[id];
+        const gameModel = GameModel._from2(4, 1);
 
         if (direction === 0) {
             x2 = x + 1;
@@ -6647,13 +6705,14 @@ class mudclient extends GameConnection {
         x2 *= this.magicLoc;
         y2 *= this.magicLoc;
 
-        let i3 = gameModel.vertexAt(x1, -this.world.getElevation(x1, y1), y1);
-        let j3 = gameModel.vertexAt(x1, -this.world.getElevation(x1, y1) - l2, y1);
-        let k3 = gameModel.vertexAt(x2, -this.world.getElevation(x2, y2) - l2, y2);
-        let l3 = gameModel.vertexAt(x2, -this.world.getElevation(x2, y2), y2);
-        let ai = new Int32Array([i3, j3, k3, l3]);
+        const vertices = new Int32Array([
+            gameModel.vertexAt(x1, -this.world.getElevation(x1, y1), y1),
+            gameModel.vertexAt(x1, -this.world.getElevation(x1, y1) - height, y1),
+            gameModel.vertexAt(x2, -this.world.getElevation(x2, y2) - height, y2),
+            gameModel.vertexAt(x2, -this.world.getElevation(x2, y2), y2)
+        ]);
 
-        gameModel.createFace(4, ai, j2, k2);
+        gameModel.createFace(4, vertices, frontTexture, backTexture);
         gameModel._setLight_from6(false, 60, 24, -50, -10, -50);
 
         if (x >= 0 && y >= 0 && x < 96 && y < 96) {

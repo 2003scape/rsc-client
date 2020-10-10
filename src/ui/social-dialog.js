@@ -66,7 +66,9 @@ function drawDialogSocialInput() {
             4,
             WHITE
         );
+
         y += 20;
+
         this.surface.drawStringCenter(
             `${this.inputTextCurrent}*`,
             256,
@@ -93,16 +95,21 @@ function drawDialogSocialInput() {
     } else if (this.showDialogSocialInput === 2) {
         this.surface.drawBox(6, y, 500, 70, 0);
         this.surface.drawBoxEdge(6, y, 500, 70, WHITE);
+
         y += 20;
+
+        const targetName = Utility.hashToUsername(this.privateMessageTarget);
+
         this.surface.drawStringCenter(
-            'Enter message to send to ' +
-                Utility.hashToUsername(this.privateMessageTarget),
+            `Enter message to send to ${targetName}`,
             256,
             y,
             4,
             WHITE
         );
+
         y += 20;
+
         this.surface.drawStringCenter(
             this.inputPMCurrent + '*',
             256,
@@ -113,36 +120,37 @@ function drawDialogSocialInput() {
 
         if (this.inputPMFinal.length > 0) {
             let message = this.inputPMFinal;
+
             this.inputPMCurrent = '';
             this.inputPMFinal = '';
             this.showDialogSocialInput = 0;
 
-            let scrambledMessage = ChatMessage.scramble(message);
+            const length = ChatMessage.scramble(message);
+
             this.sendPrivateMessage(
                 this.privateMessageTarget,
                 ChatMessage.scrambledBytes,
-                scrambledMessage
+                length
             );
+
             message = ChatMessage.descramble(
                 ChatMessage.scrambledBytes,
                 0,
-                scrambledMessage
+                length
             );
 
             if (this.options.wordFilter) {
                 message = WordFilter.filter(message);
             }
 
-            this.showServerMessage(
-                '@pri@You tell ' +
-                    `${Utility.hashToUsername(this.privateMessageTarget)}: ` +
-                    message
-            );
+            this.showServerMessage(`@pri@You tell ${targetName}: ${message}`);
         }
     } else if (this.showDialogSocialInput === 3) {
         this.surface.drawBox(106, y, 300, 70, 0);
         this.surface.drawBoxEdge(106, y, 300, 70, WHITE);
+
         y += 20;
+
         this.surface.drawStringCenter(
             'Enter name to add to ignore list',
             256,
@@ -150,7 +158,9 @@ function drawDialogSocialInput() {
             4,
             WHITE
         );
+
         y += 20;
+
         this.surface.drawStringCenter(
             `${this.inputTextCurrent}*`,
             256,

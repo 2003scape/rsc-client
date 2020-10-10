@@ -58,22 +58,26 @@ class Panel {
             this.controlListEntries.push([]);
         }
 
-        this.colourScrollbarTop = this.rgbToLongMod(114, 114, 176);
-        this.colourScrollbarBottom = this.rgbToLongMod(14, 14, 62);
-        this.colourScrollbarHandleLeft = this.rgbToLongMod(200, 208, 232);
-        this.colourScrollbarHandleMid = this.rgbToLongMod(96, 129, 184);
-        this.colourScrollbarHandleRight = this.rgbToLongMod(53, 95, 115);
-        this.colourRoundedBoxOut = this.rgbToLongMod(117, 142, 171);
-        this.colourRoundedBoxMid = this.rgbToLongMod(98, 122, 158);
-        this.colourRoundedBoxIn = this.rgbToLongMod(86, 100, 136);
-        this.colourBoxTopNBottom = this.rgbToLongMod(135, 146, 179);
-        this.colourBoxTopNBottom2 = this.rgbToLongMod(97, 112, 151);
-        this.colourBoxLeftNRight2 = this.rgbToLongMod(88, 102, 136);
-        this.colourBoxLeftNRight = this.rgbToLongMod(84, 93, 120);
+        this.colourScrollbarTop = this.rgbToIntMod(114, 114, 176);
+        this.colourScrollbarBottom = this.rgbToIntMod(14, 14, 62);
+        this.colourScrollbarHandleLeft = this.rgbToIntMod(200, 208, 232);
+        this.colourScrollbarHandleMid = this.rgbToIntMod(96, 129, 184);
+        this.colourScrollbarHandleRight = this.rgbToIntMod(53, 95, 115);
+        this.colourRoundedBoxOut = this.rgbToIntMod(117, 142, 171);
+        this.colourRoundedBoxMid = this.rgbToIntMod(98, 122, 158);
+        this.colourRoundedBoxIn = this.rgbToIntMod(86, 100, 136);
+        this.colourBoxTopNBottom = this.rgbToIntMod(135, 146, 179);
+        this.colourBoxTopNBottom2 = this.rgbToIntMod(97, 112, 151);
+        this.colourBoxLeftNRight2 = this.rgbToIntMod(88, 102, 136);
+        this.colourBoxLeftNRight = this.rgbToIntMod(84, 93, 120);
     }
 
-    rgbToLongMod(r, g, b) {
-        return Surface.rgbToLong(((Panel.redMod * r) / 114) | 0, ((Panel.greenMod * g) / 114) | 0, ((Panel.blueMod * b) / 176) | 0);
+    rgbToIntMod(r, g, b) {
+        return Surface.rgbToInt(
+            ((Panel.redMod * r) / 114) | 0,
+            ((Panel.greenMod * g) / 114) | 0,
+            ((Panel.blueMod * b) / 176) | 0
+        );
     }
 
     handleMouse(mx, my, lastMb, mbDown, mScrollDelta = 0) {
@@ -88,12 +92,27 @@ class Panel {
 
         if (lastMb === 1) {
             for (let i1 = 0; i1 < this.controlCount; i1++) {
-                if (this.controlShown[i1] && this.controlType[i1] === controlTypes.BUTTON && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
+                if (
+                    this.controlShown[i1] &&
+                    this.controlType[i1] === controlTypes.BUTTON &&
+                    this.mouseX >= this.controlX[i1] &&
+                    this.mouseY >= this.controlY[i1] &&
+                    this.mouseX <= this.controlX[i1] + this.controlWidth[i1] &&
+                    this.mouseY <= this.controlY[i1] + this.controlHeight[i1]
+                ) {
                     this.controlClicked[i1] = true;
                 }
 
-                if (this.controlShown[i1] && this.controlType[i1] === controlTypes.CHECKBOX && this.mouseX >= this.controlX[i1] && this.mouseY >= this.controlY[i1] && this.mouseX <= this.controlX[i1] + this.controlWidth[i1] && this.mouseY <= this.controlY[i1] + this.controlHeight[i1]) {
-                    this.controlListEntryMouseButtonDown[i1] = 1 - this.controlListEntryMouseButtonDown[i1];
+                if (
+                    this.controlShown[i1] &&
+                    this.controlType[i1] === controlTypes.CHECKBOX &&
+                    this.mouseX >= this.controlX[i1] &&
+                    this.mouseY >= this.controlY[i1] &&
+                    this.mouseX <= this.controlX[i1] + this.controlWidth[i1] &&
+                    this.mouseY <= this.controlY[i1] + this.controlHeight[i1]
+                ) {
+                    this.controlListEntryMouseButtonDown[i1] =
+                        1 - this.controlListEntryMouseButtonDown[i1];
                 }
             }
         }
@@ -106,7 +125,14 @@ class Panel {
 
         if (lastMb === 1 || this.mouseMetaButtonHeld > 20) {
             for (let j1 = 0; j1 < this.controlCount; j1++) {
-                if (this.controlShown[j1] && this.controlType[j1] === 15 && this.mouseX >= this.controlX[j1] && this.mouseY >= this.controlY[j1] && this.mouseX <= this.controlX[j1] + this.controlWidth[j1] && this.mouseY <= this.controlY[j1] + this.controlHeight[j1]) {
+                if (
+                    this.controlShown[j1] &&
+                    this.controlType[j1] === 15 &&
+                    this.mouseX >= this.controlX[j1] &&
+                    this.mouseY >= this.controlY[j1] &&
+                    this.mouseX <= this.controlX[j1] + this.controlWidth[j1] &&
+                    this.mouseY <= this.controlY[j1] + this.controlHeight[j1]
+                ) {
                     this.controlClicked[j1] = true;
                 }
             }
@@ -129,31 +155,45 @@ class Panel {
             return;
         }
 
-        if (this.focusControlIndex !== -1 && this.controlText[this.focusControlIndex] !== null && this.controlShown[this.focusControlIndex]) {
-            let inputLen = this.controlText[this.focusControlIndex].length;
+        if (
+            this.focusControlIndex !== -1 &&
+            this.controlText[this.focusControlIndex] !== null &&
+            this.controlShown[this.focusControlIndex]
+        ) {
+            const inputLen = this.controlText[this.focusControlIndex].length;
 
             if (key === 8 && inputLen > 0) {
-                this.controlText[this.focusControlIndex] = this.controlText[this.focusControlIndex].slice(0, inputLen - 1);
+                this.controlText[this.focusControlIndex] = this.controlText[
+                    this.focusControlIndex
+                ].slice(0, inputLen - 1);
             }
 
             if ((key === 10 || key === 13) && inputLen > 0) {
                 this.controlClicked[this.focusControlIndex] = true;
             }
 
-            let s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"£$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
+            const charSet =
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567' +
+                '89!"£$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
 
             if (inputLen < this.controlInputMaxLen[this.focusControlIndex]) {
-                for (let k = 0; k < s.length; k++) {
-                    if (key === s.charCodeAt(k)) {
-                        this.controlText[this.focusControlIndex] += String.fromCharCode(key);
+                for (let k = 0; k < charSet.length; k++) {
+                    if (key === charSet.charCodeAt(k)) {
+                        this.controlText[
+                            this.focusControlIndex
+                        ] += String.fromCharCode(key);
                     }
                 }
             }
 
             if (key === 9) {
                 do {
-                    this.focusControlIndex = (this.focusControlIndex + 1) % this.controlCount;
-                } while (this.controlType[this.focusControlIndex] !== 5 && this.controlType[this.focusControlIndex] !== 6);
+                    this.focusControlIndex =
+                        (this.focusControlIndex + 1) % this.controlCount;
+                } while (
+                    this.controlType[this.focusControlIndex] !== 5 &&
+                    this.controlType[this.focusControlIndex] !== 6
+                );
             }
         }
     }
@@ -162,29 +202,114 @@ class Panel {
         for (let i = 0; i < this.controlCount; i++) {
             if (this.controlShown[i]) {
                 if (this.controlType[i] === controlTypes.TEXT) {
-                    this.drawText(i, this.controlX[i], this.controlY[i], this.controlText[i], this.controlTextSize[i]);
+                    this.drawText(
+                        i,
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlText[i],
+                        this.controlTextSize[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.CENTRE_TEXT) {
-                    this.drawText(i, this.controlX[i] - ((this.surface.textWidth(this.controlText[i], this.controlTextSize[i]) / 2) | 0), this.controlY[i], this.controlText[i], this.controlTextSize[i]);
+                    this.drawText(
+                        i,
+                        this.controlX[i] -
+                            ((this.surface.textWidth(
+                                this.controlText[i],
+                                this.controlTextSize[i]
+                            ) /
+                                2) |
+                                0),
+                        this.controlY[i],
+                        this.controlText[i],
+                        this.controlTextSize[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.GRADIENT_BG) {
-                    this.drawBox(this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
+                    this.drawBox(
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlWidth[i],
+                        this.controlHeight[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.HORIZ_LINE) {
-                    this.drawLineHoriz(this.controlX[i], this.controlY[i], this.controlWidth[i]);
+                    this.drawLineHoriz(
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlWidth[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.TEXT_LIST) {
-                    this.drawTextList(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlTextSize[i], this.controlListEntries[i], this.controlListEntryCount[i], this.controlFlashText[i]);
-                } else if (this.controlType[i] === controlTypes.LIST_INPUT || this.controlType[i] === controlTypes.TEXT_INPUT) {
-                    this.drawTextInput(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlText[i], this.controlTextSize[i]);
+                    this.drawTextList(
+                        i,
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlWidth[i],
+                        this.controlHeight[i],
+                        this.controlTextSize[i],
+                        this.controlListEntries[i],
+                        this.controlListEntryCount[i],
+                        this.controlFlashText[i]
+                    );
+                } else if (
+                    this.controlType[i] === controlTypes.LIST_INPUT ||
+                    this.controlType[i] === controlTypes.TEXT_INPUT
+                ) {
+                    this.drawTextInput(
+                        i,
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlWidth[i],
+                        this.controlHeight[i],
+                        this.controlText[i],
+                        this.controlTextSize[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.HORIZ_OPTION) {
-                    this.drawOptionListHoriz(i, this.controlX[i], this.controlY[i], this.controlTextSize[i], this.controlListEntries[i]);
+                    this.drawOptionListHoriz(
+                        i,
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlTextSize[i],
+                        this.controlListEntries[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.VERT_OPTION) {
-                    this.drawOptionListVert(i, this.controlX[i], this.controlY[i], this.controlTextSize[i], this.controlListEntries[i]);
+                    this.drawOptionListVert(
+                        i,
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlTextSize[i],
+                        this.controlListEntries[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.I_TEXT_LIST) {
-                    this.drawTextListInteractive(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i], this.controlTextSize[i], this.controlListEntries[i], this.controlListEntryCount[i], this.controlFlashText[i]);
+                    this.drawTextListInteractive(
+                        i,
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlWidth[i],
+                        this.controlHeight[i],
+                        this.controlTextSize[i],
+                        this.controlListEntries[i],
+                        this.controlListEntryCount[i],
+                        this.controlFlashText[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.ROUND_BOX) {
-                    this.drawRoundedBox(this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
+                    this.drawRoundedBox(
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlWidth[i],
+                        this.controlHeight[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.IMAGE) {
-                    this.drawPicture(this.controlX[i], this.controlY[i], this.controlTextSize[i]);
+                    this.drawPicture(
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlTextSize[i]
+                    );
                 } else if (this.controlType[i] === controlTypes.CHECKBOX) {
-                    this.drawCheckbox(i, this.controlX[i], this.controlY[i], this.controlWidth[i], this.controlHeight[i]);
+                    this.drawCheckbox(
+                        i,
+                        this.controlX[i],
+                        this.controlY[i],
+                        this.controlWidth[i],
+                        this.controlHeight[i]
+                    );
                 }
             }
         }
@@ -196,19 +321,29 @@ class Panel {
         this.surface.drawBox(x, y, width, height, 0xffffff);
         this.surface.drawLineHoriz(x, y, width, this.colourBoxTopNBottom);
         this.surface.drawLineVert(x, y, height, this.colourBoxTopNBottom);
-        this.surface.drawLineHoriz(x, (y + height) - 1, width, this.colourBoxLeftNRight);
-        this.surface.drawLineVert((x + width) - 1, y, height, this.colourBoxLeftNRight);
+        this.surface.drawLineHoriz(
+            x,
+            y + height - 1,
+            width,
+            this.colourBoxLeftNRight
+        );
+        this.surface.drawLineVert(
+            x + width - 1,
+            y,
+            height,
+            this.colourBoxLeftNRight
+        );
 
         if (this.controlListEntryMouseButtonDown[control] === 1) {
             for (let j1 = 0; j1 < height; j1++) {
                 this.surface.drawLineHoriz(x + j1, y + j1, 1, 0);
-                this.surface.drawLineHoriz((x + width) - 1 - j1, y + j1, 1, 0);
+                this.surface.drawLineHoriz(x + width - 1 - j1, y + j1, 1, 0);
             }
         }
     }
 
     drawText(control, x, y, text, textSize) {
-        let y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
+        const y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
         this.drawString(control, x, y2, text, textSize);
     }
 
@@ -227,7 +362,7 @@ class Panel {
     drawTextInput(control, x, y, width, height, text, textSize) {
         // password
         if (this.controlMaskText[control]) {
-            let len = text.length;
+            const len = text.length;
             text = '';
 
             for (let i2 = 0; i2 < len; i2++) {
@@ -236,11 +371,23 @@ class Panel {
         }
 
         if (this.controlType[control] === controlTypes.LIST_INPUT) {
-            if (this.mouseLastButtonDown === 1 && this.mouseX >= x && this.mouseY >= y - ((height / 2) | 0) && this.mouseX <= x + width && this.mouseY <= y + ((height / 2) | 0)) {
+            if (
+                this.mouseLastButtonDown === 1 &&
+                this.mouseX >= x &&
+                this.mouseY >= y - ((height / 2) | 0) &&
+                this.mouseX <= x + width &&
+                this.mouseY <= y + ((height / 2) | 0)
+            ) {
                 this.focusControlIndex = control;
             }
         } else if (this.controlType[control] === controlTypes.TEXT_INPUT) {
-            if (this.mouseLastButtonDown === 1 && this.mouseX >= x - ((width / 2) | 0) && this.mouseY >= y - ((height / 2) | 0) && this.mouseX <= x + width / 2 && this.mouseY <= y + ((height / 2) |0)) {
+            if (
+                this.mouseLastButtonDown === 1 &&
+                this.mouseX >= x - ((width / 2) | 0) &&
+                this.mouseY >= y - ((height / 2) | 0) &&
+                this.mouseX <= x + width / 2 &&
+                this.mouseY <= y + ((height / 2) | 0)
+            ) {
                 this.focusControlIndex = control;
             }
 
@@ -251,47 +398,132 @@ class Panel {
             text = text + '*';
         }
 
-        let y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
+        const y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
         this.drawString(control, x, y2, text, textSize);
     }
 
-
     drawBox(x, y, width, height) {
         this.surface.setBounds(x, y, x + width, y + height);
-        this.surface.drawGradient(x, y, width, height, this.colourBoxLeftNRight, this.colourBoxTopNBottom);
+        this.surface.drawGradient(
+            x,
+            y,
+            width,
+            height,
+            this.colourBoxLeftNRight,
+            this.colourBoxTopNBottom
+        );
 
         if (Panel.drawBackgroundArrow) {
             for (let i1 = x - (y & 0x3f); i1 < x + width; i1 += 128) {
                 for (let j1 = y - (y & 0x1f); j1 < y + height; j1 += 128) {
-                    this.surface.drawSpriteAlpha(i1, j1, 6 + Panel.baseSpriteStart, 128);
+                    this.surface.drawSpriteAlpha(
+                        i1,
+                        j1,
+                        6 + Panel.baseSpriteStart,
+                        128
+                    );
                 }
             }
         }
 
         this.surface.drawLineHoriz(x, y, width, this.colourBoxTopNBottom);
-        this.surface.drawLineHoriz(x + 1, y + 1, width - 2, this.colourBoxTopNBottom);
-        this.surface.drawLineHoriz(x + 2, y + 2, width - 4, this.colourBoxTopNBottom2);
+        this.surface.drawLineHoriz(
+            x + 1,
+            y + 1,
+            width - 2,
+            this.colourBoxTopNBottom
+        );
+        this.surface.drawLineHoriz(
+            x + 2,
+            y + 2,
+            width - 4,
+            this.colourBoxTopNBottom2
+        );
         this.surface.drawLineVert(x, y, height, this.colourBoxTopNBottom);
-        this.surface.drawLineVert(x + 1, y + 1, height - 2, this.colourBoxTopNBottom);
-        this.surface.drawLineVert(x + 2, y + 2, height - 4, this.colourBoxTopNBottom2);
-        this.surface.drawLineHoriz(x, (y + height) - 1, width, this.colourBoxLeftNRight);
-        this.surface.drawLineHoriz(x + 1, (y + height) - 2, width - 2, this.colourBoxLeftNRight);
-        this.surface.drawLineHoriz(x + 2, (y + height) - 3, width - 4, this.colourBoxLeftNRight2);
-        this.surface.drawLineVert((x + width) - 1, y, height, this.colourBoxLeftNRight);
-        this.surface.drawLineVert((x + width) - 2, y + 1, height - 2, this.colourBoxLeftNRight);
-        this.surface.drawLineVert((x + width) - 3, y + 2, height - 4, this.colourBoxLeftNRight2);
+        this.surface.drawLineVert(
+            x + 1,
+            y + 1,
+            height - 2,
+            this.colourBoxTopNBottom
+        );
+        this.surface.drawLineVert(
+            x + 2,
+            y + 2,
+            height - 4,
+            this.colourBoxTopNBottom2
+        );
+        this.surface.drawLineHoriz(
+            x,
+            y + height - 1,
+            width,
+            this.colourBoxLeftNRight
+        );
+        this.surface.drawLineHoriz(
+            x + 1,
+            y + height - 2,
+            width - 2,
+            this.colourBoxLeftNRight
+        );
+        this.surface.drawLineHoriz(
+            x + 2,
+            y + height - 3,
+            width - 4,
+            this.colourBoxLeftNRight2
+        );
+        this.surface.drawLineVert(
+            x + width - 1,
+            y,
+            height,
+            this.colourBoxLeftNRight
+        );
+        this.surface.drawLineVert(
+            x + width - 2,
+            y + 1,
+            height - 2,
+            this.colourBoxLeftNRight
+        );
+        this.surface.drawLineVert(
+            x + width - 3,
+            y + 2,
+            height - 4,
+            this.colourBoxLeftNRight2
+        );
         this.surface.resetBounds();
     }
 
     drawRoundedBox(x, y, width, height) {
         this.surface.drawBox(x, y, width, height, 0);
         this.surface.drawBoxEdge(x, y, width, height, this.colourRoundedBoxOut);
-        this.surface.drawBoxEdge(x + 1, y + 1, width - 2, height - 2, this.colourRoundedBoxMid);
-        this.surface.drawBoxEdge(x + 2, y + 2, width - 4, height - 4, this.colourRoundedBoxIn);
+        this.surface.drawBoxEdge(
+            x + 1,
+            y + 1,
+            width - 2,
+            height - 2,
+            this.colourRoundedBoxMid
+        );
+        this.surface.drawBoxEdge(
+            x + 2,
+            y + 2,
+            width - 4,
+            height - 4,
+            this.colourRoundedBoxIn
+        );
         this.surface._drawSprite_from3(x, y, 2 + Panel.baseSpriteStart);
-        this.surface._drawSprite_from3((x + width) - 7, y, 3 + Panel.baseSpriteStart);
-        this.surface._drawSprite_from3(x, (y + height) - 7, 4 + Panel.baseSpriteStart);
-        this.surface._drawSprite_from3((x + width) - 7, (y + height) - 7, 5 + Panel.baseSpriteStart);
+        this.surface._drawSprite_from3(
+            x + width - 7,
+            y,
+            3 + Panel.baseSpriteStart
+        );
+        this.surface._drawSprite_from3(
+            x,
+            y + height - 7,
+            4 + Panel.baseSpriteStart
+        );
+        this.surface._drawSprite_from3(
+            x + width - 7,
+            y + height - 7,
+            5 + Panel.baseSpriteStart
+        );
     }
 
     drawPicture(x, y, size) {
@@ -302,9 +534,20 @@ class Panel {
         this.surface.drawLineHoriz(x, y, width, 0xffffff);
     }
 
-    drawTextList(control, x, y, width, height, textSize, listEntries, listEntryCount, listEntryPosition) {
-        let displayedEntryCount = (height / this.surface.textHeight(textSize)) | 0;
-        let maxEntries = listEntryCount - displayedEntryCount;
+    drawTextList(
+        control,
+        x,
+        y,
+        width,
+        height,
+        textSize,
+        listEntries,
+        listEntryCount,
+        listEntryPosition
+    ) {
+        const displayedEntryCount =
+            (height / this.surface.textHeight(textSize)) | 0;
+        const maxEntries = listEntryCount - displayedEntryCount;
 
         if (listEntryPosition > maxEntries) {
             listEntryPosition = maxEntries;
@@ -317,16 +560,26 @@ class Panel {
         this.controlFlashText[control] = listEntryPosition;
 
         if (displayedEntryCount < listEntryCount) {
-            let cornerTopRight = (x + width) - 12;
-            let cornerBottomLeft = (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
+            const cornerTopRight = x + width - 12;
+            let cornerBottomLeft =
+                (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
 
             if (cornerBottomLeft < 6) {
                 cornerBottomLeft = 6;
             }
 
-            let j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / maxEntries) | 0;
+            let j3 =
+                (((height - 27 - cornerBottomLeft) * listEntryPosition) /
+                    maxEntries) |
+                0;
 
-            if (this.mouseScrollDelta !== 0 && this.mouseX > x && this.mouseX < (x + width) && this.mouseY > y && this.mouseY < (y + height)) {
+            if (
+                this.mouseScrollDelta !== 0 &&
+                this.mouseX > x &&
+                this.mouseX < x + width &&
+                this.mouseY > y &&
+                this.mouseY < y + height
+            ) {
                 listEntryPosition += this.mouseScrollDelta;
 
                 if (listEntryPosition < 0) {
@@ -338,24 +591,45 @@ class Panel {
                 this.controlFlashText[control] = listEntryPosition;
             }
 
-            if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) {
-                if (this.mouseY > y && this.mouseY < y + 12 && listEntryPosition > 0) {
+            if (
+                this.mouseButtonDown === 1 &&
+                this.mouseX >= cornerTopRight &&
+                this.mouseX <= cornerTopRight + 12
+            ) {
+                if (
+                    this.mouseY > y &&
+                    this.mouseY < y + 12 &&
+                    listEntryPosition > 0
+                ) {
                     listEntryPosition--;
                 }
 
-                if (this.mouseY > (y + height) - 12 && this.mouseY < y + height && listEntryPosition < listEntryCount - displayedEntryCount) {
+                if (
+                    this.mouseY > y + height - 12 &&
+                    this.mouseY < y + height &&
+                    listEntryPosition < listEntryCount - displayedEntryCount
+                ) {
                     listEntryPosition++;
                 }
 
                 this.controlFlashText[control] = listEntryPosition;
             }
 
-            if (this.mouseButtonDown === 1 && (this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12 || this.mouseX >= cornerTopRight - 12 && this.mouseX <= cornerTopRight + 24 && this.controlListScrollbarHandleDragged[control])) {
-                if (this.mouseY > y + 12 && this.mouseY < (y + height) - 12) {
+            if (
+                this.mouseButtonDown === 1 &&
+                ((this.mouseX >= cornerTopRight &&
+                    this.mouseX <= cornerTopRight + 12) ||
+                    (this.mouseX >= cornerTopRight - 12 &&
+                        this.mouseX <= cornerTopRight + 24 &&
+                        this.controlListScrollbarHandleDragged[control]))
+            ) {
+                if (this.mouseY > y + 12 && this.mouseY < y + height - 12) {
                     this.controlListScrollbarHandleDragged[control] = true;
 
-                    let l3 = this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
-                    listEntryPosition = ((l3 * listEntryCount) / (height - 24)) | 0;
+                    const l3 =
+                        this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
+                    listEntryPosition =
+                        ((l3 * listEntryCount) / (height - 24)) | 0;
 
                     if (listEntryPosition > maxEntries) {
                         listEntryPosition = maxEntries;
@@ -371,16 +645,26 @@ class Panel {
                 this.controlListScrollbarHandleDragged[control] = false;
             }
 
-            j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / (listEntryCount - displayedEntryCount)) | 0;
+            j3 =
+                (((height - 27 - cornerBottomLeft) * listEntryPosition) /
+                    (listEntryCount - displayedEntryCount)) |
+                0;
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
 
-        let entryListStartY = height - displayedEntryCount * this.surface.textHeight(textSize);
-        let y2 = y + ((this.surface.textHeight(textSize) * 5) / 6 + entryListStartY / 2) | 0;
+        const entryListStartY =
+            height - displayedEntryCount * this.surface.textHeight(textSize);
+        let y2 =
+            (y +
+                ((this.surface.textHeight(textSize) * 5) / 6 +
+                    entryListStartY / 2)) |
+            0;
 
         for (let entry = listEntryPosition; entry < listEntryCount; entry++) {
             this.drawString(control, x + 2, y2, listEntries[entry], textSize);
-            y2 += this.surface.textHeight(textSize) - Panel.textListEntryHeightMod;
+            y2 +=
+                this.surface.textHeight(textSize) -
+                Panel.textListEntryHeightMod;
 
             if (y2 >= y + height) {
                 return;
@@ -389,24 +673,54 @@ class Panel {
     }
 
     drawListContainer(x, y, width, height, corner1, corner2) {
-        let x2 = (x + width) - 12;
+        const x2 = x + width - 12;
         this.surface.drawBoxEdge(x2, y, 12, height, 0);
         this.surface._drawSprite_from3(x2 + 1, y + 1, Panel.baseSpriteStart); // up arrow?
-        this.surface._drawSprite_from3(x2 + 1, (y + height) - 12, 1 + Panel.baseSpriteStart); // down arrow?
+        this.surface._drawSprite_from3(
+            x2 + 1,
+            y + height - 12,
+            1 + Panel.baseSpriteStart
+        ); // down arrow?
         this.surface.drawLineHoriz(x2, y + 13, 12, 0);
-        this.surface.drawLineHoriz(x2, (y + height) - 13, 12, 0);
-        this.surface.drawGradient(x2 + 1, y + 14, 11, height - 27, this.colourScrollbarTop, this.colourScrollbarBottom);
-        this.surface.drawBox(x2 + 3, corner1 + y + 14, 7, corner2, this.colourScrollbarHandleMid);
-        this.surface.drawLineVert(x2 + 2, corner1 + y + 14, corner2, this.colourScrollbarHandleLeft);
-        this.surface.drawLineVert(x2 + 2 + 8, corner1 + y + 14, corner2, this.colourScrollbarHandleRight);
+        this.surface.drawLineHoriz(x2, y + height - 13, 12, 0);
+        this.surface.drawGradient(
+            x2 + 1,
+            y + 14,
+            11,
+            height - 27,
+            this.colourScrollbarTop,
+            this.colourScrollbarBottom
+        );
+        this.surface.drawBox(
+            x2 + 3,
+            corner1 + y + 14,
+            7,
+            corner2,
+            this.colourScrollbarHandleMid
+        );
+        this.surface.drawLineVert(
+            x2 + 2,
+            corner1 + y + 14,
+            corner2,
+            this.colourScrollbarHandleLeft
+        );
+        this.surface.drawLineVert(
+            x2 + 2 + 8,
+            corner1 + y + 14,
+            corner2,
+            this.colourScrollbarHandleRight
+        );
     }
 
     drawOptionListHoriz(control, x, y, textSize, listEntries) {
         let listTotalTextWidth = 0;
-        let listEntryCount = listEntries.length;
+        const listEntryCount = listEntries.length;
 
         for (let idx = 0; idx < listEntryCount; idx++) {
-            listTotalTextWidth += this.surface.textWidth(listEntries[idx], textSize);
+            listTotalTextWidth += this.surface.textWidth(
+                listEntries[idx],
+                textSize
+            );
 
             if (idx < listEntryCount - 1) {
                 listTotalTextWidth += this.surface.textWidth('  ', textSize);
@@ -414,7 +728,7 @@ class Panel {
         }
 
         let left = x - ((listTotalTextWidth / 2) | 0);
-        let bottom = y + ((this.surface.textHeight(textSize) / 3) | 0);
+        const bottom = y + ((this.surface.textHeight(textSize) / 3) | 0);
 
         for (let idx = 0; idx < listEntryCount; idx++) {
             let colour;
@@ -425,7 +739,13 @@ class Panel {
                 colour = 0;
             }
 
-            if (this.mouseX >= left && this.mouseX <= left + this.surface.textWidth(listEntries[idx], textSize) && this.mouseY <= bottom && this.mouseY > bottom - this.surface.textHeight(textSize)) {
+            if (
+                this.mouseX >= left &&
+                this.mouseX <=
+                    left + this.surface.textWidth(listEntries[idx], textSize) &&
+                this.mouseY <= bottom &&
+                this.mouseY > bottom - this.surface.textHeight(textSize)
+            ) {
                 if (this.controlUseAlternativeColour[control]) {
                     colour = 0x808080;
                 } else {
@@ -446,14 +766,23 @@ class Panel {
                 }
             }
 
-            this.surface.drawString(listEntries[idx], left, bottom, textSize, colour);
+            this.surface.drawString(
+                listEntries[idx],
+                left,
+                bottom,
+                textSize,
+                colour
+            );
             left += this.surface.textWidth(listEntries[idx] + '  ', textSize);
         }
     }
 
     drawOptionListVert(control, x, y, textSize, listEntries) {
-        let listEntryCount = listEntries.length;
-        let listTotalTextHeightMid = y - (((this.surface.textHeight(textSize) * (listEntryCount - 1)) / 2) | 0);
+        const listEntryCount = listEntries.length;
+        let listTotalTextHeightMid =
+            y -
+            (((this.surface.textHeight(textSize) * (listEntryCount - 1)) / 2) |
+                0);
 
         for (let idx = 0; idx < listEntryCount; idx++) {
             let colour;
@@ -464,9 +793,18 @@ class Panel {
                 colour = 0;
             }
 
-            let entryTextWidth = this.surface.textWidth(listEntries[idx], textSize);
+            const entryTextWidth = this.surface.textWidth(
+                listEntries[idx],
+                textSize
+            );
 
-            if (this.mouseX >= x - ((entryTextWidth / 2) | 0) && this.mouseX <= x + ((entryTextWidth / 2) | 0) && this.mouseY - 2 <= listTotalTextHeightMid && this.mouseY - 2 > listTotalTextHeightMid - this.surface.textHeight(textSize)) {
+            if (
+                this.mouseX >= x - ((entryTextWidth / 2) | 0) &&
+                this.mouseX <= x + ((entryTextWidth / 2) | 0) &&
+                this.mouseY - 2 <= listTotalTextHeightMid &&
+                this.mouseY - 2 >
+                    listTotalTextHeightMid - this.surface.textHeight(textSize)
+            ) {
                 if (this.controlUseAlternativeColour[control]) {
                     colour = 0x808080;
                 } else {
@@ -487,26 +825,53 @@ class Panel {
                 }
             }
 
-            this.surface.drawString(listEntries[idx], x - ((entryTextWidth / 2) | 0), listTotalTextHeightMid, textSize, colour);
+            this.surface.drawString(
+                listEntries[idx],
+                x - ((entryTextWidth / 2) | 0),
+                listTotalTextHeightMid,
+                textSize,
+                colour
+            );
             listTotalTextHeightMid += this.surface.textHeight(textSize);
         }
     }
 
-    drawTextListInteractive(control, x, y, width, height, textSize, listEntries, listEntryCount, listEntryPosition) {
-        let displayedEntryCount = (height / this.surface.textHeight(textSize)) | 0;
-        let maxEntries = listEntryCount - displayedEntryCount;
+    drawTextListInteractive(
+        control,
+        x,
+        y,
+        width,
+        height,
+        textSize,
+        listEntries,
+        listEntryCount,
+        listEntryPosition
+    ) {
+        const displayedEntryCount =
+            (height / this.surface.textHeight(textSize)) | 0;
+        const maxEntries = listEntryCount - displayedEntryCount;
 
         if (displayedEntryCount < listEntryCount) {
-            let cornerTopRight = (x + width) - 12;
-            let cornerBottomLeft = (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
+            const cornerTopRight = x + width - 12;
+            let cornerBottomLeft =
+                (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
 
             if (cornerBottomLeft < 6) {
                 cornerBottomLeft = 6;
             }
 
-            let j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / maxEntries) | 0;
+            let j3 =
+                (((height - 27 - cornerBottomLeft) * listEntryPosition) /
+                    maxEntries) |
+                0;
 
-            if (this.mouseScrollDelta !== 0 && this.mouseX > x && this.mouseX < (x + width) && this.mouseY > y && this.mouseY < (y + height)) {
+            if (
+                this.mouseScrollDelta !== 0 &&
+                this.mouseX > x &&
+                this.mouseX < x + width &&
+                this.mouseY > y &&
+                this.mouseY < y + height
+            ) {
                 listEntryPosition += this.mouseScrollDelta;
 
                 if (listEntryPosition < 0) {
@@ -519,12 +884,24 @@ class Panel {
             }
 
             // the up and down arrow buttons on the scrollbar
-            if (this.mouseButtonDown === 1 && this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12) {
-                if (this.mouseY > y && this.mouseY < y + 12 && listEntryPosition > 0) {
+            if (
+                this.mouseButtonDown === 1 &&
+                this.mouseX >= cornerTopRight &&
+                this.mouseX <= cornerTopRight + 12
+            ) {
+                if (
+                    this.mouseY > y &&
+                    this.mouseY < y + 12 &&
+                    listEntryPosition > 0
+                ) {
                     listEntryPosition--;
                 }
 
-                if (this.mouseY > (y + height) - 12 && this.mouseY < y + height && listEntryPosition < maxEntries) {
+                if (
+                    this.mouseY > y + height - 12 &&
+                    this.mouseY < y + height &&
+                    listEntryPosition < maxEntries
+                ) {
                     listEntryPosition++;
                 }
 
@@ -532,12 +909,21 @@ class Panel {
             }
 
             // handle the thumb/middle section dragging of the scrollbar
-            if (this.mouseButtonDown === 1 && (this.mouseX >= cornerTopRight && this.mouseX <= cornerTopRight + 12 || this.mouseX >= cornerTopRight - 12 && this.mouseX <= cornerTopRight + 24 && this.controlListScrollbarHandleDragged[control])) {
-                if (this.mouseY > y + 12 && this.mouseY < (y + height) - 12) {
+            if (
+                this.mouseButtonDown === 1 &&
+                ((this.mouseX >= cornerTopRight &&
+                    this.mouseX <= cornerTopRight + 12) ||
+                    (this.mouseX >= cornerTopRight - 12 &&
+                        this.mouseX <= cornerTopRight + 24 &&
+                        this.controlListScrollbarHandleDragged[control]))
+            ) {
+                if (this.mouseY > y + 12 && this.mouseY < y + height - 12) {
                     this.controlListScrollbarHandleDragged[control] = true;
 
-                    let l3 = this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
-                    listEntryPosition = ((l3 * listEntryCount) / (height - 24)) | 0;
+                    const l3 =
+                        this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
+                    listEntryPosition =
+                        ((l3 * listEntryCount) / (height - 24)) | 0;
 
                     if (listEntryPosition < 0) {
                         listEntryPosition = 0;
@@ -553,7 +939,10 @@ class Panel {
                 this.controlListScrollbarHandleDragged[control] = false;
             }
 
-            j3 = (((height - 27 - cornerBottomLeft) * listEntryPosition) / maxEntries) | 0;
+            j3 =
+                (((height - 27 - cornerBottomLeft) * listEntryPosition) /
+                    maxEntries) |
+                0;
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         } else {
             listEntryPosition = 0;
@@ -561,8 +950,12 @@ class Panel {
         }
 
         this.controlListEntryMouseOver[control] = -1;
-        let k2 = height - displayedEntryCount * this.surface.textHeight(textSize);
-        let i3 = y + (((((this.surface.textHeight(textSize) * 5) / 6) | 0) + k2 / 2) | 0);
+        const k2 =
+            height - displayedEntryCount * this.surface.textHeight(textSize);
+        let i3 =
+            y +
+            (((((this.surface.textHeight(textSize) * 5) / 6) | 0) + k2 / 2) |
+                0);
 
         for (let k3 = listEntryPosition; k3 < listEntryCount; k3++) {
             let i4;
@@ -573,7 +966,13 @@ class Panel {
                 i4 = 0;
             }
 
-            if (this.mouseX >= x + 2 && this.mouseX <= x + 2 + this.surface.textWidth(listEntries[k3], textSize) && this.mouseY - 2 <= i3 && this.mouseY - 2 > i3 - this.surface.textHeight(textSize)) {
+            if (
+                this.mouseX >= x + 2 &&
+                this.mouseX <=
+                    x + 2 + this.surface.textWidth(listEntries[k3], textSize) &&
+                this.mouseY - 2 <= i3 &&
+                this.mouseY - 2 > i3 - this.surface.textHeight(textSize)
+            ) {
                 if (this.controlUseAlternativeColour[control]) {
                     i4 = 0x808080;
                 } else {
@@ -588,7 +987,10 @@ class Panel {
                 }
             }
 
-            if (this.controlListEntryMouseButtonDown[control] === k3 && this.aBoolean219) {
+            if (
+                this.controlListEntryMouseButtonDown[control] === k3 &&
+                this.aBoolean219
+            ) {
                 i4 = 0xff0000;
             }
 
@@ -602,7 +1004,19 @@ class Panel {
     }
 
     addText(x, y, text, size, flag) {
-        this.controlType[this.controlCount] = 1;
+        this.controlShown[this.controlCount] = true;
+        this.controlClicked[this.controlCount] = false;
+        this.controlTextSize[this.controlCount] = size;
+        this.controlUseAlternativeColour[this.controlCount] = flag;
+        this.controlX[this.controlCount] = x;
+        this.controlY[this.controlCount] = y;
+        this.controlText[this.controlCount] = text;
+
+        return this.controlCount++;
+    }
+
+    addTextCentre(x, y, text, size, flag) {
+        this.controlType[this.controlCount] = controlTypes.CENTRE_TEXT;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlTextSize[this.controlCount] = size;
@@ -615,7 +1029,7 @@ class Panel {
     }
 
     addButtonBackground(x, y, width, height) {
-        this.controlType[this.controlCount] = 2;
+        this.controlType[this.controlCount] = controlTypes.GRADIENT_BG;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x - ((width / 2) | 0);
@@ -627,7 +1041,7 @@ class Panel {
     }
 
     addBoxRounded(x, y, width, height) {
-        this.controlType[this.controlCount] = 11;
+        this.controlType[this.controlCount] = controlTypes.ROUND_BOX;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
         this.controlX[this.controlCount] = x - ((width / 2) | 0);
@@ -639,8 +1053,8 @@ class Panel {
     }
 
     addSprite(x, y, spriteId) {
-        let imgWidth = this.surface.spriteWidth[spriteId];
-        let imgHeight = this.surface.spriteHeight[spriteId];
+        const imgWidth = this.surface.spriteWidth[spriteId];
+        const imgHeight = this.surface.spriteHeight[spriteId];
 
         this.controlType[this.controlCount] = controlTypes.IMAGE;
         this.controlShown[this.controlCount] = true;
@@ -708,7 +1122,15 @@ class Panel {
         return this.controlCount++;
     }
 
-    addTextListInteractive(x, y, width, height, textSize, maxLength, flag) {
+    addTextListInteractive(
+        x,
+        y,
+        width,
+        height,
+        textSize,
+        maxLength,
+        flag
+    ) {
         this.controlType[this.controlCount] = controlTypes.I_TEXT_LIST;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
@@ -796,6 +1218,14 @@ class Panel {
         return this.controlCount++;
     }
 
+    toggleCheckbox(control, activated) {
+        this.controlListEntryMouseButtonDown[control] = activated ? 1 : 0;
+    }
+
+    isActivated(control) {
+        return this.controlListEntryMouseButtonDown[control] !== 0;
+    }
+
     clearList(control) {
         this.controlListEntryCount[control] = 0;
     }
@@ -822,14 +1252,16 @@ class Panel {
             this.controlListEntryCount[control]--;
 
             for (let k = 0; k < j; k++) {
-                this.controlListEntries[control][k] = this.controlListEntries[control][k + 1];
+                this.controlListEntries[control][k] = this.controlListEntries[
+                    control
+                ][k + 1];
             }
         }
 
         this.controlListEntries[control][j] = text;
 
         if (flag) {
-            this.controlFlashText[control] = 999999; // 0xf423f;
+            this.controlFlashText[control] = 999999;
         }
     }
 

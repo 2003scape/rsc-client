@@ -57,6 +57,152 @@ class GameConnection extends GameShell {
         this.messageTokens = new Int32Array(GameConnection.maxSocialListSize);
     }
 
+    async register(username, password) {
+        if (this.worldFullTimeout > 0) {
+            this.showLoginScreenStatus(
+                'Please wait...',
+                'Connecting to server'
+            );
+
+            await sleep(2000);
+
+            this.showLoginScreenStatus(
+                'Sorry! The server is currently full.',
+                'Please try again later'
+            );
+
+            return;
+        }
+
+        try {
+            username = Utility.formatAuthString(username, 20);
+            password = Utility.formatAuthString(password, 20);
+
+            this.showLoginScreenStatus(
+                'Please wait...',
+                'Connecting to server'
+            );
+
+            this.packetStream = new PacketStream(
+                await this.createSocket(this.server, this.port),
+                this
+            );
+
+            const encodedUsername = Utility.usernameToHash(username);
+            this.packetStream.newPacket(clientOpcodes.SESSION);
+            this.packetStream.putByte(
+                encodedUsername.shiftRight(16).and(31).toInt()
+            );
+            this.packetStream.flushPacket();
+
+            const sessionID = await this.packetStream.getLong();
+            this.sessionID = sessionID;
+
+            if (sessionID.equals(0)) {
+                this.showLoginScreenStatus(
+                    'Login server offline.',
+                    'Please try again in a few mins'
+                );
+                return;
+            }
+
+            console.log('Verb: Session id: ' + sessionID);
+
+            this.packetStream.newPacket(clientOpcodes.REGISTER);
+            this.packetStream.putShort(GameConnection.clientVersion);
+            this.packetStream.putString(username);
+            this.packetStream.putString(password);
+            this.packetStream.flushPacket();
+
+            const response = await this.packetStream.readStream();
+
+            this.packetStream.closeStream();
+
+            console.log('Newplayer response: ' + response);
+
+            switch (response) {
+                case 2: // success
+                    this.resetLoginVars();
+                    return;
+                case 13: // username taken
+                case 3:
+                    this.showLoginScreenStatus(
+                        'Username already taken.',
+                        'Please choose another username'
+                    );
+                    return;
+                case 4: // username in use. distinction??
+                    this.showLoginScreenStatus(
+                        'That username is already in use.',
+                        'Wait 60 seconds then retry'
+                    );
+                    return;
+                case 5: // client has been updated
+                    this.showLoginScreenStatus(
+                        'The client has been updated.',
+                        'Please reload this page'
+                    );
+                    return;
+                case 6: // IP in use
+                    this.showLoginScreenStatus(
+                        'You may only use 1 character at once.',
+                        'Your ip-address is already in use'
+                    );
+                    return;
+                case 7: // spam throttle was hit
+                    this.showLoginScreenStatus(
+                        'Login attempts exceeded!',
+                        'Please try again in 5 minutes'
+                    );
+                    return;
+                case 11: // temporary ban
+                    this.showLoginScreenStatus(
+                        'Account has been temporarily disabled',
+                        'for cheating or abuse'
+                    );
+                    return;
+                case 12: // permanent ban
+                    this.showLoginScreenStatus(
+                        'Account has been permanently disabled',
+                        'for cheating or abuse'
+                    );
+                    return;
+                case 14: // server full
+                    this.showLoginScreenStatus(
+                        'Sorry! The server is currently full.',
+                        'Please try again later'
+                    );
+                    this.worldFullTimeout = 1500;
+                    return;
+                case 15: // members account needed
+                    this.showLoginScreenStatus(
+                        'You need a members account',
+                        'to login to this server'
+                    );
+                    return;
+                case 16: // switch to members server
+                    this.showLoginScreenStatus(
+                        'Please login to a members server',
+                        'to access member-only features'
+                    );
+                    return;
+                default:
+                    this.showLoginScreenStatus(
+                        'Error unable to create username.',
+                        'Unrecognised response code'
+                    );
+                    return;
+            }
+        } catch (e) {
+            console.error(e);
+
+            this.showLoginScreenStatus(
+                'Error unable to create user.',
+                'Unrecognised response code'
+            );
+        }
+    }
+
     async login(username, password, reconnecting) {
         if (this.worldFullTimeout > 0) {
             this.showLoginScreenStatus(
@@ -107,7 +253,6 @@ class GameConnection extends GameShell {
             this.packetStream.maxReadTries = GameConnection.maxReadTries;
 
             const encodedUsername = Utility.usernameToHash(username);
-
             this.packetStream.newPacket(clientOpcodes.SESSION);
             this.packetStream.putByte(
                 encodedUsername.shiftRight(16).and(31).toInt()
@@ -127,7 +272,7 @@ class GameConnection extends GameShell {
 
             console.log('Verb: Session id: ' + sessionID);
 
-            let keys = new Int32Array(4);
+            const keys = new Int32Array(4);
             keys[0] = (Math.random() * 99999999) | 0;
             keys[1] = (Math.random() * 99999999) | 0;
             keys[2] = sessionID.shiftRight(32).toInt();
@@ -135,12 +280,7 @@ class GameConnection extends GameShell {
 
             this.packetStream.newPacket(clientOpcodes.LOGIN);
 
-            if (reconnecting) {
-                this.packetStream.putByte(1);
-            } else {
-                this.packetStream.putByte(0);
-            }
-
+            this.packetStream.putByte(+reconnecting);
             this.packetStream.putShort(GameConnection.clientVersion);
             this.packetStream.putByte(0); // limit30
 
@@ -326,6 +466,98 @@ class GameConnection extends GameShell {
         }
     }
 
+    async recoverAttempt(username) {
+        this.showLoginScreenStatus('Please wait...', 'Connecting to server');
+
+        try {
+            this.packetStream = new PacketStream(
+                await this.createSocket(this.server, this.port),
+                this
+            );
+            this.packetStream.maxReadTries = this.maxReadTries;
+            this.packetStream.newPacket();
+            this.packetStream.putLong(Utility.usernameToHash(username));
+            this.packetStream.flushPacket();
+
+            const response = await this.packetStream.readStream();
+            console.log('Getpq response: ' + response);
+
+            if (response === 0) {
+                this.showLoginScreenStatus(
+                    'Sorry, the recovery questions for this user have not ' +
+                        'been set',
+                    ''
+                );
+                return;
+            }
+
+            for (let i = 0; i < 5; i++) {
+                const length = await this.packetStream.readStream();
+
+                if (length < 0) {
+                    throw new Error('invalid recovery question length');
+                }
+
+                const buffer = new Int8Array(length);
+                await this.packetStream.readBytes(length, buffer);
+                const question = fromCharArray(buffer.slice(0, length));
+
+                this.panelRecoverUser.updateText(
+                    this.controlRecoverQuestions[i],
+                    question
+                );
+            }
+
+            if (this.recentRecoverFail) {
+                this.showLoginScreenStatus(
+                    'Sorry, you have already attempted 1 recovery, try again ' +
+                        'later',
+                    ''
+                );
+                return;
+            }
+
+            this.loginScreen = 3;
+            this.panelRecoverUser.updateText(
+                this.controlRecoverInfo1,
+                '@yel@To prove this is your account please provide the ' +
+                    'answers to'
+            );
+            this.panelRecoverUser.updateText(
+                this.controlRecoverInfo2,
+                '@yel@your security questions. You will then be able to ' +
+                    'reset your password'
+            );
+
+            for (let i = 0; i < 5; i++) {
+                this.panelRecoverUser.updateText(
+                    this.controlRecoverAnswers[i],
+                    ''
+                );
+            }
+
+            this.panelRecoverUser.updateText(
+                this.controlRecoverOldPassword,
+                ''
+            );
+            this.panelRecoverUser.updateText(
+                this.controlRecoverNewPassword,
+                ''
+            );
+            this.panelRecoverUser.updateText(
+                this.controlRecoverConfirmPassword,
+                ''
+            );
+        } catch (e) {
+            console.error(e);
+            this.showLoginScreenStatus(
+                'Sorry! Unable to connect.',
+                'Check leternet settings or try another world'
+            );
+            return;
+        }
+    }
+
     closeConnection() {
         if (this.packetStream !== null) {
             try {
@@ -410,13 +642,14 @@ class GameConnection extends GameShell {
             return;
         }
 
-        let psize = await this.packetStream.readPacket(this.incomingPacket);
+        const length = await this.packetStream.readPacket(this.incomingPacket);
 
-        if (psize > 0) {
-            let ptype = this.packetStream.isaacCommand(
+        if (length > 0) {
+            const type = this.packetStream.isaacCommand(
                 this.incomingPacket[0] & 0xff
             );
-            this.handlePacket(ptype, ptype, psize);
+
+            this.handlePacket(type, type, length);
         }
     }
 
@@ -533,9 +766,15 @@ class GameConnection extends GameShell {
             this.messageIndex =
                 (this.messageIndex + 1) % GameConnection.maxSocialListSize;
 
-            const message = WordFilter.filter(
-                ChatMessage.descramble(this.incomingPacket, 13, psize - 13)
+            let message = ChatMessage.descramble(
+                this.incomingPacket,
+                13,
+                psize - 13
             );
+
+            if (this.options.wordFilter) {
+                message = WordFilter.filter(message);
+            }
 
             this.showServerMessage(
                 `@pri@${Utility.hashToUsername(from)}: tells you ${message}`
@@ -566,13 +805,13 @@ class GameConnection extends GameShell {
                     (this.friendListOnline[i] === 0 &&
                         this.friendListOnline[i + 1] !== 0)
                 ) {
-                    let j = this.friendListOnline[i];
+                    const onlineStatus = this.friendListOnline[i];
                     this.friendListOnline[i] = this.friendListOnline[i + 1];
-                    this.friendListOnline[i + 1] = j;
+                    this.friendListOnline[i + 1] = onlineStatus;
 
-                    let l = this.friendListHashes[i];
+                    const encodedUsername = this.friendListHashes[i];
                     this.friendListHashes[i] = this.friendListHashes[i + 1];
-                    this.friendListHashes[i + 1] = l;
+                    this.friendListHashes[i + 1] = encodedUsername;
 
                     flag = true;
                 }

@@ -6,8 +6,8 @@ const RED = 0xff0000;
 const WHITE = 0xffffff;
 
 const BUTTON_HEIGHT = 20;
-const DIALOG_X = 7;
-const DIALOG_Y = 15;
+const UI_X = 7;
+const UI_Y = 15;
 const WIDTH = 175;
 
 const COMBAT_STYLES = [
@@ -22,10 +22,10 @@ function drawDialogCombatStyle() {
         for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
             if (
                 i <= 0 ||
-                this.mouseX <= DIALOG_X ||
-                this.mouseX >= DIALOG_X + WIDTH ||
-                this.mouseY <= DIALOG_Y + i * BUTTON_HEIGHT ||
-                this.mouseY >= DIALOG_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT
+                this.mouseX <= UI_X ||
+                this.mouseX >= UI_X + WIDTH ||
+                this.mouseY <= UI_Y + i * BUTTON_HEIGHT ||
+                this.mouseY >= UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT
             ) {
                 continue;
             }
@@ -44,22 +44,22 @@ function drawDialogCombatStyle() {
         const boxColour = i === this.combatStyle + 1 ? RED : GREY;
 
         this.surface.drawBoxAlpha(
-            DIALOG_X,
-            DIALOG_Y + i * BUTTON_HEIGHT,
+            UI_X,
+            UI_Y + i * BUTTON_HEIGHT,
             WIDTH,
             BUTTON_HEIGHT,
             boxColour,
             128
         );
         this.surface.drawLineHoriz(
-            DIALOG_X,
-            DIALOG_Y + i * BUTTON_HEIGHT,
+            UI_X,
+            UI_Y + i * BUTTON_HEIGHT,
             WIDTH,
             BLACK
         );
         this.surface.drawLineHoriz(
-            DIALOG_X,
-            DIALOG_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
+            UI_X,
+            UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
             WIDTH,
             BLACK
         );
@@ -69,8 +69,8 @@ function drawDialogCombatStyle() {
 
     this.surface.drawStringCenter(
         'Select combat style',
-        DIALOG_X + ((WIDTH / 2) | 0),
-        DIALOG_Y + y,
+        UI_X + ((WIDTH / 2) | 0),
+        UI_Y + y,
         3,
         WHITE
     );
@@ -80,8 +80,8 @@ function drawDialogCombatStyle() {
     for (const combatStyle of COMBAT_STYLES) {
         this.surface.drawStringCenter(
             combatStyle,
-            DIALOG_X + ((WIDTH / 2) | 0),
-            DIALOG_Y + y,
+            UI_X + ((WIDTH / 2) | 0),
+            UI_Y + y,
             3,
             BLACK
         );

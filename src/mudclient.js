@@ -675,6 +675,8 @@ class mudclient extends GameConnection {
             this.drawDialogReportAbuse();
         } else if (this.showDialogReportAbuseStep === 2) {
             this.drawDialogReportAbuseInput();
+        } else if (this.showChangePasswordStep !== 0) {
+            this.drawDialogChangePassword();
         } else if (this.showDialogSocialInput !== 0) {
             this.drawDialogSocialInput();
         } else {
@@ -782,33 +784,45 @@ class mudclient extends GameConnection {
         this.friendListCount = 0;
     }
 
-    handleKeyPress(i) {
+    handleKeyPress(keyCode) {
         if (this.loggedIn === 0) {
             if (this.loginScreen === 0 && this.panelLoginWelcome) {
-                this.panelLoginWelcome.keyPress(i);
+                this.panelLoginWelcome.keyPress(keyCode);
             }
 
             if (this.loginScreen === 1 && this.panelLoginNewUser) {
-                this.panelLoginNewUser.keyPress(i);
+                this.panelLoginNewUser.keyPress(keyCode);
             }
 
             if (this.loginScreen === 2 && this.panelLoginExistingUser) {
-                this.panelLoginExistingUser.keyPress(i);
+                this.panelLoginExistingUser.keyPress(keyCode);
             }
 
             if (this.loginScreen === 3 && this.panelRecoverUser) {
-                this.panelRecoverUser.keyPress(i);
+                this.panelRecoverUser.keyPress(keyCode);
             }
         }
 
         if (this.loggedIn === 1) {
             if (this.showAppearanceChange && this.panelAppearance !== null) {
-                this.panelAppearance.keyPress(i);
+                this.panelAppearance.keyPress(keyCode);
                 return;
             }
 
-            if (this.showDialogSocialInput === 0 && this.showDialogReportAbuseStep === 0 && !this.isSleeping && this.panelMessageTabs !== null) {
-                this.panelMessageTabs.keyPress(i);
+            if (
+                this.showChangePasswordStep === 0 &&
+                this.showDialogSocialInput === 0 &&
+                this.showDialogReportAbuseStep === 0 &&
+                !this.isSleeping &&
+                this.panelMessageTabs !== null
+            ) {
+                this.panelMessageTabs.keyPress(keyCode);
+            }
+
+            if (
+                this.showChangePasswordStep === 3 ||
+                this.showChangePasswordStep === 4) {
+                this.showChangePasswordStep = 0;
             }
         }
     }
@@ -967,8 +981,8 @@ class mudclient extends GameConnection {
     }
 
     drawItem(x, y, w, h, id) {
-        let picture = GameData.itemPicture[id] + this.spriteItem;
-        let mask = GameData.itemMask[id];
+        const picture = GameData.itemPicture[id] + this.spriteItem;
+        const mask = GameData.itemMask[id];
         this.surface._spriteClipping_from9(x, y, w, h, picture, mask, 0, 0,
             false);
     }
@@ -1612,10 +1626,15 @@ class mudclient extends GameConnection {
     drawRightClickMenu() {
         if (this.mouseButtonClick !== 0) {
             for (let i = 0; i < this.menuItemsCount; i++) {
-                let k = this.menuX + 2;
-                let i1 = this.menuY + 27 + i * 15;
+                const entryX = this.menuX + 2;
+                const entryY = this.menuY + 27 + i * 15;
 
-                if (this.mouseX <= k - 2 || this.mouseY <= i1 - 12 || this.mouseY >= i1 + 4 || this.mouseX >= (k - 3) + this.menuWidth) {
+                if (
+                    this.mouseX <= entryX - 2 ||
+                    this.mouseY <= entryY - 12 ||
+                    this.mouseY >= entryY + 4 ||
+                    this.mouseX >= (entryX - 3) + this.menuWidth
+                ) {
                     continue;
                 }
 
@@ -1628,24 +1647,55 @@ class mudclient extends GameConnection {
             return;
         }
 
-        if (this.mouseX < this.menuX - 10 || this.mouseY < this.menuY - 10 || this.mouseX > this.menuX + this.menuWidth + 10 || this.mouseY > this.menuY + this.menuHeight + 10) {
+        if (
+            this.mouseX < this.menuX - 10 ||
+            this.mouseY < this.menuY - 10 ||
+            this.mouseX > this.menuX + this.menuWidth + 10 ||
+            this.mouseY > this.menuY + this.menuHeight + 10
+        ) {
             this.showRightClickMenu = false;
             return;
         }
 
-        this.surface.drawBoxAlpha(this.menuX, this.menuY, this.menuWidth, this.menuHeight, 0xd0d0d0, 160);
-        this.surface.drawString('Choose option', this.menuX + 2, this.menuY + 12, 1, 65535);
+        this.surface.drawBoxAlpha(
+            this.menuX,
+            this.menuY,
+            this.menuWidth,
+            this.menuHeight,
+            0xd0d0d0,
+            160
+        );
 
-        for (let j = 0; j < this.menuItemsCount; j++) {
-            let l = this.menuX + 2;
-            let j1 = this.menuY + 27 + j * 15;
-            let k1 = 0xffffff;
+        this.surface.drawString(
+            'Choose option',
+            this.menuX + 2,
+            this.menuY + 12,
+            1,
+            0x00ffff
+        );
 
-            if (this.mouseX > l - 2 && this.mouseY > j1 - 12 && this.mouseY < j1 + 4 && this.mouseX < (l - 3) + this.menuWidth) {
-                k1 = 0xffff00;
+        for (let i = 0; i < this.menuItemsCount; i++) {
+            const entryX = this.menuX + 2;
+            const entryY = this.menuY + 27 + i * 15;
+            let textColour = 0xffffff;
+
+            if (
+                this.mouseX > entryX - 2 &&
+                this.mouseY > entryY - 12 &&
+                this.mouseY < entryY + 4 &&
+                this.mouseX < (entryX - 3) + this.menuWidth
+            ) {
+                textColour = 0xffff00;
             }
 
-            this.surface.drawString(this.menuItemText1[this.menuIndices[j]] + ' ' + this.menuItemText2[this.menuIndices[j]], l, j1, 1, k1);
+            this.surface.drawString(
+                this.menuItemText1[this.menuIndices[i]] + ' ' +
+                    this.menuItemText2[this.menuIndices[i]],
+                entryX,
+                entryY,
+                1,
+                textColour
+            );
         }
     }
 
@@ -1850,7 +1900,11 @@ class mudclient extends GameConnection {
     }
 
     async loadGameConfig() {
-        const configJag = await this.readDataFile('config' + version.CONFIG + '.jag', 'Configuration', 10);
+        const configJag = await this.readDataFile(
+            `config${version.CONFIG}.jag`,
+            'Configuration',
+            10
+        );
 
         if (!configJag) {
             this.errorLoadingData = true;
@@ -1859,18 +1913,34 @@ class mudclient extends GameConnection {
 
         GameData.loadData(configJag, this.members);
 
-        const filterJag = await this.readDataFile('filter' + version.FILTER + '.jag', 'Chat system', 15);
+        const filterJag = await this.readDataFile(
+            `filter${version.FILTER}.jag`,
+            'Chat system',
+            15
+        );
 
         if (!filterJag) {
             this.errorLoadingData = true;
-        } else {
-            let buffragments = Utility.loadData('fragmentsenc.txt', 0, filterJag);
-            let buffbandenc = Utility.loadData('badenc.txt', 0, filterJag);
-            let buffhostenc = Utility.loadData('hostenc.txt', 0, filterJag);
-            let bufftldlist = Utility.loadData('tldlist.txt', 0, filterJag);
-
-            WordFilter.loadFilters(new GameBuffer(buffragments), new GameBuffer(buffbandenc), new GameBuffer(buffhostenc), new GameBuffer(bufftldlist));
+            return;
         }
+
+        const fragments = new GameBuffer(
+            Utility.loadData('fragmentsenc.txt', 0, filterJag)
+        );
+
+        const badWords = new GameBuffer(
+            Utility.loadData('badenc.txt', 0, filterJag)
+        );
+
+        const hosts = new GameBuffer(
+            Utility.loadData('hostenc.txt', 0, filterJag)
+        );
+
+        const tlds = new GameBuffer(
+            Utility.loadData('tldlist.txt', 0, filterJag)
+        );
+
+        WordFilter.loadFilters(fragments, badWords, hosts, tlds);
     }
 
     addNpc(serverIndex, x, y, sprite, type) {
@@ -2945,14 +3015,18 @@ class mudclient extends GameConnection {
     }
 
     async loadMedia() {
-        let mediaJag = await this.readDataFile('media' + version.MEDIA + '.jag', '2d graphics', 20);
+        const mediaJag = await this.readDataFile(
+            `media${version.MEDIA}.jag`,
+            '2d graphics',
+            20
+        );
 
         if (mediaJag === null) {
             this.errorLoadingData = true;
             return;
         }
 
-        let indexDat = Utility.loadData('index.dat', 0, mediaJag);
+        const indexDat = Utility.loadData('index.dat', 0, mediaJag);
 
         this.surface.parseSprite(this.spriteMedia, Utility.loadData('inv1.dat', 0, mediaJag), indexDat, 1);
         this.surface.parseSprite(this.spriteMedia + 1, Utility.loadData('inv2.dat', 0, mediaJag), indexDat, 6);
@@ -3557,16 +3631,24 @@ class mudclient extends GameConnection {
 
     async loadSounds() {
         try {
-            this.soundData = await this.readDataFile('sounds' + version.SOUNDS + '.mem', 'Sound effects', 90);
+            this.soundData = await this.readDataFile(
+                `sounds${version.SOUNDS}.mem`,
+                'Sound effects',
+                90
+            );
+
             this.audioPlayer = new StreamAudioPlayer();
         } catch (e) {
             console.error(e);
         }
     }
 
-    isItemEquipped(i) {
-        for (let j = 0; j < this.inventoryItemsCount; j++) {
-            if (this.inventoryItemId[j] === i && this.inventoryEquipped[j] === 1) {
+    isItemEquipped(id) {
+        for (let i = 0; i < this.inventoryItemsCount; i++) {
+            if (
+                this.inventoryItemId[i] === id &&
+                this.inventoryEquipped[i] === 1
+            ) {
                 return true;
             }
         }
@@ -3575,14 +3657,18 @@ class mudclient extends GameConnection {
     }
 
     async loadEntities() {
-        let entityJag = await this.readDataFile('entity' + version.ENTITY + '.jag', 'people and monsters', 30);
+        const entityJag = await this.readDataFile(
+            `entity${version.ENTITY}.jag`,
+            'people and monsters',
+            30
+        );
 
         if (!entityJag) {
             this.errorLoadingData = true;
             return;
         }
 
-        let indexDat = Utility.loadData('index.dat', 0, entityJag);
+        const indexDat = Utility.loadData('index.dat', 0, entityJag);
 
         let entityJagMem = null;
         let indexDatMem = null;
@@ -3922,11 +4008,11 @@ class mudclient extends GameConnection {
         }
     }
 
-    walkToGroundItem(i, j, k, l, walkToAction) {
-        if (this.walkTo(i, j, k, l, k, l, false, walkToAction)) {
+    walkToGroundItem(startX, startY, k, l, walkToAction) {
+        if (this.walkTo(startX, startY, k, l, k, l, false, walkToAction)) {
             return;
         } else {
-            this._walkToActionSource_from8(i, j, k, l, k, l, true, walkToAction);
+            this._walkToActionSource_from8(startX, startY, k, l, k, l, true, walkToAction);
             return;
         }
     }
@@ -3936,24 +4022,31 @@ class mudclient extends GameConnection {
             GameData.getModelIndex(modelName);
         }
 
-        let modelsBuffer = await this.readDataFile('models' + version.MODELS + '.jag', '3d models', 60);
+        const modelsJag = await this.readDataFile(
+            `models${version.MODELS}.jag`,
+            '3d models',
+            60
+        );
 
-        if (!modelsBuffer) {
+        if (!modelsJag) {
             this.errorLoadingData = true;
             return;
         }
 
-        for (let j = 0; j < GameData.modelCount; j++) {
-            let k = Utility.getDataFileOffset(GameData.modelName[j] + '.ob3', modelsBuffer);
+        for (let i = 0; i < GameData.modelCount; i++) {
+            const offset = Utility.getDataFileOffset(
+                `${GameData.modelName[i]}.ob3`,
+                modelsJag
+            );
 
-            if (k !== 0) {
-                this.gameModels[j] = GameModel.fromBytes(modelsBuffer, k);
+            if (offset !== 0) {
+                this.gameModels[i] = GameModel.fromBytes(modelsJag, offset);
             } else {
-                this.gameModels[j] = GameModel._from2(1, 1);
+                this.gameModels[i] = GameModel._from2(1, 1);
             }
 
-            if (GameData.modelName[j].toLowerCase() === 'giantcrystal') {
-                this.gameModels[j].transparent = true;
+            if (GameData.modelName[i].toLowerCase() === 'giantcrystal') {
+                this.gameModels[i].transparent = true;
             }
         }
     }
@@ -4041,34 +4134,34 @@ class mudclient extends GameConnection {
     }
 
     walkToObject(x, y, id, index) {
-        let w = 0;
-        let h = 0;
+        let width = 0;
+        let height = 0;
 
         if (id === 0 || id === 4) {
-            w = GameData.objectWidth[index];
-            h = GameData.objectHeight[index];
+            width = GameData.objectWidth[index];
+            height = GameData.objectHeight[index];
         } else {
-            h = GameData.objectWidth[index];
-            w = GameData.objectHeight[index];
+            height = GameData.objectWidth[index];
+            width = GameData.objectHeight[index];
         }
 
         if (GameData.objectType[index] === 2 || GameData.objectType[index] === 3) {
             if (id === 0) {
                 x--;
-                w++;
+                width++;
             } else if (id === 2) {
-                h++;
+                height++;
             } else if (id === 4) {
-                w++;
+                width++;
             } else if (id === 6) {
                 y--;
-                h++;
+                height++;
             }
 
-            this._walkToActionSource_from8(this.localRegionX, this.localRegionY, x, y, (x + w) - 1, (y + h) - 1, false, true);
+            this._walkToActionSource_from8(this.localRegionX, this.localRegionY, x, y, (x + width) - 1, (y + height) - 1, false, true);
             return;
         } else {
-            this._walkToActionSource_from8(this.localRegionX, this.localRegionY, x, y, (x + w) - 1, (y + h) - 1, true, true);
+            this._walkToActionSource_from8(this.localRegionX, this.localRegionY, x, y, (x + width) - 1, (y + height) - 1, true, true);
             return;
         }
     }
@@ -4076,12 +4169,12 @@ class mudclient extends GameConnection {
     getInventoryCount(id) {
         let count = 0;
 
-        for (let k = 0; k < this.inventoryItemsCount; k++) {
-            if (this.inventoryItemId[k] === id) {
+        for (let i = 0; i < this.inventoryItemsCount; i++) {
+            if (this.inventoryItemId[i] === id) {
                 if (GameData.itemStackable[id] === 1) {
                     count++;
                 } else {
-                    count += this.inventoryItemStackCount[k];
+                    count += this.inventoryItemStackCount[i];
                 }
             }
         }
@@ -4090,7 +4183,11 @@ class mudclient extends GameConnection {
     }
 
     async loadTextures() {
-        const texturesJag = await this.readDataFile(`textures${version.TEXTURES}.jag`, 'Textures', 50);
+        const texturesJag = await this.readDataFile(
+            `textures${version.TEXTURES}.jag`,
+            'Textures',
+            50
+        );
 
         if (!texturesJag) {
             this.errorLoadingData = true;
@@ -6652,28 +6749,32 @@ class mudclient extends GameConnection {
     }
 
     async loadMaps() {
-        this.world.mapPack =
-            await this.readDataFile(`maps${version.MAPS}.jag`, 'map', 70);
+        this.world.mapPack = await this.readDataFile(
+            `maps${version.MAPS}.jag`,
+            'map',
+            70
+        );
 
         if (this.members) {
-            this.world.memberMapPack =
-                await this.readDataFile(
-                    `maps${version.MAPS}.mem`,
-                    'members map',
-                    75
-                );
+            this.world.memberMapPack = await this.readDataFile(
+                `maps${version.MAPS}.mem`,
+                'members map',
+                75
+            );
         }
 
-        this.world.landscapePack =
-            await this.readDataFile(`land${version.MAPS}.jag`, 'landscape', 80);
+        this.world.landscapePack = await this.readDataFile(
+            `land${version.MAPS}.jag`,
+            'landscape',
+            80
+        );
 
         if (this.members) {
-            this.world.memberLandscapePack =
-                await this.readDataFile(
-                    `land${version.MAPS}.mem`,
-                    'members landscape',
-                    85
-                );
+            this.world.memberLandscapePack = await this.readDataFile(
+                `land${version.MAPS}.mem`,
+                'members landscape',
+                85
+            );
         }
     }
 

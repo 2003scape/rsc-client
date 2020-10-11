@@ -19,7 +19,7 @@ function drawUiTabOptions(noMenus) {
     this.surface.drawBoxAlpha(UI_X, 166, WIDTH, 95, DARK_GREY, 160);
     this.surface.drawBoxAlpha(UI_X, 261, WIDTH, 40, LIGHT_GREY, 160);
 
-    let x = UI_X + 3;
+    const x = UI_X + 3;
     let y = UI_Y + LINE_BREAK;
 
     this.surface.drawString('Game options - click to toggle', x, y, 1, BLACK);
@@ -61,57 +61,105 @@ function drawUiTabOptions(noMenus) {
 
     y += LINE_BREAK;
 
-    this.surface.drawString('To change your contact details,', x, y, 0, WHITE);
+    if (this.options.accountManagement) {
+        y += 5;
+        this.surface.drawString('Security settings', x, y, 1, 0);
+        y += 15;
 
-    y += LINE_BREAK;
+        let textColour = 0xffffff;
 
-    this.surface.drawString(
-        'password, recovery questions, etc..',
-        x,
-        y,
-        0,
-        WHITE
-    );
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4
+        ) {
+            textColour = YELLOW;
+        }
 
-    y += LINE_BREAK;
+        this.surface.drawString('Change password', x, y, 1, textColour);
 
-    this.surface.drawString(
-        "please select 'account management'",
-        x,
-        y,
-        0,
-        WHITE
-    );
+        y += 15;
+        textColour = 0xffffff;
 
-    y += LINE_BREAK;
+        if (
+            this.mouseX > x &&
+            this.mouseX < x + WIDTH &&
+            this.mouseY > y - 12 &&
+            this.mouseY < y + 4
+        ) {
+            textColour = YELLOW;
+        }
 
-    if (this.referID === 0) {
         this.surface.drawString(
-            'from the runescape.com front page',
+            'Change recovery questions',
             x,
             y,
-            0,
-            WHITE
+            1,
+            textColour
         );
-    } else if (this.referID === 1) {
-        this.surface.drawString(
-            'from the link below the gamewindow',
-            x,
-            y,
-            0,
-            WHITE
-        );
+
+        y += 15;
+        y += 15;
     } else {
         this.surface.drawString(
-            'from the runescape front webpage',
+            'To change your contact details,',
             x,
             y,
             0,
             WHITE
         );
-    }
 
-    y += LINE_BREAK + 5;
+        y += LINE_BREAK;
+
+        this.surface.drawString(
+            'password, recovery questions, etc..',
+            x,
+            y,
+            0,
+            WHITE
+        );
+
+        y += LINE_BREAK;
+
+        this.surface.drawString(
+            "please select 'account management'",
+            x,
+            y,
+            0,
+            WHITE
+        );
+
+        y += LINE_BREAK;
+
+        if (this.referID === 0) {
+            this.surface.drawString(
+                'from the runescape.com front page',
+                x,
+                y,
+                0,
+                WHITE
+            );
+        } else if (this.referID === 1) {
+            this.surface.drawString(
+                'from the link below the gamewindow',
+                x,
+                y,
+                0,
+                WHITE
+            );
+        } else {
+            this.surface.drawString(
+                'from the runescape front webpage',
+                x,
+                y,
+                0,
+                WHITE
+            );
+        }
+
+        y += LINE_BREAK + 5;
+    }
 
     this.surface.drawString(
         'Privacy settings. Will be applied to',
@@ -204,7 +252,7 @@ function drawUiTabOptions(noMenus) {
     const mouseY = this.mouseY - 36;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 265) {
-        let x = UI_X + 3;
+        const x = UI_X + 3;
         let y = UI_Y + 30;
 
         if (
@@ -254,8 +302,37 @@ function drawUiTabOptions(noMenus) {
             this.packetStream.sendPacket();
         }
 
-        for (let i = 0; i < 5; i += 1) {
+        if (this.options.accountManagement) {
+            y += LINE_BREAK + 20;
+
+            if (
+                this.mouseX > x &&
+                this.mouseX < x + WIDTH &&
+                this.mouseY > y - 12 &&
+                this.mouseY < y + 4 &&
+                this.mouseButtonClick === 1
+            ) {
+                this.showChangePasswordStep = 6;
+                this.inputTextCurrent = '';
+                this.inputTextFinal = '';
+            }
+
             y += LINE_BREAK;
+
+            if (
+                this.mouseX > x &&
+                this.mouseX < x + WIDTH &&
+                this.mouseY > y - 12 &&
+                this.mouseY < y + 4 &&
+                this.mouseButtonClick === 1
+            ) {
+                this.packetStream.newPacket(clientOpcodes.RECOVER_SET_REQUEST);
+                this.packetStream.sendPacket();
+            }
+
+            y += LINE_BREAK * 2;
+        } else {
+            y += LINE_BREAK * 5;
         }
 
         let hasChangedSetting = false;

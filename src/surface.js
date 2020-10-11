@@ -9,10 +9,10 @@ const C_9 = '9'.charCodeAt(0);
 
 // canvas imagedata needs an alpha channel, but the client only uses rgb
 function fixPixel(pixel) {
-    let r = (pixel >> 16) & 255;
-    let g = (pixel >> 8) & 255;
-    let b = pixel & 255;
-    let a = 255; // alpha always 255
+    const r = (pixel >> 16) & 255;
+    const g = (pixel >> 8) & 255;
+    const b = pixel & 255;
+    const a = 255; // alpha always 255
 
     return (a << 24) + (b << 16) + (g << 8) + r;
 }
@@ -143,10 +143,10 @@ class Surface {
     }
 
     drawCircle(x, y, radius, colour, alpha) {
-        let bgAlpha = 256 - alpha;
-        let red = ((colour >> 16) & 0xff) * alpha;
-        let green = ((colour >> 8) & 0xff) * alpha;
-        let blue = (colour & 0xff) * alpha;
+        const bgAlpha = 256 - alpha;
+        const red = ((colour >> 16) & 0xff) * alpha;
+        const green = ((colour >> 8) & 0xff) * alpha;
+        const blue = (colour & 0xff) * alpha;
         let top = y - radius;
 
         if (top < 0) {
@@ -170,8 +170,8 @@ class Surface {
         }
 
         for (let yy = top; yy <= bottom; yy += vertInc) {
-            let l3 = yy - y;
-            let i4 = Math.sqrt(radius * radius - l3 * l3) | 0;
+            const l3 = yy - y;
+            const i4 = Math.sqrt(radius * radius - l3 * l3) | 0;
             let j4 = x - i4;
 
             if (j4 < 0) {
@@ -184,17 +184,19 @@ class Surface {
                 k4 = this.width2 - 1;
             }
 
-            let pixelIdx = j4 + yy * this.width2;
+            let index = j4 + yy * this.width2;
 
-            for (let i5 = j4; i5 <= k4; i5++) {
-                let bgRed = ((this.pixels[pixelIdx] >> 16) & 0xff) * bgAlpha;
-                let bgGreen = ((this.pixels[pixelIdx] >> 8) & 0xff) * bgAlpha;
-                let bgBlue = (this.pixels[pixelIdx] & 0xff) * bgAlpha;
-                let newColour =
+            for (let i = j4; i <= k4; i++) {
+                const bgRed = ((this.pixels[index] >> 16) & 0xff) * bgAlpha;
+                const bgGreen = ((this.pixels[index] >> 8) & 0xff) * bgAlpha;
+                const bgBlue = (this.pixels[index] & 0xff) * bgAlpha;
+
+                const newColour =
                     (((red + bgRed) >> 8) << 16) +
                     (((green + bgGreen) >> 8) << 8) +
                     ((blue + bgBlue) >> 8);
-                this.pixels[pixelIdx++] = newColour;
+
+                this.pixels[index++] = newColour;
             }
         }
     }

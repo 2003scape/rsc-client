@@ -3,10 +3,7 @@
 class Graphics {
     constructor(canvas) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', {
-            alpha: false,
-            desynchronized: true
-        });
+        this.ctx = canvas.getContext('2d', { alpha: false });
     }
 
     setColor(color) {

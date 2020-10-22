@@ -8,7 +8,7 @@ const TGA = require('tga-js');
 const Utility = require('./utility');
 const keycodes = require('./lib/keycodes');
 const version = require('./version');
-const zzz = require('sleep-promise');
+const sleep = require('sleep-promise');
 
 const CHAR_MAP =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
@@ -102,20 +102,19 @@ class GameShell {
             this.mousePressed.bind(this)
         );
 
-        this._canvas.addEventListener(
-            'contextmenu',
-            this.mousePressed.bind(this)
-        );
+        this._canvas.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            return false;
+        });
 
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
         this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
         this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
         this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
+        window.addEventListener('beforeunload', () => this.onClosing());
         window.addEventListener('keydown', this.keyPressed.bind(this));
         window.addEventListener('keyup', this.keyReleased.bind(this));
-
-        window.addEventListener('beforeunload', () => this.onClosing());
 
         this.loadingStep = 1;
 
@@ -136,13 +135,13 @@ class GameShell {
         e.preventDefault();
 
         const code = e.keyCode;
-        let chr = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
+        let charCode = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
         if ([8, 10, 13, 9].indexOf(code) > -1) {
-            chr = code;
+            charCode = code;
         }
 
-        this.handleKeyPress(chr);
+        this.handleKeyPress(charCode);
 
         if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = true;
@@ -167,7 +166,7 @@ class GameShell {
         let foundText = false;
 
         for (let i = 0; i < CHAR_MAP.length; i++) {
-            if (CHAR_MAP.charCodeAt(i) === chr) {
+            if (CHAR_MAP.charCodeAt(i) === charCode) {
                 foundText = true;
                 break;
             }
@@ -175,20 +174,18 @@ class GameShell {
 
         if (foundText) {
             if (this.inputTextCurrent.length < 20) {
-                this.inputTextCurrent += String.fromCharCode(chr);
+                this.inputTextCurrent += String.fromCharCode(charCode);
             }
 
             if (this.inputPMCurrent.length < 80) {
-                this.inputPMCurrent += String.fromCharCode(chr);
+                this.inputPMCurrent += String.fromCharCode(charCode);
             }
         }
 
         if (code === keycodes.ENTER) {
             this.inputTextFinal = this.inputTextCurrent;
             this.inputPMFinal = this.inputPMCurrent;
-        }
-
-        if (code === keycodes.BACKSPACE) {
+        } else if (code === keycodes.BACKSPACE) {
             if (this.inputTextCurrent.length > 0) {
                 this.inputTextCurrent = this.inputTextCurrent.substring(
                     0,
@@ -259,8 +256,8 @@ class GameShell {
     mousePressed(e) {
         e.preventDefault();
 
-        let x = e.offsetX;
-        let y = e.offsetY;
+        const x = e.offsetX;
+        const y = e.offsetY;
 
         this.mouseX = x;
         this.mouseY = y;
@@ -327,7 +324,7 @@ class GameShell {
 
         let i = 0;
         let j = 256;
-        let sleep = 1;
+        let delay = 1;
         let i1 = 0;
 
         for (let j1 = 0; j1 < 10; j1++) {
@@ -344,17 +341,17 @@ class GameShell {
                 }
             }
 
-            let k1 = j;
-            let lastSleep = sleep;
+            const k1 = j;
+            const lastDelay = delay;
 
             j = 300;
-            sleep = 1;
+            delay = 1;
 
-            let time = Date.now();
+            const time = Date.now();
 
             if (this.timings[i] === 0) {
                 j = k1;
-                sleep = lastSleep;
+                delay = lastDelay;
             } else if (time > this.timings[i]) {
                 j = ((2560 * this.targetFps) / (time - this.timings[i])) | 0;
             }
@@ -365,22 +362,22 @@ class GameShell {
 
             if (j > 256) {
                 j = 256;
-                sleep = (this.targetFps - (time - this.timings[i]) / 10) | 0;
+                delay = (this.targetFps - (time - this.timings[i]) / 10) | 0;
 
-                if (sleep < this.threadSleep) {
-                    sleep = this.threadSleep;
+                if (delay < this.threadSleep) {
+                    delay = this.threadSleep;
                 }
             }
 
-            await zzz(sleep);
+            await sleep(delay);
 
             this.timings[i] = time;
             i = (i + 1) % 10;
 
-            if (sleep > 1) {
+            if (delay > 1) {
                 for (let j2 = 0; j2 < 10; j2++) {
                     if (this.timings[j2] !== 0) {
-                        this.timings[j2] += sleep;
+                        this.timings[j2] += delay;
                     }
                 }
             }
@@ -437,7 +434,7 @@ class GameShell {
 
         if (jagexJag) {
             const logoTga = Utility.loadData('logo.tga', 0, jagexJag);
-            this.imageLogo = this.createImage(logoTga);
+            this.imageLogo = this.parseTGA(logoTga);
         }
 
         const fontsJag = await this.readDataFile(
@@ -470,6 +467,7 @@ class GameShell {
 
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;
+
         this.graphics.setColor(new Color(132, 132, 132));
 
         if (this.hasRefererLogoNotUsed) {
@@ -495,14 +493,14 @@ class GameShell {
         if (!this.hasRefererLogoNotUsed) {
             this.drawString(
                 this.graphics,
-                'Created by JAGeX - visit ' + 'www.jagex.com',
+                'Created by JAGeX - visit www.jagex.com',
                 this.fontHelvetica13b,
                 x + 138,
                 y + 30
             );
             this.drawString(
                 this.graphics,
-                '\u00a92001-2002 Andrew Gower and ' + 'Jagex Ltd',
+                '\u00a92001-2002 Andrew Gower and Jagex Ltd',
                 this.fontHelvetica13b,
                 x + 138,
                 y + 44
@@ -541,13 +539,13 @@ class GameShell {
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;
 
-        const progressWidth = ((277 * percent) / 100) | 0;
         this.graphics.setColor(new Color(132, 132, 132));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(220, 0, 0));
         }
 
+        const progressWidth = ((277 * percent) / 100) | 0;
         this.graphics.fillRect(x, y, progressWidth, 20);
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(x + progressWidth, y, 277 - progressWidth, 20);
@@ -576,7 +574,7 @@ class GameShell {
         );
     }
 
-    createImage(tgaBuffer) {
+    parseTGA(tgaBuffer) {
         const tgaImage = new TGA();
         tgaImage.load(new Uint8Array(tgaBuffer.buffer));
 
@@ -633,6 +631,7 @@ class GameShell {
 
         if (archiveSizeCompressed !== archiveSize) {
             const decompressed = new Int8Array(archiveSize);
+
             BZLib.decompress(
                 decompressed,
                 archiveSize,
@@ -651,8 +650,8 @@ class GameShell {
         return this._graphics;
     }
 
-    async createSocket(s, i) {
-        let socket = new Socket(s, i);
+    async createSocket(server, port) {
+        const socket = new Socket(server, port);
         await socket.connect();
         return socket;
     }

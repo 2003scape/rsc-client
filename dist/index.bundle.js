@@ -11395,14 +11395,22 @@ const { Bzip2 } = require('@ledgerhq/compressjs');
 
 // BZ is a magic symbol, h is for huffman and 1 is the level of compression (
 // from 1-9)
-const BZIP_HEADER = Buffer.from('BZh1'.split('').map(c => c.charCodeAt(0)));
+const BZIP_HEADER = Buffer.from('BZh1'.split('').map((c) => c.charCodeAt(0)));
 
-function decompress(fileData, fileSize, archiveData, fileSizeCompressed,
-    offset) {
+function decompress(
+    fileData,
+    _,
+    archiveData,
+    fileSizeCompressed,
+    offset
+) {
     const compressed = Buffer.from(
-        archiveData.slice(offset, fileSizeCompressed + offset));
+        archiveData.slice(offset, fileSizeCompressed + offset)
+    );
+
     const decompressed = Bzip2.decompressFile(
-        Buffer.concat([BZIP_HEADER, compressed]));
+        Buffer.concat([BZIP_HEADER, compressed])
+    );
 
     fileData.set(decompressed);
 }
@@ -14612,7 +14620,7 @@ const TGA = require('tga-js');
 const Utility = require('./utility');
 const keycodes = require('./lib/keycodes');
 const version = require('./version');
-const zzz = require('sleep-promise');
+const sleep = require('sleep-promise');
 
 const CHAR_MAP =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
@@ -14706,20 +14714,19 @@ class GameShell {
             this.mousePressed.bind(this)
         );
 
-        this._canvas.addEventListener(
-            'contextmenu',
-            this.mousePressed.bind(this)
-        );
+        this._canvas.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            return false;
+        });
 
         this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
         this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
         this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
         this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
+        window.addEventListener('beforeunload', () => this.onClosing());
         window.addEventListener('keydown', this.keyPressed.bind(this));
         window.addEventListener('keyup', this.keyReleased.bind(this));
-
-        window.addEventListener('beforeunload', () => this.onClosing());
 
         this.loadingStep = 1;
 
@@ -14740,13 +14747,13 @@ class GameShell {
         e.preventDefault();
 
         const code = e.keyCode;
-        let chr = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
+        let charCode = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
         if ([8, 10, 13, 9].indexOf(code) > -1) {
-            chr = code;
+            charCode = code;
         }
 
-        this.handleKeyPress(chr);
+        this.handleKeyPress(charCode);
 
         if (code === keycodes.LEFT_ARROW) {
             this.keyLeft = true;
@@ -14771,7 +14778,7 @@ class GameShell {
         let foundText = false;
 
         for (let i = 0; i < CHAR_MAP.length; i++) {
-            if (CHAR_MAP.charCodeAt(i) === chr) {
+            if (CHAR_MAP.charCodeAt(i) === charCode) {
                 foundText = true;
                 break;
             }
@@ -14779,20 +14786,18 @@ class GameShell {
 
         if (foundText) {
             if (this.inputTextCurrent.length < 20) {
-                this.inputTextCurrent += String.fromCharCode(chr);
+                this.inputTextCurrent += String.fromCharCode(charCode);
             }
 
             if (this.inputPMCurrent.length < 80) {
-                this.inputPMCurrent += String.fromCharCode(chr);
+                this.inputPMCurrent += String.fromCharCode(charCode);
             }
         }
 
         if (code === keycodes.ENTER) {
             this.inputTextFinal = this.inputTextCurrent;
             this.inputPMFinal = this.inputPMCurrent;
-        }
-
-        if (code === keycodes.BACKSPACE) {
+        } else if (code === keycodes.BACKSPACE) {
             if (this.inputTextCurrent.length > 0) {
                 this.inputTextCurrent = this.inputTextCurrent.substring(
                     0,
@@ -14863,8 +14868,8 @@ class GameShell {
     mousePressed(e) {
         e.preventDefault();
 
-        let x = e.offsetX;
-        let y = e.offsetY;
+        const x = e.offsetX;
+        const y = e.offsetY;
 
         this.mouseX = x;
         this.mouseY = y;
@@ -14931,7 +14936,7 @@ class GameShell {
 
         let i = 0;
         let j = 256;
-        let sleep = 1;
+        let delay = 1;
         let i1 = 0;
 
         for (let j1 = 0; j1 < 10; j1++) {
@@ -14948,17 +14953,17 @@ class GameShell {
                 }
             }
 
-            let k1 = j;
-            let lastSleep = sleep;
+            const k1 = j;
+            const lastDelay = delay;
 
             j = 300;
-            sleep = 1;
+            delay = 1;
 
-            let time = Date.now();
+            const time = Date.now();
 
             if (this.timings[i] === 0) {
                 j = k1;
-                sleep = lastSleep;
+                delay = lastDelay;
             } else if (time > this.timings[i]) {
                 j = ((2560 * this.targetFps) / (time - this.timings[i])) | 0;
             }
@@ -14969,22 +14974,22 @@ class GameShell {
 
             if (j > 256) {
                 j = 256;
-                sleep = (this.targetFps - (time - this.timings[i]) / 10) | 0;
+                delay = (this.targetFps - (time - this.timings[i]) / 10) | 0;
 
-                if (sleep < this.threadSleep) {
-                    sleep = this.threadSleep;
+                if (delay < this.threadSleep) {
+                    delay = this.threadSleep;
                 }
             }
 
-            await zzz(sleep);
+            await sleep(delay);
 
             this.timings[i] = time;
             i = (i + 1) % 10;
 
-            if (sleep > 1) {
+            if (delay > 1) {
                 for (let j2 = 0; j2 < 10; j2++) {
                     if (this.timings[j2] !== 0) {
-                        this.timings[j2] += sleep;
+                        this.timings[j2] += delay;
                     }
                 }
             }
@@ -15041,7 +15046,7 @@ class GameShell {
 
         if (jagexJag) {
             const logoTga = Utility.loadData('logo.tga', 0, jagexJag);
-            this.imageLogo = this.createImage(logoTga);
+            this.imageLogo = this.parseTGA(logoTga);
         }
 
         const fontsJag = await this.readDataFile(
@@ -15074,6 +15079,7 @@ class GameShell {
 
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;
+
         this.graphics.setColor(new Color(132, 132, 132));
 
         if (this.hasRefererLogoNotUsed) {
@@ -15099,14 +15105,14 @@ class GameShell {
         if (!this.hasRefererLogoNotUsed) {
             this.drawString(
                 this.graphics,
-                'Created by JAGeX - visit ' + 'www.jagex.com',
+                'Created by JAGeX - visit www.jagex.com',
                 this.fontHelvetica13b,
                 x + 138,
                 y + 30
             );
             this.drawString(
                 this.graphics,
-                '\u00a92001-2002 Andrew Gower and ' + 'Jagex Ltd',
+                '\u00a92001-2002 Andrew Gower and Jagex Ltd',
                 this.fontHelvetica13b,
                 x + 138,
                 y + 44
@@ -15145,13 +15151,13 @@ class GameShell {
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;
 
-        const progressWidth = ((277 * percent) / 100) | 0;
         this.graphics.setColor(new Color(132, 132, 132));
 
         if (this.hasRefererLogoNotUsed) {
             this.graphics.setColor(new Color(220, 0, 0));
         }
 
+        const progressWidth = ((277 * percent) / 100) | 0;
         this.graphics.fillRect(x, y, progressWidth, 20);
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(x + progressWidth, y, 277 - progressWidth, 20);
@@ -15180,7 +15186,7 @@ class GameShell {
         );
     }
 
-    createImage(tgaBuffer) {
+    parseTGA(tgaBuffer) {
         const tgaImage = new TGA();
         tgaImage.load(new Uint8Array(tgaBuffer.buffer));
 
@@ -15237,6 +15243,7 @@ class GameShell {
 
         if (archiveSizeCompressed !== archiveSize) {
             const decompressed = new Int8Array(archiveSize);
+
             BZLib.decompress(
                 decompressed,
                 archiveSize,
@@ -15255,8 +15262,8 @@ class GameShell {
         return this._graphics;
     }
 
-    async createSocket(s, i) {
-        let socket = new Socket(s, i);
+    async createSocket(server, port) {
+        const socket = new Socket(server, port);
         await socket.connect();
         return socket;
     }
@@ -15349,10 +15356,7 @@ module.exports = Font;
 class Graphics {
     constructor(canvas) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', {
-            alpha: false,
-            desynchronized: true
-        });
+        this.ctx = canvas.getContext('2d', { alpha: false });
     }
 
     setColor(color) {
@@ -16582,12 +16586,20 @@ class mudclient extends GameConnection {
         }
 
         if (this.combatTimeout > 450) {
-            this.showMessage('@cya@You can\'t logout during combat!', 3);
+            this.showMessage(
+                "@cya@You can't logout during combat!",
+                3
+            );
+
             return;
         }
 
         if (this.combatTimeout > 0) {
-            this.showMessage('@cya@You can\'t logout for 10 seconds after combat', 3);
+            this.showMessage(
+                "@cya@You can't logout for 10 seconds after combat",
+                3
+            );
+
             return;
         } else {
             this.packetStream.newPacket(clientOpcodes.LOGOUT);
@@ -20920,31 +20932,32 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.REGION_PLAYER_UPDATE) {
-                let k1 = Utility.getUnsignedShort(pdata, 1);
+                const length = Utility.getUnsignedShort(pdata, 1);
                 let offset = 3;
 
-                for (let k15 = 0; k15 < k1; k15++) {
-                    let playerId = Utility.getUnsignedShort(pdata, offset);
+                for (let i = 0; i < length; i++) {
+                    const playerIndex = Utility.getUnsignedShort(pdata, offset);
                     offset += 2;
 
-                    let character = this.playerServer[playerId];
-                    let updateType = pdata[offset];
+                    const player = this.playerServer[playerIndex];
+                    const updateType = pdata[offset];
                     offset++;
 
                     // speech bubble with an item in it
                     if (updateType === 0) {
-                        let id = Utility.getUnsignedShort(pdata, offset);
+                        const itemID = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        if (character !== null) {
-                            character.bubbleTimeout = 150;
-                            character.bubbleItem = id;
+                        if (player !== null) {
+                            player.bubbleTimeout = 150;
+                            player.bubbleItem = itemID;
                         }
-                    } else if (updateType === 1) { // chat
-                        let messageLength = pdata[offset];
+                    // chat
+                    } else if (updateType === 1) {
+                        const messageLength = pdata[offset];
                         offset++;
 
-                        if (character !== null) {
+                        if (player !== null) {
                             let message =
                                 ChatMessage.descramble(
                                     pdata,
@@ -20959,120 +20972,128 @@ class mudclient extends GameConnection {
                             let ignored = false;
 
                             for (let i = 0; i < this.ignoreListCount; i++) {
-                                if (this.ignoreList[i] === character.hash) {
+                                if (this.ignoreList[i] === player.hash) {
                                     ignored = true;
                                     break;
                                 }
                             }
 
                             if (!ignored) {
-                                character.messageTimeout = 150;
-                                character.message = message;
-                                this.showMessage(character.name + ': ' + character.message, 2);
+                                player.messageTimeout = 150;
+                                player.message = message;
+                                this.showMessage(
+                                    `${player.name}: ${player.message}`,
+                                    2
+                                );
                             }
                         }
 
                         offset += messageLength;
-                    } else if (updateType === 2) { // combat damage and hp
-                        let damage = Utility.getUnsignedByte(pdata[offset]);
+                    // combat damage and hp
+                    } else if (updateType === 2) {
+                        const damage = Utility.getUnsignedByte(pdata[offset]);
                         offset++;
 
-                        let current = Utility.getUnsignedByte(pdata[offset]);
+                        const current = Utility.getUnsignedByte(pdata[offset]);
                         offset++;
 
-                        let max = Utility.getUnsignedByte(pdata[offset]);
+                        const max = Utility.getUnsignedByte(pdata[offset]);
                         offset++;
 
-                        if (character !== null) {
-                            character.damageTaken = damage;
-                            character.healthCurrent = current;
-                            character.healthMax = max;
-                            character.combatTimer = 200;
+                        if (player !== null) {
+                            player.damageTaken = damage;
+                            player.healthCurrent = current;
+                            player.healthMax = max;
+                            player.combatTimer = 200;
 
-                            if (character === this.localPlayer) {
+                            if (player === this.localPlayer) {
                                 this.playerStatCurrent[3] = current;
                                 this.playerStatBase[3] = max;
                                 this.showDialogWelcome = false;
                                 this.showDialogServerMessage = false;
                             }
                         }
-                    } else if (updateType === 3) { // new incoming projectile from npc?
-                        let projectileSprite = Utility.getUnsignedShort(pdata, offset);
+                    // new incoming projectile to npc
+                    } else if (updateType === 3) {
+                        const projectileSprite = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        let npcIdx = Utility.getUnsignedShort(pdata, offset);
+                        const npcIndex = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        if (character !== null) {
-                            character.incomingProjectileSprite = projectileSprite;
-                            character.attackingNpcServerIndex = npcIdx;
-                            character.attackingPlayerServerIndex = -1;
-                            character.projectileRange = this.projectileMaxRange;
+                        if (player !== null) {
+                            player.incomingProjectileSprite = projectileSprite;
+                            player.attackingNpcServerIndex = npcIndex;
+                            player.attackingPlayerServerIndex = -1;
+                            player.projectileRange = this.projectileMaxRange;
                         }
-                    } else if (updateType === 4) { // new incoming projectile from player
-                        let projectileSprite = Utility.getUnsignedShort(pdata, offset);
+                    // new incoming projectile from player
+                    } else if (updateType === 4) {
+                        const projectileSprite = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        let playerIdx = Utility.getUnsignedShort(pdata, offset);
+                        const opponentIndex = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        if (character !== null) {
-                            character.incomingProjectileSprite = projectileSprite;
-                            character.attackingPlayerServerIndex = playerIdx;
-                            character.attackingNpcServerIndex = -1;
-                            character.projectileRange = this.projectileMaxRange;
+                        if (player !== null) {
+                            player.incomingProjectileSprite = projectileSprite;
+                            player.attackingPlayerServerIndex = opponentIndex;
+                            player.attackingNpcServerIndex = -1;
+                            player.projectileRange = this.projectileMaxRange;
                         }
+                    // player appearance update
                     } else if (updateType === 5) {
-                        if (character !== null) {
-                            character.serverId = Utility.getUnsignedShort(pdata, offset);
+                        if (player !== null) {
+                            player.serverId = Utility.getUnsignedShort(pdata, offset);
                             offset += 2;
-                            character.hash = Utility.getUnsignedLong(pdata, offset);
+                            player.hash = Utility.getUnsignedLong(pdata, offset);
                             offset += 8;
-                            character.name = Utility.hashToUsername(character.hash);
+                            player.name = Utility.hashToUsername(player.hash);
 
-                            let equippedCount = Utility.getUnsignedByte(pdata[offset]);
+                            const equippedCount = Utility.getUnsignedByte(pdata[offset]);
                             offset++;
 
-                            for (let i = 0; i < equippedCount; i++) {
-                                character.equippedItem[i] = Utility.getUnsignedByte(pdata[offset]);
+                            for (let j = 0; j < equippedCount; j++) {
+                                player.equippedItem[j] = Utility.getUnsignedByte(pdata[offset]);
                                 offset++;
                             }
 
-                            for (let i = equippedCount; i < 12; i++) {
-                                character.equippedItem[i] = 0;
+                            for (let j = equippedCount; j < 12; j++) {
+                                player.equippedItem[j] = 0;
                             }
 
-                            character.colourHair = pdata[offset++] & 0xff;
-                            character.colourTop = pdata[offset++] & 0xff;
-                            character.colourBottom = pdata[offset++] & 0xff;
-                            character.colourSkin = pdata[offset++] & 0xff;
-                            character.level = pdata[offset++] & 0xff;
-                            character.skullVisible = pdata[offset++] & 0xff;
+                            player.colourHair = pdata[offset++] & 0xff;
+                            player.colourTop = pdata[offset++] & 0xff;
+                            player.colourBottom = pdata[offset++] & 0xff;
+                            player.colourSkin = pdata[offset++] & 0xff;
+                            player.level = pdata[offset++] & 0xff;
+                            player.skullVisible = pdata[offset++] & 0xff;
                         } else {
                             offset += 14;
 
                             const unused = Utility.getUnsignedByte(pdata[offset]);
                             offset += unused + 1;
                         }
+                    // public chat
                     } else if (updateType === 6) {
-                        let mLen = pdata[offset];
+                        const messageLength = pdata[offset];
                         offset++;
 
-                        if (character !== null) {
-                            const message = ChatMessage.descramble(pdata, offset, mLen);
+                        if (player !== null) {
+                            const message = ChatMessage.descramble(pdata, offset, messageLength);
 
-                            character.messageTimeout = 150;
-                            character.message = message;
+                            player.messageTimeout = 150;
+                            player.message = message;
 
-                            if (character === this.localPlayer) {
+                            if (player === this.localPlayer) {
                                 this.showMessage(
-                                    `${character.name}: ${character.message}`,
+                                    `${player.name}: ${player.message}`,
                                     5
                                 );
                             }
                         }
 
-                        offset += mLen;
+                        offset += messageLength;
                     }
                 }
 
@@ -21141,7 +21162,8 @@ class mudclient extends GameConnection {
 
                         if (id !== 65535) {
                             this.world._setObjectAdjacency_from4(lX, lY, direction, id);
-                            let model = this.createModel(lX, lY, direction, id, this.wallObjectCount);
+
+                            const model = this.createModel(lX, lY, direction, id, this.wallObjectCount);
                             this.wallObjectModel[this.wallObjectCount] = model;
                             this.wallObjectX[this.wallObjectCount] = lX;
                             this.wallObjectY[this.wallObjectCount] = lY;
@@ -22026,7 +22048,7 @@ class mudclient extends GameConnection {
             if (gameModel.faceTag[pid] <= 65535 || gameModel.faceTag[pid] >= 200000 && gameModel.faceTag[pid] <= 300000)  {
                 if (gameModel === this.scene.view) {
                     let idx = gameModel.faceTag[pid] % 10000;
-                    let type = (gameModel.faceTag[pid] / 10000) | 0;
+                    const type = (gameModel.faceTag[pid] / 10000) | 0;
 
                     if (type === 1) {
                         let menuText = '';

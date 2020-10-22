@@ -833,12 +833,20 @@ class mudclient extends GameConnection {
         }
 
         if (this.combatTimeout > 450) {
-            this.showMessage('@cya@You can\'t logout during combat!', 3);
+            this.showMessage(
+                "@cya@You can't logout during combat!",
+                3
+            );
+
             return;
         }
 
         if (this.combatTimeout > 0) {
-            this.showMessage('@cya@You can\'t logout for 10 seconds after combat', 3);
+            this.showMessage(
+                "@cya@You can't logout for 10 seconds after combat",
+                3
+            );
+
             return;
         } else {
             this.packetStream.newPacket(clientOpcodes.LOGOUT);
@@ -5171,31 +5179,32 @@ class mudclient extends GameConnection {
             }
 
             if (opcode === serverOpcodes.REGION_PLAYER_UPDATE) {
-                let k1 = Utility.getUnsignedShort(pdata, 1);
+                const length = Utility.getUnsignedShort(pdata, 1);
                 let offset = 3;
 
-                for (let k15 = 0; k15 < k1; k15++) {
-                    let playerId = Utility.getUnsignedShort(pdata, offset);
+                for (let i = 0; i < length; i++) {
+                    const playerIndex = Utility.getUnsignedShort(pdata, offset);
                     offset += 2;
 
-                    let character = this.playerServer[playerId];
-                    let updateType = pdata[offset];
+                    const player = this.playerServer[playerIndex];
+                    const updateType = pdata[offset];
                     offset++;
 
                     // speech bubble with an item in it
                     if (updateType === 0) {
-                        let id = Utility.getUnsignedShort(pdata, offset);
+                        const itemID = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        if (character !== null) {
-                            character.bubbleTimeout = 150;
-                            character.bubbleItem = id;
+                        if (player !== null) {
+                            player.bubbleTimeout = 150;
+                            player.bubbleItem = itemID;
                         }
-                    } else if (updateType === 1) { // chat
-                        let messageLength = pdata[offset];
+                    // chat
+                    } else if (updateType === 1) {
+                        const messageLength = pdata[offset];
                         offset++;
 
-                        if (character !== null) {
+                        if (player !== null) {
                             let message =
                                 ChatMessage.descramble(
                                     pdata,
@@ -5210,120 +5219,128 @@ class mudclient extends GameConnection {
                             let ignored = false;
 
                             for (let i = 0; i < this.ignoreListCount; i++) {
-                                if (this.ignoreList[i] === character.hash) {
+                                if (this.ignoreList[i] === player.hash) {
                                     ignored = true;
                                     break;
                                 }
                             }
 
                             if (!ignored) {
-                                character.messageTimeout = 150;
-                                character.message = message;
-                                this.showMessage(character.name + ': ' + character.message, 2);
+                                player.messageTimeout = 150;
+                                player.message = message;
+                                this.showMessage(
+                                    `${player.name}: ${player.message}`,
+                                    2
+                                );
                             }
                         }
 
                         offset += messageLength;
-                    } else if (updateType === 2) { // combat damage and hp
-                        let damage = Utility.getUnsignedByte(pdata[offset]);
+                    // combat damage and hp
+                    } else if (updateType === 2) {
+                        const damage = Utility.getUnsignedByte(pdata[offset]);
                         offset++;
 
-                        let current = Utility.getUnsignedByte(pdata[offset]);
+                        const current = Utility.getUnsignedByte(pdata[offset]);
                         offset++;
 
-                        let max = Utility.getUnsignedByte(pdata[offset]);
+                        const max = Utility.getUnsignedByte(pdata[offset]);
                         offset++;
 
-                        if (character !== null) {
-                            character.damageTaken = damage;
-                            character.healthCurrent = current;
-                            character.healthMax = max;
-                            character.combatTimer = 200;
+                        if (player !== null) {
+                            player.damageTaken = damage;
+                            player.healthCurrent = current;
+                            player.healthMax = max;
+                            player.combatTimer = 200;
 
-                            if (character === this.localPlayer) {
+                            if (player === this.localPlayer) {
                                 this.playerStatCurrent[3] = current;
                                 this.playerStatBase[3] = max;
                                 this.showDialogWelcome = false;
                                 this.showDialogServerMessage = false;
                             }
                         }
-                    } else if (updateType === 3) { // new incoming projectile from npc?
-                        let projectileSprite = Utility.getUnsignedShort(pdata, offset);
+                    // new incoming projectile to npc
+                    } else if (updateType === 3) {
+                        const projectileSprite = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        let npcIdx = Utility.getUnsignedShort(pdata, offset);
+                        const npcIndex = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        if (character !== null) {
-                            character.incomingProjectileSprite = projectileSprite;
-                            character.attackingNpcServerIndex = npcIdx;
-                            character.attackingPlayerServerIndex = -1;
-                            character.projectileRange = this.projectileMaxRange;
+                        if (player !== null) {
+                            player.incomingProjectileSprite = projectileSprite;
+                            player.attackingNpcServerIndex = npcIndex;
+                            player.attackingPlayerServerIndex = -1;
+                            player.projectileRange = this.projectileMaxRange;
                         }
-                    } else if (updateType === 4) { // new incoming projectile from player
-                        let projectileSprite = Utility.getUnsignedShort(pdata, offset);
+                    // new incoming projectile from player
+                    } else if (updateType === 4) {
+                        const projectileSprite = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        let playerIdx = Utility.getUnsignedShort(pdata, offset);
+                        const opponentIndex = Utility.getUnsignedShort(pdata, offset);
                         offset += 2;
 
-                        if (character !== null) {
-                            character.incomingProjectileSprite = projectileSprite;
-                            character.attackingPlayerServerIndex = playerIdx;
-                            character.attackingNpcServerIndex = -1;
-                            character.projectileRange = this.projectileMaxRange;
+                        if (player !== null) {
+                            player.incomingProjectileSprite = projectileSprite;
+                            player.attackingPlayerServerIndex = opponentIndex;
+                            player.attackingNpcServerIndex = -1;
+                            player.projectileRange = this.projectileMaxRange;
                         }
+                    // player appearance update
                     } else if (updateType === 5) {
-                        if (character !== null) {
-                            character.serverId = Utility.getUnsignedShort(pdata, offset);
+                        if (player !== null) {
+                            player.serverId = Utility.getUnsignedShort(pdata, offset);
                             offset += 2;
-                            character.hash = Utility.getUnsignedLong(pdata, offset);
+                            player.hash = Utility.getUnsignedLong(pdata, offset);
                             offset += 8;
-                            character.name = Utility.hashToUsername(character.hash);
+                            player.name = Utility.hashToUsername(player.hash);
 
-                            let equippedCount = Utility.getUnsignedByte(pdata[offset]);
+                            const equippedCount = Utility.getUnsignedByte(pdata[offset]);
                             offset++;
 
-                            for (let i = 0; i < equippedCount; i++) {
-                                character.equippedItem[i] = Utility.getUnsignedByte(pdata[offset]);
+                            for (let j = 0; j < equippedCount; j++) {
+                                player.equippedItem[j] = Utility.getUnsignedByte(pdata[offset]);
                                 offset++;
                             }
 
-                            for (let i = equippedCount; i < 12; i++) {
-                                character.equippedItem[i] = 0;
+                            for (let j = equippedCount; j < 12; j++) {
+                                player.equippedItem[j] = 0;
                             }
 
-                            character.colourHair = pdata[offset++] & 0xff;
-                            character.colourTop = pdata[offset++] & 0xff;
-                            character.colourBottom = pdata[offset++] & 0xff;
-                            character.colourSkin = pdata[offset++] & 0xff;
-                            character.level = pdata[offset++] & 0xff;
-                            character.skullVisible = pdata[offset++] & 0xff;
+                            player.colourHair = pdata[offset++] & 0xff;
+                            player.colourTop = pdata[offset++] & 0xff;
+                            player.colourBottom = pdata[offset++] & 0xff;
+                            player.colourSkin = pdata[offset++] & 0xff;
+                            player.level = pdata[offset++] & 0xff;
+                            player.skullVisible = pdata[offset++] & 0xff;
                         } else {
                             offset += 14;
 
                             const unused = Utility.getUnsignedByte(pdata[offset]);
                             offset += unused + 1;
                         }
+                    // public chat
                     } else if (updateType === 6) {
-                        let mLen = pdata[offset];
+                        const messageLength = pdata[offset];
                         offset++;
 
-                        if (character !== null) {
-                            const message = ChatMessage.descramble(pdata, offset, mLen);
+                        if (player !== null) {
+                            const message = ChatMessage.descramble(pdata, offset, messageLength);
 
-                            character.messageTimeout = 150;
-                            character.message = message;
+                            player.messageTimeout = 150;
+                            player.message = message;
 
-                            if (character === this.localPlayer) {
+                            if (player === this.localPlayer) {
                                 this.showMessage(
-                                    `${character.name}: ${character.message}`,
+                                    `${player.name}: ${player.message}`,
                                     5
                                 );
                             }
                         }
 
-                        offset += mLen;
+                        offset += messageLength;
                     }
                 }
 
@@ -5392,7 +5409,8 @@ class mudclient extends GameConnection {
 
                         if (id !== 65535) {
                             this.world._setObjectAdjacency_from4(lX, lY, direction, id);
-                            let model = this.createModel(lX, lY, direction, id, this.wallObjectCount);
+
+                            const model = this.createModel(lX, lY, direction, id, this.wallObjectCount);
                             this.wallObjectModel[this.wallObjectCount] = model;
                             this.wallObjectX[this.wallObjectCount] = lX;
                             this.wallObjectY[this.wallObjectCount] = lY;
@@ -6277,7 +6295,7 @@ class mudclient extends GameConnection {
             if (gameModel.faceTag[pid] <= 65535 || gameModel.faceTag[pid] >= 200000 && gameModel.faceTag[pid] <= 300000)  {
                 if (gameModel === this.scene.view) {
                     let idx = gameModel.faceTag[pid] % 10000;
-                    let type = (gameModel.faceTag[pid] / 10000) | 0;
+                    const type = (gameModel.faceTag[pid] / 10000) | 0;
 
                     if (type === 1) {
                         let menuText = '';

@@ -5,7 +5,8 @@ a port of the
 from java to javascript.
 
 this client is designed to work with
-[rsc-server](https://github.com/2003scape/rsc-server).
+[rsc-server](https://github.com/2003scape/rsc-server) and
+[RSCGo](https://github.com/spkaeros/RSCGo).
 
 ![](./screenshot.png?raw=true)
 

@@ -20075,7 +20075,7 @@ class mudclient extends GameConnection {
     }
 
     createTopMouseMenu() {
-        if (this.selectedSpell >= 0 || this.secledtItemInventoryIndex >= 0) {
+        if (this.selectedSpell >= 0 || this.selectedItemInventoryIndex >= 0) {
             this.menuItemText1[this.menuItemsCount] = 'Cancel';
             this.menuItemText2[this.menuItemsCount] = '';
             this.menuType[this.menuItemsCount] = 4000;
@@ -20120,9 +20120,9 @@ class mudclient extends GameConnection {
 
             let s = null;
 
-            if ((this.secledtItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount === 1) {
+            if ((this.selectedItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount === 1) {
                 s = 'Choose a target';
-            } else if ((this.secledtItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount > 1) {
+            } else if ((this.selectedItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount > 1) {
                 s = '@whi@' + this.menuItemText1[this.menuIndices[0]] + ' ' + this.menuItemText2[this.menuIndices[0]];
             } else if (k !== -1) {
                 s = this.menuItemText2[this.menuIndices[k]] + ': @whi@' + this.menuItemText1[this.menuIndices[0]];
@@ -32313,8 +32313,8 @@ function drawUiTabInventory(noMenus) {
         const itemIndex = ((mouseX / 49) | 0) + ((mouseY / 34) | 0) * 5;
 
         if (itemIndex < this.inventoryItemsCount) {
-            const itemId = this.inventoryItemId[itemIndex];
-            const itemName = `@lre@${GameData.itemName[itemId]}`;
+            const itemID = this.inventoryItemId[itemIndex];
+            const itemName = `@lre@${GameData.itemName[itemID]}`;
 
             if (this.selectedSpell >= 0) {
                 if (GameData.spellType[this.selectedSpell] === 3) {
@@ -32351,8 +32351,8 @@ function drawUiTabInventory(noMenus) {
                     this.menuType[this.menuItemsCount] = 620;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
                     this.menuItemsCount++;
-                } else if (GameData.itemWearable[itemId] !== 0) {
-                    if ((GameData.itemWearable[itemId] & 24) !== 0) {
+                } else if (GameData.itemWearable[itemID] !== 0) {
+                    if ((GameData.itemWearable[itemID] & 24) !== 0) {
                         this.menuItemText1[this.menuItemsCount] = 'Wield';
                     } else {
                         this.menuItemText1[this.menuItemsCount] = 'Wear';
@@ -32364,9 +32364,9 @@ function drawUiTabInventory(noMenus) {
                     this.menuItemsCount++;
                 }
 
-                if (GameData.itemCommand[itemId] !== '') {
+                if (GameData.itemCommand[itemID] !== '') {
                     this.menuItemText1[this.menuItemsCount] =
-                        GameData.itemCommand[itemId];
+                        GameData.itemCommand[itemID];
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 640;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
@@ -32388,7 +32388,7 @@ function drawUiTabInventory(noMenus) {
                 this.menuItemText1[this.menuItemsCount] = 'Examine';
                 this.menuItemText2[this.menuItemsCount] = itemName;
                 this.menuType[this.menuItemsCount] = 3600;
-                this.menuIndex[this.menuItemsCount] = itemId;
+                this.menuIndex[this.menuItemsCount] = itemID;
                 this.menuItemsCount++;
             }
         }

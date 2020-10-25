@@ -80,8 +80,8 @@ function drawUiTabInventory(noMenus) {
         const itemIndex = ((mouseX / 49) | 0) + ((mouseY / 34) | 0) * 5;
 
         if (itemIndex < this.inventoryItemsCount) {
-            const itemId = this.inventoryItemId[itemIndex];
-            const itemName = `@lre@${GameData.itemName[itemId]}`;
+            const itemID = this.inventoryItemId[itemIndex];
+            const itemName = `@lre@${GameData.itemName[itemID]}`;
 
             if (this.selectedSpell >= 0) {
                 if (GameData.spellType[this.selectedSpell] === 3) {
@@ -118,8 +118,8 @@ function drawUiTabInventory(noMenus) {
                     this.menuType[this.menuItemsCount] = 620;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
                     this.menuItemsCount++;
-                } else if (GameData.itemWearable[itemId] !== 0) {
-                    if ((GameData.itemWearable[itemId] & 24) !== 0) {
+                } else if (GameData.itemWearable[itemID] !== 0) {
+                    if ((GameData.itemWearable[itemID] & 24) !== 0) {
                         this.menuItemText1[this.menuItemsCount] = 'Wield';
                     } else {
                         this.menuItemText1[this.menuItemsCount] = 'Wear';
@@ -131,9 +131,9 @@ function drawUiTabInventory(noMenus) {
                     this.menuItemsCount++;
                 }
 
-                if (GameData.itemCommand[itemId] !== '') {
+                if (GameData.itemCommand[itemID] !== '') {
                     this.menuItemText1[this.menuItemsCount] =
-                        GameData.itemCommand[itemId];
+                        GameData.itemCommand[itemID];
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 640;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
@@ -155,7 +155,7 @@ function drawUiTabInventory(noMenus) {
                 this.menuItemText1[this.menuItemsCount] = 'Examine';
                 this.menuItemText2[this.menuItemsCount] = itemName;
                 this.menuType[this.menuItemsCount] = 3600;
-                this.menuIndex[this.menuItemsCount] = itemId;
+                this.menuIndex[this.menuItemsCount] = itemID;
                 this.menuItemsCount++;
             }
         }

@@ -4322,7 +4322,7 @@ class mudclient extends GameConnection {
     }
 
     createTopMouseMenu() {
-        if (this.selectedSpell >= 0 || this.secledtItemInventoryIndex >= 0) {
+        if (this.selectedSpell >= 0 || this.selectedItemInventoryIndex >= 0) {
             this.menuItemText1[this.menuItemsCount] = 'Cancel';
             this.menuItemText2[this.menuItemsCount] = '';
             this.menuType[this.menuItemsCount] = 4000;
@@ -4367,9 +4367,9 @@ class mudclient extends GameConnection {
 
             let s = null;
 
-            if ((this.secledtItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount === 1) {
+            if ((this.selectedItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount === 1) {
                 s = 'Choose a target';
-            } else if ((this.secledtItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount > 1) {
+            } else if ((this.selectedItemInventoryIndex >= 0 || this.selectedSpell >= 0) && this.menuItemsCount > 1) {
                 s = '@whi@' + this.menuItemText1[this.menuIndices[0]] + ' ' + this.menuItemText2[this.menuIndices[0]];
             } else if (k !== -1) {
                 s = this.menuItemText2[this.menuIndices[k]] + ': @whi@' + this.menuItemText1[this.menuIndices[0]];

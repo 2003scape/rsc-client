@@ -1,6 +1,6 @@
 {
   "name": "@2003scape/rsc-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "runescape classic web client",
   "main": "./src/mudclient.js",
   "scripts": {

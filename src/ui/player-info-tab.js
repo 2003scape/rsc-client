@@ -219,7 +219,9 @@ function drawUiTabPlayerInfo(noMenus) {
             1,
             WHITE
         );
+
         y += 12;
+
         this.surface.drawString(
             `Fatigue: @yel@${((this.statFatigue * 100) / 750) | 0}%`,
             UI_X + 5,
@@ -227,9 +229,11 @@ function drawUiTabPlayerInfo(noMenus) {
             1,
             WHITE
         );
+
         y += 8;
 
         this.surface.drawString('Equipment Status', UI_X + 5, y, 3, YELLOW);
+
         y += 12;
 
         for (let i = 0; i < 3; i++) {
@@ -257,6 +261,7 @@ function drawUiTabPlayerInfo(noMenus) {
         }
 
         y += 6;
+
         this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, BLACK);
 
         if (selectedSkill !== -1) {
@@ -267,6 +272,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 1,
                 YELLOW
             );
+
             y += 12;
 
             let nextLevelAt = EXPERIENCE_ARRAY[0];
@@ -276,7 +282,6 @@ function drawUiTabPlayerInfo(noMenus) {
                     this.playerExperience[selectedSkill] >= EXPERIENCE_ARRAY[i]
                 ) {
                     nextLevelAt = EXPERIENCE_ARRAY[i + 1];
-                    break;
                 }
             }
 
@@ -312,7 +317,9 @@ function drawUiTabPlayerInfo(noMenus) {
                 1,
                 WHITE
             );
+
             y += 12;
+
             this.surface.drawString(
                 `Combat level: ${this.localPlayer.level}`,
                 UI_X + 5,
@@ -320,10 +327,11 @@ function drawUiTabPlayerInfo(noMenus) {
                 1,
                 WHITE
             );
+
             y += 12;
         }
-        // the handler for the Quests tab
     } else if (this.uiTabPlayerInfoSubTab === 1) {
+        // the handler for the Quests tab
         this.panelQuestList.clearList(this.controlListQuest);
         this.panelQuestList.addListEntry(
             this.controlListQuest,

@@ -983,7 +983,7 @@ class Surface {
             this.mudclientref.drawPlayer(x, y, w, h, id - 5000, tx, ty);
             return;
         } else {
-            super._spriteClipping_from5(x, y, w, h, id);
+            this._spriteClipping_from5(x, y, w, h, id);
             return;
         }
     }

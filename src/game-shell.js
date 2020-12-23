@@ -40,7 +40,8 @@ class GameShell {
             totalExperience: false,
             wordFilter: true,
             accountManagement: true,
-            messageScrollBack: false
+            messageScrollBack: false,
+            retroFpsCounter: false
         };
 
         this.middleButtonDown = false;
@@ -415,6 +416,9 @@ class GameShell {
             this.interlaceTimer--;
             i1 &= 0xff;
             this.draw();
+
+            // calculate fps
+            this.fps = (1000 * j) / (this.targetFps * 256);
 
             this.mouseScrollDelta = 0;
         }

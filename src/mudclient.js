@@ -15,7 +15,7 @@ const Utility = require('./utility');
 const WordFilter = require('./word-filter');
 const World = require('./world');
 const applyUIComponents = require('./ui');
-const keycodes = require("./lib/keycodes");
+const keycodes = require('./lib/keycodes');
 const clientOpcodes = require('./opcodes/client');
 const serverOpcodes = require('./opcodes/server');
 const version = require('./version');
@@ -3624,6 +3624,20 @@ class mudclient extends GameConnection {
             this.surface._drawSprite_from3(this.mouseClickXX - 8, this.mouseClickXY - 8, this.spriteMedia + 18 + (((24 + this.mouseClickXStep) / 6) | 0));
         }
 
+        // retro fps counter
+        if (this.options.retroFpsCounter) {
+            // how much the wilderness skull needs to move for the fps counter
+            const offset = this.isInWild ? 70 : 0;
+
+            this.surface.drawString(
+                'Fps: ' + (this.fps | 0),
+                this.gameWidth - 62 - offset,
+                this.gameHeight - 10,
+                1,
+                0xffff00
+            );
+        }
+
         if (this.systemUpdate !== 0) {
             let seconds = ((this.systemUpdate / 50) | 0);
             const minutes = (seconds / 60) | 0;
@@ -3644,12 +3658,15 @@ class mudclient extends GameConnection {
                 j6 = -50;
             }
 
-            if (j6 > 0) {
+            this.isInWild = j6 > 0;
+
+            if (this.isInWild) {
                 let wildlvl = 1 + ((j6 / 6) | 0);
 
-                this.surface._drawSprite_from3(453, this.gameHeight - 56, this.spriteMedia + 13);
-                this.surface.drawStringCenter('Wilderness', 465, this.gameHeight - 20, 1, 0xffff00);
-                this.surface.drawStringCenter('Level: ' + wildlvl, 465, this.gameHeight - 7, 1, 0xffff00);
+                // wilderness skull placement made independent of gameWidth
+                this.surface._drawSprite_from3(this.gameWidth - 59, this.gameHeight - 56, this.spriteMedia + 13);
+                this.surface.drawStringCenter('Wilderness', this.gameWidth - 47, this.gameHeight - 20, 1, 0xffff00);
+                this.surface.drawStringCenter('Level: ' + wildlvl, this.gameWidth - 47, this.gameHeight - 7, 1, 0xffff00);
 
                 if (this.showUiWildWarn === 0) {
                     this.showUiWildWarn = 2;

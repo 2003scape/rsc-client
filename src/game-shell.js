@@ -39,7 +39,9 @@ class GameShell {
             remainingExperience: false,
             totalExperience: false,
             wordFilter: true,
-            accountManagement: true
+            accountManagement: true,
+            messageScrollBack: false,
+            retroFpsCounter: false
         };
 
         this.middleButtonDown = false;
@@ -79,6 +81,7 @@ class GameShell {
         this.keyHome = false;
         this.keyPgUp = false;
         this.keyPgDown = false;
+        this.ctrl = false;
         this.threadSleep = 1;
         this.interlace = false;
         this.inputTextCurrent = '';
@@ -137,7 +140,12 @@ class GameShell {
         const code = e.keyCode;
         let charCode = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
-        if ([8, 10, 13, 9].indexOf(code) > -1) {
+        if (
+            [8, 10, 13, 9].includes(code) ||
+            (this.options.messageScrollBack &&
+                [keycodes.UP_ARROW, keycodes.DOWN_ARROW].includes(code) &&
+                this.ctrl)
+        ) {
             charCode = code;
         }
 
@@ -161,6 +169,8 @@ class GameShell {
             this.keyPgUp = true;
         } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = true;
+        } else if (code === keycodes.CTRL) {
+            this.ctrl = true;
         }
 
         let foundText = false;
@@ -225,6 +235,8 @@ class GameShell {
             this.keyPgUp = false;
         } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = false;
+        } else if (code === keycodes.CTRL) {
+            this.ctrl = false;
         }
 
         return false;
@@ -404,6 +416,9 @@ class GameShell {
             this.interlaceTimer--;
             i1 &= 0xff;
             this.draw();
+
+            // calculate fps
+            this.fps = (1000 * j) / (this.targetFps * 256);
 
             this.mouseScrollDelta = 0;
         }

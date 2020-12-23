@@ -15,6 +15,7 @@ const Utility = require('./utility');
 const WordFilter = require('./word-filter');
 const World = require('./world');
 const applyUIComponents = require('./ui');
+const keycodes = require('./lib/keycodes');
 const clientOpcodes = require('./opcodes/client');
 const serverOpcodes = require('./opcodes/server');
 const version = require('./version');
@@ -396,6 +397,9 @@ class mudclient extends GameConnection {
         this.objectModel = [];
         this.objectModel.length = OBJECTS_MAX;
         this.objectModel.fill(null);
+        // message scrollback
+        this.playerMsgHistory = [];
+        this.playerMsgPtr = 0;
 
         this.recoveryQuestions = [
             'Where were you born?',
@@ -816,12 +820,63 @@ class mudclient extends GameConnection {
                 !this.isSleeping &&
                 this.panelMessageTabs !== null
             ) {
+                // for scrolling through messages the player previously sent
+                if (this.options.messageScrollBack) {
+                    if (
+                        this.ctrl &&
+                        [keycodes.UP_ARROW, keycodes.DOWN_ARROW].includes(keyCode)
+                    ) {
+                        if (keyCode === keycodes.UP_ARROW) {
+                            if (this.playerMsgPtr >= this.playerMsgHistory.length) {
+                                return;
+                            }
+
+                            this.playerMsgPtr += 1;
+                        } else if (keyCode === keycodes.DOWN_ARROW) {
+                            if (this.playerMsgPtr <= 1) {
+                                this.panelMessageTabs.controlText[1] = "";
+                                this.playerMsgPtr = 0;
+                                return;
+                            }
+
+                            this.playerMsgPtr -= 1;
+                        }
+
+                        const newPlayerMsg = this.playerMsgHistory[
+                            this.playerMsgHistory.length - this.playerMsgPtr
+                        ];
+
+                        if (newPlayerMsg) {
+                            this.panelMessageTabs.controlText[1] = newPlayerMsg;
+                        }
+
+                        return;
+                    }
+
+                    if (keyCode === keycodes.ENTER) {
+                        const chatMsg = this.panelMessageTabs.controlText[1];
+
+                        if (!!chatMsg) {
+                            const lastChatMessage = this.playerMsgHistory[
+                                this.playerMsgHistory.length - 1
+                            ];
+
+                            if (chatMsg !== lastChatMessage) {
+                                this.playerMsgHistory.push(chatMsg);
+                            }
+
+                            this.playerMsgPtr = 0;
+                        }
+                    }
+                }
+
                 this.panelMessageTabs.keyPress(keyCode);
             }
 
             if (
                 this.showChangePasswordStep === 3 ||
-                this.showChangePasswordStep === 4) {
+                this.showChangePasswordStep === 4
+            ) {
                 this.showChangePasswordStep = 0;
             }
         }
@@ -1563,9 +1618,9 @@ class mudclient extends GameConnection {
     }
 
     handleCameraZoom() {
-        if (this.keyUp) {
+        if (this.keyUp && !this.ctrl) {
             this.cameraZoom -= 16;
-        } else if (this.keyDown) {
+        } else if (this.keyDown && !this.ctrl) {
             this.cameraZoom += 16;
         } else if (this.keyHome) {
             this.cameraZoom = ZOOM_OUTDOORS;
@@ -3569,6 +3624,20 @@ class mudclient extends GameConnection {
             this.surface._drawSprite_from3(this.mouseClickXX - 8, this.mouseClickXY - 8, this.spriteMedia + 18 + (((24 + this.mouseClickXStep) / 6) | 0));
         }
 
+        // retro fps counter
+        if (this.options.retroFpsCounter) {
+            // how much the wilderness skull needs to move for the fps counter
+            const offset = this.isInWild ? 70 : 0;
+
+            this.surface.drawString(
+                'Fps: ' + (this.fps | 0),
+                this.gameWidth - 62 - offset,
+                this.gameHeight - 10,
+                1,
+                0xffff00
+            );
+        }
+
         if (this.systemUpdate !== 0) {
             let seconds = ((this.systemUpdate / 50) | 0);
             const minutes = (seconds / 60) | 0;
@@ -3589,12 +3658,15 @@ class mudclient extends GameConnection {
                 j6 = -50;
             }
 
-            if (j6 > 0) {
+            this.isInWild = j6 > 0;
+
+            if (this.isInWild) {
                 let wildlvl = 1 + ((j6 / 6) | 0);
 
-                this.surface._drawSprite_from3(453, this.gameHeight - 56, this.spriteMedia + 13);
-                this.surface.drawStringCenter('Wilderness', 465, this.gameHeight - 20, 1, 0xffff00);
-                this.surface.drawStringCenter('Level: ' + wildlvl, 465, this.gameHeight - 7, 1, 0xffff00);
+                // wilderness skull placement made independent of gameWidth
+                this.surface._drawSprite_from3(this.gameWidth - 59, this.gameHeight - 56, this.spriteMedia + 13);
+                this.surface.drawStringCenter('Wilderness', this.gameWidth - 47, this.gameHeight - 20, 1, 0xffff00);
+                this.surface.drawStringCenter('Level: ' + wildlvl, this.gameWidth - 47, this.gameHeight - 7, 1, 0xffff00);
 
                 if (this.showUiWildWarn === 0) {
                     this.showUiWildWarn = 2;

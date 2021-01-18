@@ -8,12 +8,16 @@ class Socket {
 
         // amount of bytes are left to read since last read call (in total)
         this.bytesAvailable = 0;
+
         // the message buffers that arrive from the websocket
         this.buffers = [];
+
         // the current buffer we're reading
         this.currentBuffer = null;
+
         // amount of bytes we read in current buffer
         this.offset = 0;
+
         // amount of bytes left in current buffer
         this.bytesLeft = 0;
     }
@@ -24,6 +28,7 @@ class Socket {
                 `ws://${this.host}:${this.port}`,
                 'binary'
             );
+
             this.client.binaryType = 'arraybuffer';
 
             const onError = (err) => {
@@ -200,4 +205,3 @@ class Socket {
 }
 
 module.exports = Socket;
-

@@ -4,7 +4,7 @@ const Scanline = require('./scanline');
 
 const COLOUR_TRANSPARENT = 12345678;
 
-function polygonDepthSort(a, b) {
+/*function polygonDepthSort(a, b) {
     if (a.depth === 0) {
         return 1;
     }
@@ -14,7 +14,7 @@ function polygonDepthSort(a, b) {
     }
 
     return a.depth < b.depth ? 1 : -1;
-}
+}*/
 
 class Scene {
     constructor(surface, maxModelCount, polygonCount, spriteCount) {
@@ -1847,21 +1847,14 @@ class Scene {
 
         this.lastVisiblePolygonsCount = this.visiblePolygonsCount;
 
-        // twice as fast to use native .sort instead of recursive qsort
-
-        /*this.polygonsQSort(
+        this.polygonsQSort(
             this.visiblePolygons,
             0,
             this.visiblePolygonsCount - 1
-        );*/
-
-        const sorted = this.visiblePolygons
-            .slice(0, this.visiblePolygonsCount)
-            .sort(polygonDepthSort);
+        );
 
         // TODO see what this does. it's taking up a lot of time in performance,
         // but commenting out doesn't seem to change the game at all?
-
         /*this.polygonsIntersectSort(
             100,
             this.visiblePolygons,
@@ -1869,10 +1862,6 @@ class Scene {
         );*/
 
         for (let i = 0; i < this.visiblePolygonsCount; i++) {
-            if (i < sorted.length) {
-                this.visiblePolygons[i] = sorted[i];
-            }
-
             let polygon = this.visiblePolygons[i];
             let gameModel_2 = polygon.model;
             let l = polygon.face;

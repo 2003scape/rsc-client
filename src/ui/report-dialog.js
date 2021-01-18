@@ -1,15 +1,12 @@
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
-
-const BLACK = 0;
-const ORANGE = 0xff8000;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const DIALOG_X = 56;
 const DIALOG_Y = 35;
-const WIDTH = 400;
 const HEIGHT = 290;
+const LINE_BREAK = 15;
+const WIDTH = 400;
 
 const INPUT_DIALOG_Y = DIALOG_Y + 95;
 const INPUT_HEIGHT = 100;
@@ -31,6 +28,7 @@ const RULES = [
 
 function drawDialogReportAbuse() {
     this.reportAbuseOffence = 0;
+
     let y = 135;
 
     for (let i = 0; i < 12; i++) {
@@ -54,7 +52,7 @@ function drawDialogReportAbuse() {
         return;
     }
 
-    y += 15;
+    y += LINE_BREAK;
 
     if (this.mouseButtonClick !== 0) {
         this.mouseButtonClick = 0;
@@ -80,8 +78,8 @@ function drawDialogReportAbuse() {
         }
     }
 
-    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, BLACK);
-    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, WHITE);
+    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.black);
+    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.white);
 
     y = 50;
 
@@ -90,27 +88,27 @@ function drawDialogReportAbuse() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     this.surface.drawStringCenter(
         'Using it sends a snapshot of the last 60 secs of activity to us',
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     this.surface.drawStringCenter(
         'If you misuse this form you will be banned',
         256,
         y,
         1,
-        ORANGE
+        colours.orange
     );
 
     y += 25;
@@ -120,30 +118,30 @@ function drawDialogReportAbuse() {
         256,
         y,
         1,
-        YELLOW
+        colours.yellow
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     this.surface.drawStringCenter(
         'explanation of each rule please read the manual on our website.',
         256,
         y,
         1,
-        YELLOW
+        colours.yellow
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     for (let i = 1; i < RULES.length + 1; i += 1) {
-        let textColour = 0;
+        let textColour = colours.black;
 
         // draw the box that highlights the string
         if (this.reportAbuseOffence === i) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, WHITE);
-            textColour = ORANGE;
+            this.surface.drawBoxEdge(66, y - 12, 380, 15, colours.white);
+            textColour = colours.orange;
         } else {
-            textColour = WHITE;
+            textColour = colours.white;
         }
 
         const rule = RULES[i - 1];
@@ -151,9 +149,9 @@ function drawDialogReportAbuse() {
         y += 14;
     }
 
-    y += 15;
+    y += LINE_BREAK;
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > 196 &&
@@ -161,7 +159,7 @@ function drawDialogReportAbuse() {
         this.mouseY > y - 15 &&
         this.mouseY < y + 5
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
     }
 
     this.surface.drawStringCenter(
@@ -194,13 +192,20 @@ function drawDialogReportAbuseInput() {
         return;
     }
 
-    this.surface.drawBox(DIALOG_X, INPUT_DIALOG_Y, WIDTH, INPUT_HEIGHT, BLACK);
+    this.surface.drawBox(
+        DIALOG_X,
+        INPUT_DIALOG_Y,
+        WIDTH,
+        INPUT_HEIGHT,
+        colours.black
+    );
+
     this.surface.drawBoxEdge(
         DIALOG_X,
         INPUT_DIALOG_Y,
         WIDTH,
         INPUT_HEIGHT,
-        WHITE
+        colours.white
     );
 
     let y = INPUT_DIALOG_Y + 30;
@@ -210,7 +215,7 @@ function drawDialogReportAbuseInput() {
         256,
         y,
         1,
-        YELLOW
+        colours.yellow
     );
 
     y += 18;
@@ -220,17 +225,17 @@ function drawDialogReportAbuseInput() {
         256,
         y,
         4,
-        WHITE
+        colours.white
     );
 
     if (this.moderatorLevel > 0) {
         y = INPUT_DIALOG_Y + 77;
 
-        let textColour = WHITE;
+        let textColour = colours.white;
         let toggleText = 'OFF';
 
         if (this.reportAbuseMute) {
-            textColour = ORANGE;
+            textColour = colours.orange;
             toggleText = 'ON';
         }
 
@@ -256,7 +261,7 @@ function drawDialogReportAbuseInput() {
 
     y = 222;
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > 196 &&
@@ -264,7 +269,7 @@ function drawDialogReportAbuseInput() {
         this.mouseY > y - 13 &&
         this.mouseY < y + 2
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
 
         if (this.mouseButtonClick === 1) {
             this.mouseButtonClick = 0;
@@ -293,8 +298,8 @@ function drawDialogReportAbuseInput() {
 }
 
 module.exports = {
-    drawDialogReportAbuse: drawDialogReportAbuse,
-    drawDialogReportAbuseInput: drawDialogReportAbuseInput,
+    drawDialogReportAbuse,
+    drawDialogReportAbuseInput,
     reportAbuseMute: false,
     reportAbuseOffence: 0,
     showDialogReportAbuseStep: 0

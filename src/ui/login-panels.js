@@ -16,6 +16,7 @@ function createLoginPanels() {
         );
 
         this.panelLoginWelcome.addButtonBackground(x - 100, 240 + y, 120, 35);
+
         this.panelLoginWelcome.addTextCentre(
             x - 100,
             240 + y,
@@ -23,6 +24,7 @@ function createLoginPanels() {
             5,
             false
         );
+
         this.controlWelcomeNewUser = this.panelLoginWelcome.addButton(
             x - 100,
             240 + y,
@@ -31,6 +33,7 @@ function createLoginPanels() {
         );
 
         this.panelLoginWelcome.addButtonBackground(x + 100, 240 + y, 120, 35);
+
         this.panelLoginWelcome.addTextCentre(
             x + 100,
             240 + y,
@@ -38,6 +41,7 @@ function createLoginPanels() {
             5,
             false
         );
+
         this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(
             x + 100,
             240 + y,
@@ -52,6 +56,7 @@ function createLoginPanels() {
             4,
             true
         );
+
         this.panelLoginWelcome.addTextCentre(
             x,
             215 + y,
@@ -61,6 +66,7 @@ function createLoginPanels() {
         );
 
         this.panelLoginWelcome.addButtonBackground(x, 250 + y, 200, 35);
+
         this.panelLoginWelcome.addTextCentre(
             x,
             250 + y,
@@ -68,6 +74,7 @@ function createLoginPanels() {
             5,
             false
         );
+
         this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(
             x,
             250 + y,
@@ -141,6 +148,7 @@ function createLoginPanels() {
 
         this.panelLoginNewUser.addButtonBackground(x, y + 17, 150, 34);
         this.panelLoginNewUser.addTextCentre(x, y + 17, 'Ok', 5, false);
+
         this.controlLoginNewOk = this.panelLoginNewUser.addButton(
             x,
             y + 17,
@@ -158,19 +166,21 @@ function createLoginPanels() {
             true
         );
 
-        let relY = y + 25;
+        let offsetY = y + 25;
 
-        this.panelLoginNewUser.addButtonBackground(x, relY + 17, 250, 34);
+        this.panelLoginNewUser.addButtonBackground(x, offsetY + 17, 250, 34);
+
         this.panelLoginNewUser.addTextCentre(
             x,
-            relY + 8,
+            offsetY + 8,
             'Choose a Username',
             4,
             false
         );
+
         this.controlRegisterUser = this.panelLoginNewUser.addTextInput(
             x,
-            relY + 25,
+            offsetY + 25,
             200,
             40,
             4,
@@ -181,19 +191,26 @@ function createLoginPanels() {
 
         this.panelLoginNewUser.setFocus(this.controlRegisterUser);
 
-        relY += 40;
+        offsetY += 40;
 
-        this.panelLoginNewUser.addButtonBackground(x - 115, relY + 17, 220, 34);
+        this.panelLoginNewUser.addButtonBackground(
+            x - 115,
+            offsetY + 17,
+            220,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x - 115,
-            relY + 8,
+            offsetY + 8,
             'Choose a Password',
             4,
             false
         );
+
         this.controlRegisterPassword = this.panelLoginNewUser.addTextInput(
             x - 115,
-            relY + 25,
+            offsetY + 25,
             220,
             40,
             4,
@@ -202,17 +219,24 @@ function createLoginPanels() {
             false
         );
 
-        this.panelLoginNewUser.addButtonBackground(x + 115, relY + 17, 220, 34);
+        this.panelLoginNewUser.addButtonBackground(
+            x + 115,
+            offsetY + 17,
+            220,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x + 115,
-            relY + 8,
+            offsetY + 8,
             'Confirm Password',
             4,
             false
         );
+
         this.controlRegisterConfirmPassword = this.panelLoginNewUser.addTextInput(
             x + 115,
-            relY + 25,
+            offsetY + 25,
             220,
             40,
             4,
@@ -221,60 +245,75 @@ function createLoginPanels() {
             false
         );
 
-        relY += 60;
+        offsetY += 60;
 
         this.controlRegisterCheckbox = this.panelLoginNewUser.addCheckbox(
             x - 196 - 7,
-            relY - 7,
+            offsetY - 7,
             14,
             14
         );
 
         this.panelLoginNewUser.addText(
             x - 181,
-            relY,
+            offsetY,
             'I have read and agreed to the terms and conditions',
             4,
             true
         );
 
-        relY += 15;
+        offsetY += 15;
 
         this.panelLoginNewUser.addTextCentre(
             x,
-            relY,
+            offsetY,
             '(to view these click the relevant link below this game window)',
             4,
             true
         );
 
-        relY += 20;
+        offsetY += 20;
 
-        this.panelLoginNewUser.addButtonBackground(x - 100, relY + 17, 150, 34);
+        this.panelLoginNewUser.addButtonBackground(
+            x - 100,
+            offsetY + 17,
+            150,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x - 100,
-            relY + 17,
+            offsetY + 17,
             'Submit',
             5,
             false
         );
+
         this.controlRegisterSubmit = this.panelLoginNewUser.addButton(
             x - 100,
-            relY + 17,
+            offsetY + 17,
             150,
             34
         );
-        this.panelLoginNewUser.addButtonBackground(x + 100, relY + 17, 150, 34);
+
+        this.panelLoginNewUser.addButtonBackground(
+            x + 100,
+            offsetY + 17,
+            150,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x + 100,
-            relY + 17,
+            offsetY + 17,
             'Cancel',
             5,
             false
         );
+
         this.controlRegisterCancel = this.panelLoginNewUser.addButton(
             x + 100,
-            relY + 17,
+            offsetY + 17,
             150,
             34
         );
@@ -295,6 +334,7 @@ function createLoginPanels() {
     y += 28;
 
     this.panelLoginExistingUser.addButtonBackground(x - 116, y, 200, 40);
+
     this.panelLoginExistingUser.addTextCentre(
         x - 116,
         y - 10,
@@ -302,6 +342,7 @@ function createLoginPanels() {
         4,
         false
     );
+
     this.controlLoginUser = this.panelLoginExistingUser.addTextInput(
         x - 116,
         y + 10,
@@ -316,6 +357,7 @@ function createLoginPanels() {
     y += 47;
 
     this.panelLoginExistingUser.addButtonBackground(x - 66, y, 200, 40);
+
     this.panelLoginExistingUser.addTextCentre(
         x - 66,
         y - 10,
@@ -323,6 +365,7 @@ function createLoginPanels() {
         4,
         false
     );
+
     this.controlLoginPassword = this.panelLoginExistingUser.addTextInput(
         x - 66,
         y + 10,
@@ -338,6 +381,7 @@ function createLoginPanels() {
 
     this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
     this.panelLoginExistingUser.addTextCentre(x + 154, y, 'Ok', 4, false);
+
     this.controlLoginOk = this.panelLoginExistingUser.addButton(
         x + 154,
         y,
@@ -349,6 +393,7 @@ function createLoginPanels() {
 
     this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
     this.panelLoginExistingUser.addTextCentre(x + 154, y, 'Cancel', 4, false);
+
     this.controlLoginCancel = this.panelLoginExistingUser.addButton(
         x + 154,
         y,
@@ -407,6 +452,7 @@ function renderLoginScreenViewports() {
         0,
         zoom * 2
     );
+
     this.scene.render();
 
     this.surface.fadeToBlack();
@@ -457,6 +503,7 @@ function renderLoginScreenViewports() {
         0,
         zoom * 2
     );
+
     this.scene.render();
 
     this.surface.fadeToBlack();
@@ -519,6 +566,7 @@ function renderLoginScreenViewports() {
         0,
         zoom * 2
     );
+
     this.scene.render();
 
     this.surface.fadeToBlack();
@@ -564,9 +612,7 @@ function drawLoginScreens() {
     if (this.options.accountManagement) {
         showBackground = this.loginScreen === 0 || this.loginScreen === 2;
     } else {
-        showBackground =
-            this.loginScreen >= 0 &&
-            this.loginScreen <= 3;
+        showBackground = this.loginScreen >= 0 && this.loginScreen <= 3;
     }
 
     if (showBackground) {
@@ -644,19 +690,24 @@ async function handleLoginScreenInput() {
 
             if (this.options.accountManagement) {
                 this.panelLoginNewUser.updateText(this.controlRegisterUser, '');
+
                 this.panelLoginNewUser.updateText(
                     this.controlRegisterPassword,
                     ''
                 );
+
                 this.panelLoginNewUser.updateText(
                     this.controlRegisterConfirmPassword,
                     ''
                 );
+
                 this.panelLoginNewUser.setFocus(this.controlRegisterUser);
+
                 this.panelLoginNewUser.toggleCheckbox(
                     this.controlRegisterCheckbox,
                     false
                 );
+
                 this.panelLoginNewUser.updateText(
                     this.controlRegisterStatus,
                     'To create an account please enter all the requested ' +
@@ -667,16 +718,21 @@ async function handleLoginScreenInput() {
 
         if (this.panelLoginWelcome.isClicked(this.controlWelcomeExistingUser)) {
             this.loginScreen = 2;
+
             this.panelLoginExistingUser.updateText(
                 this.controlLoginStatus,
                 'Please enter your username and password'
             );
+
             this.panelLoginExistingUser.updateText(this.controlLoginUser, '');
+
             this.panelLoginExistingUser.updateText(
                 this.controlLoginPassword,
                 ''
             );
+
             this.panelLoginExistingUser.setFocus(this.controlLoginUser);
+
             return;
         }
     } else if (this.loginScreen === 1) {
@@ -738,6 +794,7 @@ async function handleLoginScreenInput() {
                         '@yel@Please fill in ALL requested information to ' +
                             'continue!'
                     );
+
                     return;
                 }
 
@@ -747,6 +804,7 @@ async function handleLoginScreenInput() {
                         '@yel@The two passwords entered are not the same as ' +
                             'each other!'
                     );
+
                     return;
                 }
 
@@ -755,6 +813,7 @@ async function handleLoginScreenInput() {
                         this.controlRegisterStatus,
                         '@yel@Your password must be at least 5 letters long'
                     );
+
                     return;
                 }
 
@@ -768,6 +827,7 @@ async function handleLoginScreenInput() {
                         '@yel@You must agree to the terms+conditions to ' +
                             'continue'
                     );
+
                     return;
                 }
 
@@ -782,14 +842,12 @@ async function handleLoginScreenInput() {
                 this.registerUser = this.panelLoginNewUser.getText(
                     this.controlRegisterUser
                 );
+
                 this.registerPassword = this.panelLoginNewUser.getText(
                     this.controlRegisterPassword
                 );
 
-                await this.register(
-                    this.registerUser,
-                    this.registerPassword
-                );
+                await this.register(this.registerUser, this.registerPassword);
 
                 return;
             }

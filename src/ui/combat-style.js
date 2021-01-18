@@ -1,9 +1,7 @@
 const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
 
-const BLACK = 0;
 const GREY = 0xbebebe;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
 
 const BUTTON_HEIGHT = 20;
 const UI_X = 7;
@@ -41,7 +39,7 @@ function drawDialogCombatStyle() {
     }
 
     for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
-        const boxColour = i === this.combatStyle + 1 ? RED : GREY;
+        const boxColour = i === this.combatStyle + 1 ? colours.red : GREY;
 
         this.surface.drawBoxAlpha(
             UI_X,
@@ -55,13 +53,13 @@ function drawDialogCombatStyle() {
             UI_X,
             UI_Y + i * BUTTON_HEIGHT,
             WIDTH,
-            BLACK
+            colours.black
         );
         this.surface.drawLineHoriz(
             UI_X,
             UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
             WIDTH,
-            BLACK
+            colours.black
         );
     }
 
@@ -72,7 +70,7 @@ function drawDialogCombatStyle() {
         UI_X + ((WIDTH / 2) | 0),
         UI_Y + y,
         3,
-        WHITE
+        colours.white
     );
 
     y += BUTTON_HEIGHT;
@@ -83,7 +81,7 @@ function drawDialogCombatStyle() {
             UI_X + ((WIDTH / 2) | 0),
             UI_Y + y,
             3,
-            BLACK
+            colours.black
         );
 
         y += BUTTON_HEIGHT;

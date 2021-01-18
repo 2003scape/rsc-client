@@ -1,32 +1,38 @@
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
-
-const CYAN = 0x00ffff;
-const GREY = 0x989898;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const DIALOG_X = 22;
 const DIALOG_Y = 36;
 
 function drawDialogTradeConfirm() {
     this.surface.drawBox(DIALOG_X, DIALOG_Y, 468, 16, 192);
-    this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + 16, 468, 246, GREY, 160);
+
+    this.surface.drawBoxAlpha(
+        DIALOG_X,
+        DIALOG_Y + 16,
+        468,
+        246,
+        colours.grey,
+        160
+    );
+
     this.surface.drawStringCenter(
         'Please confirm your trade with @yel@' +
             Utility.hashToUsername(this.tradeRecipientConfirmHash),
         DIALOG_X + 234,
         DIALOG_Y + 12,
         1,
-        WHITE
+        colours.white
     );
+
     this.surface.drawStringCenter(
         'You are about to give:',
         DIALOG_X + 117,
         DIALOG_Y + 30,
         1,
-        YELLOW
+        colours.yellow
     );
 
     for (let i = 0; i < this.tradeConfirmItemsCount; i++) {
@@ -43,7 +49,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 117,
             DIALOG_Y + 42 + i * 12,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -53,7 +59,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 117,
             DIALOG_Y + 42,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -62,7 +68,7 @@ function drawDialogTradeConfirm() {
         DIALOG_X + 351,
         DIALOG_Y + 30,
         1,
-        YELLOW
+        colours.yellow
     );
 
     for (let i = 0; i < this.tradeRecipientConfirmItemsCount; i++) {
@@ -81,7 +87,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 351,
             DIALOG_Y + 42 + i * 12,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -91,7 +97,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 351,
             DIALOG_Y + 42,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -100,21 +106,23 @@ function drawDialogTradeConfirm() {
         DIALOG_X + 234,
         DIALOG_Y + 200,
         4,
-        CYAN
+        colours.cyan
     );
+
     this.surface.drawStringCenter(
         'There is NO WAY to reverse a trade if you change your mind.',
         DIALOG_X + 234,
         DIALOG_Y + 215,
         1,
-        WHITE
+        colours.white
     );
+
     this.surface.drawStringCenter(
         'Remember that not all players are trustworthy',
         DIALOG_X + 234,
         DIALOG_Y + 230,
         1,
-        WHITE
+        colours.white
     );
 
     if (!this.tradeConfirmAccepted) {
@@ -123,6 +131,7 @@ function drawDialogTradeConfirm() {
             DIALOG_Y + 238,
             this.spriteMedia + 25
         );
+
         this.surface._drawSprite_from3(
             DIALOG_X + 352 - 35,
             DIALOG_Y + 238,
@@ -134,7 +143,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 234,
             DIALOG_Y + 250,
             1,
-            YELLOW
+            colours.yellow
         );
     }
 

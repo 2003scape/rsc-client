@@ -1,8 +1,4 @@
-const BLACK = 0;
-const LIGHT_GREY = 0xdcdcdc;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const HEIGHT = 275;
 const UI_X = 313;
@@ -140,10 +136,10 @@ function drawUiTabPlayerInfo(noMenus) {
         UI_Y + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
-        LIGHT_GREY,
+        colours.lightGrey,
         128
     );
-    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, BLACK);
+    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, colours.black);
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -158,14 +154,14 @@ function drawUiTabPlayerInfo(noMenus) {
         let y = 72;
         let selectedSkill = -1;
 
-        this.surface.drawString('Skills', UI_X + 5, y, 3, YELLOW);
+        this.surface.drawString('Skills', UI_X + 5, y, 3, colours.yellow);
 
         y += 13;
 
         // draw two columns with each skill name and current/base levels
         for (let i = 0; i < 9; i++) {
             // left column
-            let textColour = WHITE;
+            let textColour = colours.white;
 
             if (
                 this.mouseX > UI_X + 3 &&
@@ -173,7 +169,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 this.mouseY < y + 2 &&
                 this.mouseX < UI_X + 90
             ) {
-                textColour = RED;
+                textColour = colours.red;
                 selectedSkill = i;
             }
 
@@ -187,7 +183,7 @@ function drawUiTabPlayerInfo(noMenus) {
             );
 
             // right column
-            textColour = WHITE;
+            textColour = colours.white;
 
             if (
                 this.mouseX >= UI_X + 90 &&
@@ -195,7 +191,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 this.mouseY < y - 13 + 2 &&
                 this.mouseX < UI_X + 196
             ) {
-                textColour = RED;
+                textColour = colours.red;
                 selectedSkill = i + 9;
             }
 
@@ -217,7 +213,7 @@ function drawUiTabPlayerInfo(noMenus) {
             UI_X + HALF_WIDTH - 5,
             y - 13,
             1,
-            WHITE
+            colours.white
         );
 
         y += 12;
@@ -227,12 +223,18 @@ function drawUiTabPlayerInfo(noMenus) {
             UI_X + 5,
             y - 13,
             1,
-            WHITE
+            colours.white
         );
 
         y += 8;
 
-        this.surface.drawString('Equipment Status', UI_X + 5, y, 3, YELLOW);
+        this.surface.drawString(
+            'Equipment Status',
+            UI_X + 5,
+            y,
+            3,
+            colours.yellow
+        );
 
         y += 12;
 
@@ -243,7 +245,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
 
             if (i < 2) {
@@ -253,7 +255,7 @@ function drawUiTabPlayerInfo(noMenus) {
                     UI_X + HALF_WIDTH + 25,
                     y,
                     1,
-                    WHITE
+                    colours.white
                 );
             }
 
@@ -262,7 +264,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         y += 6;
 
-        this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, BLACK);
+        this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, colours.black);
 
         if (selectedSkill !== -1) {
             this.surface.drawString(
@@ -270,7 +272,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                YELLOW
+                colours.yellow
             );
 
             y += 12;
@@ -290,7 +292,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
             y += 12;
             this.surface.drawString(
@@ -298,10 +300,16 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
         } else {
-            this.surface.drawString('Overall levels', UI_X + 5, y, 1, YELLOW);
+            this.surface.drawString(
+                'Overall levels',
+                UI_X + 5,
+                y,
+                1,
+                colours.yellow
+            );
             y += 12;
 
             let totalLevel = 0;
@@ -315,7 +323,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
 
             y += 12;
@@ -325,7 +333,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
 
             y += 12;

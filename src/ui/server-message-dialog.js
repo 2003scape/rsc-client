@@ -1,9 +1,8 @@
-const BLACK = 0;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
+const colours = require('./_colours');
+
+const WIDTH = 400;
 
 function drawDialogServerMessage() {
-    let width = 400;
     let height = 100;
 
     if (this.serverMessageBoxTop) {
@@ -12,56 +11,58 @@ function drawDialogServerMessage() {
     }
 
     this.surface.drawBox(
-        256 - ((width / 2) | 0),
+        256 - ((WIDTH / 2) | 0),
         167 - ((height / 2) | 0),
-        width,
+        WIDTH,
         height,
-        BLACK
+        colours.black
     );
+
     this.surface.drawBoxEdge(
-        256 - ((width / 2) | 0),
+        256 - ((WIDTH / 2) | 0),
         167 - ((height / 2) | 0),
-        width,
+        WIDTH,
         height,
-        WHITE
+        colours.white
     );
+
     this.surface.drawParagraph(
         this.serverMessage,
         256,
         167 - ((height / 2) | 0) + 20,
         1,
-        WHITE,
-        width - 40
+        colours.white,
+        WIDTH - 40
     );
 
-    let i = 157 + ((height / 2) | 0);
-    let textColour = WHITE;
+    const offsetY = 157 + ((height / 2) | 0);
+    let textColour = colours.white;
 
     if (
-        this.mouseY > i - 12 &&
-        this.mouseY <= i &&
+        this.mouseY > offsetY - 12 &&
+        this.mouseY <= offsetY &&
         this.mouseX > 106 &&
         this.mouseX < 406
     ) {
-        textColour = RED;
+        textColour = colours.red;
     }
 
     this.surface.drawStringCenter(
         'Click here to close window',
         256,
-        i,
+        offsetY,
         1,
         textColour
     );
 
     if (this.mouseButtonClick === 1) {
-        if (textColour === RED) {
+        if (textColour === colours.red) {
             this.showDialogServerMessage = false;
         }
 
         if (
-            (this.mouseX < 256 - ((width / 2) | 0) ||
-                this.mouseX > 256 + ((width / 2) | 0)) &&
+            (this.mouseX < 256 - ((WIDTH / 2) | 0) ||
+                this.mouseX > 256 + ((WIDTH / 2) | 0)) &&
             (this.mouseY < 167 - ((height / 2) | 0) ||
                 this.mouseY > 167 + ((height / 2) | 0))
         ) {

@@ -12678,7 +12678,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":84,"./word-filter":86,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":85,"./word-filter":87,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13270,7 +13270,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":84,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":85,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14609,7 +14609,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":60,"./utility":84}],46:[function(require,module,exports){
+},{"./scene":60,"./utility":85}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -15286,7 +15286,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":84,"./version":85,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":85,"./version":86,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -15571,12 +15571,16 @@ class Socket {
 
         // amount of bytes are left to read since last read call (in total)
         this.bytesAvailable = 0;
+
         // the message buffers that arrive from the websocket
         this.buffers = [];
+
         // the current buffer we're reading
         this.currentBuffer = null;
+
         // amount of bytes we read in current buffer
         this.offset = 0;
+
         // amount of bytes left in current buffer
         this.bytesLeft = 0;
     }
@@ -15587,6 +15591,7 @@ class Socket {
                 `ws://${this.host}:${this.port}`,
                 'binary'
             );
+
             this.client.binaryType = 'arraybuffer';
 
             const onError = (err) => {
@@ -15763,7 +15768,6 @@ class Socket {
 }
 
 module.exports = Socket;
-
 
 },{}],53:[function(require,module,exports){
 const ChatMessage = require('./chat-message');
@@ -22686,7 +22690,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":64,"./utility":84,"./version":85,"./word-filter":86,"./world":87,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":65,"./utility":85,"./version":86,"./word-filter":87,"./world":88,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -26308,21 +26312,18 @@ class Scene {
 
         this.lastVisiblePolygonsCount = this.visiblePolygonsCount;
 
-        // twice as fast to use native .sort instead of recursive qsort
-
-        /*this.polygonsQSort(
+        this.polygonsQSort(
             this.visiblePolygons,
             0,
             this.visiblePolygonsCount - 1
-        );*/
+        );
 
-        const sorted = this.visiblePolygons
+        /*const sorted = this.visiblePolygons
             .slice(0, this.visiblePolygonsCount)
-            .sort(polygonDepthSort);
+            .sort(polygonDepthSort);*/
 
         // TODO see what this does. it's taking up a lot of time in performance,
         // but commenting out doesn't seem to change the game at all?
-
         /*this.polygonsIntersectSort(
             100,
             this.visiblePolygons,
@@ -26330,9 +26331,9 @@ class Scene {
         );*/
 
         for (let i = 0; i < this.visiblePolygonsCount; i++) {
-            if (i < sorted.length) {
+            /*if (i < sorted.length) {
                 this.visiblePolygons[i] = sorted[i];
-            }
+            }*/
 
             let polygon = this.visiblePolygons[i];
             let gameModel_2 = polygon.model;
@@ -32225,13 +32226,25 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":84}],63:[function(require,module,exports){
-const clientOpcodes = require('../opcodes/client');
+},{"./utility":85}],63:[function(require,module,exports){
+module.exports = {
+    black : 0,
+    white: 0xffffff,
+    grey: 0x989898,
+    darkGrey : 0xb5b5b5,
+    lightGrey: 0xdcdcdc,
+    red : 0xff0000,
+    yellow : 0xffff00,
+    cyan: 0x00ffff,
+    green: 0x00ff00,
+    orange: 0xff8000
+};
 
-const BLACK = 0;
+},{}],64:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
+
 const GREY = 0xbebebe;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
 
 const BUTTON_HEIGHT = 20;
 const UI_X = 7;
@@ -32269,7 +32282,7 @@ function drawDialogCombatStyle() {
     }
 
     for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
-        const boxColour = i === this.combatStyle + 1 ? RED : GREY;
+        const boxColour = i === this.combatStyle + 1 ? colours.red : GREY;
 
         this.surface.drawBoxAlpha(
             UI_X,
@@ -32283,13 +32296,13 @@ function drawDialogCombatStyle() {
             UI_X,
             UI_Y + i * BUTTON_HEIGHT,
             WIDTH,
-            BLACK
+            colours.black
         );
         this.surface.drawLineHoriz(
             UI_X,
             UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
             WIDTH,
-            BLACK
+            colours.black
         );
     }
 
@@ -32300,7 +32313,7 @@ function drawDialogCombatStyle() {
         UI_X + ((WIDTH / 2) | 0),
         UI_Y + y,
         3,
-        WHITE
+        colours.white
     );
 
     y += BUTTON_HEIGHT;
@@ -32311,7 +32324,7 @@ function drawDialogCombatStyle() {
             UI_X + ((WIDTH / 2) | 0),
             UI_Y + y,
             3,
-            BLACK
+            colours.black
         );
 
         y += BUTTON_HEIGHT;
@@ -32323,13 +32336,17 @@ module.exports = {
     drawDialogCombatStyle
 };
 
-},{"../opcodes/client":54}],64:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],65:[function(require,module,exports){
 
 
 function applyUI(mudclient) {
-    const components = (function () {var f = require("./index.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
 
     for (const componentName of Object.keys(components)) {
+        if (/^_/.test(componentName)) {
+            continue;
+        }
+
         const component = components[componentName];
 
         for (const propertyName of Object.keys(component)) {
@@ -32346,13 +32363,9 @@ function applyUI(mudclient) {
 
 module.exports = applyUI;
 
-},{"./combat-style.js":63,"./index.js":64,"./inventory-tab.js":65,"./login-panels.js":66,"./logout-dialog.js":67,"./magic-tab.js":68,"./minimap-tab.js":69,"./option-menu.js":70,"./options-tab.js":71,"./password-dialog.js":72,"./player-info-tab.js":73,"./recovery-panel.js":74,"./report-dialog.js":75,"./server-message-dialog.js":76,"./shop-dialog.js":77,"./social-dialog.js":78,"./social-tab.js":79,"./trade-confirm-dialog.js":80,"./trade-dialog.js":81,"./welcome-dialog.js":82,"./wilderness-dialog.js":83}],65:[function(require,module,exports){
+},{"./_colours.js":63,"./combat-style.js":64,"./index.js":65,"./inventory-tab.js":66,"./login-panels.js":67,"./logout-dialog.js":68,"./magic-tab.js":69,"./minimap-tab.js":70,"./option-menu.js":71,"./options-tab.js":72,"./password-dialog.js":73,"./player-info-tab.js":74,"./recovery-panel.js":75,"./report-dialog.js":76,"./server-message-dialog.js":77,"./shop-dialog.js":78,"./social-dialog.js":79,"./social-tab.js":80,"./trade-confirm-dialog.js":81,"./trade-dialog.js":82,"./welcome-dialog.js":83,"./wilderness-dialog.js":84}],66:[function(require,module,exports){
 const GameData = require('../game-data');
-
-const BLACK = 0;
-const DARK_GREY = 0xb5b5b5;
-const RED = 0xff0000;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const UI_X = 512 - 248;
 const UI_Y = 36;
@@ -32365,9 +32378,16 @@ function drawUiTabInventory(noMenus) {
         const slotY = 36 + ((i / 5) | 0) * 34;
 
         if (i < this.inventoryItemsCount && this.inventoryEquipped[i] === 1) {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, RED, 128);
+            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, colours.red, 128);
         } else {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, DARK_GREY, 128);
+            this.surface.drawBoxAlpha(
+                slotX,
+                slotY,
+                49,
+                34,
+                colours.darkGrey,
+                128
+            );
         }
 
         if (i < this.inventoryItemsCount) {
@@ -32393,7 +32413,7 @@ function drawUiTabInventory(noMenus) {
                     slotX + 1,
                     slotY + 10,
                     1,
-                    YELLOW
+                    colours.yellow
                 );
             }
         }
@@ -32405,12 +32425,12 @@ function drawUiTabInventory(noMenus) {
             UI_X + i * 49,
             36,
             ((this.inventoryMaxItemCount / 5) | 0) * 34,
-            BLACK
+            colours.black
         );
     }
 
     for (let i = 1; i <= ((this.inventoryMaxItemCount / 5) | 0) - 1; i++) {
-        this.surface.drawLineHoriz(UI_X, 36 + i * 34, 245, BLACK);
+        this.surface.drawLineHoriz(UI_X, 36 + i * 34, 245, colours.black);
     }
 
     if (!noMenus) {
@@ -32513,7 +32533,7 @@ function drawUiTabInventory(noMenus) {
 
 module.exports = { drawUiTabInventory };
 
-},{"../game-data":44}],66:[function(require,module,exports){
+},{"../game-data":44,"./_colours":63}],67:[function(require,module,exports){
 const Panel = require('../panel');
 
 function createLoginPanels() {
@@ -32532,6 +32552,7 @@ function createLoginPanels() {
         );
 
         this.panelLoginWelcome.addButtonBackground(x - 100, 240 + y, 120, 35);
+
         this.panelLoginWelcome.addTextCentre(
             x - 100,
             240 + y,
@@ -32539,6 +32560,7 @@ function createLoginPanels() {
             5,
             false
         );
+
         this.controlWelcomeNewUser = this.panelLoginWelcome.addButton(
             x - 100,
             240 + y,
@@ -32547,6 +32569,7 @@ function createLoginPanels() {
         );
 
         this.panelLoginWelcome.addButtonBackground(x + 100, 240 + y, 120, 35);
+
         this.panelLoginWelcome.addTextCentre(
             x + 100,
             240 + y,
@@ -32554,6 +32577,7 @@ function createLoginPanels() {
             5,
             false
         );
+
         this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(
             x + 100,
             240 + y,
@@ -32568,6 +32592,7 @@ function createLoginPanels() {
             4,
             true
         );
+
         this.panelLoginWelcome.addTextCentre(
             x,
             215 + y,
@@ -32577,6 +32602,7 @@ function createLoginPanels() {
         );
 
         this.panelLoginWelcome.addButtonBackground(x, 250 + y, 200, 35);
+
         this.panelLoginWelcome.addTextCentre(
             x,
             250 + y,
@@ -32584,6 +32610,7 @@ function createLoginPanels() {
             5,
             false
         );
+
         this.controlWelcomeExistingUser = this.panelLoginWelcome.addButton(
             x,
             250 + y,
@@ -32657,6 +32684,7 @@ function createLoginPanels() {
 
         this.panelLoginNewUser.addButtonBackground(x, y + 17, 150, 34);
         this.panelLoginNewUser.addTextCentre(x, y + 17, 'Ok', 5, false);
+
         this.controlLoginNewOk = this.panelLoginNewUser.addButton(
             x,
             y + 17,
@@ -32674,19 +32702,21 @@ function createLoginPanels() {
             true
         );
 
-        let relY = y + 25;
+        let offsetY = y + 25;
 
-        this.panelLoginNewUser.addButtonBackground(x, relY + 17, 250, 34);
+        this.panelLoginNewUser.addButtonBackground(x, offsetY + 17, 250, 34);
+
         this.panelLoginNewUser.addTextCentre(
             x,
-            relY + 8,
+            offsetY + 8,
             'Choose a Username',
             4,
             false
         );
+
         this.controlRegisterUser = this.panelLoginNewUser.addTextInput(
             x,
-            relY + 25,
+            offsetY + 25,
             200,
             40,
             4,
@@ -32697,19 +32727,26 @@ function createLoginPanels() {
 
         this.panelLoginNewUser.setFocus(this.controlRegisterUser);
 
-        relY += 40;
+        offsetY += 40;
 
-        this.panelLoginNewUser.addButtonBackground(x - 115, relY + 17, 220, 34);
+        this.panelLoginNewUser.addButtonBackground(
+            x - 115,
+            offsetY + 17,
+            220,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x - 115,
-            relY + 8,
+            offsetY + 8,
             'Choose a Password',
             4,
             false
         );
+
         this.controlRegisterPassword = this.panelLoginNewUser.addTextInput(
             x - 115,
-            relY + 25,
+            offsetY + 25,
             220,
             40,
             4,
@@ -32718,17 +32755,24 @@ function createLoginPanels() {
             false
         );
 
-        this.panelLoginNewUser.addButtonBackground(x + 115, relY + 17, 220, 34);
+        this.panelLoginNewUser.addButtonBackground(
+            x + 115,
+            offsetY + 17,
+            220,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x + 115,
-            relY + 8,
+            offsetY + 8,
             'Confirm Password',
             4,
             false
         );
+
         this.controlRegisterConfirmPassword = this.panelLoginNewUser.addTextInput(
             x + 115,
-            relY + 25,
+            offsetY + 25,
             220,
             40,
             4,
@@ -32737,60 +32781,75 @@ function createLoginPanels() {
             false
         );
 
-        relY += 60;
+        offsetY += 60;
 
         this.controlRegisterCheckbox = this.panelLoginNewUser.addCheckbox(
             x - 196 - 7,
-            relY - 7,
+            offsetY - 7,
             14,
             14
         );
 
         this.panelLoginNewUser.addText(
             x - 181,
-            relY,
+            offsetY,
             'I have read and agreed to the terms and conditions',
             4,
             true
         );
 
-        relY += 15;
+        offsetY += 15;
 
         this.panelLoginNewUser.addTextCentre(
             x,
-            relY,
+            offsetY,
             '(to view these click the relevant link below this game window)',
             4,
             true
         );
 
-        relY += 20;
+        offsetY += 20;
 
-        this.panelLoginNewUser.addButtonBackground(x - 100, relY + 17, 150, 34);
+        this.panelLoginNewUser.addButtonBackground(
+            x - 100,
+            offsetY + 17,
+            150,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x - 100,
-            relY + 17,
+            offsetY + 17,
             'Submit',
             5,
             false
         );
+
         this.controlRegisterSubmit = this.panelLoginNewUser.addButton(
             x - 100,
-            relY + 17,
+            offsetY + 17,
             150,
             34
         );
-        this.panelLoginNewUser.addButtonBackground(x + 100, relY + 17, 150, 34);
+
+        this.panelLoginNewUser.addButtonBackground(
+            x + 100,
+            offsetY + 17,
+            150,
+            34
+        );
+
         this.panelLoginNewUser.addTextCentre(
             x + 100,
-            relY + 17,
+            offsetY + 17,
             'Cancel',
             5,
             false
         );
+
         this.controlRegisterCancel = this.panelLoginNewUser.addButton(
             x + 100,
-            relY + 17,
+            offsetY + 17,
             150,
             34
         );
@@ -32811,6 +32870,7 @@ function createLoginPanels() {
     y += 28;
 
     this.panelLoginExistingUser.addButtonBackground(x - 116, y, 200, 40);
+
     this.panelLoginExistingUser.addTextCentre(
         x - 116,
         y - 10,
@@ -32818,6 +32878,7 @@ function createLoginPanels() {
         4,
         false
     );
+
     this.controlLoginUser = this.panelLoginExistingUser.addTextInput(
         x - 116,
         y + 10,
@@ -32832,6 +32893,7 @@ function createLoginPanels() {
     y += 47;
 
     this.panelLoginExistingUser.addButtonBackground(x - 66, y, 200, 40);
+
     this.panelLoginExistingUser.addTextCentre(
         x - 66,
         y - 10,
@@ -32839,6 +32901,7 @@ function createLoginPanels() {
         4,
         false
     );
+
     this.controlLoginPassword = this.panelLoginExistingUser.addTextInput(
         x - 66,
         y + 10,
@@ -32854,6 +32917,7 @@ function createLoginPanels() {
 
     this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
     this.panelLoginExistingUser.addTextCentre(x + 154, y, 'Ok', 4, false);
+
     this.controlLoginOk = this.panelLoginExistingUser.addButton(
         x + 154,
         y,
@@ -32865,6 +32929,7 @@ function createLoginPanels() {
 
     this.panelLoginExistingUser.addButtonBackground(x + 154, y, 120, 25);
     this.panelLoginExistingUser.addTextCentre(x + 154, y, 'Cancel', 4, false);
+
     this.controlLoginCancel = this.panelLoginExistingUser.addButton(
         x + 154,
         y,
@@ -32923,6 +32988,7 @@ function renderLoginScreenViewports() {
         0,
         zoom * 2
     );
+
     this.scene.render();
 
     this.surface.fadeToBlack();
@@ -32973,6 +33039,7 @@ function renderLoginScreenViewports() {
         0,
         zoom * 2
     );
+
     this.scene.render();
 
     this.surface.fadeToBlack();
@@ -33035,6 +33102,7 @@ function renderLoginScreenViewports() {
         0,
         zoom * 2
     );
+
     this.scene.render();
 
     this.surface.fadeToBlack();
@@ -33080,9 +33148,7 @@ function drawLoginScreens() {
     if (this.options.accountManagement) {
         showBackground = this.loginScreen === 0 || this.loginScreen === 2;
     } else {
-        showBackground =
-            this.loginScreen >= 0 &&
-            this.loginScreen <= 3;
+        showBackground = this.loginScreen >= 0 && this.loginScreen <= 3;
     }
 
     if (showBackground) {
@@ -33160,19 +33226,24 @@ async function handleLoginScreenInput() {
 
             if (this.options.accountManagement) {
                 this.panelLoginNewUser.updateText(this.controlRegisterUser, '');
+
                 this.panelLoginNewUser.updateText(
                     this.controlRegisterPassword,
                     ''
                 );
+
                 this.panelLoginNewUser.updateText(
                     this.controlRegisterConfirmPassword,
                     ''
                 );
+
                 this.panelLoginNewUser.setFocus(this.controlRegisterUser);
+
                 this.panelLoginNewUser.toggleCheckbox(
                     this.controlRegisterCheckbox,
                     false
                 );
+
                 this.panelLoginNewUser.updateText(
                     this.controlRegisterStatus,
                     'To create an account please enter all the requested ' +
@@ -33183,16 +33254,21 @@ async function handleLoginScreenInput() {
 
         if (this.panelLoginWelcome.isClicked(this.controlWelcomeExistingUser)) {
             this.loginScreen = 2;
+
             this.panelLoginExistingUser.updateText(
                 this.controlLoginStatus,
                 'Please enter your username and password'
             );
+
             this.panelLoginExistingUser.updateText(this.controlLoginUser, '');
+
             this.panelLoginExistingUser.updateText(
                 this.controlLoginPassword,
                 ''
             );
+
             this.panelLoginExistingUser.setFocus(this.controlLoginUser);
+
             return;
         }
     } else if (this.loginScreen === 1) {
@@ -33254,6 +33330,7 @@ async function handleLoginScreenInput() {
                         '@yel@Please fill in ALL requested information to ' +
                             'continue!'
                     );
+
                     return;
                 }
 
@@ -33263,6 +33340,7 @@ async function handleLoginScreenInput() {
                         '@yel@The two passwords entered are not the same as ' +
                             'each other!'
                     );
+
                     return;
                 }
 
@@ -33271,6 +33349,7 @@ async function handleLoginScreenInput() {
                         this.controlRegisterStatus,
                         '@yel@Your password must be at least 5 letters long'
                     );
+
                     return;
                 }
 
@@ -33284,6 +33363,7 @@ async function handleLoginScreenInput() {
                         '@yel@You must agree to the terms+conditions to ' +
                             'continue'
                     );
+
                     return;
                 }
 
@@ -33298,14 +33378,12 @@ async function handleLoginScreenInput() {
                 this.registerUser = this.panelLoginNewUser.getText(
                     this.controlRegisterUser
                 );
+
                 this.registerPassword = this.panelLoginNewUser.getText(
                     this.controlRegisterPassword
                 );
 
-                await this.register(
-                    this.registerUser,
-                    this.registerPassword
-                );
+                await this.register(this.registerUser, this.registerPassword);
 
                 return;
             }
@@ -33395,26 +33473,21 @@ module.exports = {
     renderLoginScreenViewports
 };
 
-},{"../panel":57}],67:[function(require,module,exports){
-const BLACK = 0;
-const WHITE = 0xffffff;
+},{"../panel":57}],68:[function(require,module,exports){
+const colours = require('./_colours');
 
 function drawDialogLogout() {
-    this.surface.drawBox(126, 137, 260, 60, BLACK);
-    this.surface.drawBoxEdge(126, 137, 260, 60, WHITE);
-    this.surface.drawStringCenter('Logging out...', 256, 173, 5, WHITE);
+    this.surface.drawBox(126, 137, 260, 60, colours.black);
+    this.surface.drawBoxEdge(126, 137, 260, 60, colours.white);
+    this.surface.drawStringCenter('Logging out...', 256, 173, 5, colours.white);
 }
 
 module.exports = { drawDialogLogout };
 
-},{}],68:[function(require,module,exports){
+},{"./_colours":63}],69:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
-
-const BLACK = 0;
-const LIGHT_GREY = 0xdcdcdc;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const HEIGHT = 182;
 const UI_X = 313;
@@ -33433,10 +33506,12 @@ function drawUiTabMagic(noMenus) {
         UI_Y + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
-        LIGHT_GREY,
+        colours.lightGrey,
         128
     );
-    this.surface.drawLineHoriz(UI_X, UI_Y + 113, WIDTH, BLACK);
+
+    this.surface.drawLineHoriz(UI_X, UI_Y + 113, WIDTH, colours.black);
+
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -33491,14 +33566,14 @@ function drawUiTabMagic(noMenus) {
                 UI_X + 2,
                 UI_Y + 124,
                 1,
-                YELLOW
+                colours.yellow
             );
             this.surface.drawString(
                 GameData.spellDescription[spellIndex],
                 UI_X + 2,
                 UI_Y + 136,
                 0,
-                WHITE
+                colours.white
             );
 
             for (let i = 0; i < GameData.spellRunesRequired[spellIndex]; i++) {
@@ -33521,7 +33596,7 @@ function drawUiTabMagic(noMenus) {
                     UI_X + 2 + i * 44,
                     UI_Y + 150,
                     1,
-                    WHITE
+                    colours.white
                 );
             }
         } else {
@@ -33530,7 +33605,7 @@ function drawUiTabMagic(noMenus) {
                 UI_X + 2,
                 UI_Y + 124,
                 1,
-                BLACK
+                colours.black
             );
         }
     } else if (this.uiTabMagicSubTab === 1) {
@@ -33568,21 +33643,21 @@ function drawUiTabMagic(noMenus) {
                 UI_X + HALF_WIDTH,
                 UI_Y + 130,
                 1,
-                YELLOW
+                colours.yellow
             );
             this.surface.drawStringCenter(
                 GameData.prayerDescription[prayerIndex],
                 UI_X + HALF_WIDTH,
                 UI_Y + 145,
                 0,
-                WHITE
+                colours.white
             );
             this.surface.drawStringCenter(
                 'Drain rate: ' + GameData.prayerDrain[prayerIndex],
                 UI_X + HALF_WIDTH,
                 UI_Y + 160,
                 1,
-                BLACK
+                colours.black
             );
         } else {
             this.surface.drawString(
@@ -33590,7 +33665,7 @@ function drawUiTabMagic(noMenus) {
                 UI_X + 2,
                 UI_Y + 124,
                 1,
-                BLACK
+                colours.black
             );
         }
     }
@@ -33715,14 +33790,9 @@ module.exports = {
     uiTabMagicSubTab: 0
 };
 
-},{"../game-data":44,"../opcodes/client":54}],69:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],70:[function(require,module,exports){
 const Scene = require('../scene');
-
-const CYAN = 0x00ffff;
-const GREEN = 0x00ff00;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const HEIGHT = 152;
 const UI_X = 313;
@@ -33778,6 +33848,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         let objectY =
             (((this.objectY[i] * this.magicLoc +
                 64 -
@@ -33786,6 +33857,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         const tempX = (objectY * sin + objectX * cos) >> 18;
 
         objectY = (objectY * cos - objectX * sin) >> 18;
@@ -33794,7 +33866,7 @@ function drawUiTabMinimap(noMenus) {
         this.drawMinimapEntity(
             x + HALF_WIDTH + objectX,
             UI_Y + HALF_HEIGHT - objectY,
-            CYAN
+            colours.cyan
         );
     }
 
@@ -33807,6 +33879,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         let itemY =
             (((this.groundItemY[i] * this.magicLoc +
                 64 -
@@ -33815,6 +33888,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         const tempX = (itemY * sin + itemX * cos) >> 18;
 
         itemY = (itemY * cos - itemX * sin) >> 18;
@@ -33823,18 +33897,21 @@ function drawUiTabMinimap(noMenus) {
         this.drawMinimapEntity(
             x + HALF_WIDTH + itemX,
             UI_Y + HALF_HEIGHT - itemY,
-            RED
+            colours.red
         );
     }
 
     for (let i = 0; i < this.npcCount; i++) {
         const npc = this.npcs[i];
+
         let npcX =
             (((npc.currentX - this.localPlayer.currentX) * 3 * scale) / 2048) |
             0;
+
         let npcY =
             (((npc.currentY - this.localPlayer.currentY) * 3 * scale) / 2048) |
             0;
+
         const tempX = (npcY * sin + npcX * cos) >> 18;
 
         npcY = (npcY * cos - npcX * sin) >> 18;
@@ -33843,26 +33920,29 @@ function drawUiTabMinimap(noMenus) {
         this.drawMinimapEntity(
             x + HALF_WIDTH + npcX,
             UI_Y + HALF_HEIGHT - npcY,
-            YELLOW
+            colours.yellow
         );
     }
 
     for (let i = 0; i < this.playerCount; i++) {
         const player = this.players[i];
+
         let otherPlayerX =
             (((player.currentX - this.localPlayer.currentX) * 3 * scale) /
                 2048) |
             0;
+
         let otherPlayerY =
             (((player.currentY - this.localPlayer.currentY) * 3 * scale) /
                 2048) |
             0;
+
         const tempX = (otherPlayerY * sin + otherPlayerX * cos) >> 18;
 
         otherPlayerY = (otherPlayerY * cos - otherPlayerX * sin) >> 18;
         otherPlayerX = tempX;
 
-        let playerColour = WHITE;
+        let playerColour = colours.white;
 
         for (let j = 0; j < this.friendListCount; j++) {
             if (
@@ -33872,7 +33952,7 @@ function drawUiTabMinimap(noMenus) {
                 continue;
             }
 
-            playerColour = GREEN;
+            playerColour = colours.green;
             break;
         }
 
@@ -33883,7 +33963,13 @@ function drawUiTabMinimap(noMenus) {
         );
     }
 
-    this.surface.drawCircle(x + HALF_WIDTH, UI_Y + HALF_HEIGHT, 2, WHITE, 255);
+    this.surface.drawCircle(
+        x + HALF_WIDTH,
+        UI_Y + HALF_HEIGHT,
+        2,
+        colours.white,
+        255
+    );
 
     // compass
     this.surface.drawMinimapSprite(
@@ -33917,8 +34003,10 @@ function drawUiTabMinimap(noMenus) {
 
     if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
         let dX = (((this.mouseX - (x + HALF_WIDTH)) * 16384) / (3 * scale)) | 0;
+
         let dY =
             (((this.mouseY - (UI_Y + HALF_HEIGHT)) * 16384) / (3 * scale)) | 0;
+
         const tempX = (dY * sin + dX * cos) >> 15;
 
         dY = (dY * cos - dX * sin) >> 15;
@@ -33944,11 +34032,9 @@ module.exports = {
     drawUiTabMinimap
 };
 
-},{"../scene":60}],70:[function(require,module,exports){
+},{"../scene":60,"./_colours":63}],71:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
-
-const CYAN = 0x00ffff;
-const RED = 0xff0000;
+const colours = require('./_colours');
 
 function drawOptionMenu() {
     if (this.mouseButtonClick !== 0) {
@@ -33974,14 +34060,14 @@ function drawOptionMenu() {
     }
 
     for (let i = 0; i < this.optionMenuCount; i++) {
-        let textColour = CYAN;
+        let textColour = colours.cyan;
 
         if (
             this.mouseX < this.surface.textWidth(this.optionMenuEntry[i], 1) &&
             this.mouseY > i * 12 &&
             this.mouseY < 12 + i * 12
         ) {
-            textColour = RED;
+            textColour = colours.red;
         }
 
         this.surface.drawString(
@@ -33996,14 +34082,12 @@ function drawOptionMenu() {
 
 module.exports = { drawOptionMenu };
 
-},{"../opcodes/client":54}],71:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],72:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
 
-const BLACK = 0;
 const DARK_GREY = 0xb5b5b5;
 const LIGHT_GREY = 0xc9c9c9;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
 
 const UI_X = 313;
 const UI_Y = 36;
@@ -34021,7 +34105,13 @@ function drawUiTabOptions(noMenus) {
     const x = UI_X + 3;
     let y = UI_Y + LINE_BREAK;
 
-    this.surface.drawString('Game options - click to toggle', x, y, 1, BLACK);
+    this.surface.drawString(
+        'Game options - click to toggle',
+        x,
+        y,
+        1,
+        colours.black
+    );
 
     y += LINE_BREAK;
 
@@ -34031,7 +34121,7 @@ function drawUiTabOptions(noMenus) {
         x,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -34042,7 +34132,7 @@ function drawUiTabOptions(noMenus) {
         x,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -34054,7 +34144,7 @@ function drawUiTabOptions(noMenus) {
             x,
             y,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -34062,8 +34152,10 @@ function drawUiTabOptions(noMenus) {
 
     if (this.options.accountManagement) {
         y += 5;
+
         this.surface.drawString('Security settings', x, y, 1, 0);
-        y += 15;
+
+        y += LINE_BREAK;
 
         let textColour = 0xffffff;
 
@@ -34073,12 +34165,12 @@ function drawUiTabOptions(noMenus) {
             this.mouseY > y - 12 &&
             this.mouseY < y + 4
         ) {
-            textColour = YELLOW;
+            textColour = colours.yellow;
         }
 
         this.surface.drawString('Change password', x, y, 1, textColour);
 
-        y += 15;
+        y += LINE_BREAK;
         textColour = 0xffffff;
 
         if (
@@ -34087,7 +34179,7 @@ function drawUiTabOptions(noMenus) {
             this.mouseY > y - 12 &&
             this.mouseY < y + 4
         ) {
-            textColour = YELLOW;
+            textColour = colours.yellow;
         }
 
         this.surface.drawString(
@@ -34098,15 +34190,14 @@ function drawUiTabOptions(noMenus) {
             textColour
         );
 
-        y += 15;
-        y += 15;
+        y += LINE_BREAK * 2;
     } else {
         this.surface.drawString(
             'To change your contact details,',
             x,
             y,
             0,
-            WHITE
+            colours.white
         );
 
         y += LINE_BREAK;
@@ -34116,7 +34207,7 @@ function drawUiTabOptions(noMenus) {
             x,
             y,
             0,
-            WHITE
+            colours.white
         );
 
         y += LINE_BREAK;
@@ -34126,7 +34217,7 @@ function drawUiTabOptions(noMenus) {
             x,
             y,
             0,
-            WHITE
+            colours.white
         );
 
         y += LINE_BREAK;
@@ -34137,7 +34228,7 @@ function drawUiTabOptions(noMenus) {
                 x,
                 y,
                 0,
-                WHITE
+                colours.white
             );
         } else if (this.referID === 1) {
             this.surface.drawString(
@@ -34145,7 +34236,7 @@ function drawUiTabOptions(noMenus) {
                 x,
                 y,
                 0,
-                WHITE
+                colours.white
             );
         } else {
             this.surface.drawString(
@@ -34153,7 +34244,7 @@ function drawUiTabOptions(noMenus) {
                 x,
                 y,
                 0,
-                WHITE
+                colours.white
             );
         }
 
@@ -34165,7 +34256,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        BLACK
+        colours.black
     );
 
     y += LINE_BREAK;
@@ -34175,7 +34266,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        BLACK
+        colours.black
     );
 
     y += LINE_BREAK;
@@ -34186,7 +34277,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -34197,7 +34288,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -34208,7 +34299,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -34220,17 +34311,23 @@ function drawUiTabOptions(noMenus) {
             UI_X + 3,
             y,
             1,
-            WHITE
+            colours.white
         );
     }
 
     y += LINE_BREAK + 5;
 
-    this.surface.drawString('Always logout when you finish', x, y, 1, BLACK);
+    this.surface.drawString(
+        'Always logout when you finish',
+        x,
+        y,
+        1,
+        colours.black
+    );
 
     y += LINE_BREAK;
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > x &&
@@ -34238,7 +34335,7 @@ function drawUiTabOptions(noMenus) {
         this.mouseY > y - 12 &&
         this.mouseY < y + 4
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
     }
 
     this.surface.drawString('Click here to logout', UI_X + 3, y, 1, textColour);
@@ -34418,15 +34515,14 @@ function drawUiTabOptions(noMenus) {
 
 module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54}],72:[function(require,module,exports){
-const BLACK = 0;
-const WHITE = 0xffffff;
+},{"../opcodes/client":54,"./_colours":63}],73:[function(require,module,exports){
+const colours = require('./_colours');
 
 const DIALOG_X = 106;
 const DIALOG_Y = 150;
-
-const WIDTH = 300;
 const HEIGHT = 60;
+const LINE_BREAK = 25;
+const WIDTH = 300;
 
 function drawDialogChangePassword() {
     if (this.mouseButtonClick !== 0) {
@@ -34435,7 +34531,7 @@ function drawDialogChangePassword() {
         if (
             this.mouseX < DIALOG_X ||
             this.mouseY < DIALOG_Y ||
-            this.mouseX > WIDTH + DIALOG_X  ||
+            this.mouseX > WIDTH + DIALOG_X ||
             this.mouseY > HEIGHT + DIALOG_Y
         ) {
             this.showChangePasswordStep = 0;
@@ -34443,8 +34539,8 @@ function drawDialogChangePassword() {
         }
     }
 
-    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, BLACK);
-    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, WHITE);
+    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.black);
+    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.white);
 
     let y = DIALOG_Y + 22;
     let passwordInput = '';
@@ -34455,10 +34551,10 @@ function drawDialogChangePassword() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
-        y += 25;
+        y += LINE_BREAK;
 
         passwordInput = '*';
 
@@ -34466,7 +34562,7 @@ function drawDialogChangePassword() {
             passwordInput = 'X' + passwordInput;
         }
 
-        this.surface.drawStringCenter(passwordInput, 256, y, 4, WHITE);
+        this.surface.drawStringCenter(passwordInput, 256, y, 4, colours.white);
 
         if (this.inputTextFinal.length > 0) {
             this.changePasswordOld = this.inputTextFinal;
@@ -34481,10 +34577,10 @@ function drawDialogChangePassword() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
-        y += 25;
+        y += LINE_BREAK;
 
         passwordInput = '*';
 
@@ -34492,7 +34588,7 @@ function drawDialogChangePassword() {
             passwordInput = 'X' + passwordInput;
         }
 
-        this.surface.drawStringCenter(passwordInput, 256, y, 4, WHITE);
+        this.surface.drawStringCenter(passwordInput, 256, y, 4, colours.white);
 
         if (this.inputTextFinal.length > 0) {
             this.changePasswordNew = this.inputTextFinal;
@@ -34513,10 +34609,10 @@ function drawDialogChangePassword() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
-        y += 25;
+        y += LINE_BREAK;
 
         passwordInput = '*';
 
@@ -34524,7 +34620,7 @@ function drawDialogChangePassword() {
             passwordInput = 'X' + passwordInput;
         }
 
-        this.surface.drawStringCenter(passwordInput, 256, y, 4, WHITE);
+        this.surface.drawStringCenter(passwordInput, 256, y, 4, colours.white);
 
         if (this.inputTextFinal.length > 0) {
             if (
@@ -34549,17 +34645,17 @@ function drawDialogChangePassword() {
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
-            y += 25;
+            y += LINE_BREAK;
 
             this.surface.drawStringCenter(
                 'Press any key to close',
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
             return;
@@ -34571,17 +34667,17 @@ function drawDialogChangePassword() {
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
-            y += 25;
+            y += LINE_BREAK;
 
             this.surface.drawStringCenter(
                 'Press any key to close',
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
             return;
@@ -34593,15 +34689,17 @@ function drawDialogChangePassword() {
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
-            y += 25;
+
+            y += LINE_BREAK;
+
             this.surface.drawStringCenter(
                 'least 5 letters long',
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
         }
     }
@@ -34612,12 +34710,8 @@ module.exports = {
     showChangePasswordStep: 0
 };
 
-},{}],73:[function(require,module,exports){
-const BLACK = 0;
-const LIGHT_GREY = 0xdcdcdc;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+},{"./_colours":63}],74:[function(require,module,exports){
+const colours = require('./_colours');
 
 const HEIGHT = 275;
 const UI_X = 313;
@@ -34755,10 +34849,10 @@ function drawUiTabPlayerInfo(noMenus) {
         UI_Y + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
-        LIGHT_GREY,
+        colours.lightGrey,
         128
     );
-    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, BLACK);
+    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, colours.black);
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -34773,14 +34867,14 @@ function drawUiTabPlayerInfo(noMenus) {
         let y = 72;
         let selectedSkill = -1;
 
-        this.surface.drawString('Skills', UI_X + 5, y, 3, YELLOW);
+        this.surface.drawString('Skills', UI_X + 5, y, 3, colours.yellow);
 
         y += 13;
 
         // draw two columns with each skill name and current/base levels
         for (let i = 0; i < 9; i++) {
             // left column
-            let textColour = WHITE;
+            let textColour = colours.white;
 
             if (
                 this.mouseX > UI_X + 3 &&
@@ -34788,7 +34882,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 this.mouseY < y + 2 &&
                 this.mouseX < UI_X + 90
             ) {
-                textColour = RED;
+                textColour = colours.red;
                 selectedSkill = i;
             }
 
@@ -34802,7 +34896,7 @@ function drawUiTabPlayerInfo(noMenus) {
             );
 
             // right column
-            textColour = WHITE;
+            textColour = colours.white;
 
             if (
                 this.mouseX >= UI_X + 90 &&
@@ -34810,7 +34904,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 this.mouseY < y - 13 + 2 &&
                 this.mouseX < UI_X + 196
             ) {
-                textColour = RED;
+                textColour = colours.red;
                 selectedSkill = i + 9;
             }
 
@@ -34832,7 +34926,7 @@ function drawUiTabPlayerInfo(noMenus) {
             UI_X + HALF_WIDTH - 5,
             y - 13,
             1,
-            WHITE
+            colours.white
         );
 
         y += 12;
@@ -34842,12 +34936,18 @@ function drawUiTabPlayerInfo(noMenus) {
             UI_X + 5,
             y - 13,
             1,
-            WHITE
+            colours.white
         );
 
         y += 8;
 
-        this.surface.drawString('Equipment Status', UI_X + 5, y, 3, YELLOW);
+        this.surface.drawString(
+            'Equipment Status',
+            UI_X + 5,
+            y,
+            3,
+            colours.yellow
+        );
 
         y += 12;
 
@@ -34858,7 +34958,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
 
             if (i < 2) {
@@ -34868,7 +34968,7 @@ function drawUiTabPlayerInfo(noMenus) {
                     UI_X + HALF_WIDTH + 25,
                     y,
                     1,
-                    WHITE
+                    colours.white
                 );
             }
 
@@ -34877,7 +34977,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         y += 6;
 
-        this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, BLACK);
+        this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, colours.black);
 
         if (selectedSkill !== -1) {
             this.surface.drawString(
@@ -34885,7 +34985,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                YELLOW
+                colours.yellow
             );
 
             y += 12;
@@ -34905,7 +35005,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
             y += 12;
             this.surface.drawString(
@@ -34913,10 +35013,16 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
         } else {
-            this.surface.drawString('Overall levels', UI_X + 5, y, 1, YELLOW);
+            this.surface.drawString(
+                'Overall levels',
+                UI_X + 5,
+                y,
+                1,
+                colours.yellow
+            );
             y += 12;
 
             let totalLevel = 0;
@@ -34930,7 +35036,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
 
             y += 12;
@@ -34940,7 +35046,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 UI_X + 5,
                 y,
                 1,
-                WHITE
+                colours.white
             );
 
             y += 12;
@@ -35000,7 +35106,7 @@ module.exports = {
     uiTabPlayerInfoSubTab: 0
 };
 
-},{}],74:[function(require,module,exports){
+},{"./_colours":63}],75:[function(require,module,exports){
 const selectedRecoverQuestions = [];
 selectedRecoverQuestions.length = 5;
 selectedRecoverQuestions.fill(null);
@@ -35015,19 +35121,16 @@ module.exports = {
     controlRecoverCreateButton: 0
 };
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
-
-const BLACK = 0;
-const ORANGE = 0xff8000;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const DIALOG_X = 56;
 const DIALOG_Y = 35;
-const WIDTH = 400;
 const HEIGHT = 290;
+const LINE_BREAK = 15;
+const WIDTH = 400;
 
 const INPUT_DIALOG_Y = DIALOG_Y + 95;
 const INPUT_HEIGHT = 100;
@@ -35049,6 +35152,7 @@ const RULES = [
 
 function drawDialogReportAbuse() {
     this.reportAbuseOffence = 0;
+
     let y = 135;
 
     for (let i = 0; i < 12; i++) {
@@ -35072,7 +35176,7 @@ function drawDialogReportAbuse() {
         return;
     }
 
-    y += 15;
+    y += LINE_BREAK;
 
     if (this.mouseButtonClick !== 0) {
         this.mouseButtonClick = 0;
@@ -35098,8 +35202,8 @@ function drawDialogReportAbuse() {
         }
     }
 
-    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, BLACK);
-    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, WHITE);
+    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.black);
+    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.white);
 
     y = 50;
 
@@ -35108,27 +35212,27 @@ function drawDialogReportAbuse() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     this.surface.drawStringCenter(
         'Using it sends a snapshot of the last 60 secs of activity to us',
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     this.surface.drawStringCenter(
         'If you misuse this form you will be banned',
         256,
         y,
         1,
-        ORANGE
+        colours.orange
     );
 
     y += 25;
@@ -35138,30 +35242,30 @@ function drawDialogReportAbuse() {
         256,
         y,
         1,
-        YELLOW
+        colours.yellow
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     this.surface.drawStringCenter(
         'explanation of each rule please read the manual on our website.',
         256,
         y,
         1,
-        YELLOW
+        colours.yellow
     );
 
-    y += 15;
+    y += LINE_BREAK;
 
     for (let i = 1; i < RULES.length + 1; i += 1) {
-        let textColour = 0;
+        let textColour = colours.black;
 
         // draw the box that highlights the string
         if (this.reportAbuseOffence === i) {
-            this.surface.drawBoxEdge(66, y - 12, 380, 15, WHITE);
-            textColour = ORANGE;
+            this.surface.drawBoxEdge(66, y - 12, 380, 15, colours.white);
+            textColour = colours.orange;
         } else {
-            textColour = WHITE;
+            textColour = colours.white;
         }
 
         const rule = RULES[i - 1];
@@ -35169,9 +35273,9 @@ function drawDialogReportAbuse() {
         y += 14;
     }
 
-    y += 15;
+    y += LINE_BREAK;
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > 196 &&
@@ -35179,7 +35283,7 @@ function drawDialogReportAbuse() {
         this.mouseY > y - 15 &&
         this.mouseY < y + 5
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
     }
 
     this.surface.drawStringCenter(
@@ -35212,13 +35316,20 @@ function drawDialogReportAbuseInput() {
         return;
     }
 
-    this.surface.drawBox(DIALOG_X, INPUT_DIALOG_Y, WIDTH, INPUT_HEIGHT, BLACK);
+    this.surface.drawBox(
+        DIALOG_X,
+        INPUT_DIALOG_Y,
+        WIDTH,
+        INPUT_HEIGHT,
+        colours.black
+    );
+
     this.surface.drawBoxEdge(
         DIALOG_X,
         INPUT_DIALOG_Y,
         WIDTH,
         INPUT_HEIGHT,
-        WHITE
+        colours.white
     );
 
     let y = INPUT_DIALOG_Y + 30;
@@ -35228,7 +35339,7 @@ function drawDialogReportAbuseInput() {
         256,
         y,
         1,
-        YELLOW
+        colours.yellow
     );
 
     y += 18;
@@ -35238,17 +35349,17 @@ function drawDialogReportAbuseInput() {
         256,
         y,
         4,
-        WHITE
+        colours.white
     );
 
     if (this.moderatorLevel > 0) {
         y = INPUT_DIALOG_Y + 77;
 
-        let textColour = WHITE;
+        let textColour = colours.white;
         let toggleText = 'OFF';
 
         if (this.reportAbuseMute) {
-            textColour = ORANGE;
+            textColour = colours.orange;
             toggleText = 'ON';
         }
 
@@ -35274,7 +35385,7 @@ function drawDialogReportAbuseInput() {
 
     y = 222;
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > 196 &&
@@ -35282,7 +35393,7 @@ function drawDialogReportAbuseInput() {
         this.mouseY > y - 13 &&
         this.mouseY < y + 2
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
 
         if (this.mouseButtonClick === 1) {
             this.mouseButtonClick = 0;
@@ -35311,20 +35422,19 @@ function drawDialogReportAbuseInput() {
 }
 
 module.exports = {
-    drawDialogReportAbuse: drawDialogReportAbuse,
-    drawDialogReportAbuseInput: drawDialogReportAbuseInput,
+    drawDialogReportAbuse,
+    drawDialogReportAbuseInput,
     reportAbuseMute: false,
     reportAbuseOffence: 0,
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":84}],76:[function(require,module,exports){
-const BLACK = 0;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
+},{"../opcodes/client":54,"../utility":85,"./_colours":63}],77:[function(require,module,exports){
+const colours = require('./_colours');
+
+const WIDTH = 400;
 
 function drawDialogServerMessage() {
-    let width = 400;
     let height = 100;
 
     if (this.serverMessageBoxTop) {
@@ -35333,56 +35443,58 @@ function drawDialogServerMessage() {
     }
 
     this.surface.drawBox(
-        256 - ((width / 2) | 0),
+        256 - ((WIDTH / 2) | 0),
         167 - ((height / 2) | 0),
-        width,
+        WIDTH,
         height,
-        BLACK
+        colours.black
     );
+
     this.surface.drawBoxEdge(
-        256 - ((width / 2) | 0),
+        256 - ((WIDTH / 2) | 0),
         167 - ((height / 2) | 0),
-        width,
+        WIDTH,
         height,
-        WHITE
+        colours.white
     );
+
     this.surface.drawParagraph(
         this.serverMessage,
         256,
         167 - ((height / 2) | 0) + 20,
         1,
-        WHITE,
-        width - 40
+        colours.white,
+        WIDTH - 40
     );
 
-    let i = 157 + ((height / 2) | 0);
-    let textColour = WHITE;
+    const offsetY = 157 + ((height / 2) | 0);
+    let textColour = colours.white;
 
     if (
-        this.mouseY > i - 12 &&
-        this.mouseY <= i &&
+        this.mouseY > offsetY - 12 &&
+        this.mouseY <= offsetY &&
         this.mouseX > 106 &&
         this.mouseX < 406
     ) {
-        textColour = RED;
+        textColour = colours.red;
     }
 
     this.surface.drawStringCenter(
         'Click here to close window',
         256,
-        i,
+        offsetY,
         1,
         textColour
     );
 
     if (this.mouseButtonClick === 1) {
-        if (textColour === RED) {
+        if (textColour === colours.red) {
             this.showDialogServerMessage = false;
         }
 
         if (
-            (this.mouseX < 256 - ((width / 2) | 0) ||
-                this.mouseX > 256 + ((width / 2) | 0)) &&
+            (this.mouseX < 256 - ((WIDTH / 2) | 0) ||
+                this.mouseX > 256 + ((WIDTH / 2) | 0)) &&
             (this.mouseY < 167 - ((height / 2) | 0) ||
                 this.mouseY > 167 + ((height / 2) | 0))
         ) {
@@ -35395,14 +35507,14 @@ function drawDialogServerMessage() {
 
 module.exports = { drawDialogServerMessage };
 
-},{}],77:[function(require,module,exports){
+},{"./_colours":63}],78:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
 
-const GREY = 0x989898;
-const WHITE = 0xffffff;
-const RED = 0xff0000;
-const YELLOW = 0xffff00;
+const LIGHT_GREY = 0xd0d0d0;
+
+const COINS_ID = 10;
 
 function drawDialogShop() {
     if (this.mouseButtonClick !== 0) {
@@ -35416,8 +35528,8 @@ function drawDialogShop() {
 
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 8; col++) {
-                    let slotX = 7 + col * 49;
-                    let slotY = 28 + row * 34;
+                    const slotX = 7 + col * 49;
+                    const slotY = 28 + row * 34;
 
                     if (
                         mouseX > slotX &&
@@ -35459,9 +35571,11 @@ function drawDialogShop() {
                             0;
 
                         this.packetStream.newPacket(clientOpcodes.SHOP_BUY);
+
                         this.packetStream.putShort(
                             this.shopItem[this.shopSelectedItemIndex]
                         );
+
                         this.packetStream.putInt(itemPrice);
                         this.packetStream.sendPacket();
                     }
@@ -35487,9 +35601,11 @@ function drawDialogShop() {
                             0;
 
                         this.packetStream.newPacket(clientOpcodes.SHOP_SELL);
+
                         this.packetStream.putShort(
                             this.shopItem[this.shopSelectedItemIndex]
                         );
+
                         this.packetStream.putInt(itemPrice);
                         this.packetStream.sendPacket();
                     }
@@ -35507,26 +35623,45 @@ function drawDialogShop() {
     const dialogY = 44;
 
     this.surface.drawBox(dialogX, dialogY, 408, 12, 192);
-    this.surface.drawBoxAlpha(dialogX, dialogY + 12, 408, 17, GREY, 160);
-    this.surface.drawBoxAlpha(dialogX, dialogY + 29, 8, 170, GREY, 160);
+
+    this.surface.drawBoxAlpha(
+        dialogX,
+        dialogY + 12,
+        408,
+        17,
+        colours.grey,
+        160
+    );
+
+    this.surface.drawBoxAlpha(dialogX, dialogY + 29, 8, 170, colours.grey, 160);
+
     this.surface.drawBoxAlpha(
         dialogX + 399,
         dialogY + 29,
         9,
         170,
-        GREY,
+        colours.grey,
         160
     );
-    this.surface.drawBoxAlpha(dialogX, dialogY + 199, 408, 47, GREY, 160);
+
+    this.surface.drawBoxAlpha(
+        dialogX,
+        dialogY + 199,
+        408,
+        47,
+        colours.grey,
+        160
+    );
+
     this.surface.drawString(
         'Buying and selling items',
         dialogX + 1,
         dialogY + 10,
         1,
-        WHITE
+        colours.white
     );
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > dialogX + 320 &&
@@ -35534,7 +35669,7 @@ function drawDialogShop() {
         this.mouseX < dialogX + 408 &&
         this.mouseY < dialogY + 12
     ) {
-        textColour = RED;
+        textColour = colours.red;
     }
 
     this.surface.drawStringRight(
@@ -35544,38 +35679,56 @@ function drawDialogShop() {
         1,
         textColour
     );
+
     this.surface.drawString(
         'Shops stock in green',
         dialogX + 2,
         dialogY + 24,
         1,
-        65280
+        colours.green
     );
+
     this.surface.drawString(
         'Number you own in blue',
         dialogX + 135,
         dialogY + 24,
         1,
-        65535
+        colours.cyan
     );
+
     this.surface.drawString(
-        'Your money: ' + this.getInventoryCount(10) + 'gp',
+        `Your money: ${this.getInventoryCount(COINS_ID)}gp`,
         dialogX + 280,
         dialogY + 24,
         1,
-        YELLOW
+        colours.yellow
     );
+
     let itemIndex = 0;
 
     for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 8; col++) {
-            let slotX = dialogX + 7 + col * 49;
-            let slotY = dialogY + 28 + row * 34;
+            const slotX = dialogX + 7 + col * 49;
+            const slotY = dialogY + 28 + row * 34;
 
             if (this.shopSelectedItemIndex === itemIndex) {
-                this.surface.drawBoxAlpha(slotX, slotY, 49, 34, RED, 160);
+                this.surface.drawBoxAlpha(
+                    slotX,
+                    slotY,
+                    49,
+                    34,
+                    colours.red,
+                    160
+                );
             } else {
-                this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xd0d0d0, 160);
+                this.surface.drawBoxAlpha(
+                    slotX,
+                    slotY,
+                    49,
+                    34,
+                    LIGHT_GREY,
+                    160
+                );
             }
 
             this.surface.drawBoxEdge(slotX, slotY, 50, 35, 0);
@@ -35593,19 +35746,21 @@ function drawDialogShop() {
                     0,
                     false
                 );
+
                 this.surface.drawString(
                     this.shopItemCount[itemIndex].toString(),
                     slotX + 1,
                     slotY + 10,
                     1,
-                    65280
+                    colours.green
                 );
+
                 this.surface.drawStringRight(
                     this.getInventoryCount(this.shopItem[itemIndex]).toString(),
                     slotX + 47,
                     slotY + 10,
                     1,
-                    65535
+                    colours.cyan
                 );
             }
 
@@ -35621,8 +35776,9 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 214,
             3,
-            YELLOW
+            colours.yellow
         );
+
         return;
     }
 
@@ -35639,22 +35795,18 @@ function drawDialogShop() {
             }
 
             const itemPrice =
-                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) |
-                0;
+                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) | 0;
 
             this.surface.drawString(
-                'Buy a new ' +
-                    GameData.itemName[selectedItemID] +
-                    ' for ' +
-                    itemPrice +
-                    'gp',
+                `Buy a new ${GameData.itemName[selectedItemID]} for ` +
+                    `${itemPrice}gp`,
                 dialogX + 2,
                 dialogY + 214,
                 1,
-                YELLOW
+                colours.yellow
             );
 
-            textColour = WHITE;
+            textColour = colours.white;
 
             if (
                 this.mouseX > dialogX + 298 &&
@@ -35662,7 +35814,7 @@ function drawDialogShop() {
                 this.mouseX < dialogX + 408 &&
                 this.mouseY <= dialogY + 215
             ) {
-                textColour = RED;
+                textColour = colours.red;
             }
 
             this.surface.drawStringRight(
@@ -35678,7 +35830,7 @@ function drawDialogShop() {
                 dialogX + 204,
                 dialogY + 214,
                 3,
-                YELLOW
+                colours.yellow
             );
         }
 
@@ -35692,19 +35844,18 @@ function drawDialogShop() {
             }
 
             const itemPrice =
-                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) |
-                0;
+                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) | 0;
 
             this.surface.drawStringRight(
                 `Sell your ${GameData.itemName[selectedItemID]} for ` +
-                    `${itemPrice} gp`,
+                    `${itemPrice}gp`,
                 dialogX + 405,
                 dialogY + 239,
                 1,
-                YELLOW
+                colours.yellow
             );
 
-            textColour = WHITE;
+            textColour = colours.white;
 
             if (
                 this.mouseX > dialogX + 2 &&
@@ -35712,7 +35863,7 @@ function drawDialogShop() {
                 this.mouseX < dialogX + 112 &&
                 this.mouseY <= dialogY + 240
             ) {
-                textColour = RED;
+                textColour = colours.red;
             }
 
             this.surface.drawString(
@@ -35731,20 +35882,20 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 239,
             3,
-            YELLOW
+            colours.yellow
         );
     }
 }
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54}],78:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],79:[function(require,module,exports){
+// dialog boxes for private messaging and ignore lists
+
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
-
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 function drawDialogSocialInput() {
     if (this.mouseButtonClick !== 0) {
@@ -35798,14 +35949,14 @@ function drawDialogSocialInput() {
 
     if (this.showDialogSocialInput === 1) {
         this.surface.drawBox(106, y, 300, 70, 0);
-        this.surface.drawBoxEdge(106, y, 300, 70, WHITE);
+        this.surface.drawBoxEdge(106, y, 300, 70, colours.white);
         y += 20;
         this.surface.drawStringCenter(
             'Enter name to add to friends list',
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         y += 20;
@@ -35815,7 +35966,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         if (this.inputTextFinal.length > 0) {
@@ -35835,7 +35986,7 @@ function drawDialogSocialInput() {
         }
     } else if (this.showDialogSocialInput === 2) {
         this.surface.drawBox(6, y, 500, 70, 0);
-        this.surface.drawBoxEdge(6, y, 500, 70, WHITE);
+        this.surface.drawBoxEdge(6, y, 500, 70, colours.white);
 
         y += 20;
 
@@ -35846,7 +35997,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         y += 20;
@@ -35856,7 +36007,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         if (this.inputPMFinal.length > 0) {
@@ -35888,7 +36039,7 @@ function drawDialogSocialInput() {
         }
     } else if (this.showDialogSocialInput === 3) {
         this.surface.drawBox(106, y, 300, 70, 0);
-        this.surface.drawBoxEdge(106, y, 300, 70, WHITE);
+        this.surface.drawBoxEdge(106, y, 300, 70, colours.white);
 
         y += 20;
 
@@ -35897,7 +36048,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         y += 20;
@@ -35907,7 +36058,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         if (this.inputTextFinal.length > 0) {
@@ -35927,7 +36078,7 @@ function drawDialogSocialInput() {
         }
     }
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > 236 &&
@@ -35935,7 +36086,7 @@ function drawDialogSocialInput() {
         this.mouseY > 193 &&
         this.mouseY < 213
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
     }
 
     this.surface.drawStringCenter('Cancel', 256, 208, 1, textColour);
@@ -35952,13 +36103,9 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":84,"../word-filter":86}],79:[function(require,module,exports){
+},{"../chat-message":40,"../utility":85,"../word-filter":87,"./_colours":63}],80:[function(require,module,exports){
 const Utility = require('../utility');
-
-const BLACK = 0;
-const LIGHT_GREY = 0xdcdcdc;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const HEIGHT = 182;
 const UI_X = 313;
@@ -35977,10 +36124,10 @@ function drawUiTabSocial(noMenus) {
         UI_Y + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
-        LIGHT_GREY,
+        colours.lightGrey,
         128
     );
-    this.surface.drawLineHoriz(UI_X, UI_Y + HEIGHT - 16, WIDTH, BLACK);
+    this.surface.drawLineHoriz(UI_X, UI_Y + HEIGHT - 16, WIDTH, colours.black);
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -36042,7 +36189,7 @@ function drawUiTabSocial(noMenus) {
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
-                    WHITE
+                    colours.white
                 );
             } else if (this.friendListOnline[friendIndex] === 255) {
                 this.surface.drawStringCenter(
@@ -36050,7 +36197,7 @@ function drawUiTabSocial(noMenus) {
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
-                    WHITE
+                    colours.white
                 );
             } else if (this.friendListOnline[friendIndex] > 0) {
                 if (this.friendListOnline[friendIndex] < 200) {
@@ -36060,7 +36207,7 @@ function drawUiTabSocial(noMenus) {
                         UI_X + HALF_WIDTH,
                         UI_Y + 35,
                         1,
-                        WHITE
+                        colours.white
                     );
                 } else {
                     this.surface.drawStringCenter(
@@ -36069,7 +36216,7 @@ function drawUiTabSocial(noMenus) {
                         UI_X + HALF_WIDTH,
                         UI_Y + 35,
                         1,
-                        WHITE
+                        colours.white
                     );
                 }
             } else {
@@ -36078,7 +36225,7 @@ function drawUiTabSocial(noMenus) {
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
-                    WHITE
+                    colours.white
                 );
             }
         } else {
@@ -36087,11 +36234,11 @@ function drawUiTabSocial(noMenus) {
                 UI_X + HALF_WIDTH,
                 UI_Y + 35,
                 1,
-                WHITE
+                colours.white
             );
         }
 
-        let textColour = 0;
+        let textColour = colours.black;
 
         if (
             this.mouseX > UI_X &&
@@ -36099,9 +36246,9 @@ function drawUiTabSocial(noMenus) {
             this.mouseY > UI_Y + HEIGHT - 16 &&
             this.mouseY < UI_Y + HEIGHT
         ) {
-            textColour = YELLOW;
+            textColour = colours.yellow;
         } else {
-            textColour = WHITE;
+            textColour = colours.white;
         }
 
         this.surface.drawStringCenter(
@@ -36124,7 +36271,7 @@ function drawUiTabSocial(noMenus) {
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
-                    WHITE
+                    colours.white
                 );
             }
         } else {
@@ -36133,11 +36280,11 @@ function drawUiTabSocial(noMenus) {
                 UI_X + HALF_WIDTH,
                 UI_Y + 35,
                 1,
-                WHITE
+                colours.white
             );
         }
 
-        let textColour = 0;
+        let textColour = colours.black;
 
         if (
             this.mouseX > UI_X &&
@@ -36145,9 +36292,9 @@ function drawUiTabSocial(noMenus) {
             this.mouseY > UI_Y + HEIGHT - 16 &&
             this.mouseY < UI_Y + HEIGHT
         ) {
-            textColour = YELLOW;
+            textColour = colours.yellow;
         } else {
-            textColour = WHITE;
+            textColour = colours.white;
         }
 
         this.surface.drawStringCenter(
@@ -36238,36 +36385,42 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":84}],80:[function(require,module,exports){
+},{"../utility":85,"./_colours":63}],81:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
-
-const CYAN = 0x00ffff;
-const GREY = 0x989898;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const DIALOG_X = 22;
 const DIALOG_Y = 36;
 
 function drawDialogTradeConfirm() {
     this.surface.drawBox(DIALOG_X, DIALOG_Y, 468, 16, 192);
-    this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + 16, 468, 246, GREY, 160);
+
+    this.surface.drawBoxAlpha(
+        DIALOG_X,
+        DIALOG_Y + 16,
+        468,
+        246,
+        colours.grey,
+        160
+    );
+
     this.surface.drawStringCenter(
         'Please confirm your trade with @yel@' +
             Utility.hashToUsername(this.tradeRecipientConfirmHash),
         DIALOG_X + 234,
         DIALOG_Y + 12,
         1,
-        WHITE
+        colours.white
     );
+
     this.surface.drawStringCenter(
         'You are about to give:',
         DIALOG_X + 117,
         DIALOG_Y + 30,
         1,
-        YELLOW
+        colours.yellow
     );
 
     for (let i = 0; i < this.tradeConfirmItemsCount; i++) {
@@ -36284,7 +36437,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 117,
             DIALOG_Y + 42 + i * 12,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -36294,7 +36447,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 117,
             DIALOG_Y + 42,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -36303,7 +36456,7 @@ function drawDialogTradeConfirm() {
         DIALOG_X + 351,
         DIALOG_Y + 30,
         1,
-        YELLOW
+        colours.yellow
     );
 
     for (let i = 0; i < this.tradeRecipientConfirmItemsCount; i++) {
@@ -36322,7 +36475,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 351,
             DIALOG_Y + 42 + i * 12,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -36332,7 +36485,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 351,
             DIALOG_Y + 42,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -36341,21 +36494,23 @@ function drawDialogTradeConfirm() {
         DIALOG_X + 234,
         DIALOG_Y + 200,
         4,
-        CYAN
+        colours.cyan
     );
+
     this.surface.drawStringCenter(
         'There is NO WAY to reverse a trade if you change your mind.',
         DIALOG_X + 234,
         DIALOG_Y + 215,
         1,
-        WHITE
+        colours.white
     );
+
     this.surface.drawStringCenter(
         'Remember that not all players are trustworthy',
         DIALOG_X + 234,
         DIALOG_Y + 230,
         1,
-        WHITE
+        colours.white
     );
 
     if (!this.tradeConfirmAccepted) {
@@ -36364,6 +36519,7 @@ function drawDialogTradeConfirm() {
             DIALOG_Y + 238,
             this.spriteMedia + 25
         );
+
         this.surface._drawSprite_from3(
             DIALOG_X + 352 - 35,
             DIALOG_Y + 238,
@@ -36375,7 +36531,7 @@ function drawDialogTradeConfirm() {
             DIALOG_X + 234,
             DIALOG_Y + 250,
             1,
-            YELLOW
+            colours.yellow
         );
     }
 
@@ -36422,15 +36578,12 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":84}],81:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":85,"./_colours":63}],82:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
 
-const BLACK = 0;
-const GREY = 0x989898;
 const LIGHT_GREY = 0xd0d0d0;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
 
 const DIALOG_X = 22;
 const DIALOG_Y = 36;
@@ -36519,11 +36672,11 @@ function drawDialogTrade() {
             }
 
             if (mouseX > 8 && mouseY > 30 && mouseX < 205 && mouseY < 133) {
-                let itemIndex =
+                const itemIndex =
                     (((mouseX - 9) / 49) | 0) + (((mouseY - 31) / 34) | 0) * 4;
 
                 if (itemIndex >= 0 && itemIndex < this.tradeItemsCount) {
-                    let itemType = this.tradeItems[itemIndex];
+                    const itemType = this.tradeItems[itemIndex];
 
                     for (
                         let i = 0;
@@ -36600,27 +36753,68 @@ function drawDialogTrade() {
     }
 
     this.surface.drawBox(DIALOG_X, DIALOG_Y, 468, 12, 192);
-    this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + 12, 468, 18, GREY, 160);
-    this.surface.drawBoxAlpha(DIALOG_X, DIALOG_Y + 30, 8, 248, GREY, 160);
+    this.surface.drawBoxAlpha(
+        DIALOG_X,
+        DIALOG_Y + 12,
+        468,
+        18,
+        colours.grey,
+        160
+    );
+    this.surface.drawBoxAlpha(
+        DIALOG_X,
+        DIALOG_Y + 30,
+        8,
+        248,
+        colours.grey,
+        160
+    );
+
     this.surface.drawBoxAlpha(
         DIALOG_X + 205,
         DIALOG_Y + 30,
         11,
         248,
-        GREY,
+        colours.grey,
         160
     );
-    this.surface.drawBoxAlpha(DIALOG_X + 462, DIALOG_Y + 30, 6, 248, GREY, 160);
-    this.surface.drawBoxAlpha(DIALOG_X + 8, DIALOG_Y + 133, 197, 22, GREY, 160);
-    this.surface.drawBoxAlpha(DIALOG_X + 8, DIALOG_Y + 258, 197, 20, GREY, 160);
+
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 462,
+        DIALOG_Y + 30,
+        6,
+        248,
+        colours.grey,
+        160
+    );
+
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 8,
+        DIALOG_Y + 133,
+        197,
+        22,
+        colours.grey,
+        160
+    );
+
+    this.surface.drawBoxAlpha(
+        DIALOG_X + 8,
+        DIALOG_Y + 258,
+        197,
+        20,
+        colours.grey,
+        160
+    );
+
     this.surface.drawBoxAlpha(
         DIALOG_X + 216,
         DIALOG_Y + 235,
         246,
         43,
-        GREY,
+        colours.grey,
         160
     );
+
     this.surface.drawBoxAlpha(
         DIALOG_X + 8,
         DIALOG_Y + 30,
@@ -36629,6 +36823,7 @@ function drawDialogTrade() {
         LIGHT_GREY,
         160
     );
+
     this.surface.drawBoxAlpha(
         DIALOG_X + 8,
         DIALOG_Y + 155,
@@ -36637,6 +36832,7 @@ function drawDialogTrade() {
         LIGHT_GREY,
         160
     );
+
     this.surface.drawBoxAlpha(
         DIALOG_X + 216,
         DIALOG_Y + 30,
@@ -36651,7 +36847,7 @@ function drawDialogTrade() {
             DIALOG_X + 8,
             DIALOG_Y + 30 + i * 34,
             197,
-            BLACK
+            colours.black
         );
     }
 
@@ -36660,7 +36856,7 @@ function drawDialogTrade() {
             DIALOG_X + 8,
             DIALOG_Y + 155 + i * 34,
             197,
-            BLACK
+            colours.black
         );
     }
 
@@ -36669,7 +36865,7 @@ function drawDialogTrade() {
             DIALOG_X + 216,
             DIALOG_Y + 30 + i * 34,
             246,
-            BLACK
+            colours.black
         );
     }
 
@@ -36679,13 +36875,13 @@ function drawDialogTrade() {
                 DIALOG_X + 8 + i * 49,
                 DIALOG_Y + 30,
                 103,
-                BLACK
+                colours.black
             );
             this.surface.drawLineVert(
                 DIALOG_X + 8 + i * 49,
                 DIALOG_Y + 155,
                 103,
-                BLACK
+                colours.black
             );
         }
 
@@ -36693,7 +36889,7 @@ function drawDialogTrade() {
             DIALOG_X + 216 + i * 49,
             DIALOG_Y + 30,
             205,
-            BLACK
+            colours.black
         );
     }
 
@@ -36702,28 +36898,31 @@ function drawDialogTrade() {
         DIALOG_X + 1,
         DIALOG_Y + 10,
         1,
-        WHITE
+        colours.white
     );
+
     this.surface.drawString(
         'Your Offer',
         DIALOG_X + 9,
         DIALOG_Y + 27,
         4,
-        WHITE
+        colours.white
     );
+
     this.surface.drawString(
         "Opponent's Offer",
         DIALOG_X + 9,
         DIALOG_Y + 152,
         4,
-        WHITE
+        colours.white
     );
+
     this.surface.drawString(
         'Your Inventory',
         DIALOG_X + 216,
         DIALOG_Y + 27,
         4,
-        WHITE
+        colours.white
     );
 
     if (!this.tradeAccepted) {
@@ -36746,14 +36945,15 @@ function drawDialogTrade() {
             DIALOG_X + 341,
             DIALOG_Y + 246,
             1,
-            WHITE
+            colours.white
         );
+
         this.surface.drawStringCenter(
             'has accepted',
             DIALOG_X + 341,
             DIALOG_Y + 256,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -36763,14 +36963,15 @@ function drawDialogTrade() {
             DIALOG_X + 217 + 35,
             DIALOG_Y + 246,
             1,
-            WHITE
+            colours.white
         );
+
         this.surface.drawStringCenter(
             'other player',
             DIALOG_X + 217 + 35,
             DIALOG_Y + 256,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -36796,7 +36997,7 @@ function drawDialogTrade() {
                 slotX + 1,
                 slotY + 10,
                 1,
-                YELLOW
+                colours.yellow
             );
         }
     }
@@ -36823,7 +37024,7 @@ function drawDialogTrade() {
                 slotX + 1,
                 slotY + 10,
                 1,
-                YELLOW
+                colours.yellow
             );
         }
 
@@ -36839,7 +37040,7 @@ function drawDialogTrade() {
                 DIALOG_X + 8,
                 DIALOG_Y + 273,
                 1,
-                YELLOW
+                colours.yellow
             );
         }
     }
@@ -36866,7 +37067,7 @@ function drawDialogTrade() {
                 slotX + 1,
                 slotY + 10,
                 1,
-                YELLOW
+                colours.yellow
             );
         }
 
@@ -36883,7 +37084,7 @@ function drawDialogTrade() {
                 DIALOG_X + 8,
                 DIALOG_Y + 273,
                 1,
-                YELLOW
+                colours.yellow
             );
         }
     }
@@ -36894,11 +37095,8 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54}],82:[function(require,module,exports){
-const ORANGE = 0xff8000;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],83:[function(require,module,exports){
+const colours = require('./_colours');
 
 const WIDTH = 400;
 
@@ -36925,7 +37123,7 @@ function drawDialogWelcome() {
         167 - ((height / 2) | 0),
         WIDTH,
         height,
-        WHITE
+        colours.white
     );
 
     y += 20;
@@ -36935,7 +37133,7 @@ function drawDialogWelcome() {
         256,
         y,
         4,
-        YELLOW
+        colours.yellow
     );
 
     y += 30;
@@ -36956,7 +37154,7 @@ function drawDialogWelcome() {
             256,
             y,
             1,
-            WHITE
+            colours.white
         );
 
         y += 15;
@@ -36972,7 +37170,7 @@ function drawDialogWelcome() {
             256,
             y,
             1,
-            WHITE
+            colours.white
         );
 
         y += 15;
@@ -36980,7 +37178,7 @@ function drawDialogWelcome() {
     }
 
     if (this.welcomeUnreadMessages > 0) {
-        let textColour = WHITE;
+        const textColour = colours.white;
 
         this.surface.drawStringCenter(
             'Jagex staff will NEVER email you. We use the',
@@ -37008,7 +37206,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                WHITE
+                colours.white
             );
         } else {
             this.surface.drawStringCenter(
@@ -37018,7 +37216,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                WHITE
+                colours.white
             );
         }
 
@@ -37033,7 +37231,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                ORANGE
+                colours.orange
             );
 
             y += 15;
@@ -37043,7 +37241,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                ORANGE
+                colours.orange
             );
 
             y += 15;
@@ -37054,7 +37252,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                ORANGE
+                colours.orange
             );
 
             y += 15;
@@ -37074,7 +37272,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                ORANGE
+                colours.orange
             );
 
             y += 15;
@@ -37085,7 +37283,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                ORANGE
+                colours.orange
             );
 
             y += 15;
@@ -37096,7 +37294,7 @@ function drawDialogWelcome() {
                 256,
                 y,
                 1,
-                ORANGE
+                colours.orange
             );
 
             y += 15;
@@ -37105,7 +37303,7 @@ function drawDialogWelcome() {
         y += 15;
     }
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseY > y - 12 &&
@@ -37113,7 +37311,7 @@ function drawDialogWelcome() {
         this.mouseX > 106 &&
         this.mouseX < 406
     ) {
-        textColour = RED;
+        textColour = colours.red;
     }
 
     this.surface.drawStringCenter(
@@ -37125,7 +37323,7 @@ function drawDialogWelcome() {
     );
 
     if (this.mouseButtonClick === 1) {
-        if (textColour === RED) {
+        if (textColour === colours.red) {
             this.showDialogWelcome = false;
         }
 
@@ -37146,23 +37344,21 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{}],83:[function(require,module,exports){
-const BLACK = 0;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
+},{"./_colours":63}],84:[function(require,module,exports){
+const colours = require('./_colours');
 
 function drawDialogWildWarn() {
     let y = 97;
 
-    this.surface.drawBox(86, 77, 340, 180, BLACK);
-    this.surface.drawBoxEdge(86, 77, 340, 180, WHITE);
+    this.surface.drawBox(86, 77, 340, 180, colours.black);
+    this.surface.drawBoxEdge(86, 77, 340, 180, colours.white);
 
     this.surface.drawStringCenter(
         'Warning! Proceed with caution',
         256,
         y,
         4,
-        RED
+        colours.red
     );
 
     y += 26;
@@ -37172,7 +37368,7 @@ function drawDialogWildWarn() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += 13;
@@ -37182,7 +37378,7 @@ function drawDialogWildWarn() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += 13;
@@ -37192,7 +37388,7 @@ function drawDialogWildWarn() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += 22;
@@ -37202,7 +37398,7 @@ function drawDialogWildWarn() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += 13;
@@ -37212,7 +37408,7 @@ function drawDialogWildWarn() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += 22;
@@ -37222,7 +37418,7 @@ function drawDialogWildWarn() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += 13;
@@ -37232,12 +37428,12 @@ function drawDialogWildWarn() {
         256,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += 22;
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseY > y - 12 &&
@@ -37245,7 +37441,7 @@ function drawDialogWildWarn() {
         this.mouseX > 181 &&
         this.mouseX < 331
     ) {
-        textColour = RED;
+        textColour = colours.red;
     }
 
     this.surface.drawStringCenter(
@@ -37284,7 +37480,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{}],84:[function(require,module,exports){
+},{"./_colours":63}],85:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -37673,7 +37869,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],85:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],86:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -37687,7 +37883,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],86:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -38868,7 +39064,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 module.exports = WordFilter;
 
 
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -41394,4 +41590,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":84,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":85,"ndarray":34}]},{},[1]);

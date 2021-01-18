@@ -1,11 +1,10 @@
-const BLACK = 0;
-const WHITE = 0xffffff;
+const colours = require('./_colours');
 
 const DIALOG_X = 106;
 const DIALOG_Y = 150;
-
-const WIDTH = 300;
 const HEIGHT = 60;
+const LINE_BREAK = 25;
+const WIDTH = 300;
 
 function drawDialogChangePassword() {
     if (this.mouseButtonClick !== 0) {
@@ -14,7 +13,7 @@ function drawDialogChangePassword() {
         if (
             this.mouseX < DIALOG_X ||
             this.mouseY < DIALOG_Y ||
-            this.mouseX > WIDTH + DIALOG_X  ||
+            this.mouseX > WIDTH + DIALOG_X ||
             this.mouseY > HEIGHT + DIALOG_Y
         ) {
             this.showChangePasswordStep = 0;
@@ -22,8 +21,8 @@ function drawDialogChangePassword() {
         }
     }
 
-    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, BLACK);
-    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, WHITE);
+    this.surface.drawBox(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.black);
+    this.surface.drawBoxEdge(DIALOG_X, DIALOG_Y, WIDTH, HEIGHT, colours.white);
 
     let y = DIALOG_Y + 22;
     let passwordInput = '';
@@ -34,10 +33,10 @@ function drawDialogChangePassword() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
-        y += 25;
+        y += LINE_BREAK;
 
         passwordInput = '*';
 
@@ -45,7 +44,7 @@ function drawDialogChangePassword() {
             passwordInput = 'X' + passwordInput;
         }
 
-        this.surface.drawStringCenter(passwordInput, 256, y, 4, WHITE);
+        this.surface.drawStringCenter(passwordInput, 256, y, 4, colours.white);
 
         if (this.inputTextFinal.length > 0) {
             this.changePasswordOld = this.inputTextFinal;
@@ -60,10 +59,10 @@ function drawDialogChangePassword() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
-        y += 25;
+        y += LINE_BREAK;
 
         passwordInput = '*';
 
@@ -71,7 +70,7 @@ function drawDialogChangePassword() {
             passwordInput = 'X' + passwordInput;
         }
 
-        this.surface.drawStringCenter(passwordInput, 256, y, 4, WHITE);
+        this.surface.drawStringCenter(passwordInput, 256, y, 4, colours.white);
 
         if (this.inputTextFinal.length > 0) {
             this.changePasswordNew = this.inputTextFinal;
@@ -92,10 +91,10 @@ function drawDialogChangePassword() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
-        y += 25;
+        y += LINE_BREAK;
 
         passwordInput = '*';
 
@@ -103,7 +102,7 @@ function drawDialogChangePassword() {
             passwordInput = 'X' + passwordInput;
         }
 
-        this.surface.drawStringCenter(passwordInput, 256, y, 4, WHITE);
+        this.surface.drawStringCenter(passwordInput, 256, y, 4, colours.white);
 
         if (this.inputTextFinal.length > 0) {
             if (
@@ -128,17 +127,17 @@ function drawDialogChangePassword() {
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
-            y += 25;
+            y += LINE_BREAK;
 
             this.surface.drawStringCenter(
                 'Press any key to close',
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
             return;
@@ -150,17 +149,17 @@ function drawDialogChangePassword() {
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
-            y += 25;
+            y += LINE_BREAK;
 
             this.surface.drawStringCenter(
                 'Press any key to close',
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
 
             return;
@@ -172,15 +171,17 @@ function drawDialogChangePassword() {
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
-            y += 25;
+
+            y += LINE_BREAK;
+
             this.surface.drawStringCenter(
                 'least 5 letters long',
                 256,
                 y,
                 4,
-                WHITE
+                colours.white
             );
         }
     }

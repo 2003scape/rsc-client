@@ -1,9 +1,5 @@
 const GameData = require('../game-data');
-
-const BLACK = 0;
-const DARK_GREY = 0xb5b5b5;
-const RED = 0xff0000;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const UI_X = 512 - 248;
 const UI_Y = 36;
@@ -16,9 +12,16 @@ function drawUiTabInventory(noMenus) {
         const slotY = 36 + ((i / 5) | 0) * 34;
 
         if (i < this.inventoryItemsCount && this.inventoryEquipped[i] === 1) {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, RED, 128);
+            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, colours.red, 128);
         } else {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, DARK_GREY, 128);
+            this.surface.drawBoxAlpha(
+                slotX,
+                slotY,
+                49,
+                34,
+                colours.darkGrey,
+                128
+            );
         }
 
         if (i < this.inventoryItemsCount) {
@@ -44,7 +47,7 @@ function drawUiTabInventory(noMenus) {
                     slotX + 1,
                     slotY + 10,
                     1,
-                    YELLOW
+                    colours.yellow
                 );
             }
         }
@@ -56,12 +59,12 @@ function drawUiTabInventory(noMenus) {
             UI_X + i * 49,
             36,
             ((this.inventoryMaxItemCount / 5) | 0) * 34,
-            BLACK
+            colours.black
         );
     }
 
     for (let i = 1; i <= ((this.inventoryMaxItemCount / 5) | 0) - 1; i++) {
-        this.surface.drawLineHoriz(UI_X, 36 + i * 34, 245, BLACK);
+        this.surface.drawLineHoriz(UI_X, 36 + i * 34, 245, colours.black);
     }
 
     if (!noMenus) {

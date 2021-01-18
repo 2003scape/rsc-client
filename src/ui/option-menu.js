@@ -1,7 +1,5 @@
 const clientOpcodes = require('../opcodes/client');
-
-const CYAN = 0x00ffff;
-const RED = 0xff0000;
+const colours = require('./_colours');
 
 function drawOptionMenu() {
     if (this.mouseButtonClick !== 0) {
@@ -27,14 +25,14 @@ function drawOptionMenu() {
     }
 
     for (let i = 0; i < this.optionMenuCount; i++) {
-        let textColour = CYAN;
+        let textColour = colours.cyan;
 
         if (
             this.mouseX < this.surface.textWidth(this.optionMenuEntry[i], 1) &&
             this.mouseY > i * 12 &&
             this.mouseY < 12 + i * 12
         ) {
-            textColour = RED;
+            textColour = colours.red;
         }
 
         this.surface.drawString(

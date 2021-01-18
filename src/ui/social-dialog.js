@@ -1,9 +1,9 @@
+// dialog boxes for private messaging and ignore lists
+
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
-
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 function drawDialogSocialInput() {
     if (this.mouseButtonClick !== 0) {
@@ -57,14 +57,14 @@ function drawDialogSocialInput() {
 
     if (this.showDialogSocialInput === 1) {
         this.surface.drawBox(106, y, 300, 70, 0);
-        this.surface.drawBoxEdge(106, y, 300, 70, WHITE);
+        this.surface.drawBoxEdge(106, y, 300, 70, colours.white);
         y += 20;
         this.surface.drawStringCenter(
             'Enter name to add to friends list',
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         y += 20;
@@ -74,7 +74,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         if (this.inputTextFinal.length > 0) {
@@ -94,7 +94,7 @@ function drawDialogSocialInput() {
         }
     } else if (this.showDialogSocialInput === 2) {
         this.surface.drawBox(6, y, 500, 70, 0);
-        this.surface.drawBoxEdge(6, y, 500, 70, WHITE);
+        this.surface.drawBoxEdge(6, y, 500, 70, colours.white);
 
         y += 20;
 
@@ -105,7 +105,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         y += 20;
@@ -115,7 +115,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         if (this.inputPMFinal.length > 0) {
@@ -147,7 +147,7 @@ function drawDialogSocialInput() {
         }
     } else if (this.showDialogSocialInput === 3) {
         this.surface.drawBox(106, y, 300, 70, 0);
-        this.surface.drawBoxEdge(106, y, 300, 70, WHITE);
+        this.surface.drawBoxEdge(106, y, 300, 70, colours.white);
 
         y += 20;
 
@@ -156,7 +156,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         y += 20;
@@ -166,7 +166,7 @@ function drawDialogSocialInput() {
             256,
             y,
             4,
-            WHITE
+            colours.white
         );
 
         if (this.inputTextFinal.length > 0) {
@@ -186,7 +186,7 @@ function drawDialogSocialInput() {
         }
     }
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > 236 &&
@@ -194,7 +194,7 @@ function drawDialogSocialInput() {
         this.mouseY > 193 &&
         this.mouseY < 213
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
     }
 
     this.surface.drawStringCenter('Cancel', 256, 208, 1, textColour);

@@ -1,10 +1,10 @@
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
 
-const GREY = 0x989898;
-const WHITE = 0xffffff;
-const RED = 0xff0000;
-const YELLOW = 0xffff00;
+const LIGHT_GREY = 0xd0d0d0;
+
+const COINS_ID = 10;
 
 function drawDialogShop() {
     if (this.mouseButtonClick !== 0) {
@@ -18,8 +18,8 @@ function drawDialogShop() {
 
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 8; col++) {
-                    let slotX = 7 + col * 49;
-                    let slotY = 28 + row * 34;
+                    const slotX = 7 + col * 49;
+                    const slotY = 28 + row * 34;
 
                     if (
                         mouseX > slotX &&
@@ -61,9 +61,11 @@ function drawDialogShop() {
                             0;
 
                         this.packetStream.newPacket(clientOpcodes.SHOP_BUY);
+
                         this.packetStream.putShort(
                             this.shopItem[this.shopSelectedItemIndex]
                         );
+
                         this.packetStream.putInt(itemPrice);
                         this.packetStream.sendPacket();
                     }
@@ -89,9 +91,11 @@ function drawDialogShop() {
                             0;
 
                         this.packetStream.newPacket(clientOpcodes.SHOP_SELL);
+
                         this.packetStream.putShort(
                             this.shopItem[this.shopSelectedItemIndex]
                         );
+
                         this.packetStream.putInt(itemPrice);
                         this.packetStream.sendPacket();
                     }
@@ -109,26 +113,45 @@ function drawDialogShop() {
     const dialogY = 44;
 
     this.surface.drawBox(dialogX, dialogY, 408, 12, 192);
-    this.surface.drawBoxAlpha(dialogX, dialogY + 12, 408, 17, GREY, 160);
-    this.surface.drawBoxAlpha(dialogX, dialogY + 29, 8, 170, GREY, 160);
+
+    this.surface.drawBoxAlpha(
+        dialogX,
+        dialogY + 12,
+        408,
+        17,
+        colours.grey,
+        160
+    );
+
+    this.surface.drawBoxAlpha(dialogX, dialogY + 29, 8, 170, colours.grey, 160);
+
     this.surface.drawBoxAlpha(
         dialogX + 399,
         dialogY + 29,
         9,
         170,
-        GREY,
+        colours.grey,
         160
     );
-    this.surface.drawBoxAlpha(dialogX, dialogY + 199, 408, 47, GREY, 160);
+
+    this.surface.drawBoxAlpha(
+        dialogX,
+        dialogY + 199,
+        408,
+        47,
+        colours.grey,
+        160
+    );
+
     this.surface.drawString(
         'Buying and selling items',
         dialogX + 1,
         dialogY + 10,
         1,
-        WHITE
+        colours.white
     );
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > dialogX + 320 &&
@@ -136,7 +159,7 @@ function drawDialogShop() {
         this.mouseX < dialogX + 408 &&
         this.mouseY < dialogY + 12
     ) {
-        textColour = RED;
+        textColour = colours.red;
     }
 
     this.surface.drawStringRight(
@@ -146,38 +169,56 @@ function drawDialogShop() {
         1,
         textColour
     );
+
     this.surface.drawString(
         'Shops stock in green',
         dialogX + 2,
         dialogY + 24,
         1,
-        65280
+        colours.green
     );
+
     this.surface.drawString(
         'Number you own in blue',
         dialogX + 135,
         dialogY + 24,
         1,
-        65535
+        colours.cyan
     );
+
     this.surface.drawString(
-        'Your money: ' + this.getInventoryCount(10) + 'gp',
+        `Your money: ${this.getInventoryCount(COINS_ID)}gp`,
         dialogX + 280,
         dialogY + 24,
         1,
-        YELLOW
+        colours.yellow
     );
+
     let itemIndex = 0;
 
     for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 8; col++) {
-            let slotX = dialogX + 7 + col * 49;
-            let slotY = dialogY + 28 + row * 34;
+            const slotX = dialogX + 7 + col * 49;
+            const slotY = dialogY + 28 + row * 34;
 
             if (this.shopSelectedItemIndex === itemIndex) {
-                this.surface.drawBoxAlpha(slotX, slotY, 49, 34, RED, 160);
+                this.surface.drawBoxAlpha(
+                    slotX,
+                    slotY,
+                    49,
+                    34,
+                    colours.red,
+                    160
+                );
             } else {
-                this.surface.drawBoxAlpha(slotX, slotY, 49, 34, 0xd0d0d0, 160);
+                this.surface.drawBoxAlpha(
+                    slotX,
+                    slotY,
+                    49,
+                    34,
+                    LIGHT_GREY,
+                    160
+                );
             }
 
             this.surface.drawBoxEdge(slotX, slotY, 50, 35, 0);
@@ -195,19 +236,21 @@ function drawDialogShop() {
                     0,
                     false
                 );
+
                 this.surface.drawString(
                     this.shopItemCount[itemIndex].toString(),
                     slotX + 1,
                     slotY + 10,
                     1,
-                    65280
+                    colours.green
                 );
+
                 this.surface.drawStringRight(
                     this.getInventoryCount(this.shopItem[itemIndex]).toString(),
                     slotX + 47,
                     slotY + 10,
                     1,
-                    65535
+                    colours.cyan
                 );
             }
 
@@ -223,8 +266,9 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 214,
             3,
-            YELLOW
+            colours.yellow
         );
+
         return;
     }
 
@@ -241,22 +285,18 @@ function drawDialogShop() {
             }
 
             const itemPrice =
-                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) |
-                0;
+                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) | 0;
 
             this.surface.drawString(
-                'Buy a new ' +
-                    GameData.itemName[selectedItemID] +
-                    ' for ' +
-                    itemPrice +
-                    'gp',
+                `Buy a new ${GameData.itemName[selectedItemID]} for ` +
+                    `${itemPrice}gp`,
                 dialogX + 2,
                 dialogY + 214,
                 1,
-                YELLOW
+                colours.yellow
             );
 
-            textColour = WHITE;
+            textColour = colours.white;
 
             if (
                 this.mouseX > dialogX + 298 &&
@@ -264,7 +304,7 @@ function drawDialogShop() {
                 this.mouseX < dialogX + 408 &&
                 this.mouseY <= dialogY + 215
             ) {
-                textColour = RED;
+                textColour = colours.red;
             }
 
             this.surface.drawStringRight(
@@ -280,7 +320,7 @@ function drawDialogShop() {
                 dialogX + 204,
                 dialogY + 214,
                 3,
-                YELLOW
+                colours.yellow
             );
         }
 
@@ -294,19 +334,18 @@ function drawDialogShop() {
             }
 
             const itemPrice =
-                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) |
-                0;
+                ((priceMod * GameData.itemBasePrice[selectedItemID]) / 100) | 0;
 
             this.surface.drawStringRight(
                 `Sell your ${GameData.itemName[selectedItemID]} for ` +
-                    `${itemPrice} gp`,
+                    `${itemPrice}gp`,
                 dialogX + 405,
                 dialogY + 239,
                 1,
-                YELLOW
+                colours.yellow
             );
 
-            textColour = WHITE;
+            textColour = colours.white;
 
             if (
                 this.mouseX > dialogX + 2 &&
@@ -314,7 +353,7 @@ function drawDialogShop() {
                 this.mouseX < dialogX + 112 &&
                 this.mouseY <= dialogY + 240
             ) {
-                textColour = RED;
+                textColour = colours.red;
             }
 
             this.surface.drawString(
@@ -333,7 +372,7 @@ function drawDialogShop() {
             dialogX + 204,
             dialogY + 239,
             3,
-            YELLOW
+            colours.yellow
         );
     }
 }

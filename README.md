@@ -77,6 +77,18 @@ make sure that wherever you host it, it's able to access
 [XHR](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest)
 for its cache files.
 
+## faq
+* what is the purpose of `| 0`? why not use `Math.floor()`?
+
+  `number | 0` is an
+  [asm.js](https://github.com/zbjornson/human-asmjs#11-type-declaration)
+  declaration for declaring a number as a 32-bit integer. a lot of the original
+  java client used integer overflow techniques, and this is the most performant
+  way to cast and indicate to the compiler the correct type and accomplish the
+  correct behaviour (as javascript's
+  [Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
+  is an [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754)).
+
 ## license
 Copyright 2020  2003Scape Team
 

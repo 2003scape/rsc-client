@@ -1,10 +1,5 @@
 const Scene = require('../scene');
-
-const CYAN = 0x00ffff;
-const GREEN = 0x00ff00;
-const RED = 0xff0000;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
+const colours = require('./_colours');
 
 const HEIGHT = 152;
 const UI_X = 313;
@@ -60,6 +55,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         let objectY =
             (((this.objectY[i] * this.magicLoc +
                 64 -
@@ -68,6 +64,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         const tempX = (objectY * sin + objectX * cos) >> 18;
 
         objectY = (objectY * cos - objectX * sin) >> 18;
@@ -76,7 +73,7 @@ function drawUiTabMinimap(noMenus) {
         this.drawMinimapEntity(
             x + HALF_WIDTH + objectX,
             UI_Y + HALF_HEIGHT - objectY,
-            CYAN
+            colours.cyan
         );
     }
 
@@ -89,6 +86,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         let itemY =
             (((this.groundItemY[i] * this.magicLoc +
                 64 -
@@ -97,6 +95,7 @@ function drawUiTabMinimap(noMenus) {
                 scale) /
                 2048) |
             0;
+
         const tempX = (itemY * sin + itemX * cos) >> 18;
 
         itemY = (itemY * cos - itemX * sin) >> 18;
@@ -105,18 +104,21 @@ function drawUiTabMinimap(noMenus) {
         this.drawMinimapEntity(
             x + HALF_WIDTH + itemX,
             UI_Y + HALF_HEIGHT - itemY,
-            RED
+            colours.red
         );
     }
 
     for (let i = 0; i < this.npcCount; i++) {
         const npc = this.npcs[i];
+
         let npcX =
             (((npc.currentX - this.localPlayer.currentX) * 3 * scale) / 2048) |
             0;
+
         let npcY =
             (((npc.currentY - this.localPlayer.currentY) * 3 * scale) / 2048) |
             0;
+
         const tempX = (npcY * sin + npcX * cos) >> 18;
 
         npcY = (npcY * cos - npcX * sin) >> 18;
@@ -125,26 +127,29 @@ function drawUiTabMinimap(noMenus) {
         this.drawMinimapEntity(
             x + HALF_WIDTH + npcX,
             UI_Y + HALF_HEIGHT - npcY,
-            YELLOW
+            colours.yellow
         );
     }
 
     for (let i = 0; i < this.playerCount; i++) {
         const player = this.players[i];
+
         let otherPlayerX =
             (((player.currentX - this.localPlayer.currentX) * 3 * scale) /
                 2048) |
             0;
+
         let otherPlayerY =
             (((player.currentY - this.localPlayer.currentY) * 3 * scale) /
                 2048) |
             0;
+
         const tempX = (otherPlayerY * sin + otherPlayerX * cos) >> 18;
 
         otherPlayerY = (otherPlayerY * cos - otherPlayerX * sin) >> 18;
         otherPlayerX = tempX;
 
-        let playerColour = WHITE;
+        let playerColour = colours.white;
 
         for (let j = 0; j < this.friendListCount; j++) {
             if (
@@ -154,7 +159,7 @@ function drawUiTabMinimap(noMenus) {
                 continue;
             }
 
-            playerColour = GREEN;
+            playerColour = colours.green;
             break;
         }
 
@@ -165,7 +170,13 @@ function drawUiTabMinimap(noMenus) {
         );
     }
 
-    this.surface.drawCircle(x + HALF_WIDTH, UI_Y + HALF_HEIGHT, 2, WHITE, 255);
+    this.surface.drawCircle(
+        x + HALF_WIDTH,
+        UI_Y + HALF_HEIGHT,
+        2,
+        colours.white,
+        255
+    );
 
     // compass
     this.surface.drawMinimapSprite(
@@ -199,8 +210,10 @@ function drawUiTabMinimap(noMenus) {
 
     if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
         let dX = (((this.mouseX - (x + HALF_WIDTH)) * 16384) / (3 * scale)) | 0;
+
         let dY =
             (((this.mouseY - (UI_Y + HALF_HEIGHT)) * 16384) / (3 * scale)) | 0;
+
         const tempX = (dY * sin + dX * cos) >> 15;
 
         dY = (dY * cos - dX * sin) >> 15;

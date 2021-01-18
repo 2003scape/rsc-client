@@ -1,10 +1,8 @@
 const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
 
-const BLACK = 0;
 const DARK_GREY = 0xb5b5b5;
 const LIGHT_GREY = 0xc9c9c9;
-const WHITE = 0xffffff;
-const YELLOW = 0xffff00;
 
 const UI_X = 313;
 const UI_Y = 36;
@@ -22,7 +20,13 @@ function drawUiTabOptions(noMenus) {
     const x = UI_X + 3;
     let y = UI_Y + LINE_BREAK;
 
-    this.surface.drawString('Game options - click to toggle', x, y, 1, BLACK);
+    this.surface.drawString(
+        'Game options - click to toggle',
+        x,
+        y,
+        1,
+        colours.black
+    );
 
     y += LINE_BREAK;
 
@@ -32,7 +36,7 @@ function drawUiTabOptions(noMenus) {
         x,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -43,7 +47,7 @@ function drawUiTabOptions(noMenus) {
         x,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -55,7 +59,7 @@ function drawUiTabOptions(noMenus) {
             x,
             y,
             1,
-            WHITE
+            colours.white
         );
     }
 
@@ -63,8 +67,10 @@ function drawUiTabOptions(noMenus) {
 
     if (this.options.accountManagement) {
         y += 5;
+
         this.surface.drawString('Security settings', x, y, 1, 0);
-        y += 15;
+
+        y += LINE_BREAK;
 
         let textColour = 0xffffff;
 
@@ -74,12 +80,12 @@ function drawUiTabOptions(noMenus) {
             this.mouseY > y - 12 &&
             this.mouseY < y + 4
         ) {
-            textColour = YELLOW;
+            textColour = colours.yellow;
         }
 
         this.surface.drawString('Change password', x, y, 1, textColour);
 
-        y += 15;
+        y += LINE_BREAK;
         textColour = 0xffffff;
 
         if (
@@ -88,7 +94,7 @@ function drawUiTabOptions(noMenus) {
             this.mouseY > y - 12 &&
             this.mouseY < y + 4
         ) {
-            textColour = YELLOW;
+            textColour = colours.yellow;
         }
 
         this.surface.drawString(
@@ -99,15 +105,14 @@ function drawUiTabOptions(noMenus) {
             textColour
         );
 
-        y += 15;
-        y += 15;
+        y += LINE_BREAK * 2;
     } else {
         this.surface.drawString(
             'To change your contact details,',
             x,
             y,
             0,
-            WHITE
+            colours.white
         );
 
         y += LINE_BREAK;
@@ -117,7 +122,7 @@ function drawUiTabOptions(noMenus) {
             x,
             y,
             0,
-            WHITE
+            colours.white
         );
 
         y += LINE_BREAK;
@@ -127,7 +132,7 @@ function drawUiTabOptions(noMenus) {
             x,
             y,
             0,
-            WHITE
+            colours.white
         );
 
         y += LINE_BREAK;
@@ -138,7 +143,7 @@ function drawUiTabOptions(noMenus) {
                 x,
                 y,
                 0,
-                WHITE
+                colours.white
             );
         } else if (this.referID === 1) {
             this.surface.drawString(
@@ -146,7 +151,7 @@ function drawUiTabOptions(noMenus) {
                 x,
                 y,
                 0,
-                WHITE
+                colours.white
             );
         } else {
             this.surface.drawString(
@@ -154,7 +159,7 @@ function drawUiTabOptions(noMenus) {
                 x,
                 y,
                 0,
-                WHITE
+                colours.white
             );
         }
 
@@ -166,7 +171,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        BLACK
+        colours.black
     );
 
     y += LINE_BREAK;
@@ -176,7 +181,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        BLACK
+        colours.black
     );
 
     y += LINE_BREAK;
@@ -187,7 +192,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -198,7 +203,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -209,7 +214,7 @@ function drawUiTabOptions(noMenus) {
         UI_X + 3,
         y,
         1,
-        WHITE
+        colours.white
     );
 
     y += LINE_BREAK;
@@ -221,17 +226,23 @@ function drawUiTabOptions(noMenus) {
             UI_X + 3,
             y,
             1,
-            WHITE
+            colours.white
         );
     }
 
     y += LINE_BREAK + 5;
 
-    this.surface.drawString('Always logout when you finish', x, y, 1, BLACK);
+    this.surface.drawString(
+        'Always logout when you finish',
+        x,
+        y,
+        1,
+        colours.black
+    );
 
     y += LINE_BREAK;
 
-    let textColour = WHITE;
+    let textColour = colours.white;
 
     if (
         this.mouseX > x &&
@@ -239,7 +250,7 @@ function drawUiTabOptions(noMenus) {
         this.mouseY > y - 12 &&
         this.mouseY < y + 4
     ) {
-        textColour = YELLOW;
+        textColour = colours.yellow;
     }
 
     this.surface.drawString('Click here to logout', UI_X + 3, y, 1, textColour);

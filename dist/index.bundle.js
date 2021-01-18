@@ -14651,7 +14651,9 @@ class GameShell {
             remainingExperience: false,
             totalExperience: false,
             wordFilter: true,
-            accountManagement: true
+            accountManagement: true,
+            messageScrollBack: false,
+            retroFpsCounter: false
         };
 
         this.middleButtonDown = false;
@@ -14691,6 +14693,7 @@ class GameShell {
         this.keyHome = false;
         this.keyPgUp = false;
         this.keyPgDown = false;
+        this.ctrl = false;
         this.threadSleep = 1;
         this.interlace = false;
         this.inputTextCurrent = '';
@@ -14749,7 +14752,12 @@ class GameShell {
         const code = e.keyCode;
         let charCode = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
-        if ([8, 10, 13, 9].indexOf(code) > -1) {
+        if (
+            [8, 10, 13, 9].includes(code) ||
+            (this.options.messageScrollBack &&
+                [keycodes.UP_ARROW, keycodes.DOWN_ARROW].includes(code) &&
+                this.ctrl)
+        ) {
             charCode = code;
         }
 
@@ -14773,6 +14781,8 @@ class GameShell {
             this.keyPgUp = true;
         } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = true;
+        } else if (code === keycodes.CTRL) {
+            this.ctrl = true;
         }
 
         let foundText = false;
@@ -14837,6 +14847,8 @@ class GameShell {
             this.keyPgUp = false;
         } else if (code === keycodes.PAGE_DOWN) {
             this.keyPgDown = false;
+        } else if (code === keycodes.CTRL) {
+            this.ctrl = false;
         }
 
         return false;
@@ -15016,6 +15028,9 @@ class GameShell {
             this.interlaceTimer--;
             i1 &= 0xff;
             this.draw();
+
+            // calculate fps
+            this.fps = (1000 * j) / (this.targetFps * 256);
 
             this.mouseScrollDelta = 0;
         }
@@ -15768,6 +15783,7 @@ const Utility = require('./utility');
 const WordFilter = require('./word-filter');
 const World = require('./world');
 const applyUIComponents = require('./ui');
+const keycodes = require('./lib/keycodes');
 const clientOpcodes = require('./opcodes/client');
 const serverOpcodes = require('./opcodes/server');
 const version = require('./version');
@@ -16149,6 +16165,9 @@ class mudclient extends GameConnection {
         this.objectModel = [];
         this.objectModel.length = OBJECTS_MAX;
         this.objectModel.fill(null);
+        // message scrollback
+        this.playerMsgHistory = [];
+        this.playerMsgPtr = 0;
 
         this.recoveryQuestions = [
             'Where were you born?',
@@ -16569,12 +16588,63 @@ class mudclient extends GameConnection {
                 !this.isSleeping &&
                 this.panelMessageTabs !== null
             ) {
+                // for scrolling through messages the player previously sent
+                if (this.options.messageScrollBack) {
+                    if (
+                        this.ctrl &&
+                        [keycodes.UP_ARROW, keycodes.DOWN_ARROW].includes(keyCode)
+                    ) {
+                        if (keyCode === keycodes.UP_ARROW) {
+                            if (this.playerMsgPtr >= this.playerMsgHistory.length) {
+                                return;
+                            }
+
+                            this.playerMsgPtr += 1;
+                        } else if (keyCode === keycodes.DOWN_ARROW) {
+                            if (this.playerMsgPtr <= 1) {
+                                this.panelMessageTabs.controlText[1] = "";
+                                this.playerMsgPtr = 0;
+                                return;
+                            }
+
+                            this.playerMsgPtr -= 1;
+                        }
+
+                        const newPlayerMsg = this.playerMsgHistory[
+                            this.playerMsgHistory.length - this.playerMsgPtr
+                        ];
+
+                        if (newPlayerMsg) {
+                            this.panelMessageTabs.controlText[1] = newPlayerMsg;
+                        }
+
+                        return;
+                    }
+
+                    if (keyCode === keycodes.ENTER) {
+                        const chatMsg = this.panelMessageTabs.controlText[1];
+
+                        if (!!chatMsg) {
+                            const lastChatMessage = this.playerMsgHistory[
+                                this.playerMsgHistory.length - 1
+                            ];
+
+                            if (chatMsg !== lastChatMessage) {
+                                this.playerMsgHistory.push(chatMsg);
+                            }
+
+                            this.playerMsgPtr = 0;
+                        }
+                    }
+                }
+
                 this.panelMessageTabs.keyPress(keyCode);
             }
 
             if (
                 this.showChangePasswordStep === 3 ||
-                this.showChangePasswordStep === 4) {
+                this.showChangePasswordStep === 4
+            ) {
                 this.showChangePasswordStep = 0;
             }
         }
@@ -17316,9 +17386,9 @@ class mudclient extends GameConnection {
     }
 
     handleCameraZoom() {
-        if (this.keyUp) {
+        if (this.keyUp && !this.ctrl) {
             this.cameraZoom -= 16;
-        } else if (this.keyDown) {
+        } else if (this.keyDown && !this.ctrl) {
             this.cameraZoom += 16;
         } else if (this.keyHome) {
             this.cameraZoom = ZOOM_OUTDOORS;
@@ -19322,6 +19392,20 @@ class mudclient extends GameConnection {
             this.surface._drawSprite_from3(this.mouseClickXX - 8, this.mouseClickXY - 8, this.spriteMedia + 18 + (((24 + this.mouseClickXStep) / 6) | 0));
         }
 
+        // retro fps counter
+        if (this.options.retroFpsCounter) {
+            // how much the wilderness skull needs to move for the fps counter
+            const offset = this.isInWild ? 70 : 0;
+
+            this.surface.drawString(
+                'Fps: ' + (this.fps | 0),
+                this.gameWidth - 62 - offset,
+                this.gameHeight - 10,
+                1,
+                0xffff00
+            );
+        }
+
         if (this.systemUpdate !== 0) {
             let seconds = ((this.systemUpdate / 50) | 0);
             const minutes = (seconds / 60) | 0;
@@ -19342,12 +19426,15 @@ class mudclient extends GameConnection {
                 j6 = -50;
             }
 
-            if (j6 > 0) {
+            this.isInWild = j6 > 0;
+
+            if (this.isInWild) {
                 let wildlvl = 1 + ((j6 / 6) | 0);
 
-                this.surface._drawSprite_from3(453, this.gameHeight - 56, this.spriteMedia + 13);
-                this.surface.drawStringCenter('Wilderness', 465, this.gameHeight - 20, 1, 0xffff00);
-                this.surface.drawStringCenter('Level: ' + wildlvl, 465, this.gameHeight - 7, 1, 0xffff00);
+                // wilderness skull placement made independent of gameWidth
+                this.surface._drawSprite_from3(this.gameWidth - 59, this.gameHeight - 56, this.spriteMedia + 13);
+                this.surface.drawStringCenter('Wilderness', this.gameWidth - 47, this.gameHeight - 20, 1, 0xffff00);
+                this.surface.drawStringCenter('Level: ' + wildlvl, this.gameWidth - 47, this.gameHeight - 7, 1, 0xffff00);
 
                 if (this.showUiWildWarn === 0) {
                     this.showUiWildWarn = 2;
@@ -22599,7 +22686,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":64,"./utility":84,"./version":85,"./word-filter":86,"./world":87,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":64,"./utility":84,"./version":85,"./word-filter":86,"./world":87,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -24378,6 +24465,18 @@ const Scanline = require('./scanline');
 
 const COLOUR_TRANSPARENT = 12345678;
 
+function polygonDepthSort(a, b) {
+    if (a.depth === 0) {
+        return 1;
+    }
+
+    if (a.depth === b.depth) {
+        return 0;
+    }
+
+    return a.depth < b.depth ? 1 : -1;
+}
+
 class Scene {
     constructor(surface, maxModelCount, polygonCount, spriteCount) {
         this.lastVisiblePolygonsCount = 0;
@@ -26049,6 +26148,7 @@ class Scene {
             this.viewDistance,
             this.clipNear
         );
+
         this.visiblePolygonsCount = 0;
 
         for (let count = 0; count < this.modelCount; count++) {
@@ -26118,6 +26218,7 @@ class Scene {
                                 let polygon_1 = this.visiblePolygons[
                                     this.visiblePolygonsCount
                                 ];
+
                                 polygon_1.model = gameModel;
                                 polygon_1.face = face;
                                 this.initialisePolygon3D(
@@ -26206,19 +26307,34 @@ class Scene {
         }
 
         this.lastVisiblePolygonsCount = this.visiblePolygonsCount;
-        this.polygonsQSort(
+
+        // twice as fast to use native .sort instead of recursive qsort
+
+        /*this.polygonsQSort(
             this.visiblePolygons,
             0,
             this.visiblePolygonsCount - 1
-        );
-        this.polygonsIntersectSort(
+        );*/
+
+        const sorted = this.visiblePolygons
+            .slice(0, this.visiblePolygonsCount)
+            .sort(polygonDepthSort);
+
+        // TODO see what this does. it's taking up a lot of time in performance,
+        // but commenting out doesn't seem to change the game at all?
+
+        /*this.polygonsIntersectSort(
             100,
             this.visiblePolygons,
             this.visiblePolygonsCount
-        );
+        );*/
 
-        for (let model = 0; model < this.visiblePolygonsCount; model++) {
-            let polygon = this.visiblePolygons[model];
+        for (let i = 0; i < this.visiblePolygonsCount; i++) {
+            if (i < sorted.length) {
+                this.visiblePolygons[i] = sorted[i];
+            }
+
+            let polygon = this.visiblePolygons[i];
             let gameModel_2 = polygon.model;
             let l = polygon.face;
 

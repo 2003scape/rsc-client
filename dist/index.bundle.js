@@ -12678,7 +12678,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":85,"./word-filter":87,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":86,"./word-filter":88,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13270,7 +13270,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":85,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":86,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14609,7 +14609,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":60,"./utility":85}],46:[function(require,module,exports){
+},{"./scene":60,"./utility":86}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -15286,7 +15286,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":85,"./version":86,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":86,"./version":87,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -16626,15 +16626,15 @@ class mudclient extends GameConnection {
                     }
 
                     if (keyCode === keycodes.ENTER) {
-                        const chatMsg = this.panelMessageTabs.controlText[1];
+                        const chatMessage = this.panelMessageTabs.controlText[1];
 
-                        if (!!chatMsg) {
+                        if (chatMessage) {
                             const lastChatMessage = this.playerMsgHistory[
                                 this.playerMsgHistory.length - 1
                             ];
 
-                            if (chatMsg !== lastChatMessage) {
-                                this.playerMsgHistory.push(chatMsg);
+                            if (chatMessage !== lastChatMessage) {
+                                this.playerMsgHistory.push(chatMessage);
                             }
 
                             this.playerMsgPtr = 0;
@@ -17134,45 +17134,7 @@ class mudclient extends GameConnection {
         }
 
         if (this.isSleeping) {
-            if (this.inputTextFinal.length > 0) {
-                if (/^::lostcon$/i.test(this.inputTextFinal)) {
-                    this.packetStream.closeStream();
-                } else if (/^::closecon$/.test(this.inputTextFinal)) {
-                    this.closeConnection();
-                } else {
-                    this.packetStream.newPacket(clientOpcodes.SLEEP_WORD);
-                    this.packetStream.putString(this.inputTextFinal);
-
-                    if (!this.sleepWordDelay) {
-                        this.packetStream.putByte(0);
-                        this.sleepWordDelay = true;
-                    }
-
-                    this.packetStream.sendPacket();
-
-                    this.inputTextCurrent = '';
-                    this.inputTextFinal = '';
-                    this.sleepingStatusText = 'Please wait...';
-                }
-            }
-
-            if (this.lastMouseButtonDown === 1 && this.mouseY > 275 && this.mouseY < 310 && this.mouseX > 56 && this.mouseX < 456) {
-                this.packetStream.newPacket(clientOpcodes.SLEEP_WORD);
-                this.packetStream.putString('-null-');
-
-                if (!this.sleepWordDelay) {
-                    this.packetStream.putByte(0);
-                    this.sleepWordDelay = true;
-                }
-
-                this.packetStream.sendPacket();
-
-                this.inputTextCurrent = '';
-                this.inputTextFinal = '';
-                this.sleepingStatusText = 'Please wait...';
-            }
-
-            this.lastMouseButtonDown = 0;
+            this.handleSleepInput();
             return;
         }
 
@@ -19105,35 +19067,7 @@ class mudclient extends GameConnection {
         }
 
         if (this.isSleeping) {
-            this.surface.fadeToBlack();
-
-            if (Math.random() < 0.14999999999999999) {
-                this.surface.drawStringCenter('ZZZ', (Math.random() * 80) | 0, (Math.random() * 334) | 0, 5, (Math.random() * 16777215) | 0);
-            }
-
-            if (Math.random() < 0.14999999999999999) {
-                this.surface.drawStringCenter('ZZZ', 512 - ((Math.random() * 80) | 0), (Math.random() * 334) | 0, 5, (Math.random() * 16777215) | 0);
-            }
-
-            this.surface.drawBox(((this.gameWidth / 2) | 0) - 100, 160, 200, 40, 0);
-            this.surface.drawStringCenter('You are sleeping', (this.gameWidth / 2) | 0, 50, 7, 0xffff00);
-            this.surface.drawStringCenter('Fatigue: ' + (((this.fatigueSleeping * 100) / 750) | 0) + '%', (this.gameWidth / 2) | 0, 90, 7, 0xffff00);
-            this.surface.drawStringCenter('When you want to wake up just use your', (this.gameWidth / 2) | 0, 140, 5, 0xffffff);
-            this.surface.drawStringCenter('keyboard to type the word in the box below', (this.gameWidth / 2) | 0, 160, 5, 0xffffff);
-            this.surface.drawStringCenter(this.inputTextCurrent + '*', (this.gameWidth / 2) | 0, 180, 5, 65535);
-
-            if (this.sleepingStatusText === null) {
-                this.surface._drawSprite_from3(((this.gameWidth / 2) | 0) - 127, 230, this.spriteTexture + 1);
-            } else {
-                this.surface.drawStringCenter(this.sleepingStatusText, (this.gameWidth / 2) | 0, 260, 5, 0xff0000);
-            }
-
-            this.surface.drawBoxEdge(((this.gameWidth / 2) | 0) - 128, 229, 257, 42, 0xffffff);
-            this.drawChatMessageTabs();
-            this.surface.drawStringCenter('If you can\'t read the word', (this.gameWidth / 2) | 0, 290, 1, 0xffffff);
-            this.surface.drawStringCenter('@yel@click here@whi@ to get a different one', (this.gameWidth / 2) | 0, 305, 1, 0xffffff);
-            this.surface.draw(this.graphics, 0, 0);
-
+            this.drawSleep();
             return;
         }
 
@@ -22690,7 +22624,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":65,"./utility":85,"./version":86,"./word-filter":87,"./world":88,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":65,"./utility":86,"./version":87,"./word-filter":88,"./world":89,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -24469,7 +24403,7 @@ const Scanline = require('./scanline');
 
 const COLOUR_TRANSPARENT = 12345678;
 
-function polygonDepthSort(a, b) {
+/*function polygonDepthSort(a, b) {
     if (a.depth === 0) {
         return 1;
     }
@@ -24479,7 +24413,7 @@ function polygonDepthSort(a, b) {
     }
 
     return a.depth < b.depth ? 1 : -1;
-}
+}*/
 
 class Scene {
     constructor(surface, maxModelCount, polygonCount, spriteCount) {
@@ -26318,10 +26252,6 @@ class Scene {
             this.visiblePolygonsCount - 1
         );
 
-        /*const sorted = this.visiblePolygons
-            .slice(0, this.visiblePolygonsCount)
-            .sort(polygonDepthSort);*/
-
         // TODO see what this does. it's taking up a lot of time in performance,
         // but commenting out doesn't seem to change the game at all?
         /*this.polygonsIntersectSort(
@@ -26331,10 +26261,6 @@ class Scene {
         );*/
 
         for (let i = 0; i < this.visiblePolygonsCount; i++) {
-            /*if (i < sorted.length) {
-                this.visiblePolygons[i] = sorted[i];
-            }*/
-
             let polygon = this.visiblePolygons[i];
             let gameModel_2 = polygon.model;
             let l = polygon.face;
@@ -32226,7 +32152,7 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":85}],63:[function(require,module,exports){
+},{"./utility":86}],63:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
@@ -32340,7 +32266,7 @@ module.exports = {
 
 
 function applyUI(mudclient) {
-    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
 
     for (const componentName of Object.keys(components)) {
         if (/^_/.test(componentName)) {
@@ -32363,7 +32289,7 @@ function applyUI(mudclient) {
 
 module.exports = applyUI;
 
-},{"./_colours.js":63,"./combat-style.js":64,"./index.js":65,"./inventory-tab.js":66,"./login-panels.js":67,"./logout-dialog.js":68,"./magic-tab.js":69,"./minimap-tab.js":70,"./option-menu.js":71,"./options-tab.js":72,"./password-dialog.js":73,"./player-info-tab.js":74,"./recovery-panel.js":75,"./report-dialog.js":76,"./server-message-dialog.js":77,"./shop-dialog.js":78,"./social-dialog.js":79,"./social-tab.js":80,"./trade-confirm-dialog.js":81,"./trade-dialog.js":82,"./welcome-dialog.js":83,"./wilderness-dialog.js":84}],66:[function(require,module,exports){
+},{"./_colours.js":63,"./combat-style.js":64,"./index.js":65,"./inventory-tab.js":66,"./login-panels.js":67,"./logout-dialog.js":68,"./magic-tab.js":69,"./minimap-tab.js":70,"./option-menu.js":71,"./options-tab.js":72,"./password-dialog.js":73,"./player-info-tab.js":74,"./recovery-panel.js":75,"./report-dialog.js":76,"./server-message-dialog.js":77,"./shop-dialog.js":78,"./sleep.js":79,"./social-dialog.js":80,"./social-tab.js":81,"./trade-confirm-dialog.js":82,"./trade-dialog.js":83,"./welcome-dialog.js":84,"./wilderness-dialog.js":85}],66:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
@@ -35429,7 +35355,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":85,"./_colours":63}],77:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":86,"./_colours":63}],77:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -35890,6 +35816,176 @@ function drawDialogShop() {
 module.exports = { drawDialogShop };
 
 },{"../game-data":44,"../opcodes/client":54,"./_colours":63}],79:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
+
+function drawSleep() {
+    this.surface.fadeToBlack();
+
+    if (Math.random() <= 0.15) {
+        this.surface.drawStringCenter(
+            'ZZZ',
+            (Math.random() * 80) | 0,
+            (Math.random() * 334) | 0,
+            5,
+            (Math.random() * 16777215) | 0
+        );
+    }
+
+    if (Math.random() <= 0.15) {
+        this.surface.drawStringCenter(
+            'ZZZ',
+            512 - ((Math.random() * 80) | 0),
+            (Math.random() * 334) | 0,
+            5,
+            (Math.random() * 16777215) | 0
+        );
+    }
+
+    this.surface.drawBox(
+        ((this.gameWidth / 2) | 0) - 100,
+        160,
+        200,
+        40,
+        colours.black
+    );
+
+    this.surface.drawStringCenter(
+        'You are sleeping',
+        (this.gameWidth / 2) | 0,
+        50,
+        7,
+        colours.yellow
+    );
+
+    this.surface.drawStringCenter(
+        `Fatigue: ${((this.fatigueSleeping * 100) / 750) | 0}%`,
+        (this.gameWidth / 2) | 0,
+        90,
+        7,
+        colours.yellow
+    );
+
+    this.surface.drawStringCenter(
+        'When you want to wake up just use your',
+        (this.gameWidth / 2) | 0,
+        140,
+        5,
+        colours.white
+    );
+
+    this.surface.drawStringCenter(
+        'keyboard to type the word in the box below',
+        (this.gameWidth / 2) | 0,
+        160,
+        5,
+        colours.white
+    );
+
+    this.surface.drawStringCenter(
+        this.inputTextCurrent + '*',
+        (this.gameWidth / 2) | 0,
+        180,
+        5,
+        colours.cyan
+    );
+
+    if (this.sleepingStatusText === null) {
+        this.surface._drawSprite_from3(
+            ((this.gameWidth / 2) | 0) - 127,
+            230,
+            this.spriteTexture + 1
+        );
+    } else {
+        this.surface.drawStringCenter(
+            this.sleepingStatusText,
+            (this.gameWidth / 2) | 0,
+            260,
+            5,
+            colours.red
+        );
+    }
+
+    this.surface.drawBoxEdge(
+        ((this.gameWidth / 2) | 0) - 128,
+        229,
+        257,
+        42,
+        colours.white
+    );
+
+    this.drawChatMessageTabs();
+
+    this.surface.drawStringCenter(
+        "If you can't read the word",
+        (this.gameWidth / 2) | 0,
+        290,
+        1,
+        colours.white
+    );
+
+    this.surface.drawStringCenter(
+        '@yel@click here@whi@ to get a different one',
+        (this.gameWidth / 2) | 0,
+        305,
+        1,
+        colours.white
+    );
+
+    this.surface.draw(this.graphics, 0, 0);
+}
+
+function handleSleepInput() {
+    if (this.inputTextFinal.length > 0) {
+        if (/^::lostcon$/i.test(this.inputTextFinal)) {
+            this.packetStream.closeStream();
+        } else if (/^::closecon$/.test(this.inputTextFinal)) {
+            this.closeConnection();
+        } else {
+            this.packetStream.newPacket(clientOpcodes.SLEEP_WORD);
+            this.packetStream.putString(this.inputTextFinal);
+
+            if (!this.sleepWordDelay) {
+                this.packetStream.putByte(0);
+                this.sleepWordDelay = true;
+            }
+
+            this.packetStream.sendPacket();
+
+            this.inputTextCurrent = '';
+            this.inputTextFinal = '';
+            this.sleepingStatusText = 'Please wait...';
+        }
+    }
+
+    if (
+        this.lastMouseButtonDown === 1 &&
+        this.mouseY > 275 &&
+        this.mouseY < 310 &&
+        this.mouseX > 56 &&
+        this.mouseX < 456
+    ) {
+        this.packetStream.newPacket(clientOpcodes.SLEEP_WORD);
+        this.packetStream.putString('-null-');
+
+        if (!this.sleepWordDelay) {
+            this.packetStream.putByte(0);
+            this.sleepWordDelay = true;
+        }
+
+        this.packetStream.sendPacket();
+
+        this.inputTextCurrent = '';
+        this.inputTextFinal = '';
+        this.sleepingStatusText = 'Please wait...';
+    }
+
+    this.lastMouseButtonDown = 0;
+}
+
+module.exports = { drawSleep, handleSleepInput };
+
+},{"../opcodes/client":54,"./_colours":63}],80:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -36103,7 +36199,7 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":85,"../word-filter":87,"./_colours":63}],80:[function(require,module,exports){
+},{"../chat-message":40,"../utility":86,"../word-filter":88,"./_colours":63}],81:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
@@ -36385,7 +36481,7 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":85,"./_colours":63}],81:[function(require,module,exports){
+},{"../utility":86,"./_colours":63}],82:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
@@ -36578,7 +36674,7 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":85,"./_colours":63}],82:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":86,"./_colours":63}],83:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -37095,7 +37191,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],83:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],84:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -37344,7 +37440,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":63}],84:[function(require,module,exports){
+},{"./_colours":63}],85:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -37480,7 +37576,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":63}],85:[function(require,module,exports){
+},{"./_colours":63}],86:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -37869,7 +37965,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],86:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],87:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -37883,7 +37979,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -39064,7 +39160,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 module.exports = WordFilter;
 
 
-},{}],88:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -41590,4 +41686,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":85,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":86,"ndarray":34}]},{},[1]);

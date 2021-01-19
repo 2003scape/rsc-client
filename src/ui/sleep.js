@@ -165,4 +165,8 @@ function handleSleepInput() {
     this.lastMouseButtonDown = 0;
 }
 
-module.exports = { drawSleep, handleSleepInput };
+module.exports = {
+    drawSleep,
+    handleSleepInput,
+    isSleeping: false
+};

@@ -2,8 +2,6 @@ const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
-const LIGHT_GREY = 0xd0d0d0;
-
 const COINS_ID = 10;
 
 function drawDialogShop() {
@@ -216,7 +214,7 @@ function drawDialogShop() {
                     slotY,
                     49,
                     34,
-                    LIGHT_GREY,
+                    colours.lightGrey2,
                     160
                 );
             }

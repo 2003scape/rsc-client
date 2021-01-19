@@ -12678,7 +12678,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":86,"./word-filter":88,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":87,"./word-filter":89,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13270,7 +13270,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":86,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":87,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14609,7 +14609,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":60,"./utility":86}],46:[function(require,module,exports){
+},{"./scene":60,"./utility":87}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -15286,7 +15286,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":86,"./version":87,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":87,"./version":88,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -15908,6 +15908,7 @@ class mudclient extends GameConnection {
         this.tradeConfirmItemsCount = 0;
         this.mouseClickXStep = 0;
         this.newBankItemCount = 0;
+
         // the orders of the NPC animation slots at different angles
         this.npcAnimationArray = [
             new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3, 4]),
@@ -15918,6 +15919,7 @@ class mudclient extends GameConnection {
             new Int32Array([4, 3, 2, 9, 7, 1, 6, 10, 8, 11, 0, 5]),
             new Int32Array([11, 4, 2, 9, 7, 1, 6, 10, 0, 5, 8, 3]),
             new Int32Array([11, 2, 9, 7, 1, 6, 10, 0, 5, 8, 4, 3])];
+
         this.npcWalkModel = new Int32Array([0, 1, 2, 1]);
         this.referID = 0;
         this.combatTimeout = 0;
@@ -16028,7 +16030,6 @@ class mudclient extends GameConnection {
         this.lastObjectAnimationNumberClaw = -1;
         this.planeIndex = -1;
         this.welcomScreenAlreadyShown = false;
-        this.isSleeping = false;
         this.cameraRotation = 128;
         this.teleportBubbleX = new Int32Array(50);
         this.errorLoadingData = false;
@@ -17788,424 +17789,6 @@ class mudclient extends GameConnection {
         this.loginScreen = 0;
         this.loggedIn = 0;
         this.logoutTimeout = 0;
-    }
-
-    drawDialogBank() {
-        let dialogWidth = 408;
-        let dialogHeight = 334;
-
-        if (this.bankActivePage > 0 && this.bankItemCount <= 48) {
-            this.bankActivePage = 0;
-        }
-
-        if (this.bankActivePage > 1 && this.bankItemCount <= 96) {
-            this.bankActivePage = 1;
-        }
-
-        if (this.bankActivePage > 2 && this.bankItemCount <= 144) {
-            this.bankActivePage = 2;
-        }
-
-        if (this.bankSelectedItemSlot >= this.bankItemCount || this.bankSelectedItemSlot < 0) {
-            this.bankSelectedItemSlot = -1;
-        }
-
-        if (this.bankSelectedItemSlot !== -1 && this.bankItems[this.bankSelectedItemSlot] !== this.bankSelectedItem) {
-            this.bankSelectedItemSlot = -1;
-            this.bankSelectedItem = -2;
-        }
-
-        if (this.mouseButtonClick !== 0) {
-            this.mouseButtonClick = 0;
-
-            let mouseX = this.mouseX - (((this.gameWidth / 2) | 0) - ((dialogWidth / 2) | 0));
-            let mouseY = this.mouseY - (((this.gameHeight / 2) | 0) - ((dialogHeight / 2) | 0));
-
-            if (mouseX >= 0 && mouseY >= 12 && mouseX < 408 && mouseY < 280) {
-                let i1 = this.bankActivePage * 48;
-
-                for (let l1 = 0; l1 < 6; l1++) {
-                    for (let j2 = 0; j2 < 8; j2++) {
-                        let l6 = 7 + j2 * 49;
-                        let j7 = 28 + l1 * 34;
-
-                        if (mouseX > l6 && mouseX < l6 + 49 && mouseY > j7 && mouseY < j7 + 34 && i1 < this.bankItemCount && this.bankItems[i1] !== -1) {
-                            this.bankSelectedItem = this.bankItems[i1];
-                            this.bankSelectedItemSlot = i1;
-                        }
-
-                        i1++;
-                    }
-                }
-
-                mouseX = 256 - ((dialogWidth / 2) | 0);
-                mouseY = 170 - ((dialogHeight / 2) | 0);
-
-                let slot = 0;
-
-                if (this.bankSelectedItemSlot < 0) {
-                    slot = -1;
-                } else {
-                    slot = this.bankItems[this.bankSelectedItemSlot];
-                }
-
-                if (slot !== -1) {
-                    let j1 = this.bankItemsCount[this.bankSelectedItemSlot];
-
-                    if (GameData.itemStackable[slot] === 1 && j1 > 1) {
-                        j1 = 1;
-                    }
-
-                    if (j1 >= 1 && this.mouseX >= mouseX + 220 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 250 && this.mouseY <= mouseY + 249) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(1);
-                        this.packetStream.putInt(0x12345678);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (j1 >= 5 && this.mouseX >= mouseX + 250 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 280 && this.mouseY <= mouseY + 249) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(5);
-                        this.packetStream.putInt(0x12345678);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (j1 >= 25 && this.mouseX >= mouseX + 280 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 305 && this.mouseY <= mouseY + 249) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(25);
-                        this.packetStream.putInt(0x12345678);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (j1 >= 100 && this.mouseX >= mouseX + 305 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 335 && this.mouseY <= mouseY + 249) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(100);
-                        this.packetStream.putInt(0x12345678);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (j1 >= 500 && this.mouseX >= mouseX + 335 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 368 && this.mouseY <= mouseY + 249) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(500);
-                        this.packetStream.putInt(0x12345678);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (j1 >= 2500 && this.mouseX >= mouseX + 370 && this.mouseY >= mouseY + 238 && this.mouseX < mouseX + 400 && this.mouseY <= mouseY + 249) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(2500);
-                        this.packetStream.putInt(0x12345678);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (this.getInventoryCount(slot) >= 1 && this.mouseX >= mouseX + 220 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 250 && this.mouseY <= mouseY + 274) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(1);
-                        this.packetStream.putInt(0x87654321);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (this.getInventoryCount(slot) >= 5 && this.mouseX >= mouseX + 250 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 280 && this.mouseY <= mouseY + 274) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(5);
-                        this.packetStream.putInt(0x87654321);
-                        this.packetStream.sendPacket();
-                    }
-                    if (this.getInventoryCount(slot) >= 25 && this.mouseX >= mouseX + 280 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 305 && this.mouseY <= mouseY + 274) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(25);
-                        this.packetStream.putInt(0x87654321);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (this.getInventoryCount(slot) >= 100 && this.mouseX >= mouseX + 305 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 335 && this.mouseY <= mouseY + 274) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(100);
-                        this.packetStream.putInt(0x87654321);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (this.getInventoryCount(slot) >= 500 && this.mouseX >= mouseX + 335 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 368 && this.mouseY <= mouseY + 274) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(500);
-                        this.packetStream.putInt(0x87654321);
-                        this.packetStream.sendPacket();
-                    }
-
-                    if (this.getInventoryCount(slot) >= 2500 && this.mouseX >= mouseX + 370 && this.mouseY >= mouseY + 263 && this.mouseX < mouseX + 400 && this.mouseY <= mouseY + 274) {
-                        this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
-                        this.packetStream.putShort(slot);
-                        this.packetStream.putShort(2500);
-                        this.packetStream.putInt(0x87654321);
-                        this.packetStream.sendPacket();
-                    }
-                }
-            } else if (this.bankItemCount > 48 && mouseX >= 50 && mouseX <= 115 && mouseY <= 12) {
-                this.bankActivePage = 0;
-            } else if (this.bankItemCount > 48 && mouseX >= 115 && mouseX <= 180 && mouseY <= 12) {
-                this.bankActivePage = 1;
-            } else if (this.bankItemCount > 96 && mouseX >= 180 && mouseX <= 245 && mouseY <= 12) {
-                this.bankActivePage = 2;
-            } else if (this.bankItemCount > 144 && mouseX >= 245 && mouseX <= 310 && mouseY <= 12) {
-                this.bankActivePage = 3;
-            } else {
-                this.packetStream.newPacket(clientOpcodes.BANK_CLOSE);
-                this.packetStream.sendPacket();
-                this.showDialogBank = false;
-                return;
-            }
-        }
-
-        let x = ((this.gameWidth / 2) | 0) - ((dialogWidth / 2) | 0);
-        let y = ((this.gameHeight / 2) | 0) - ((dialogHeight / 2) | 0);
-
-        this.surface.drawBox(x, y, 408, 12, 192);
-        this.surface.drawBoxAlpha(x, y + 12, 408, 17, 0x989898, 160);
-        this.surface.drawBoxAlpha(x, y + 29, 8, 204, 0x989898, 160);
-        this.surface.drawBoxAlpha(x + 399, y + 29, 9, 204, 0x989898, 160);
-        this.surface.drawBoxAlpha(x, y + 233, 408, 47, 0x989898, 160);
-        this.surface.drawString('Bank', x + 1, y + 10, 1, 0xffffff);
-
-        let xOff = 50;
-
-        if (this.bankItemCount > 48) {
-            let l2 = 0xffffff;
-
-            if (this.bankActivePage === 0) {
-                l2 = 0xff0000;
-            } else if (this.mouseX > x + xOff && this.mouseY >= y && this.mouseX < x + xOff + 65 && this.mouseY < y + 12) {
-                l2 = 0xffff00;
-            }
-
-            this.surface.drawString('<page 1>', x + xOff, y + 10, 1, l2);
-            xOff += 65;
-            l2 = 0xffffff;
-
-            if (this.bankActivePage === 1) {
-                l2 = 0xff0000;
-            } else if (this.mouseX > x + xOff && this.mouseY >= y && this.mouseX < x + xOff + 65 && this.mouseY < y + 12) {
-                l2 = 0xffff00;
-            }
-
-            this.surface.drawString('<page 2>', x + xOff, y + 10, 1, l2);
-            xOff += 65;
-        }
-
-        if (this.bankItemCount > 96) {
-            let i3 = 0xffffff;
-            if (this.bankActivePage === 2) {
-                i3 = 0xff0000;
-            } else if (this.mouseX > x + xOff && this.mouseY >= y && this.mouseX < x + xOff + 65 && this.mouseY < y + 12) {
-                i3 = 0xffff00;
-            }
-
-            this.surface.drawString('<page 3>', x + xOff, y + 10, 1, i3);
-            xOff += 65;
-        }
-
-        if (this.bankItemCount > 144) {
-            let j3 = 0xffffff;
-
-            if (this.bankActivePage === 3) {
-                j3 = 0xff0000;
-            } else if (this.mouseX > x + xOff && this.mouseY >= y && this.mouseX < x + xOff + 65 && this.mouseY < y + 12) {
-                j3 = 0xffff00;
-            }
-
-            this.surface.drawString('<page 4>', x + xOff, y + 10, 1, j3);
-            xOff += 65;
-        }
-
-        let colour = 0xffffff;
-
-        if (this.mouseX > x + 320 && this.mouseY >= y && this.mouseX < x + 408 && this.mouseY < y + 12) {
-            colour = 0xff0000;
-        }
-
-        this.surface.drawStringRight('Close window', x + 406, y + 10, 1, colour);
-        this.surface.drawString('Number in bank in green', x + 7, y + 24, 1, 65280);
-        this.surface.drawString('Number held in blue', x + 289, y + 24, 1, 65535);
-
-        let k7 = this.bankActivePage * 48;
-
-        for (let i8 = 0; i8 < 6; i8++) {
-            for (let j8 = 0; j8 < 8; j8++) {
-                let l8 = x + 7 + j8 * 49;
-                let i9 = y + 28 + i8 * 34;
-
-                if (this.bankSelectedItemSlot === k7) {
-                    this.surface.drawBoxAlpha(l8, i9, 49, 34, 0xff0000, 160);
-                } else {
-                    this.surface.drawBoxAlpha(l8, i9, 49, 34, 0xd0d0d0, 160);
-                }
-
-                this.surface.drawBoxEdge(l8, i9, 50, 35, 0);
-
-                if (k7 < this.bankItemCount && this.bankItems[k7] !== -1) {
-                    this.surface._spriteClipping_from9(l8, i9, 48, 32, this.spriteItem + GameData.itemPicture[this.bankItems[k7]], GameData.itemMask[this.bankItems[k7]], 0, 0, false);
-                    this.surface.drawString(this.bankItemsCount[k7].toString(), l8 + 1, i9 + 10, 1, 65280);
-                    this.surface.drawStringRight(this.getInventoryCount(this.bankItems[k7]).toString(), l8 + 47, i9 + 29, 1, 65535);
-                }
-
-                k7++;
-            }
-        }
-
-        this.surface.drawLineHoriz(x + 5, y + 256, 398, 0);
-
-        if (this.bankSelectedItemSlot === -1) {
-            this.surface.drawStringCenter('Select an object to withdraw or deposit', x + 204, y + 248, 3, 0xffff00);
-            return;
-        }
-
-        let itemType = 0;
-
-        if (this.bankSelectedItemSlot < 0) {
-            itemType = -1;
-        } else {
-            itemType = this.bankItems[this.bankSelectedItemSlot];
-        }
-
-        if (itemType !== -1) {
-            let itemCount = this.bankItemsCount[this.bankSelectedItemSlot];
-
-            if (GameData.itemStackable[itemType] === 1 && itemCount > 1) {
-                itemCount = 1;
-            }
-
-            if (itemCount > 0) {
-                this.surface.drawString('Withdraw ' + GameData.itemName[itemType], x + 2, y + 248, 1, 0xffffff);
-                colour = 0xffffff;
-
-                if (this.mouseX >= x + 220 && this.mouseY >= y + 238 && this.mouseX < x + 250 && this.mouseY <= y + 249) {
-                    colour = 0xff0000;
-                }
-
-                this.surface.drawString('One', x + 222, y + 248, 1, colour);
-
-                if (itemCount >= 5) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 250 && this.mouseY >= y + 238 && this.mouseX < x + 280 && this.mouseY <= y + 249) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('Five', x + 252, y + 248, 1, colour);
-                }
-
-                if (itemCount >= 25) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 280 && this.mouseY >= y + 238 && this.mouseX < x + 305 && this.mouseY <= y + 249) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('25', x + 282, y + 248, 1, colour);
-                }
-
-                if (itemCount >= 100) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 305 && this.mouseY >= y + 238 && this.mouseX < x + 335 && this.mouseY <= y + 249) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('100', x + 307, y + 248, 1, colour);
-                }
-
-                if (itemCount >= 500) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 335 && this.mouseY >= y + 238 && this.mouseX < x + 368 && this.mouseY <= y + 249) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('500', x + 337, y + 248, 1, colour);
-                }
-
-                if (itemCount >= 2500) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 370 && this.mouseY >= y + 238 && this.mouseX < x + 400 && this.mouseY <= y + 249) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('2500', x + 370, y + 248, 1, colour);
-                }
-            }
-
-            if (this.getInventoryCount(itemType) > 0) {
-                this.surface.drawString('Deposit ' + GameData.itemName[itemType], x + 2, y + 273, 1, 0xffffff);
-                colour = 0xffffff;
-
-                if (this.mouseX >= x + 220 && this.mouseY >= y + 263 && this.mouseX < x + 250 && this.mouseY <= y + 274) {
-                    colour = 0xff0000;
-                }
-
-                this.surface.drawString('One', x + 222, y + 273, 1, colour);
-
-                if (this.getInventoryCount(itemType) >= 5) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 250 && this.mouseY >= y + 263 && this.mouseX < x + 280 && this.mouseY <= y + 274) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('Five', x + 252, y + 273, 1, colour);
-                }
-
-                if (this.getInventoryCount(itemType) >= 25) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 280 && this.mouseY >= y + 263 && this.mouseX < x + 305 && this.mouseY <= y + 274) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('25', x + 282, y + 273, 1, colour);
-                }
-
-                if (this.getInventoryCount(itemType) >= 100) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 305 && this.mouseY >= y + 263 && this.mouseX < x + 335 && this.mouseY <= y + 274) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('100', x + 307, y + 273, 1, colour);
-                }
-
-                if (this.getInventoryCount(itemType) >= 500) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 335 && this.mouseY >= y + 263 && this.mouseX < x + 368 && this.mouseY <= y + 274) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('500', x + 337, y + 273, 1, colour);
-                }
-
-                if (this.getInventoryCount(itemType) >= 2500) {
-                    colour = 0xffffff;
-
-                    if (this.mouseX >= x + 370 && this.mouseY >= y + 263 && this.mouseX < x + 400 && this.mouseY <= y + 274) {
-                        colour = 0xff0000;
-                    }
-
-                    this.surface.drawString('2500', x + 370, y + 273, 1, colour);
-                }
-            }
-        }
     }
 
     drawDialogDuel() {
@@ -22624,7 +22207,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":65,"./utility":86,"./version":87,"./word-filter":88,"./world":89,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":66,"./utility":87,"./version":88,"./word-filter":89,"./world":90,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -32152,13 +31735,14 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":86}],63:[function(require,module,exports){
+},{"./utility":87}],63:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
     grey: 0x989898,
     darkGrey : 0xb5b5b5,
     lightGrey: 0xdcdcdc,
+    lightGrey2: 0xd0d0d0,
     red : 0xff0000,
     yellow : 0xffff00,
     cyan: 0x00ffff,
@@ -32167,6 +31751,739 @@ module.exports = {
 };
 
 },{}],64:[function(require,module,exports){
+const GameData = require('../game-data');
+const clientOpcodes = require('../opcodes/client');
+const colours = require('./_colours');
+
+const WIDTH = 408;
+const HEIGHT = 334;
+
+const ITEMS_PER_PAGE = 48;
+const MAGIC_DEPOSIT = 0x87654321;
+const MAGIC_WITHDRAW = 0x12345678;
+
+function drawDialogBank() {
+    if (this.bankActivePage > 0 && this.bankItemCount <= ITEMS_PER_PAGE) {
+        this.bankActivePage = 0;
+    }
+
+    if (this.bankActivePage > 1 && this.bankItemCount <= 96) {
+        this.bankActivePage = 1;
+    }
+
+    if (this.bankActivePage > 2 && this.bankItemCount <= 144) {
+        this.bankActivePage = 2;
+    }
+
+    if (
+        this.bankSelectedItemSlot >= this.bankItemCount ||
+        this.bankSelectedItemSlot < 0
+    ) {
+        this.bankSelectedItemSlot = -1;
+    }
+
+    if (
+        this.bankSelectedItemSlot !== -1 &&
+        this.bankItems[this.bankSelectedItemSlot] !== this.bankSelectedItem
+    ) {
+        this.bankSelectedItemSlot = -1;
+        this.bankSelectedItem = -2;
+    }
+
+    if (this.mouseButtonClick !== 0) {
+        this.mouseButtonClick = 0;
+
+        let mouseX =
+            this.mouseX - (((this.gameWidth / 2) | 0) - ((WIDTH / 2) | 0));
+
+        let mouseY =
+            this.mouseY - (((this.gameHeight / 2) | 0) - ((HEIGHT / 2) | 0));
+
+        if (mouseX >= 0 && mouseY >= 12 && mouseX < 408 && mouseY < 280) {
+            let slotIndex = this.bankActivePage * ITEMS_PER_PAGE;
+
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const slotX = 7 + col * 49;
+                    const slotY = 28 + row * 34;
+
+                    if (
+                        mouseX > slotX &&
+                        mouseX < slotX + 49 &&
+                        mouseY > slotY &&
+                        mouseY < slotY + 34 &&
+                        slotIndex < this.bankItemCount &&
+                        this.bankItems[slotIndex] !== -1
+                    ) {
+                        this.bankSelectedItem = this.bankItems[slotIndex];
+                        this.bankSelectedItemSlot = slotIndex;
+                    }
+
+                    slotIndex++;
+                }
+            }
+
+            mouseX = 256 - ((WIDTH / 2) | 0);
+            mouseY = 170 - ((HEIGHT / 2) | 0);
+
+            let slot = 0;
+
+            if (this.bankSelectedItemSlot < 0) {
+                slot = -1;
+            } else {
+                slot = this.bankItems[this.bankSelectedItemSlot];
+            }
+
+            if (slot !== -1) {
+                let itemAmount = this.bankItemsCount[this.bankSelectedItemSlot];
+
+                if (GameData.itemStackable[slot] === 1 && itemAmount > 1) {
+                    itemAmount = 1;
+                }
+
+                if (
+                    itemAmount >= 1 &&
+                    this.mouseX >= mouseX + 220 &&
+                    this.mouseY >= mouseY + 238 &&
+                    this.mouseX < mouseX + 250 &&
+                    this.mouseY <= mouseY + 249
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(1);
+                    this.packetStream.putInt(MAGIC_WITHDRAW);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    itemAmount >= 5 &&
+                    this.mouseX >= mouseX + 250 &&
+                    this.mouseY >= mouseY + 238 &&
+                    this.mouseX < mouseX + 280 &&
+                    this.mouseY <= mouseY + 249
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(5);
+                    this.packetStream.putInt(MAGIC_WITHDRAW);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    itemAmount >= 25 &&
+                    this.mouseX >= mouseX + 280 &&
+                    this.mouseY >= mouseY + 238 &&
+                    this.mouseX < mouseX + 305 &&
+                    this.mouseY <= mouseY + 249
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(25);
+                    this.packetStream.putInt(MAGIC_WITHDRAW);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    itemAmount >= 100 &&
+                    this.mouseX >= mouseX + 305 &&
+                    this.mouseY >= mouseY + 238 &&
+                    this.mouseX < mouseX + 335 &&
+                    this.mouseY <= mouseY + 249
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(100);
+                    this.packetStream.putInt(MAGIC_WITHDRAW);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    itemAmount >= 500 &&
+                    this.mouseX >= mouseX + 335 &&
+                    this.mouseY >= mouseY + 238 &&
+                    this.mouseX < mouseX + 368 &&
+                    this.mouseY <= mouseY + 249
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(500);
+                    this.packetStream.putInt(MAGIC_WITHDRAW);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    itemAmount >= 2500 &&
+                    this.mouseX >= mouseX + 370 &&
+                    this.mouseY >= mouseY + 238 &&
+                    this.mouseX < mouseX + 400 &&
+                    this.mouseY <= mouseY + 249
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_WITHDRAW);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(2500);
+                    this.packetStream.putInt(MAGIC_WITHDRAW);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    this.getInventoryCount(slot) >= 1 &&
+                    this.mouseX >= mouseX + 220 &&
+                    this.mouseY >= mouseY + 263 &&
+                    this.mouseX < mouseX + 250 &&
+                    this.mouseY <= mouseY + 274
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(1);
+                    this.packetStream.putInt(MAGIC_DEPOSIT);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    this.getInventoryCount(slot) >= 5 &&
+                    this.mouseX >= mouseX + 250 &&
+                    this.mouseY >= mouseY + 263 &&
+                    this.mouseX < mouseX + 280 &&
+                    this.mouseY <= mouseY + 274
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(5);
+                    this.packetStream.putInt(MAGIC_DEPOSIT);
+                    this.packetStream.sendPacket();
+                }
+                if (
+                    this.getInventoryCount(slot) >= 25 &&
+                    this.mouseX >= mouseX + 280 &&
+                    this.mouseY >= mouseY + 263 &&
+                    this.mouseX < mouseX + 305 &&
+                    this.mouseY <= mouseY + 274
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(25);
+                    this.packetStream.putInt(MAGIC_DEPOSIT);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    this.getInventoryCount(slot) >= 100 &&
+                    this.mouseX >= mouseX + 305 &&
+                    this.mouseY >= mouseY + 263 &&
+                    this.mouseX < mouseX + 335 &&
+                    this.mouseY <= mouseY + 274
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(100);
+                    this.packetStream.putInt(MAGIC_DEPOSIT);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    this.getInventoryCount(slot) >= 500 &&
+                    this.mouseX >= mouseX + 335 &&
+                    this.mouseY >= mouseY + 263 &&
+                    this.mouseX < mouseX + 368 &&
+                    this.mouseY <= mouseY + 274
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(500);
+                    this.packetStream.putInt(MAGIC_DEPOSIT);
+                    this.packetStream.sendPacket();
+                }
+
+                if (
+                    this.getInventoryCount(slot) >= 2500 &&
+                    this.mouseX >= mouseX + 370 &&
+                    this.mouseY >= mouseY + 263 &&
+                    this.mouseX < mouseX + 400 &&
+                    this.mouseY <= mouseY + 274
+                ) {
+                    this.packetStream.newPacket(clientOpcodes.BANK_DEPOSIT);
+                    this.packetStream.putShort(slot);
+                    this.packetStream.putShort(2500);
+                    this.packetStream.putInt(MAGIC_DEPOSIT);
+                    this.packetStream.sendPacket();
+                }
+            }
+        } else if (
+            this.bankItemCount > ITEMS_PER_PAGE &&
+            mouseX >= 50 &&
+            mouseX <= 115 &&
+            mouseY <= 12
+        ) {
+            this.bankActivePage = 0;
+        } else if (
+            this.bankItemCount > ITEMS_PER_PAGE &&
+            mouseX >= 115 &&
+            mouseX <= 180 &&
+            mouseY <= 12
+        ) {
+            this.bankActivePage = 1;
+        } else if (
+            this.bankItemCount > ITEMS_PER_PAGE * 2 &&
+            mouseX >= 180 &&
+            mouseX <= 245 &&
+            mouseY <= 12
+        ) {
+            this.bankActivePage = 2;
+        } else if (
+            this.bankItemCount > ITEMS_PER_PAGE * 3 &&
+            mouseX >= 245 &&
+            mouseX <= 310 &&
+            mouseY <= 12
+        ) {
+            this.bankActivePage = 3;
+        } else {
+            this.packetStream.newPacket(clientOpcodes.BANK_CLOSE);
+            this.packetStream.sendPacket();
+            this.showDialogBank = false;
+            return;
+        }
+    }
+
+    const x = ((this.gameWidth / 2) | 0) - ((WIDTH / 2) | 0);
+    const y = ((this.gameHeight / 2) | 0) - ((HEIGHT / 2) | 0);
+
+    this.surface.drawBox(x, y, 408, 12, 192);
+    this.surface.drawBoxAlpha(x, y + 12, 408, 17, colours.grey, 160);
+    this.surface.drawBoxAlpha(x, y + 29, 8, 204, colours.grey, 160);
+    this.surface.drawBoxAlpha(x + 399, y + 29, 9, 204, colours.grey, 160);
+    this.surface.drawBoxAlpha(x, y + 233, 408, 47, colours.grey, 160);
+    this.surface.drawString('Bank', x + 1, y + 10, 1, colours.white);
+
+    let offsetX = 50;
+
+    if (this.bankItemCount > ITEMS_PER_PAGE) {
+        let textColour = colours.white;
+
+        if (this.bankActivePage === 0) {
+            textColour = colours.red;
+        } else if (
+            this.mouseX > x + offsetX &&
+            this.mouseY >= y &&
+            this.mouseX < x + offsetX + 65 &&
+            this.mouseY < y + 12
+        ) {
+            textColour = colours.yellow;
+        }
+
+        this.surface.drawString('<page 1>', x + offsetX, y + 10, 1, textColour);
+
+        offsetX += 65;
+        textColour = colours.white;
+
+        if (this.bankActivePage === 1) {
+            textColour = colours.red;
+        } else if (
+            this.mouseX > x + offsetX &&
+            this.mouseY >= y &&
+            this.mouseX < x + offsetX + 65 &&
+            this.mouseY < y + 12
+        ) {
+            textColour = colours.yellow;
+        }
+
+        this.surface.drawString('<page 2>', x + offsetX, y + 10, 1, textColour);
+        offsetX += 65;
+    }
+
+    if (this.bankItemCount > ITEMS_PER_PAGE * 2) {
+        let textColour = colours.white;
+
+        if (this.bankActivePage === 2) {
+            textColour = colours.red;
+        } else if (
+            this.mouseX > x + offsetX &&
+            this.mouseY >= y &&
+            this.mouseX < x + offsetX + 65 &&
+            this.mouseY < y + 12
+        ) {
+            textColour = colours.yellow;
+        }
+
+        this.surface.drawString('<page 3>', x + offsetX, y + 10, 1, textColour);
+        offsetX += 65;
+    }
+
+    if (this.bankItemCount > ITEMS_PER_PAGE * 3) {
+        let textColour = colours.white;
+
+        if (this.bankActivePage === 3) {
+            textColour = colours.red;
+        } else if (
+            this.mouseX > x + offsetX &&
+            this.mouseY >= y &&
+            this.mouseX < x + offsetX + 65 &&
+            this.mouseY < y + 12
+        ) {
+            textColour = colours.yellow;
+        }
+
+        this.surface.drawString('<page 4>', x + offsetX, y + 10, 1, textColour);
+        offsetX += 65;
+    }
+
+    let textColour = colours.white;
+
+    if (
+        this.mouseX > x + 320 &&
+        this.mouseY >= y &&
+        this.mouseX < x + 408 &&
+        this.mouseY < y + 12
+    ) {
+        textColour = colours.red;
+    }
+
+    this.surface.drawStringRight(
+        'Close window',
+        x + 406,
+        y + 10,
+        1,
+        textColour
+    );
+
+    this.surface.drawString(
+        'Number in bank in green',
+        x + 7,
+        y + 24,
+        1,
+        colours.green
+    );
+
+    this.surface.drawString(
+        'Number held in blue',
+        x + 289,
+        y + 24,
+        1,
+        colours.cyan
+    );
+
+    let selectedIndex = this.bankActivePage * ITEMS_PER_PAGE;
+
+    for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < 8; col++) {
+            const slotX = x + 7 + col * 49;
+            const slotY = y + 28 + row * 34;
+
+            if (this.bankSelectedItemSlot === selectedIndex) {
+                this.surface.drawBoxAlpha(
+                    slotX,
+                    slotY,
+                    49,
+                    34,
+                    colours.red,
+                    160
+                );
+            } else {
+                this.surface.drawBoxAlpha(
+                    slotX,
+                    slotY,
+                    49,
+                    34,
+                    colours.lightGrey2,
+                    160
+                );
+            }
+
+            this.surface.drawBoxEdge(slotX, slotY, 50, 35, 0);
+
+            if (
+                selectedIndex < this.bankItemCount &&
+                this.bankItems[selectedIndex] !== -1
+            ) {
+                this.surface._spriteClipping_from9(
+                    slotX,
+                    slotY,
+                    48,
+                    32,
+                    this.spriteItem +
+                        GameData.itemPicture[this.bankItems[selectedIndex]],
+                    GameData.itemMask[this.bankItems[selectedIndex]],
+                    0,
+                    0,
+                    false
+                );
+
+                this.surface.drawString(
+                    this.bankItemsCount[selectedIndex].toString(),
+                    slotX + 1,
+                    slotY + 10,
+                    1,
+                    colours.green
+                );
+
+                this.surface.drawStringRight(
+                    this.getInventoryCount(
+                        this.bankItems[selectedIndex]
+                    ).toString(),
+                    slotX + 47,
+                    slotY + 29,
+                    1,
+                    colours.cyan
+                );
+            }
+
+            selectedIndex++;
+        }
+    }
+
+    this.surface.drawLineHoriz(x + 5, y + 256, 398, 0);
+
+    if (this.bankSelectedItemSlot === -1) {
+        this.surface.drawStringCenter(
+            'Select an object to withdraw or deposit',
+            x + 204,
+            y + 248,
+            3,
+            colours.yellow
+        );
+
+        return;
+    }
+
+    let itemType = 0;
+
+    if (this.bankSelectedItemSlot < 0) {
+        itemType = -1;
+    } else {
+        itemType = this.bankItems[this.bankSelectedItemSlot];
+    }
+
+    if (itemType !== -1) {
+        let itemCount = this.bankItemsCount[this.bankSelectedItemSlot];
+
+        if (GameData.itemStackable[itemType] === 1 && itemCount > 1) {
+            itemCount = 1;
+        }
+
+        if (itemCount > 0) {
+            this.surface.drawString(
+                `Withdraw ${GameData.itemName[itemType]}`,
+                x + 2,
+                y + 248,
+                1,
+                colours.white
+            );
+
+            textColour = colours.white;
+
+            if (
+                this.mouseX >= x + 220 &&
+                this.mouseY >= y + 238 &&
+                this.mouseX < x + 250 &&
+                this.mouseY <= y + 249
+            ) {
+                textColour = colours.red;
+            }
+
+            this.surface.drawString('One', x + 222, y + 248, 1, textColour);
+
+            if (itemCount >= 5) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 250 &&
+                    this.mouseY >= y + 238 &&
+                    this.mouseX < x + 280 &&
+                    this.mouseY <= y + 249
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString(
+                    'Five',
+                    x + 252,
+                    y + 248,
+                    1,
+                    textColour
+                );
+            }
+
+            if (itemCount >= 25) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 280 &&
+                    this.mouseY >= y + 238 &&
+                    this.mouseX < x + 305 &&
+                    this.mouseY <= y + 249
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString('25', x + 282, y + 248, 1, textColour);
+            }
+
+            if (itemCount >= 100) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 305 &&
+                    this.mouseY >= y + 238 &&
+                    this.mouseX < x + 335 &&
+                    this.mouseY <= y + 249
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString('100', x + 307, y + 248, 1, textColour);
+            }
+
+            if (itemCount >= 500) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 335 &&
+                    this.mouseY >= y + 238 &&
+                    this.mouseX < x + 368 &&
+                    this.mouseY <= y + 249
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString('500', x + 337, y + 248, 1, textColour);
+            }
+
+            if (itemCount >= 2500) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 370 &&
+                    this.mouseY >= y + 238 &&
+                    this.mouseX < x + 400 &&
+                    this.mouseY <= y + 249
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString(
+                    '2500',
+                    x + 370,
+                    y + 248,
+                    1,
+                    textColour
+                );
+            }
+        }
+
+        if (this.getInventoryCount(itemType) > 0) {
+            this.surface.drawString(
+                `Deposit ${GameData.itemName[itemType]}`,
+                x + 2,
+                y + 273,
+                1,
+                colours.white
+            );
+
+            textColour = colours.white;
+
+            if (
+                this.mouseX >= x + 220 &&
+                this.mouseY >= y + 263 &&
+                this.mouseX < x + 250 &&
+                this.mouseY <= y + 274
+            ) {
+                textColour = colours.red;
+            }
+
+            this.surface.drawString('One', x + 222, y + 273, 1, textColour);
+
+            if (this.getInventoryCount(itemType) >= 5) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 250 &&
+                    this.mouseY >= y + 263 &&
+                    this.mouseX < x + 280 &&
+                    this.mouseY <= y + 274
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString(
+                    'Five',
+                    x + 252,
+                    y + 273,
+                    1,
+                    textColour
+                );
+            }
+
+            if (this.getInventoryCount(itemType) >= 25) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 280 &&
+                    this.mouseY >= y + 263 &&
+                    this.mouseX < x + 305 &&
+                    this.mouseY <= y + 274
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString('25', x + 282, y + 273, 1, textColour);
+            }
+
+            if (this.getInventoryCount(itemType) >= 100) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 305 &&
+                    this.mouseY >= y + 263 &&
+                    this.mouseX < x + 335 &&
+                    this.mouseY <= y + 274
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString('100', x + 307, y + 273, 1, textColour);
+            }
+
+            if (this.getInventoryCount(itemType) >= 500) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 335 &&
+                    this.mouseY >= y + 263 &&
+                    this.mouseX < x + 368 &&
+                    this.mouseY <= y + 274
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString('500', x + 337, y + 273, 1, textColour);
+            }
+
+            if (this.getInventoryCount(itemType) >= 2500) {
+                textColour = colours.white;
+
+                if (
+                    this.mouseX >= x + 370 &&
+                    this.mouseY >= y + 263 &&
+                    this.mouseX < x + 400 &&
+                    this.mouseY <= y + 274
+                ) {
+                    textColour = colours.red;
+                }
+
+                this.surface.drawString(
+                    '2500',
+                    x + 370,
+                    y + 273,
+                    1,
+                    textColour
+                );
+            }
+        }
+    }
+}
+
+module.exports = { drawDialogBank };
+
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],65:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -32262,11 +32579,11 @@ module.exports = {
     drawDialogCombatStyle
 };
 
-},{"../opcodes/client":54,"./_colours":63}],65:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],66:[function(require,module,exports){
 
 
 function applyUI(mudclient) {
-    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
 
     for (const componentName of Object.keys(components)) {
         if (/^_/.test(componentName)) {
@@ -32289,7 +32606,7 @@ function applyUI(mudclient) {
 
 module.exports = applyUI;
 
-},{"./_colours.js":63,"./combat-style.js":64,"./index.js":65,"./inventory-tab.js":66,"./login-panels.js":67,"./logout-dialog.js":68,"./magic-tab.js":69,"./minimap-tab.js":70,"./option-menu.js":71,"./options-tab.js":72,"./password-dialog.js":73,"./player-info-tab.js":74,"./recovery-panel.js":75,"./report-dialog.js":76,"./server-message-dialog.js":77,"./shop-dialog.js":78,"./sleep.js":79,"./social-dialog.js":80,"./social-tab.js":81,"./trade-confirm-dialog.js":82,"./trade-dialog.js":83,"./welcome-dialog.js":84,"./wilderness-dialog.js":85}],66:[function(require,module,exports){
+},{"./_colours.js":63,"./bank-dialog.js":64,"./combat-style.js":65,"./index.js":66,"./inventory-tab.js":67,"./login-panels.js":68,"./logout-dialog.js":69,"./magic-tab.js":70,"./minimap-tab.js":71,"./option-menu.js":72,"./options-tab.js":73,"./password-dialog.js":74,"./player-info-tab.js":75,"./recovery-panel.js":76,"./report-dialog.js":77,"./server-message-dialog.js":78,"./shop-dialog.js":79,"./sleep.js":80,"./social-dialog.js":81,"./social-tab.js":82,"./trade-confirm-dialog.js":83,"./trade-dialog.js":84,"./welcome-dialog.js":85,"./wilderness-dialog.js":86}],67:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
@@ -32459,7 +32776,7 @@ function drawUiTabInventory(noMenus) {
 
 module.exports = { drawUiTabInventory };
 
-},{"../game-data":44,"./_colours":63}],67:[function(require,module,exports){
+},{"../game-data":44,"./_colours":63}],68:[function(require,module,exports){
 const Panel = require('../panel');
 
 function createLoginPanels() {
@@ -33399,7 +33716,7 @@ module.exports = {
     renderLoginScreenViewports
 };
 
-},{"../panel":57}],68:[function(require,module,exports){
+},{"../panel":57}],69:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogLogout() {
@@ -33410,7 +33727,7 @@ function drawDialogLogout() {
 
 module.exports = { drawDialogLogout };
 
-},{"./_colours":63}],69:[function(require,module,exports){
+},{"./_colours":63}],70:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -33716,7 +34033,7 @@ module.exports = {
     uiTabMagicSubTab: 0
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],70:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],71:[function(require,module,exports){
 const Scene = require('../scene');
 const colours = require('./_colours');
 
@@ -33958,7 +34275,7 @@ module.exports = {
     drawUiTabMinimap
 };
 
-},{"../scene":60,"./_colours":63}],71:[function(require,module,exports){
+},{"../scene":60,"./_colours":63}],72:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -34008,7 +34325,7 @@ function drawOptionMenu() {
 
 module.exports = { drawOptionMenu };
 
-},{"../opcodes/client":54,"./_colours":63}],72:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],73:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -34441,7 +34758,7 @@ function drawUiTabOptions(noMenus) {
 
 module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54,"./_colours":63}],73:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],74:[function(require,module,exports){
 const colours = require('./_colours');
 
 const DIALOG_X = 106;
@@ -34636,7 +34953,7 @@ module.exports = {
     showChangePasswordStep: 0
 };
 
-},{"./_colours":63}],74:[function(require,module,exports){
+},{"./_colours":63}],75:[function(require,module,exports){
 const colours = require('./_colours');
 
 const HEIGHT = 275;
@@ -35032,7 +35349,7 @@ module.exports = {
     uiTabPlayerInfoSubTab: 0
 };
 
-},{"./_colours":63}],75:[function(require,module,exports){
+},{"./_colours":63}],76:[function(require,module,exports){
 const selectedRecoverQuestions = [];
 selectedRecoverQuestions.length = 5;
 selectedRecoverQuestions.fill(null);
@@ -35047,7 +35364,7 @@ module.exports = {
     controlRecoverCreateButton: 0
 };
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -35355,7 +35672,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":86,"./_colours":63}],77:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":87,"./_colours":63}],78:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -35433,12 +35750,10 @@ function drawDialogServerMessage() {
 
 module.exports = { drawDialogServerMessage };
 
-},{"./_colours":63}],78:[function(require,module,exports){
+},{"./_colours":63}],79:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
-
-const LIGHT_GREY = 0xd0d0d0;
 
 const COINS_ID = 10;
 
@@ -35652,7 +35967,7 @@ function drawDialogShop() {
                     slotY,
                     49,
                     34,
-                    LIGHT_GREY,
+                    colours.lightGrey2,
                     160
                 );
             }
@@ -35815,7 +36130,7 @@ function drawDialogShop() {
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],79:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],80:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -35983,9 +36298,13 @@ function handleSleepInput() {
     this.lastMouseButtonDown = 0;
 }
 
-module.exports = { drawSleep, handleSleepInput };
+module.exports = {
+    drawSleep,
+    handleSleepInput,
+    isSleeping: false
+};
 
-},{"../opcodes/client":54,"./_colours":63}],80:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],81:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -36199,7 +36518,7 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":86,"../word-filter":88,"./_colours":63}],81:[function(require,module,exports){
+},{"../chat-message":40,"../utility":87,"../word-filter":89,"./_colours":63}],82:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
@@ -36481,7 +36800,7 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":86,"./_colours":63}],82:[function(require,module,exports){
+},{"../utility":87,"./_colours":63}],83:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
@@ -36674,12 +36993,10 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":86,"./_colours":63}],83:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":87,"./_colours":63}],84:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
-
-const LIGHT_GREY = 0xd0d0d0;
 
 const DIALOG_X = 22;
 const DIALOG_Y = 36;
@@ -36705,6 +37022,7 @@ function drawDialogTrade() {
                 if (slot >= 0 && slot < this.inventoryItemsCount) {
                     let sendUpdate = false;
                     let itemCountAdd = 0;
+
                     const itemType = this.inventoryItemId[slot];
 
                     for (let i = 0; i < this.tradeItemsCount; i++) {
@@ -36849,6 +37167,7 @@ function drawDialogTrade() {
     }
 
     this.surface.drawBox(DIALOG_X, DIALOG_Y, 468, 12, 192);
+
     this.surface.drawBoxAlpha(
         DIALOG_X,
         DIALOG_Y + 12,
@@ -36857,6 +37176,7 @@ function drawDialogTrade() {
         colours.grey,
         160
     );
+
     this.surface.drawBoxAlpha(
         DIALOG_X,
         DIALOG_Y + 30,
@@ -36916,7 +37236,7 @@ function drawDialogTrade() {
         DIALOG_Y + 30,
         197,
         103,
-        LIGHT_GREY,
+        colours.lightGrey2,
         160
     );
 
@@ -36925,7 +37245,7 @@ function drawDialogTrade() {
         DIALOG_Y + 155,
         197,
         103,
-        LIGHT_GREY,
+        colours.lightGrey2,
         160
     );
 
@@ -36934,7 +37254,7 @@ function drawDialogTrade() {
         DIALOG_Y + 30,
         246,
         205,
-        LIGHT_GREY,
+        colours.lightGrey2,
         160
     );
 
@@ -37191,7 +37511,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],84:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],85:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -37440,7 +37760,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":63}],85:[function(require,module,exports){
+},{"./_colours":63}],86:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -37576,7 +37896,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":63}],86:[function(require,module,exports){
+},{"./_colours":63}],87:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -37965,7 +38285,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],87:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],88:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -37979,7 +38299,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],88:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -39160,7 +39480,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 module.exports = WordFilter;
 
 
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -41686,4 +42006,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":86,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":87,"ndarray":34}]},{},[1]);

@@ -2,8 +2,6 @@ const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
-const LIGHT_GREY = 0xd0d0d0;
-
 const DIALOG_X = 22;
 const DIALOG_Y = 36;
 
@@ -28,6 +26,7 @@ function drawDialogTrade() {
                 if (slot >= 0 && slot < this.inventoryItemsCount) {
                     let sendUpdate = false;
                     let itemCountAdd = 0;
+
                     const itemType = this.inventoryItemId[slot];
 
                     for (let i = 0; i < this.tradeItemsCount; i++) {
@@ -172,6 +171,7 @@ function drawDialogTrade() {
     }
 
     this.surface.drawBox(DIALOG_X, DIALOG_Y, 468, 12, 192);
+
     this.surface.drawBoxAlpha(
         DIALOG_X,
         DIALOG_Y + 12,
@@ -180,6 +180,7 @@ function drawDialogTrade() {
         colours.grey,
         160
     );
+
     this.surface.drawBoxAlpha(
         DIALOG_X,
         DIALOG_Y + 30,
@@ -239,7 +240,7 @@ function drawDialogTrade() {
         DIALOG_Y + 30,
         197,
         103,
-        LIGHT_GREY,
+        colours.lightGrey2,
         160
     );
 
@@ -248,7 +249,7 @@ function drawDialogTrade() {
         DIALOG_Y + 155,
         197,
         103,
-        LIGHT_GREY,
+        colours.lightGrey2,
         160
     );
 
@@ -257,7 +258,7 @@ function drawDialogTrade() {
         DIALOG_Y + 30,
         246,
         205,
-        LIGHT_GREY,
+        colours.lightGrey2,
         160
     );
 

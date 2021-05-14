@@ -301,6 +301,8 @@ function drawDialogBank() {
     this.surface.drawBoxAlpha(x, y + 233, 408, 47, colours.grey, 160);
     this.surface.drawString('Bank', x + 1, y + 10, 1, colours.white);
 
+    // TODO drawPages
+
     let offsetX = 50;
 
     if (this.bankItemCount > ITEMS_PER_PAGE) {

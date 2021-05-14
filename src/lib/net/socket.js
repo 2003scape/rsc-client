@@ -1,3 +1,8 @@
+// a shim for java.net.Socket
+// https://docs.oracle.com/javase/7/docs/api/java/net/Socket.html
+
+const CLOSE_TIMEOUT = 5000;
+
 class Socket {
     constructor(host, port) {
         this.host = host;
@@ -29,16 +34,32 @@ class Socket {
                 'binary'
             );
 
+            const closeTimeout = setTimeout(() => {
+                if (!this.connected) {
+                    this.client.close();
+                    reject(new Error('websocket connect timeout'));
+                }
+            }, CLOSE_TIMEOUT);
+
             this.client.binaryType = 'arraybuffer';
 
             const onError = (err) => {
-                this.client.removeEventListener('error', onError);
+                if (this.onError) {
+                    this.onError(err);
+                    this.onError = undefined;
+                }
+
                 reject(err);
             };
 
             this.client.addEventListener('error', onError);
 
             this.client.addEventListener('close', () => {
+                if (this.onClose) {
+                    this.onClose(-1);
+                    this.onClose = undefined;
+                }
+
                 this.connected = false;
                 this.clear();
             });
@@ -47,11 +68,16 @@ class Socket {
                 this.buffers.push(new Int8Array(msg.data));
                 this.bytesAvailable += msg.data.byteLength;
                 this.refreshCurrentBuffer();
+
+                if (this.onNextMessage) {
+                    this.onNextMessage(msg.data.byteLength);
+                    this.onNextMessage = undefined;
+                }
             });
 
             this.client.addEventListener('open', () => {
                 this.connected = true;
-                this.client.removeEventListener('error', onError);
+                clearTimeout(closeTimeout);
                 resolve();
             });
         });
@@ -93,53 +119,36 @@ class Socket {
             return this.currentBuffer[this.offset++] & 0xff;
         }
 
-        return new Promise((resolve, reject) => {
-            let onClose, onError, onNextMessage;
-
-            onClose = () => {
-                this.client.removeEventListener('error', onError);
-                this.client.removeEventListener('close', onClose);
-                this.client.removeEventListener('message', onNextMessage);
-                resolve(-1);
-            };
-
-            onError = (err) => {
-                this.client.removeEventListener('error', onError);
-                this.client.removeEventListener('close', onClose);
-                this.client.removeEventListener('message', onNextMessage);
-                reject(err);
-            };
-
-            onNextMessage = () => {
-                this.client.removeEventListener('error', onError);
-                this.client.removeEventListener('close', onClose);
-                this.client.removeEventListener('message', onNextMessage);
-                Promise.resolve().then(async () => {
-                    resolve(await this.read());
-                });
-            };
-
-            this.client.addEventListener('error', onError);
-            this.client.addEventListener('close', onClose);
-            this.client.addEventListener('message', onNextMessage);
+        const bytesRead = await new Promise((resolve, reject) => {
+            this.onClose = resolve;
+            this.onError = reject;
+            this.onNextMessage = resolve;
         });
+
+        if (bytesRead === -1) {
+            return -1;
+        }
+
+        return await this.read();
     }
 
-    // read multiple bytes (specified by `len`) and put them into the `dest`
-    // array at specified `off` (0 by default).
-    async readBytes(dest, off = 0, len = -1) {
+    // read multiple bytes (specified by `length`) and put them into the
+    // `destination` array at specified `offset` (0 by default).
+    async readBytes(destination, offset = 0, length = -1) {
         if (!this.connected) {
             return -1;
         }
 
-        len = len === -1 ? dest.length : len;
+        length = length === -1 ? destination.length : length;
 
-        if (this.bytesAvailable >= len) {
-            while (len > 0) {
-                dest[off++] = this.currentBuffer[this.offset++] & 0xff;
+        if (this.bytesAvailable >= length) {
+            while (length > 0) {
+                destination[offset++] =
+                    this.currentBuffer[this.offset++] & 0xff;
+
                 this.bytesLeft -= 1;
                 this.bytesAvailable -= 1;
-                len -= 1;
+                length -= 1;
 
                 if (this.bytesLeft === 0) {
                     this.refreshCurrentBuffer();
@@ -149,36 +158,17 @@ class Socket {
             return;
         }
 
-        return new Promise((resolve, reject) => {
-            let onClose, onError, onNextMessage;
-
-            onClose = () => {
-                this.client.removeEventListener('error', onError);
-                this.client.removeEventListener('close', onClose);
-                this.client.removeEventListener('message', onNextMessage);
-                resolve(-1);
-            };
-
-            onError = (err) => {
-                this.client.removeEventListener('error', onError);
-                this.client.removeEventListener('close', onClose);
-                this.client.removeEventListener('message', onNextMessage);
-                reject(err);
-            };
-
-            onNextMessage = () => {
-                this.client.removeEventListener('error', onError);
-                this.client.removeEventListener('close', onClose);
-                this.client.removeEventListener('message', onNextMessage);
-                Promise.resolve().then(async () => {
-                    resolve(await this.readBytes(dest, off, len));
-                });
-            };
-
-            this.client.addEventListener('error', onError);
-            this.client.addEventListener('close', onClose);
-            this.client.addEventListener('message', onNextMessage);
+        const bytesRead = await new Promise((resolve, reject) => {
+            this.onClose = resolve;
+            this.onError = reject;
+            this.onNextMessage = resolve;
         });
+
+        if (bytesRead === -1) {
+            return -1;
+        }
+
+        return await this.readBytes(destination, offset, length);
     }
 
     close() {

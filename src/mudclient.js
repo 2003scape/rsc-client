@@ -25,7 +25,7 @@ const ZOOM_MAX = 1250;
 const ZOOM_INDOORS = 550;
 const ZOOM_OUTDOORS = 750;
 
-const MENU_MAX_SIZE = 250;
+const MENU_MAX = 250;
 const PATH_STEPS_MAX = 8000;
 const PLAYERS_MAX = 500;
 const NPCS_MAX = 500;
@@ -211,7 +211,7 @@ class mudclient extends GameConnection {
         this.welcomeLastLoggedInIP = 0;
         this.sleepWordDelayTimer = 0;
 
-        this.menuIndices = new Int32Array(MENU_MAX_SIZE);
+        this.menuIndices = new Int32Array(MENU_MAX);
         this.cameraAutoAngleDebug = false;
         this.wallObjectDirection = new Int32Array(WALL_OBJECTS_MAX);
         this.wallObjectId = new Int32Array(WALL_OBJECTS_MAX);
@@ -231,8 +231,8 @@ class mudclient extends GameConnection {
         this.receivedMessageHeight = new Int32Array(50);
         this.localPlayer = new GameCharacter();
         this.localPlayerServerIndex = -1;
-        this.menuItemX = new Int32Array(MENU_MAX_SIZE);
-        this.menuItemY = new Int32Array(MENU_MAX_SIZE);
+        this.menuItemX = new Int32Array(MENU_MAX);
+        this.menuItemY = new Int32Array(MENU_MAX);
         this.bankItems = new Int32Array(256);
         this.bankItemsCount = new Int32Array(256);
         this.appearanceBodyGender = 1;
@@ -250,7 +250,7 @@ class mudclient extends GameConnection {
         this.cameraRotationYIncrement = 2;
         this.objectAlreadyInMenu = new Int8Array(OBJECTS_MAX);
         this.menuItemText1 = [];
-        this.menuItemText1.length = MENU_MAX_SIZE;
+        this.menuItemText1.length = MENU_MAX;
         this.menuItemText1.fill(null);
         this.duelOpponentName = '';
         this.lastObjectAnimationNumberFireLightningSpell = -1;
@@ -277,9 +277,9 @@ class mudclient extends GameConnection {
         this.players.length = PLAYERS_MAX;
         this.players.fill(null);
         this.prayerOn = new Int8Array(50);
-        this.menuIndex = new Int32Array(MENU_MAX_SIZE);
-        this.menuSourceIndex = new Int32Array(MENU_MAX_SIZE);
-        this.menuTargetIndex = new Int32Array(MENU_MAX_SIZE);
+        this.menuIndex = new Int32Array(MENU_MAX);
+        this.menuSourceIndex = new Int32Array(MENU_MAX);
+        this.menuTargetIndex = new Int32Array(MENU_MAX);
         this.wallObjectAlreadyInMenu = new Int8Array(WALL_OBJECTS_MAX);
         this.magicLoc = 128;
         this.errorLoadingMemory = false;
@@ -337,7 +337,7 @@ class mudclient extends GameConnection {
         this.tradeRecipientItems = new Int32Array(14);
         this.tradeRecipientItemCount = new Int32Array(14);
         this.showDialogServerMessage = false;
-        this.menuType = new Int32Array(MENU_MAX_SIZE);
+        this.menuType = new Int32Array(MENU_MAX);
         this.questComplete = new Int8Array(QUEST_COUNT);
         this.wallObjectModel = [];
         this.wallObjectModel.length = WALL_OBJECTS_MAX;
@@ -389,7 +389,7 @@ class mudclient extends GameConnection {
         this.wallObjectX = new Int32Array(WALL_OBJECTS_MAX);
         this.wallObjectY = new Int32Array(WALL_OBJECTS_MAX);
         this.menuItemText2 = [];
-        this.menuItemText2.length = MENU_MAX_SIZE;
+        this.menuItemText2.length = MENU_MAX;
         this.menuItemText2.fill(null);
         this.npcsServer = [];
         this.npcsServer.length = NPCS_SERVER_MAX;
@@ -541,20 +541,18 @@ class mudclient extends GameConnection {
                 break;
             }
 
-            let invId = this.inventoryItemId[invIdx];
-            let hasItemInInv = false;
+            const inventoryID = this.inventoryItemId[invIdx];
+            let hasItemInInventory = false;
 
-            for (let bankidx = 0; bankidx < this.bankItemCount; bankidx++) {
-                if (this.bankItems[bankidx] !== invId) {
-                    continue;
+            for (let i = 0; i < this.bankItemCount; i++) {
+                if (this.bankItems[i] === inventoryID) {
+                    hasItemInInventory = true;
+                    break;
                 }
-
-                hasItemInInv = true;
-                break;
             }
 
-            if (!hasItemInInv) {
-                this.bankItems[this.bankItemCount] = invId;
+            if (!hasItemInInventory) {
+                this.bankItems[this.bankItemCount] = inventoryID;
                 this.bankItemsCount[this.bankItemCount] = 0;
                 this.bankItemCount++;
             }
@@ -776,7 +774,7 @@ class mudclient extends GameConnection {
             this.npcs[i] = null;
         }
 
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < this.prayerOn.length; i++) {
             this.prayerOn[i] = false;
         }
 
@@ -3142,7 +3140,7 @@ class mudclient extends GameConnection {
         }
 
         // retro fps counter
-        if (this.options.retroFpsCounter) {
+        if (this.options.retroFPSCounter) {
             // how much the wilderness skull needs to move for the fps counter
             const offset = this.isInWild ? 70 : 0;
 

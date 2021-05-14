@@ -216,6 +216,7 @@ class GameConnection extends GameShell {
                 'Sorry! The server is currently full.',
                 'Please try again later'
             );
+
             return;
         }
 
@@ -250,13 +251,17 @@ class GameConnection extends GameShell {
                 await this.createSocket(this.server, this.port),
                 this
             );
+
             this.packetStream.maxReadTries = GameConnection.maxReadTries;
 
-            const encodedUsername = Utility.usernameToHash(username);
             this.packetStream.newPacket(clientOpcodes.SESSION);
+
+            const encodedUsername = Utility.usernameToHash(username);
+
             this.packetStream.putByte(
                 encodedUsername.shiftRight(16).and(31).toInt()
             );
+
             this.packetStream.flushPacket();
 
             const sessionID = await this.packetStream.getLong();
@@ -550,10 +555,12 @@ class GameConnection extends GameShell {
             );
         } catch (e) {
             console.error(e);
+
             this.showLoginScreenStatus(
                 'Sorry! Unable to connect.',
                 'Check leternet settings or try another world'
             );
+
             return;
         }
     }
@@ -581,7 +588,10 @@ class GameConnection extends GameShell {
             console.error(e);
         }
 
-        this.autoLoginTimeout = 10;
+        if (this.options.retryLoginOnDisconnect) {
+            this.autoLoginTimeout = 10;
+        }
+
         await this.login(this.username, this.password, true);
     }
 

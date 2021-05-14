@@ -41,7 +41,8 @@ class GameShell {
             wordFilter: true,
             accountManagement: true,
             messageScrollBack: false,
-            retroFpsCounter: false
+            retroFPSCounter: true,
+            retryLoginOnDisconnect: true
         };
 
         this.middleButtonDown = false;

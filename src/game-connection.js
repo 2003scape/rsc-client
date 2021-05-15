@@ -1,11 +1,9 @@
-const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameShell = require('./game-shell');
 const Long = require('long');
 const PacketStream = require('./packet-stream');
 const Utility = require('./utility');
-const WordFilter = require('./word-filter');
 const clientOpcodes = require('./opcodes/client');
 const serverOpcodes = require('./opcodes/server');
 const sleep = require('sleep-promise');
@@ -20,7 +18,6 @@ class GameConnection extends GameShell {
     constructor(canvas) {
         super(canvas);
 
-        this.packetStream = null;
         this.friendListCount = 0;
         this.ignoreListCount = 0;
         this.settingsBlockChat = 0;
@@ -36,18 +33,19 @@ class GameConnection extends GameShell {
 
         this.server = '127.0.0.1';
         this.port = 43594;
+
         this.username = '';
         this.password = '';
-        this.incomingPacket = new Int8Array(5000);
+
         this.incomingPacket = new Int8Array(5000);
 
+        this.friendListOnline = new Int32Array(200);
         this.friendListHashes = [];
 
         for (let i = 0; i < 200; i += 1) {
             this.friendListHashes.push(new Long(0));
         }
 
-        this.friendListOnline = new Int32Array(200);
         this.ignoreList = [];
 
         for (let i = 0; i < GameConnection.maxSocialListSize; i += 1) {
@@ -595,20 +593,23 @@ class GameConnection extends GameShell {
         await this.login(this.username, this.password, true);
     }
 
-    drawTextBox(s, s1) {
+    drawTextBox(top, bottom) {
         const graphics = this.getGraphics();
         const font = new Font('Helvetica', 1, 15);
         const width = 512;
         const height = 344;
 
         graphics.setColor(Color.black);
+
         graphics.fillRect(
             ((width / 2) | 0) - 140,
             ((height / 2) | 0) - 25,
             280,
             50
         );
+
         graphics.setColor(Color.white);
+
         graphics.drawRect(
             ((width / 2) | 0) - 140,
             ((height / 2) | 0) - 25,
@@ -618,14 +619,15 @@ class GameConnection extends GameShell {
 
         this.drawString(
             graphics,
-            s,
+            top,
             font,
             (width / 2) | 0,
             ((height / 2) | 0) - 10
         );
+
         this.drawString(
             graphics,
-            s1,
+            bottom,
             font,
             (width / 2) | 0,
             ((height / 2) | 0) + 10
@@ -633,6 +635,7 @@ class GameConnection extends GameShell {
     }
 
     async checkConnection() {
+        // packetTick?
         const timestamp = Date.now();
 
         if (this.packetStream.hasPacket()) {
@@ -655,24 +658,20 @@ class GameConnection extends GameShell {
         const length = await this.packetStream.readPacket(this.incomingPacket);
 
         if (length > 0) {
-            const type = this.packetStream.isaacCommand(
+            const opcode = this.packetStream.isaacCommand(
                 this.incomingPacket[0] & 0xff
             );
 
-            this.handlePacket(type, type, length);
+            this.handlePacket(opcode, length);
         }
     }
 
-    handlePacket(opcode, ptype, psize) {
-        console.log('opcode:' + opcode + ' psize:' + psize);
-
-        if (opcode === serverOpcodes.MESSAGE) {
-            const message = fromCharArray(this.incomingPacket.slice(1, psize));
-            this.showServerMessage(message);
-        }
+    handlePacket(opcode, size) {
+        console.log('opcode:' + opcode + ' psize:' + size);
 
         if (opcode === serverOpcodes.CLOSE_CONNECTION) {
             this.closeConnection();
+            return;
         }
 
         if (opcode === serverOpcodes.LOGOUT_DENY) {
@@ -680,126 +679,7 @@ class GameConnection extends GameShell {
             return;
         }
 
-        if (opcode === serverOpcodes.FRIEND_LIST) {
-            this.friendListCount = Utility.getUnsignedByte(
-                this.incomingPacket[1]
-            );
-
-            for (let i = 0; i < this.friendListCount; i++) {
-                this.friendListHashes[i] = Utility.getUnsignedLong(
-                    this.incomingPacket,
-                    2 + i * 9
-                );
-                this.friendListOnline[i] = Utility.getUnsignedByte(
-                    this.incomingPacket[10 + i * 9]
-                );
-            }
-
-            this.sortFriendsList();
-
-            return;
-        }
-
-        if (opcode === serverOpcodes.FRIEND_STATUS_CHANGE) {
-            const encodedUsername = Utility.getUnsignedLong(
-                this.incomingPacket,
-                1
-            );
-            const world = this.incomingPacket[9] & 0xff;
-
-            for (let i = 0; i < this.friendListCount; i++) {
-                if (this.friendListHashes[i].equals(encodedUsername)) {
-                    if (this.friendListOnline[i] === 0 && world !== 0) {
-                        this.showServerMessage(
-                            `@pri@${Utility.hashToUsername(encodedUsername)} ` +
-                                'has logged in'
-                        );
-                    }
-
-                    if (this.friendListOnline[i] !== 0 && world === 0) {
-                        this.showServerMessage(
-                            `@pri@${Utility.hashToUsername(encodedUsername)} ` +
-                                'has logged out'
-                        );
-                    }
-
-                    this.friendListOnline[i] = world;
-                    psize = 0; // not sure what this is for
-                    this.sortFriendsList();
-                    return;
-                }
-            }
-
-            this.friendListHashes[this.friendListCount] = encodedUsername;
-            this.friendListOnline[this.friendListCount] = world;
-            this.friendListCount++;
-            this.sortFriendsList();
-
-            return;
-        }
-
-        if (opcode === serverOpcodes.IGNORE_LIST) {
-            this.ignoreListCount = Utility.getUnsignedByte(
-                this.incomingPacket[1]
-            );
-
-            for (let i1 = 0; i1 < this.ignoreListCount; i1++) {
-                this.ignoreList[i1] = Utility.getUnsignedLong(
-                    this.incomingPacket,
-                    2 + i1 * 8
-                );
-            }
-
-            return;
-        }
-
-        if (opcode === serverOpcodes.PRIVACY_SETTINGS) {
-            this.settingsBlockChat = this.incomingPacket[1];
-            this.settingsBlockPrivate = this.incomingPacket[2];
-            this.settingsBlockTrade = this.incomingPacket[3];
-            this.settingsBlockDuel = this.incomingPacket[4];
-
-            return;
-        }
-
-        if (opcode === serverOpcodes.FRIEND_MESSAGE) {
-            const from = Utility.getUnsignedLong(this.incomingPacket, 1);
-            const token = Utility.getUnsignedInt(this.incomingPacket, 9);
-
-            for (let i = 0; i < this.maxSocialListSize; i++) {
-                if (this.messageTokens[i] === token) {
-                    return;
-                }
-            }
-
-            this.messageTokens[this.messageIndex] = token;
-            this.messageIndex =
-                (this.messageIndex + 1) % GameConnection.maxSocialListSize;
-
-            let message = ChatMessage.descramble(
-                this.incomingPacket,
-                13,
-                psize - 13
-            );
-
-            if (this.options.wordFilter) {
-                message = WordFilter.filter(message);
-            }
-
-            this.showServerMessage(
-                `@pri@${Utility.hashToUsername(from)}: tells you ${message}`
-            );
-
-            return;
-        } else {
-            this.handleIncomingPacket(
-                opcode,
-                ptype,
-                psize,
-                this.incomingPacket
-            );
-            return;
-        }
+        this.handleIncomingPacket(opcode, size, this.incomingPacket);
     }
 
     sortFriendsList() {

@@ -15,7 +15,8 @@ this client is designed to work with
     $ npm install @2003scape/rsc-client
 
 ## usage
-after making modifications to `./src/`, run `$ npm run build-dev`.
+after making modifications to `./src/`, run `$ npm install` to install developer
+dependencies, then `$ npm run build-dev` to create a new bundle in `./dist/`.
 
 the `./dist/` directory contains everything you need to use the client.
 run `$ npm start` to start a simple HTTP server at http://localhost:1337.
@@ -98,7 +99,7 @@ for its cache files.
   performant method to declare them and accomplish the correct
   behaviour (javascript's
   [Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
-  is an [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), a
+  is an [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754); a
   [java double](https://docs.oracle.com/javase/7/docs/api/java/lang/Double.html)).
 
 ## license

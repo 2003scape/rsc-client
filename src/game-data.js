@@ -131,8 +131,10 @@ class GameData {
         for (i = 0; i < GameData.itemCount; i++) {
             if (!isMembers && GameData.itemMembers[i] === 1) {
                 GameData.itemName[i] = 'Members object';
+
                 GameData.itemDescription[i] =
                     'You need to be a member to use this object';
+
                 GameData.itemBasePrice[i] = 0;
                 GameData.itemCommand[i] = '';
                 GameData.itemUnused[0] = 0;
@@ -150,10 +152,12 @@ class GameData {
         GameData.npcHits = new Int32Array(GameData.npcCount);
         GameData.npcDefense = new Int32Array(GameData.npcCount);
         GameData.npcAttackable = new Int32Array(GameData.npcCount);
+
         GameData.npcSprite = ndarray(new Int32Array(GameData.npcCount * 12), [
             GameData.npcCount,
             12
         ]);
+
         GameData.npcColourHair = new Int32Array(GameData.npcCount);
         GameData.npcColourTop = new Int32Array(GameData.npcCount);
         GameData.npcColorBottom = new Int32Array(GameData.npcCount);
@@ -256,10 +260,12 @@ class GameData {
 
         GameData.animationCount = GameData.getUnsignedShort();
         GameData.animationName = [];
+
         GameData.animationCharacterColour = new Int32Array(
             GameData.animationCount
         );
-        GameData.animationSomething = new Int32Array(GameData.animationCount);
+
+        GameData.animationGender = new Int32Array(GameData.animationCount);
         GameData.animationHasA = new Int32Array(GameData.animationCount);
         GameData.animationHasF = new Int32Array(GameData.animationCount);
         GameData.animationNumber = new Int32Array(GameData.animationCount);
@@ -273,7 +279,7 @@ class GameData {
         }
 
         for (i = 0; i < GameData.animationCount; i++) {
-            GameData.animationSomething[i] = GameData.getUnsignedByte();
+            GameData.animationGender[i] = GameData.getUnsignedByte();
         }
 
         for (i = 0; i < GameData.animationCount; i++) {
@@ -343,12 +349,15 @@ class GameData {
         GameData.wallObjectCommand1 = [];
         GameData.wallObjectCommand2 = [];
         GameData.wallObjectHeight = new Int32Array(GameData.wallObjectCount);
+
         GameData.wallObjectTextureFront = new Int32Array(
             GameData.wallObjectCount
         );
+
         GameData.wallObjectTextureBack = new Int32Array(
             GameData.wallObjectCount
         );
+
         GameData.wallObjectAdjacent = new Int32Array(GameData.wallObjectCount);
         GameData.wallObjectInvisible = new Int32Array(GameData.wallObjectCount);
 
@@ -451,19 +460,21 @@ class GameData {
         }
 
         for (i = 0; i < GameData.spellCount; i++) {
-            let j = GameData.getUnsignedByte();
-            GameData.spellRunesId.push(new Int32Array(j));
+            const runeAmount = GameData.getUnsignedByte();
 
-            for (let k = 0; k < j; k++) {
-                GameData.spellRunesId[i][k] = GameData.getUnsignedShort();
+            GameData.spellRunesId.push(new Int32Array(runeAmount));
+
+            for (let j = 0; j < runeAmount; j++) {
+                GameData.spellRunesId[i][j] = GameData.getUnsignedShort();
             }
         }
 
         for (i = 0; i < GameData.spellCount; i++) {
-            let j = GameData.getUnsignedByte();
-            GameData.spellRunesCount.push(new Int32Array(j));
+            let runeAmount = GameData.getUnsignedByte();
 
-            for (let k = 0; k < j; k++) {
+            GameData.spellRunesCount.push(new Int32Array(runeAmount));
+
+            for (let k = 0; k < runeAmount; k++) {
                 GameData.spellRunesCount[i][k] = GameData.getUnsignedByte();
             }
         }
@@ -498,92 +509,19 @@ class GameData {
 GameData.modelName = [];
 GameData.modelName.length = 5000;
 GameData.modelName.fill(null);
-GameData.textureName = null;
-GameData.textureSubtypeName = null;
-GameData.objectModelIndex = null;
-GameData.objectWidth = null;
-GameData.objectHeight = null;
-GameData.objectType = null;
-GameData.objectElevation = null;
 GameData.spellCount = 0;
-GameData.npcWidth = null;
-GameData.npcHeight = null;
-GameData.npcSprite = null;
-GameData.npcAttack = null;
-GameData.npcStrength = null;
-GameData.npcHits = null;
-GameData.npcDefense = null;
-GameData.npcAttackable = null;
-GameData.spellLevel = null;
-GameData.spellRunesRequired = null;
-GameData.spellType = null;
-GameData.spellRunesId = null;
-GameData.spellRunesCount = null;
 GameData.itemCount = 0;
 GameData.itemSpriteCount = 0;
-GameData.npcColourHair = null;
-GameData.npcColourTop = null;
-GameData.npcColorBottom = null;
-GameData.npcColourSkin = null;
-GameData.wallObjectHeight = null;
-GameData.wallObjectTextureFront = null;
-GameData.wallObjectTextureBack = null;
-GameData.wallObjectAdjacent = null;
-GameData.wallObjectInvisible = null;
 GameData.tileCount = 0;
-GameData.animationCharacterColour = null;
-GameData.animationSomething = null;
-GameData.animationHasA = null;
-GameData.animationHasF = null;
-GameData.animationNumber = null;
 GameData.wallObjectCount = 0;
-GameData.prayerLevel = null;
-GameData.prayerDrain = null;
-GameData.tileDecoration = null;
-GameData.tileType = null;
-GameData.tileAdjacent = null;
 GameData.modelCount = 0;
-GameData.roofHeight = null;
-GameData.roofNumVertices = null;
 GameData.prayerCount = 0;
-GameData.itemName = null;
-GameData.itemDescription = null;
-GameData.itemCommand = null;
 GameData.projectileSprite = 0;
 GameData.npcCount = 0;
-GameData.spellName = null;
-GameData.spellDescription = null;
 GameData.textureCount = 0;
-GameData.wallObjectName = null;
-GameData.wallObjectDescription = null;
-GameData.wallObjectCommand1 = null;
-GameData.wallObjectCommand2 = null;
 GameData.roofCount = 0;
 GameData.objectCount = 0;
-GameData.npcName = null;
-GameData.npcDescription = null;
-GameData.npcCommand = null;
-GameData.animationName = null;
-GameData.itemPicture = null;
-GameData.itemBasePrice = null;
-GameData.itemStackable = null;
-GameData.itemUnused = null;
-GameData.itemWearable = null;
-GameData.itemMask = null;
-GameData.itemSpecial = null;
-GameData.itemMembers = null;
 GameData.animationCount = 0;
-GameData.prayerName = null;
-GameData.prayerDescription = null;
-GameData.objectName = null;
-GameData.objectDescription = null;
-GameData.objectCommand1 = null;
-GameData.objectCommand2 = null;
-GameData.npcWalkModel = null;
-GameData.npcCombatModel = null;
-GameData.npcCombatAnimation = null;
-GameData.dataString = null;
-GameData.dataInteger = null;
 GameData.stringOffset = 0;
 GameData.offset = 0;
 

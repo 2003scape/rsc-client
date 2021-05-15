@@ -40,8 +40,8 @@ class GameShell {
             totalExperience: false,
             wordFilter: true,
             accountManagement: true,
-            messageScrollBack: false,
-            retroFPSCounter: true,
+            messageScrollBack: true,
+            retroFPSCounter: false,
             retryLoginOnDisconnect: true
         };
 
@@ -93,6 +93,7 @@ class GameShell {
 
     async startApplication(width, height, title) {
         window.document.title = title;
+
         this._canvas.width = width;
         this._canvas.height = height;
 
@@ -106,6 +107,7 @@ class GameShell {
             this.mousePressed.bind(this)
         );
 
+        // prevent right clicks
         this._canvas.addEventListener('contextmenu', (event) => {
             event.preventDefault();
             return false;
@@ -416,6 +418,7 @@ class GameShell {
 
             this.interlaceTimer--;
             i1 &= 0xff;
+
             this.draw();
 
             // calculate fps
@@ -562,6 +565,7 @@ class GameShell {
         }
 
         const progressWidth = ((277 * percent) / 100) | 0;
+
         this.graphics.fillRect(x, y, progressWidth, 20);
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(x + progressWidth, y, 277 - progressWidth, 20);
@@ -582,7 +586,9 @@ class GameShell {
 
     drawString(graphics, string, font, x, y) {
         graphics.setFont(font);
+
         const { width, height } = graphics.ctx.measureText(string);
+
         graphics.drawString(
             string,
             x - ((width / 2) | 0),
@@ -615,6 +621,7 @@ class GameShell {
             ((header[0] & 0xff) << 16) +
             ((header[1] & 0xff) << 8) +
             (header[2] & 0xff);
+
         const archiveSizeCompressed =
             ((header[3] & 0xff) << 16) +
             ((header[4] & 0xff) << 8) +

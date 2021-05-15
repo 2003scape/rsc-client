@@ -12,11 +12,13 @@ this client is designed to work with
 
 ## install
 
-    npm install @2003scape/rsc-client
+    $ npm install @2003scape/rsc-client
 
 ## usage
-the `dist/` directory contains everything you need to use the client.
-run `npm start` to start a simple HTTP server http://localhost:1337.
+after making modifications to `./src/`, run `$ npm run build-dev`.
+
+the `./dist/` directory contains everything you need to use the client.
+run `$ npm start` to start a simple HTTP server at http://localhost:1337.
 you may put optional arguments into the hash of the URL:
 
     http://localhost:1337/index.html#members,127.0.0.1,43595
@@ -36,8 +38,8 @@ mc.threadSleep = 10;
 ```
 
 ## options
-present are features from earlier mudclients and/or inspired by modern
-third-party clients:
+features from earlier mudclients and/or inspired by modern third-party clients
+with their default values:
 
 ```javascript
 // hold down middle click and move the mouse to rotate the camera (only when
@@ -69,6 +71,15 @@ mc.options.wordFilter = true;
 // support account registration, password changes and recovery within the
 // client using jagex's older UIs
 mc.options.accountManagement = true;
+
+// use ctrl + up/down to scroll through messages
+mc.options.messageScrollBack = false;
+
+// display an "Fps: X" counter at the bottom right of the screen
+mc.options.retroFPSCounter = false;
+
+// retry logins when the server disconnects
+mc.options.retryLoginOnDisconnect = true;
 ```
 
 ## assets
@@ -82,15 +93,16 @@ for its cache files.
 
   `number | 0` is an
   [asm.js](https://github.com/zbjornson/human-asmjs#11-type-declaration)
-  declaration for declaring a number as a 32-bit integer. a lot of the original
-  java client used integer overflow techniques, and this is the most performant
-  way to cast and indicate to the compiler the correct type and accomplish the
-  correct behaviour (as javascript's
+  declaration for declaring a number as a 32-bit integer. the original
+  java client used integer overflow techniques often, and this is the most
+  performant method to declare them and accomplish the correct
+  behaviour (javascript's
   [Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
-  is an [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754)).
+  is an [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754), a
+  [java double](https://docs.oracle.com/javase/7/docs/api/java/lang/Double.html)).
 
 ## license
-Copyright 2020  2003Scape Team
+Copyright 2021  2003Scape Team
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU Affero General Public License as published by the

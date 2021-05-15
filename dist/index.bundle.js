@@ -13001,7 +13001,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":87,"./word-filter":89,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./chat-message":40,"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":56,"./utility":88,"./word-filter":90,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13135,8 +13135,10 @@ class GameData {
         for (i = 0; i < GameData.itemCount; i++) {
             if (!isMembers && GameData.itemMembers[i] === 1) {
                 GameData.itemName[i] = 'Members object';
+
                 GameData.itemDescription[i] =
                     'You need to be a member to use this object';
+
                 GameData.itemBasePrice[i] = 0;
                 GameData.itemCommand[i] = '';
                 GameData.itemUnused[0] = 0;
@@ -13154,10 +13156,12 @@ class GameData {
         GameData.npcHits = new Int32Array(GameData.npcCount);
         GameData.npcDefense = new Int32Array(GameData.npcCount);
         GameData.npcAttackable = new Int32Array(GameData.npcCount);
+
         GameData.npcSprite = ndarray(new Int32Array(GameData.npcCount * 12), [
             GameData.npcCount,
             12
         ]);
+
         GameData.npcColourHair = new Int32Array(GameData.npcCount);
         GameData.npcColourTop = new Int32Array(GameData.npcCount);
         GameData.npcColorBottom = new Int32Array(GameData.npcCount);
@@ -13260,10 +13264,12 @@ class GameData {
 
         GameData.animationCount = GameData.getUnsignedShort();
         GameData.animationName = [];
+
         GameData.animationCharacterColour = new Int32Array(
             GameData.animationCount
         );
-        GameData.animationSomething = new Int32Array(GameData.animationCount);
+
+        GameData.animationGender = new Int32Array(GameData.animationCount);
         GameData.animationHasA = new Int32Array(GameData.animationCount);
         GameData.animationHasF = new Int32Array(GameData.animationCount);
         GameData.animationNumber = new Int32Array(GameData.animationCount);
@@ -13277,7 +13283,7 @@ class GameData {
         }
 
         for (i = 0; i < GameData.animationCount; i++) {
-            GameData.animationSomething[i] = GameData.getUnsignedByte();
+            GameData.animationGender[i] = GameData.getUnsignedByte();
         }
 
         for (i = 0; i < GameData.animationCount; i++) {
@@ -13347,12 +13353,15 @@ class GameData {
         GameData.wallObjectCommand1 = [];
         GameData.wallObjectCommand2 = [];
         GameData.wallObjectHeight = new Int32Array(GameData.wallObjectCount);
+
         GameData.wallObjectTextureFront = new Int32Array(
             GameData.wallObjectCount
         );
+
         GameData.wallObjectTextureBack = new Int32Array(
             GameData.wallObjectCount
         );
+
         GameData.wallObjectAdjacent = new Int32Array(GameData.wallObjectCount);
         GameData.wallObjectInvisible = new Int32Array(GameData.wallObjectCount);
 
@@ -13455,19 +13464,21 @@ class GameData {
         }
 
         for (i = 0; i < GameData.spellCount; i++) {
-            let j = GameData.getUnsignedByte();
-            GameData.spellRunesId.push(new Int32Array(j));
+            const runeAmount = GameData.getUnsignedByte();
 
-            for (let k = 0; k < j; k++) {
-                GameData.spellRunesId[i][k] = GameData.getUnsignedShort();
+            GameData.spellRunesId.push(new Int32Array(runeAmount));
+
+            for (let j = 0; j < runeAmount; j++) {
+                GameData.spellRunesId[i][j] = GameData.getUnsignedShort();
             }
         }
 
         for (i = 0; i < GameData.spellCount; i++) {
-            let j = GameData.getUnsignedByte();
-            GameData.spellRunesCount.push(new Int32Array(j));
+            let runeAmount = GameData.getUnsignedByte();
 
-            for (let k = 0; k < j; k++) {
+            GameData.spellRunesCount.push(new Int32Array(runeAmount));
+
+            for (let k = 0; k < runeAmount; k++) {
                 GameData.spellRunesCount[i][k] = GameData.getUnsignedByte();
             }
         }
@@ -13502,98 +13513,25 @@ class GameData {
 GameData.modelName = [];
 GameData.modelName.length = 5000;
 GameData.modelName.fill(null);
-GameData.textureName = null;
-GameData.textureSubtypeName = null;
-GameData.objectModelIndex = null;
-GameData.objectWidth = null;
-GameData.objectHeight = null;
-GameData.objectType = null;
-GameData.objectElevation = null;
 GameData.spellCount = 0;
-GameData.npcWidth = null;
-GameData.npcHeight = null;
-GameData.npcSprite = null;
-GameData.npcAttack = null;
-GameData.npcStrength = null;
-GameData.npcHits = null;
-GameData.npcDefense = null;
-GameData.npcAttackable = null;
-GameData.spellLevel = null;
-GameData.spellRunesRequired = null;
-GameData.spellType = null;
-GameData.spellRunesId = null;
-GameData.spellRunesCount = null;
 GameData.itemCount = 0;
 GameData.itemSpriteCount = 0;
-GameData.npcColourHair = null;
-GameData.npcColourTop = null;
-GameData.npcColorBottom = null;
-GameData.npcColourSkin = null;
-GameData.wallObjectHeight = null;
-GameData.wallObjectTextureFront = null;
-GameData.wallObjectTextureBack = null;
-GameData.wallObjectAdjacent = null;
-GameData.wallObjectInvisible = null;
 GameData.tileCount = 0;
-GameData.animationCharacterColour = null;
-GameData.animationSomething = null;
-GameData.animationHasA = null;
-GameData.animationHasF = null;
-GameData.animationNumber = null;
 GameData.wallObjectCount = 0;
-GameData.prayerLevel = null;
-GameData.prayerDrain = null;
-GameData.tileDecoration = null;
-GameData.tileType = null;
-GameData.tileAdjacent = null;
 GameData.modelCount = 0;
-GameData.roofHeight = null;
-GameData.roofNumVertices = null;
 GameData.prayerCount = 0;
-GameData.itemName = null;
-GameData.itemDescription = null;
-GameData.itemCommand = null;
 GameData.projectileSprite = 0;
 GameData.npcCount = 0;
-GameData.spellName = null;
-GameData.spellDescription = null;
 GameData.textureCount = 0;
-GameData.wallObjectName = null;
-GameData.wallObjectDescription = null;
-GameData.wallObjectCommand1 = null;
-GameData.wallObjectCommand2 = null;
 GameData.roofCount = 0;
 GameData.objectCount = 0;
-GameData.npcName = null;
-GameData.npcDescription = null;
-GameData.npcCommand = null;
-GameData.animationName = null;
-GameData.itemPicture = null;
-GameData.itemBasePrice = null;
-GameData.itemStackable = null;
-GameData.itemUnused = null;
-GameData.itemWearable = null;
-GameData.itemMask = null;
-GameData.itemSpecial = null;
-GameData.itemMembers = null;
 GameData.animationCount = 0;
-GameData.prayerName = null;
-GameData.prayerDescription = null;
-GameData.objectName = null;
-GameData.objectDescription = null;
-GameData.objectCommand1 = null;
-GameData.objectCommand2 = null;
-GameData.npcWalkModel = null;
-GameData.npcCombatModel = null;
-GameData.npcCombatAnimation = null;
-GameData.dataString = null;
-GameData.dataInteger = null;
 GameData.stringOffset = 0;
 GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":87,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":88,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14932,7 +14870,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":60,"./utility":87}],46:[function(require,module,exports){
+},{"./scene":60,"./utility":88}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -14975,8 +14913,8 @@ class GameShell {
             totalExperience: false,
             wordFilter: true,
             accountManagement: true,
-            messageScrollBack: false,
-            retroFPSCounter: true,
+            messageScrollBack: true,
+            retroFPSCounter: false,
             retryLoginOnDisconnect: true
         };
 
@@ -15028,6 +14966,7 @@ class GameShell {
 
     async startApplication(width, height, title) {
         window.document.title = title;
+
         this._canvas.width = width;
         this._canvas.height = height;
 
@@ -15041,6 +14980,7 @@ class GameShell {
             this.mousePressed.bind(this)
         );
 
+        // prevent right clicks
         this._canvas.addEventListener('contextmenu', (event) => {
             event.preventDefault();
             return false;
@@ -15351,6 +15291,7 @@ class GameShell {
 
             this.interlaceTimer--;
             i1 &= 0xff;
+
             this.draw();
 
             // calculate fps
@@ -15497,6 +15438,7 @@ class GameShell {
         }
 
         const progressWidth = ((277 * percent) / 100) | 0;
+
         this.graphics.fillRect(x, y, progressWidth, 20);
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(x + progressWidth, y, 277 - progressWidth, 20);
@@ -15517,7 +15459,9 @@ class GameShell {
 
     drawString(graphics, string, font, x, y) {
         graphics.setFont(font);
+
         const { width, height } = graphics.ctx.measureText(string);
+
         graphics.drawString(
             string,
             x - ((width / 2) | 0),
@@ -15550,6 +15494,7 @@ class GameShell {
             ((header[0] & 0xff) << 16) +
             ((header[1] & 0xff) << 8) +
             (header[2] & 0xff);
+
         const archiveSizeCompressed =
             ((header[3] & 0xff) << 16) +
             ((header[4] & 0xff) << 8) +
@@ -15610,7 +15555,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":87,"./version":88,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":62,"./utility":88,"./version":89,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -16165,19 +16110,6 @@ class mudclient extends GameConnection {
         this.deathScreenTimeout = 0;
         this.cameraRotationY = 0;
         this.welcomeUnreadMessages = 0;
-        this.controlButtonAppearanceHead1 = 0;
-        this.controlButtonAppearanceHead2 = 0;
-        this.controlButtonAppearanceHair1 = 0;
-        this.controlButtonAppearanceHair2 = 0;
-        this.controlButtonAppearanceGender1 = 0;
-        this.controlButtonAppearanceGender2 = 0;
-        this.controlButtonAppearanceTop1 = 0;
-        this.controlButtonAppearanceTop2 = 0;
-        this.controlButtonAppearanceSkin1 = 0;
-        this.controlButtonAppearanceSkin2 = 0;
-        this.controlButtonAppearanceBottom1 = 0;
-        this.controlButtonAppearanceBottom2 = 0;
-        this.controlButtonAppearanceAccept = 0;
         this.logoutTimeout = 0;
         this.tradeRecipientConfirmHash = new Long(0);
         this.loginTimer = 0;
@@ -16508,6 +16440,7 @@ class mudclient extends GameConnection {
             'What is your favourite food?',
             'What is your favourite movie?'
         ];
+
         this.showRecoverChange = false;
         this.recoverCustomQuestionIndex = -1;
         this.showChangePasswordStep = 0;
@@ -17039,74 +16972,6 @@ class mudclient extends GameConnection {
         return player;
     }
 
-    createAppearancePanel() {
-        this.panelAppearance = new Panel(this.surface, 100);
-        this.panelAppearance.addTextCentre(256, 10, 'Please design Your Character', 4, true);
-
-        let x = 140;
-        let y = 34;
-
-        x += 116;
-        y -= 10;
-
-        this.panelAppearance.addTextCentre(x - 55, y + 110, 'Front', 3, true);
-        this.panelAppearance.addTextCentre(x, y + 110, 'Side', 3, true);
-        this.panelAppearance.addTextCentre(x + 55, y + 110, 'Back', 3, true);
-
-        let xOff = 54;
-
-        y += 145;
-
-        this.panelAppearance.addBoxRounded(x - xOff, y, 53, 41);
-        this.panelAppearance.addTextCentre(x - xOff, y - 8, 'Head', 1, true);
-        this.panelAppearance.addTextCentre(x - xOff, y + 8, 'Type', 1, true);
-        this.panelAppearance.addSprite(x - xOff - 40, y, Panel.baseSpriteStart + 7);
-        this.controlButtonAppearanceHead1 = this.panelAppearance.addButton(x - xOff - 40, y, 20, 20);
-        this.panelAppearance.addSprite((x - xOff) + 40, y, Panel.baseSpriteStart + 6);
-        this.controlButtonAppearanceHead2 = this.panelAppearance.addButton((x - xOff) + 40, y, 20, 20);
-        this.panelAppearance.addBoxRounded(x + xOff, y, 53, 41);
-        this.panelAppearance.addTextCentre(x + xOff, y - 8, 'Hair', 1, true);
-        this.panelAppearance.addTextCentre(x + xOff, y + 8, 'Color', 1, true);
-        this.panelAppearance.addSprite((x + xOff) - 40, y, Panel.baseSpriteStart + 7);
-        this.controlButtonAppearanceHair1 = this.panelAppearance.addButton((x + xOff) - 40, y, 20, 20);
-        this.panelAppearance.addSprite(x + xOff + 40, y, Panel.baseSpriteStart + 6);
-        this.controlButtonAppearanceHair2 = this.panelAppearance.addButton(x + xOff + 40, y, 20, 20);
-        y += 50;
-        this.panelAppearance.addBoxRounded(x - xOff, y, 53, 41);
-        this.panelAppearance.addTextCentre(x - xOff, y, 'Gender', 1, true);
-        this.panelAppearance.addSprite(x - xOff - 40, y, Panel.baseSpriteStart + 7);
-        this.controlButtonAppearanceGender1 = this.panelAppearance.addButton(x - xOff - 40, y, 20, 20);
-        this.panelAppearance.addSprite((x - xOff) + 40, y, Panel.baseSpriteStart + 6);
-        this.controlButtonAppearanceGender2 = this.panelAppearance.addButton((x - xOff) + 40, y, 20, 20);
-        this.panelAppearance.addBoxRounded(x + xOff, y, 53, 41);
-        this.panelAppearance.addTextCentre(x + xOff, y - 8, 'Top', 1, true);
-        this.panelAppearance.addTextCentre(x + xOff, y + 8, 'Color', 1, true);
-        this.panelAppearance.addSprite((x + xOff) - 40, y, Panel.baseSpriteStart + 7);
-        this.controlButtonAppearanceTop1 = this.panelAppearance.addButton((x + xOff) - 40, y, 20, 20);
-        this.panelAppearance.addSprite(x + xOff + 40, y, Panel.baseSpriteStart + 6);
-        this.controlButtonAppearanceTop2 = this.panelAppearance.addButton(x + xOff + 40, y, 20, 20);
-        y += 50;
-        this.panelAppearance.addBoxRounded(x - xOff, y, 53, 41);
-        this.panelAppearance.addTextCentre(x - xOff, y - 8, 'Skin', 1, true);
-        this.panelAppearance.addTextCentre(x - xOff, y + 8, 'Color', 1, true);
-        this.panelAppearance.addSprite(x - xOff - 40, y, Panel.baseSpriteStart + 7);
-        this.controlButtonAppearanceSkin1 = this.panelAppearance.addButton(x - xOff - 40, y, 20, 20);
-        this.panelAppearance.addSprite((x - xOff) + 40, y, Panel.baseSpriteStart + 6);
-        this.controlButtonAppearanceSkin2 = this.panelAppearance.addButton((x - xOff) + 40, y, 20, 20);
-        this.panelAppearance.addBoxRounded(x + xOff, y, 53, 41);
-        this.panelAppearance.addTextCentre(x + xOff, y - 8, 'Bottom', 1, true);
-        this.panelAppearance.addTextCentre(x + xOff, y + 8, 'Color', 1, true);
-        this.panelAppearance.addSprite((x + xOff) - 40, y, Panel.baseSpriteStart + 7);
-        this.controlButtonAppearanceBottom1 = this.panelAppearance.addButton((x + xOff) - 40, y, 20, 20);
-        this.panelAppearance.addSprite(x + xOff + 40, y, Panel.baseSpriteStart + 6);
-        this.controlButtonAppearanceBottom2 = this.panelAppearance.addButton(x + xOff + 40, y, 20, 20);
-        y += 82;
-        y -= 35;
-        this.panelAppearance.addButtonBackground(x, y, 200, 30);
-        this.panelAppearance.addTextCentre(x, y, 'Accept', 4, false);
-        this.controlButtonAppearanceAccept = this.panelAppearance.addButton(x, y, 200, 30);
-    }
-
     drawAppearancePanelCharacterSprites() {
         this.surface.interlace = false;
         this.surface.blackScreen();
@@ -17161,24 +17026,24 @@ class mudclient extends GameConnection {
         }
 
         if (this.showAppearanceChange) {
-            this.handleAppearancePanelControls();
+            this.handleAppearancePanelInput();
             return;
         }
 
         for (let i = 0; i < this.playerCount; i++) {
-            let character = this.players[i];
+            const player = this.players[i];
 
             // TODO figure out why this is happening
-            if (!character) {
+            if (!player) {
                 console.log('null character at ', i, this.playerCount);
                 return;
             }
 
-            let k = (character.waypointCurrent + 1) % 10;
+            let k = (player.waypointCurrent + 1) % 10;
 
-            if (character.movingStep !== k) {
+            if (player.movingStep !== k) {
                 let i1 = -1;
-                let l2 = character.movingStep;
+                let l2 = player.movingStep;
                 let j4;
 
                 if (l2 < k) {
@@ -17193,27 +17058,27 @@ class mudclient extends GameConnection {
                     j5 = (j4 - 1) * 4;
                 }
 
-                if (character.waypointsX[l2] - character.currentX > this.magicLoc * 3 || character.waypointsY[l2] - character.currentY > this.magicLoc * 3 || character.waypointsX[l2] - character.currentX < -this.magicLoc * 3 || character.waypointsY[l2] - character.currentY < -this.magicLoc * 3 || j4 > 8) {
-                    character.currentX = character.waypointsX[l2];
-                    character.currentY = character.waypointsY[l2];
+                if (player.waypointsX[l2] - player.currentX > this.magicLoc * 3 || player.waypointsY[l2] - player.currentY > this.magicLoc * 3 || player.waypointsX[l2] - player.currentX < -this.magicLoc * 3 || player.waypointsY[l2] - player.currentY < -this.magicLoc * 3 || j4 > 8) {
+                    player.currentX = player.waypointsX[l2];
+                    player.currentY = player.waypointsY[l2];
                 } else {
-                    if (character.currentX < character.waypointsX[l2]) {
-                        character.currentX += j5;
-                        character.stepCount++;
+                    if (player.currentX < player.waypointsX[l2]) {
+                        player.currentX += j5;
+                        player.stepCount++;
                         i1 = 2;
-                    } else if (character.currentX > character.waypointsX[l2]) {
-                        character.currentX -= j5;
-                        character.stepCount++;
+                    } else if (player.currentX > player.waypointsX[l2]) {
+                        player.currentX -= j5;
+                        player.stepCount++;
                         i1 = 6;
                     }
 
-                    if (character.currentX - character.waypointsX[l2] < j5 && character.currentX - character.waypointsX[l2] > -j5) {
-                        character.currentX = character.waypointsX[l2];
+                    if (player.currentX - player.waypointsX[l2] < j5 && player.currentX - player.waypointsX[l2] > -j5) {
+                        player.currentX = player.waypointsX[l2];
                     }
 
-                    if (character.currentY < character.waypointsY[l2]) {
-                        character.currentY += j5;
-                        character.stepCount++;
+                    if (player.currentY < player.waypointsY[l2]) {
+                        player.currentY += j5;
+                        player.stepCount++;
 
                         if (i1 === -1) {
                             i1 = 4;
@@ -17222,9 +17087,9 @@ class mudclient extends GameConnection {
                         } else {
                             i1 = 5;
                         }
-                    } else if (character.currentY > character.waypointsY[l2]) {
-                        character.currentY -= j5;
-                        character.stepCount++;
+                    } else if (player.currentY > player.waypointsY[l2]) {
+                        player.currentY -= j5;
+                        player.stepCount++;
 
                         if (i1 === -1) {
                             i1 = 0;
@@ -17235,32 +17100,32 @@ class mudclient extends GameConnection {
                         }
                     }
 
-                    if (character.currentY - character.waypointsY[l2] < j5 && character.currentY - character.waypointsY[l2] > -j5) {
-                        character.currentY = character.waypointsY[l2];
+                    if (player.currentY - player.waypointsY[l2] < j5 && player.currentY - player.waypointsY[l2] > -j5) {
+                        player.currentY = player.waypointsY[l2];
                     }
                 }
 
                 if (i1 !== -1) {
-                    character.animationCurrent = i1;
+                    player.animationCurrent = i1;
                 }
 
-                if (character.currentX === character.waypointsX[l2] && character.currentY === character.waypointsY[l2]) {
-                    character.movingStep = (l2 + 1) % 10;
+                if (player.currentX === player.waypointsX[l2] && player.currentY === player.waypointsY[l2]) {
+                    player.movingStep = (l2 + 1) % 10;
                 }
             } else {
-                character.animationCurrent = character.animationNext;
+                player.animationCurrent = player.animationNext;
             }
 
-            if (character.messageTimeout > 0) {
-                character.messageTimeout--;
+            if (player.messageTimeout > 0) {
+                player.messageTimeout--;
             }
 
-            if (character.bubbleTimeout > 0) {
-                character.bubbleTimeout--;
+            if (player.bubbleTimeout > 0) {
+                player.bubbleTimeout--;
             }
 
-            if (character.combatTimer > 0) {
-                character.combatTimer--;
+            if (player.combatTimer > 0) {
+                player.combatTimer--;
             }
 
             if (this.deathScreenTimeout > 0) {
@@ -17268,21 +17133,18 @@ class mudclient extends GameConnection {
 
                 if (this.deathScreenTimeout === 0) {
                     this.showMessage('You have been granted another life. Be more careful this time!', 3);
-                }
-
-                if (this.deathScreenTimeout === 0) {
                     this.showMessage('You retain your skills. Your objects land where you died', 3);
                 }
             }
         }
 
         for (let i = 0; i < this.npcCount; i++) {
-            let character_1 = this.npcs[i];
-            let j1 = (character_1.waypointCurrent + 1) % 10;
+            const npc = this.npcs[i];
+            let j1 = (npc.waypointCurrent + 1) % 10;
 
-            if (character_1.movingStep !== j1) {
+            if (npc.movingStep !== j1) {
                 let i3 = -1;
-                let k4 = character_1.movingStep;
+                let k4 = npc.movingStep;
                 let k5;
 
                 if (k4 < j1) {
@@ -17297,27 +17159,27 @@ class mudclient extends GameConnection {
                     l5 = (k5 - 1) * 4;
                 }
 
-                if (character_1.waypointsX[k4] - character_1.currentX > this.magicLoc * 3 || character_1.waypointsY[k4] - character_1.currentY > this.magicLoc * 3 || character_1.waypointsX[k4] - character_1.currentX < -this.magicLoc * 3 || character_1.waypointsY[k4] - character_1.currentY < -this.magicLoc * 3 || k5 > 8) {
-                    character_1.currentX = character_1.waypointsX[k4];
-                    character_1.currentY = character_1.waypointsY[k4];
+                if (npc.waypointsX[k4] - npc.currentX > this.magicLoc * 3 || npc.waypointsY[k4] - npc.currentY > this.magicLoc * 3 || npc.waypointsX[k4] - npc.currentX < -this.magicLoc * 3 || npc.waypointsY[k4] - npc.currentY < -this.magicLoc * 3 || k5 > 8) {
+                    npc.currentX = npc.waypointsX[k4];
+                    npc.currentY = npc.waypointsY[k4];
                 } else {
-                    if (character_1.currentX < character_1.waypointsX[k4]) {
-                        character_1.currentX += l5;
-                        character_1.stepCount++;
+                    if (npc.currentX < npc.waypointsX[k4]) {
+                        npc.currentX += l5;
+                        npc.stepCount++;
                         i3 = 2;
-                    } else if (character_1.currentX > character_1.waypointsX[k4]) {
-                        character_1.currentX -= l5;
-                        character_1.stepCount++;
+                    } else if (npc.currentX > npc.waypointsX[k4]) {
+                        npc.currentX -= l5;
+                        npc.stepCount++;
                         i3 = 6;
                     }
 
-                    if (character_1.currentX - character_1.waypointsX[k4] < l5 && character_1.currentX - character_1.waypointsX[k4] > -l5) {
-                        character_1.currentX = character_1.waypointsX[k4];
+                    if (npc.currentX - npc.waypointsX[k4] < l5 && npc.currentX - npc.waypointsX[k4] > -l5) {
+                        npc.currentX = npc.waypointsX[k4];
                     }
 
-                    if (character_1.currentY < character_1.waypointsY[k4]) {
-                        character_1.currentY += l5;
-                        character_1.stepCount++;
+                    if (npc.currentY < npc.waypointsY[k4]) {
+                        npc.currentY += l5;
+                        npc.stepCount++;
 
                         if (i3 === -1) {
                             i3 = 4;
@@ -17326,9 +17188,9 @@ class mudclient extends GameConnection {
                         } else {
                             i3 = 5;
                         }
-                    } else if (character_1.currentY > character_1.waypointsY[k4]) {
-                        character_1.currentY -= l5;
-                        character_1.stepCount++;
+                    } else if (npc.currentY > npc.waypointsY[k4]) {
+                        npc.currentY -= l5;
+                        npc.stepCount++;
 
                         if (i3 === -1) {
                             i3 = 0;
@@ -17339,36 +17201,36 @@ class mudclient extends GameConnection {
                         }
                     }
 
-                    if (character_1.currentY - character_1.waypointsY[k4] < l5 && character_1.currentY - character_1.waypointsY[k4] > -l5) {
-                        character_1.currentY = character_1.waypointsY[k4];
+                    if (npc.currentY - npc.waypointsY[k4] < l5 && npc.currentY - npc.waypointsY[k4] > -l5) {
+                        npc.currentY = npc.waypointsY[k4];
                     }
                 }
 
                 if (i3 !== -1) {
-                    character_1.animationCurrent = i3;
+                    npc.animationCurrent = i3;
                 }
 
-                if (character_1.currentX === character_1.waypointsX[k4] && character_1.currentY === character_1.waypointsY[k4]) {
-                    character_1.movingStep = (k4 + 1) % 10;
+                if (npc.currentX === npc.waypointsX[k4] && npc.currentY === npc.waypointsY[k4]) {
+                    npc.movingStep = (k4 + 1) % 10;
                 }
             } else {
-                character_1.animationCurrent = character_1.animationNext;
+                npc.animationCurrent = npc.animationNext;
 
-                if (character_1.npcId === 43) {
-                    character_1.stepCount++;
+                if (npc.npcId === 43) {
+                    npc.stepCount++;
                 }
             }
 
-            if (character_1.messageTimeout > 0) {
-                character_1.messageTimeout--;
+            if (npc.messageTimeout > 0) {
+                npc.messageTimeout--;
             }
 
-            if (character_1.bubbleTimeout > 0) {
-                character_1.bubbleTimeout--;
+            if (npc.bubbleTimeout > 0) {
+                npc.bubbleTimeout--;
             }
 
-            if (character_1.combatTimer > 0) {
-                character_1.combatTimer--;
+            if (npc.combatTimer > 0) {
+                npc.combatTimer--;
             }
         }
 
@@ -19420,7 +19282,7 @@ class mudclient extends GameConnection {
                     frameCount += 9;
                 }
 
-                if (GameData.animationSomething[j] !== 0) {
+                if (GameData.animationGender[j] !== 0) {
                     for (let l = this.animationIndex; l < this.animationIndex + 27; l++) {
                         this.surface.loadSprite(l);
                     }
@@ -19432,75 +19294,6 @@ class mudclient extends GameConnection {
         }
 
         console.log('Loaded: ' + frameCount + ' frames of animation');
-    }
-
-    handleAppearancePanelControls() {
-        this.panelAppearance.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown);
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceHead1)) {
-            do {
-                this.appearanceHeadType = ((this.appearanceHeadType - 1) + GameData.animationCount) % GameData.animationCount;
-            } while ((GameData.animationSomething[this.appearanceHeadType] & 3) !== 1 || (GameData.animationSomething[this.appearanceHeadType] & 4 * this.appearanceHeadGender) === 0);
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceHead2)) {
-            do {
-                this.appearanceHeadType = (this.appearanceHeadType + 1) % GameData.animationCount;
-            } while ((GameData.animationSomething[this.appearanceHeadType] & 3) !== 1 || (GameData.animationSomething[this.appearanceHeadType] & 4 * this.appearanceHeadGender) === 0);
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceHair1)) {
-            this.appearanceHairColour = ((this.appearanceHairColour - 1) + this.characterHairColours.length) % this.characterHairColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceHair2)) {
-            this.appearanceHairColour = (this.appearanceHairColour + 1) % this.characterHairColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceGender1) || this.panelAppearance.isClicked(this.controlButtonAppearanceGender2)) {
-            for (this.appearanceHeadGender = 3 - this.appearanceHeadGender; (GameData.animationSomething[this.appearanceHeadType] & 3) !== 1 || (GameData.animationSomething[this.appearanceHeadType] & 4 * this.appearanceHeadGender) === 0; this.appearanceHeadType = (this.appearanceHeadType + 1) % GameData.animationCount);
-            for (; (GameData.animationSomething[this.appearanceBodyGender] & 3) !== 2 || (GameData.animationSomething[this.appearanceBodyGender] & 4 * this.appearanceHeadGender) === 0; this.appearanceBodyGender = (this.appearanceBodyGender + 1) % GameData.animationCount);
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceTop1)) {
-            this.appearanceTopColour = ((this.appearanceTopColour - 1) + this.characterTopBottomColours.length) % this.characterTopBottomColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceTop2)) {
-            this.appearanceTopColour = (this.appearanceTopColour + 1) % this.characterTopBottomColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceSkin1)) {
-            this.appearanceSkinColour = ((this.appearanceSkinColour - 1) + this.characterSkinColours.length) % this.characterSkinColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceSkin2)) {
-            this.appearanceSkinColour = (this.appearanceSkinColour + 1) % this.characterSkinColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceBottom1)) {
-            this.appearanceBottomColour = ((this.appearanceBottomColour - 1) + this.characterTopBottomColours.length) % this.characterTopBottomColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceBottom2)) {
-            this.appearanceBottomColour = (this.appearanceBottomColour + 1) % this.characterTopBottomColours.length;
-        }
-
-        if (this.panelAppearance.isClicked(this.controlButtonAppearanceAccept)) {
-            this.packetStream.newPacket(clientOpcodes.APPEARANCE);
-            this.packetStream.putByte(this.appearanceHeadGender);
-            this.packetStream.putByte(this.appearanceHeadType);
-            this.packetStream.putByte(this.appearanceBodyGender);
-            this.packetStream.putByte(this.appearance2Colour);
-            this.packetStream.putByte(this.appearanceHairColour);
-            this.packetStream.putByte(this.appearanceTopColour);
-            this.packetStream.putByte(this.appearanceBottomColour);
-            this.packetStream.putByte(this.appearanceSkinColour);
-            this.packetStream.sendPacket();
-
-            this.surface.blackScreen();
-            this.showAppearanceChange = false;
-        }
     }
 
     draw() {
@@ -22519,7 +22312,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":66,"./utility":87,"./version":88,"./word-filter":89,"./world":90,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./panel":57,"./scene":60,"./stream-audio-player":61,"./surface":62,"./ui":67,"./utility":88,"./version":89,"./word-filter":90,"./world":91,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -32047,7 +31840,7 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":87}],63:[function(require,module,exports){
+},{"./utility":88}],63:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
@@ -32063,6 +31856,282 @@ module.exports = {
 };
 
 },{}],64:[function(require,module,exports){
+const GameData = require('../game-data');
+const Panel = require('../panel');
+const clientOpcodes = require('../opcodes/client');
+
+// size of the -> sprite
+const ARROW_SIZE = 20;
+
+// box around the type text
+const BOX_WIDTH = 53;
+const BOX_HEIGHT = 41;
+
+// the width of each option column including the arrows
+const COLUMN_WIDTH = 54;
+
+// size of the accept button
+const ACCEPT_WIDTH = 200;
+const ACCEPT_HEIGHT = 30;
+
+// draw a box with two arrows
+function drawOptionBox(panel, type, x, y) {
+    panel.addBoxRounded(x, y, BOX_WIDTH, BOX_HEIGHT);
+
+    const typeSplit = type.split('\n');
+
+    if (typeSplit.length === 1) {
+        panel.addTextCentre(x, y, type, 1, true);
+    } else {
+        panel.addTextCentre(x, y - 8, typeSplit[0], 1, true);
+        panel.addTextCentre(x, y + 8, typeSplit[1], 1, true);
+    }
+
+    const leftButton = panel.addButton(x - 40, y, ARROW_SIZE, ARROW_SIZE);
+    panel.addSprite(x - 40, y, Panel.baseSpriteStart + 7);
+
+    const rightButton = panel.addButton(x + 40, y, ARROW_SIZE, ARROW_SIZE);
+    panel.addSprite(x + 40, y, Panel.baseSpriteStart + 6);
+
+    return { leftButton, rightButton };
+}
+
+function createAppearancePanel() {
+    this.panelAppearance = new Panel(this.surface, 100);
+
+    const x = 256;
+
+    this.panelAppearance.addTextCentre(
+        x,
+        10,
+        'Please design Your Character',
+        4,
+        true
+    );
+
+    let y = 24;
+
+    this.panelAppearance.addTextCentre(x - 55, y + 110, 'Front', 3, true);
+    this.panelAppearance.addTextCentre(x, y + 110, 'Side', 3, true);
+    this.panelAppearance.addTextCentre(x + 55, y + 110, 'Back', 3, true);
+
+    y += 145;
+
+    const { leftButton: headLeft, rightButton: headRight } = drawOptionBox(
+        this.panelAppearance,
+        'Head\nType',
+        x - COLUMN_WIDTH,
+        y
+    );
+
+    this.controlButtonAppearanceHeadLeft = headLeft;
+    this.controlButtonAppearanceHeadRight = headRight;
+
+    const { leftButton: hairLeft, rightButton: hairRight } = drawOptionBox(
+        this.panelAppearance,
+        'Hair\nColor',
+        x + COLUMN_WIDTH,
+        y
+    );
+
+    this.controlButtonAppearanceHairLeft = hairLeft;
+    this.controlButtonAppearanceHairRight = hairRight;
+
+    y += 50;
+
+    const { leftButton: genderLeft, rightButton: genderRight } = drawOptionBox(
+        this.panelAppearance,
+        'Gender',
+        x - COLUMN_WIDTH,
+        y
+    );
+
+    this.controlButtonAppearanceGenderLeft = genderLeft;
+    this.controlButtonAppearanceGenderRight = genderRight;
+
+    const { leftButton: topLeft, rightButton: topRight } = drawOptionBox(
+        this.panelAppearance,
+        'Top\nColor',
+        x + COLUMN_WIDTH,
+        y
+    );
+
+    this.controlButtonAppearanceTopLeft = topLeft;
+    this.controlButtonAppearanceTopRight = topRight;
+
+    y += 50;
+
+    const { leftButton: skinLeft, rightButton: skinRight } = drawOptionBox(
+        this.panelAppearance,
+        'Skin\nColor',
+        x - COLUMN_WIDTH,
+        y
+    );
+
+    this.controlButtonAppearanceSkinLeft = skinLeft;
+    this.controlButtonAppearanceSkinRight = skinRight;
+
+    const { leftButton: bottomLeft, rightButton: bottomRight } = drawOptionBox(
+        this.panelAppearance,
+        'Bottom\nColor',
+        x + COLUMN_WIDTH,
+        y
+    );
+
+    this.controlButtonAppearanceBottomLeft = bottomLeft;
+    this.controlButtonAppearanceBottomRight = bottomRight;
+
+    y += 47;
+
+    this.panelAppearance.addButtonBackground(x, y, ACCEPT_WIDTH, ACCEPT_HEIGHT);
+    this.panelAppearance.addTextCentre(x, y, 'Accept', 4, false);
+
+    this.controlButtonAppearanceAccept = this.panelAppearance.addButton(
+        x,
+        y,
+        ACCEPT_WIDTH,
+        ACCEPT_HEIGHT
+    );
+}
+
+function handleAppearancePanelInput() {
+    this.panelAppearance.handleMouse(
+        this.mouseX,
+        this.mouseY,
+        this.lastMouseButtonDown,
+        this.mouseButtonDown
+    );
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceHeadLeft)) {
+        do {
+            this.appearanceHeadType =
+                (this.appearanceHeadType - 1 + GameData.animationCount) %
+                GameData.animationCount;
+        } while (
+            (GameData.animationGender[this.appearanceHeadType] & 3) !== 1 ||
+            (GameData.animationGender[this.appearanceHeadType] &
+                (4 * this.appearanceHeadGender)) ===
+                0
+        );
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceHeadRight)) {
+        do {
+            this.appearanceHeadType =
+                (this.appearanceHeadType + 1) % GameData.animationCount;
+        } while (
+            (GameData.animationGender[this.appearanceHeadType] & 3) !== 1 ||
+            (GameData.animationGender[this.appearanceHeadType] &
+                (4 * this.appearanceHeadGender)) ===
+                0
+        );
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceHairLeft)) {
+        this.appearanceHairColour =
+            (this.appearanceHairColour - 1 + this.characterHairColours.length) %
+            this.characterHairColours.length;
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceHairRight)) {
+        this.appearanceHairColour =
+            (this.appearanceHairColour + 1) % this.characterHairColours.length;
+    }
+
+    if (
+        this.panelAppearance.isClicked(
+            this.controlButtonAppearanceGenderLeft
+        ) ||
+        this.panelAppearance.isClicked(this.controlButtonAppearanceGenderRight)
+    ) {
+        for (
+            this.appearanceHeadGender = 3 - this.appearanceHeadGender;
+            (GameData.animationGender[this.appearanceHeadType] & 3) !== 1 ||
+            (GameData.animationGender[this.appearanceHeadType] &
+                (4 * this.appearanceHeadGender)) ===
+                0;
+            this.appearanceHeadType =
+                (this.appearanceHeadType + 1) % GameData.animationCount
+        );
+
+        for (
+            ;
+            (GameData.animationGender[this.appearanceBodyGender] & 3) !==
+                2 ||
+            (GameData.animationGender[this.appearanceBodyGender] &
+                (4 * this.appearanceHeadGender)) ===
+                0;
+            this.appearanceBodyGender =
+                (this.appearanceBodyGender + 1) % GameData.animationCount
+        );
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceTopLeft)) {
+        this.appearanceTopColour =
+            (this.appearanceTopColour -
+                1 +
+                this.characterTopBottomColours.length) %
+            this.characterTopBottomColours.length;
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceTopRight)) {
+        this.appearanceTopColour =
+            (this.appearanceTopColour + 1) %
+            this.characterTopBottomColours.length;
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceSkinLeft)) {
+        this.appearanceSkinColour =
+            (this.appearanceSkinColour - 1 + this.characterSkinColours.length) %
+            this.characterSkinColours.length;
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceSkinRight)) {
+        this.appearanceSkinColour =
+            (this.appearanceSkinColour + 1) % this.characterSkinColours.length;
+    }
+
+    if (
+        this.panelAppearance.isClicked(this.controlButtonAppearanceBottomLeft)
+    ) {
+        this.appearanceBottomColour =
+            (this.appearanceBottomColour -
+                1 +
+                this.characterTopBottomColours.length) %
+            this.characterTopBottomColours.length;
+    }
+
+    if (
+        this.panelAppearance.isClicked(this.controlButtonAppearanceBottomRight)
+    ) {
+        this.appearanceBottomColour =
+            (this.appearanceBottomColour + 1) %
+            this.characterTopBottomColours.length;
+    }
+
+    if (this.panelAppearance.isClicked(this.controlButtonAppearanceAccept)) {
+        this.packetStream.newPacket(clientOpcodes.APPEARANCE);
+        this.packetStream.putByte(this.appearanceHeadGender);
+        this.packetStream.putByte(this.appearanceHeadType);
+        this.packetStream.putByte(this.appearanceBodyGender);
+        this.packetStream.putByte(this.appearance2Colour);
+        this.packetStream.putByte(this.appearanceHairColour);
+        this.packetStream.putByte(this.appearanceTopColour);
+        this.packetStream.putByte(this.appearanceBottomColour);
+        this.packetStream.putByte(this.appearanceSkinColour);
+        this.packetStream.sendPacket();
+
+        this.surface.blackScreen();
+        this.showAppearanceChange = false;
+    }
+}
+
+module.exports = {
+    createAppearancePanel,
+    handleAppearancePanelInput
+};
+
+},{"../game-data":44,"../opcodes/client":54,"../panel":57}],65:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -32797,7 +32866,7 @@ function drawDialogBank() {
 
 module.exports = { drawDialogBank };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],65:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],66:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -32893,11 +32962,11 @@ module.exports = {
     drawDialogCombatStyle
 };
 
-},{"../opcodes/client":54,"./_colours":63}],66:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],67:[function(require,module,exports){
 
 
 function applyUI(mudclient) {
-    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["appearance-panel"]=require("./appearance-panel.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
 
     for (const componentName of Object.keys(components)) {
         if (/^_/.test(componentName)) {
@@ -32920,7 +32989,7 @@ function applyUI(mudclient) {
 
 module.exports = applyUI;
 
-},{"./_colours.js":63,"./bank-dialog.js":64,"./combat-style.js":65,"./index.js":66,"./inventory-tab.js":67,"./login-panels.js":68,"./logout-dialog.js":69,"./magic-tab.js":70,"./minimap-tab.js":71,"./option-menu.js":72,"./options-tab.js":73,"./password-dialog.js":74,"./player-info-tab.js":75,"./recovery-panel.js":76,"./report-dialog.js":77,"./server-message-dialog.js":78,"./shop-dialog.js":79,"./sleep.js":80,"./social-dialog.js":81,"./social-tab.js":82,"./trade-confirm-dialog.js":83,"./trade-dialog.js":84,"./welcome-dialog.js":85,"./wilderness-dialog.js":86}],67:[function(require,module,exports){
+},{"./_colours.js":63,"./appearance-panel.js":64,"./bank-dialog.js":65,"./combat-style.js":66,"./index.js":67,"./inventory-tab.js":68,"./login-panels.js":69,"./logout-dialog.js":70,"./magic-tab.js":71,"./minimap-tab.js":72,"./option-menu.js":73,"./options-tab.js":74,"./password-dialog.js":75,"./player-info-tab.js":76,"./recovery-panel.js":77,"./report-dialog.js":78,"./server-message-dialog.js":79,"./shop-dialog.js":80,"./sleep.js":81,"./social-dialog.js":82,"./social-tab.js":83,"./trade-confirm-dialog.js":84,"./trade-dialog.js":85,"./welcome-dialog.js":86,"./wilderness-dialog.js":87}],68:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
@@ -33090,7 +33159,7 @@ function drawUiTabInventory(noMenus) {
 
 module.exports = { drawUiTabInventory };
 
-},{"../game-data":44,"./_colours":63}],68:[function(require,module,exports){
+},{"../game-data":44,"./_colours":63}],69:[function(require,module,exports){
 const Panel = require('../panel');
 
 function createLoginPanels() {
@@ -33997,32 +34066,8 @@ async function handleLoginScreenInput() {
 }
 
 module.exports = {
-    controlLoginCancel: 0,
-    controlLoginNewOk: 0,
-    controlLoginOk: 0,
-    controlLoginPassword: 0,
-    controlLoginRecover: 0,
-    controlLoginStatus: 0,
-    controlLoginUser: 0,
-    controlRegisterCancel: 0,
-    controlRegisterCheckbox: 0,
-    controlRegisterConfirmPassword: 0,
-    controlRegisterPassword: 0,
-    controlRegisterStatus: 0,
-    controlRegisterSubmit: 0,
-    controlRegisterUser: 0,
-    controlWelcomeExistingUser: 0,
-    controlWelcomeNewUser: 0,
     controlRecoverQuestions: new Int32Array(5),
-    controlRecoverInfo1: 0,
-    controlRecoverInfo2: 0,
     controlRecoverAnswers: new Int32Array(5),
-    controlRecoverOldPassword: 0,
-    controlRecoverNewPassword: 0,
-    controlRecoverConfirmPassword: 0,
-    controlRecoverSubmit: 0,
-    controlRecoverCancel: 0,
-    controlRecoverCreateInfo: 0,
     loginScreen: 0,
     createLoginPanels,
     drawLoginScreens,
@@ -34030,7 +34075,7 @@ module.exports = {
     renderLoginScreenViewports
 };
 
-},{"../panel":57}],69:[function(require,module,exports){
+},{"../panel":57}],70:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogLogout() {
@@ -34041,7 +34086,7 @@ function drawDialogLogout() {
 
 module.exports = { drawDialogLogout };
 
-},{"./_colours":63}],70:[function(require,module,exports){
+},{"./_colours":63}],71:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -34347,7 +34392,7 @@ module.exports = {
     uiTabMagicSubTab: 0
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],71:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],72:[function(require,module,exports){
 const Scene = require('../scene');
 const colours = require('./_colours');
 
@@ -34589,7 +34634,7 @@ module.exports = {
     drawUiTabMinimap
 };
 
-},{"../scene":60,"./_colours":63}],72:[function(require,module,exports){
+},{"../scene":60,"./_colours":63}],73:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -34639,7 +34684,7 @@ function drawOptionMenu() {
 
 module.exports = { drawOptionMenu };
 
-},{"../opcodes/client":54,"./_colours":63}],73:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],74:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -35072,7 +35117,7 @@ function drawUiTabOptions(noMenus) {
 
 module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54,"./_colours":63}],74:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],75:[function(require,module,exports){
 const colours = require('./_colours');
 
 const DIALOG_X = 106;
@@ -35267,7 +35312,7 @@ module.exports = {
     showChangePasswordStep: 0
 };
 
-},{"./_colours":63}],75:[function(require,module,exports){
+},{"./_colours":63}],76:[function(require,module,exports){
 const colours = require('./_colours');
 
 const HEIGHT = 275;
@@ -35663,7 +35708,7 @@ module.exports = {
     uiTabPlayerInfoSubTab: 0
 };
 
-},{"./_colours":63}],76:[function(require,module,exports){
+},{"./_colours":63}],77:[function(require,module,exports){
 const selectedRecoverQuestions = [];
 selectedRecoverQuestions.length = 5;
 selectedRecoverQuestions.fill(null);
@@ -35678,7 +35723,7 @@ module.exports = {
     controlRecoverCreateButton: 0
 };
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -35986,7 +36031,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":87,"./_colours":63}],78:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":88,"./_colours":63}],79:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -36064,7 +36109,7 @@ function drawDialogServerMessage() {
 
 module.exports = { drawDialogServerMessage };
 
-},{"./_colours":63}],79:[function(require,module,exports){
+},{"./_colours":63}],80:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -36444,7 +36489,7 @@ function drawDialogShop() {
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],80:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],81:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -36618,7 +36663,7 @@ module.exports = {
     isSleeping: false
 };
 
-},{"../opcodes/client":54,"./_colours":63}],81:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":63}],82:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -36832,7 +36877,7 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":87,"../word-filter":89,"./_colours":63}],82:[function(require,module,exports){
+},{"../chat-message":40,"../utility":88,"../word-filter":90,"./_colours":63}],83:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
@@ -37114,7 +37159,7 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":87,"./_colours":63}],83:[function(require,module,exports){
+},{"../utility":88,"./_colours":63}],84:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
@@ -37307,7 +37352,7 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":87,"./_colours":63}],84:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":88,"./_colours":63}],85:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -37825,7 +37870,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],85:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":63}],86:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -38074,7 +38119,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":63}],86:[function(require,module,exports){
+},{"./_colours":63}],87:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -38210,7 +38255,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":63}],87:[function(require,module,exports){
+},{"./_colours":63}],88:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -38599,7 +38644,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],88:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],89:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -38613,7 +38658,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -39794,7 +39839,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 module.exports = WordFilter;
 
 
-},{}],90:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -42320,4 +42365,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":87,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":60,"./utility":88,"ndarray":34}]},{},[1]);

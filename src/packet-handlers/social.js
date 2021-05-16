@@ -4,7 +4,7 @@ const Utility = require('../utility');
 const WordFilter = require('../word-filter');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.FRIEND_LIST]: function (data) {
         this.friendListCount = Utility.getUnsignedByte(data[1]);
 
@@ -85,5 +85,3 @@ const handlers = {
         }
     }
 };
-
-module.exports = handlers;

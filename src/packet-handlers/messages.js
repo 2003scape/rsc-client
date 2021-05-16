@@ -1,3 +1,4 @@
+const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
 function fromCharArray(a) {
@@ -6,7 +7,7 @@ function fromCharArray(a) {
         .join('');
 }
 
-const handlers = {
+module.exports = {
     [serverOpcodes.MESSAGE]: function (data, size) {
         const message = fromCharArray(data.slice(1, size));
         this.showServerMessage(message);
@@ -20,7 +21,21 @@ const handlers = {
         this.serverMessage = fromCharArray(data.slice(1, size));
         this.showDialogServerMessage = true;
         this.serverMessageBoxTop = true;
+    },
+    [serverOpcodes.WELCOME]: function (data) {
+        if (this.welcomScreenAlreadyShown) {
+            return;
+        }
+
+        this.welcomeLastLoggedInIP = Utility.getUnsignedInt(data, 1);
+        this.welcomeLastLoggedInDays = Utility.getUnsignedShort(data, 5);
+        this.welcomeRecoverySetDays = data[7] & 0xff;
+        this.welcomeUnreadMessages = Utility.getUnsignedShort(data, 8);
+        this.showDialogWelcome = true;
+        this.welcomScreenAlreadyShown = true;
+        this.welcomeLastLoggedInHost = null;
+    },
+    [serverOpcodes.SYSTEM_UPDATE]: function (data) {
+        this.systemUpdate = Utility.getUnsignedShort(data, 1) * 32;
     }
 };
-
-module.exports = handlers;

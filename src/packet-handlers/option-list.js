@@ -5,7 +5,7 @@ function fromCharArray(a) {
     return Array.from(a).map(c => String.fromCharCode(c)).join('');
 }
 
-const handlers = {
+module.exports = {
     [serverOpcodes.OPTION_LIST]: function (data) {
         this.showOptionMenu = true;
 
@@ -28,5 +28,3 @@ const handlers = {
         this.showOptionMenu = false;
     }
 };
-
-module.exports = handlers;

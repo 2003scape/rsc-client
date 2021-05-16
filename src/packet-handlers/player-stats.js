@@ -1,7 +1,7 @@
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.PLAYER_STAT_LIST]: function (data) {
         let offset = 1;
 
@@ -59,5 +59,3 @@ const handlers = {
         }
     }
 };
-
-module.exports = handlers;

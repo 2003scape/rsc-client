@@ -2,7 +2,7 @@ const GameData = require('../game-data');
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.INVENTORY_ITEMS]: function (data) {
         let offset = 1;
 
@@ -74,5 +74,3 @@ const handlers = {
         }
     }
 };
-
-module.exports = handlers;

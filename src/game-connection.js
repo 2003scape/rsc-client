@@ -5,7 +5,6 @@ const Long = require('long');
 const PacketStream = require('./packet-stream');
 const Utility = require('./utility');
 const clientOpcodes = require('./opcodes/client');
-const serverOpcodes = require('./opcodes/server');
 const sleep = require('sleep-promise');
 
 function fromCharArray(a) {
@@ -87,10 +86,13 @@ class GameConnection extends GameShell {
             );
 
             const encodedUsername = Utility.usernameToHash(username);
+
             this.packetStream.newPacket(clientOpcodes.SESSION);
+
             this.packetStream.putByte(
                 encodedUsername.shiftRight(16).and(31).toInt()
             );
+
             this.packetStream.flushPacket();
 
             const sessionID = await this.packetStream.getLong();
@@ -491,6 +493,7 @@ class GameConnection extends GameShell {
                         'been set',
                     ''
                 );
+
                 return;
             }
 
@@ -517,15 +520,18 @@ class GameConnection extends GameShell {
                         'later',
                     ''
                 );
+
                 return;
             }
 
             this.loginScreen = 3;
+
             this.panelRecoverUser.updateText(
                 this.controlRecoverInfo1,
                 '@yel@To prove this is your account please provide the ' +
                     'answers to'
             );
+
             this.panelRecoverUser.updateText(
                 this.controlRecoverInfo2,
                 '@yel@your security questions. You will then be able to ' +
@@ -662,24 +668,9 @@ class GameConnection extends GameShell {
                 this.incomingPacket[0] & 0xff
             );
 
-            this.handlePacket(opcode, length);
+            console.log('opcode:' + opcode + ' psize:' + length);
+            this.handleIncomingPacket(opcode, length, this.incomingPacket);
         }
-    }
-
-    handlePacket(opcode, size) {
-        console.log('opcode:' + opcode + ' psize:' + size);
-
-        if (opcode === serverOpcodes.CLOSE_CONNECTION) {
-            this.closeConnection();
-            return;
-        }
-
-        if (opcode === serverOpcodes.LOGOUT_DENY) {
-            this.cantLogout();
-            return;
-        }
-
-        this.handleIncomingPacket(opcode, size, this.incomingPacket);
     }
 
     sortFriendsList() {

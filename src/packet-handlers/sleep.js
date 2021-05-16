@@ -1,7 +1,7 @@
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.SLEEP_OPEN]: function (data) {
         if (!this.isSleeping) {
             this.fatigueSleeping = this.statFatigue;
@@ -23,5 +23,3 @@ const handlers = {
         this.fatigueSleeping = Utility.getUnsignedShort(data, 1);
     }
 };
-
-module.exports = handlers;

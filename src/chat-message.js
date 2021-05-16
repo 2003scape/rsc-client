@@ -14,57 +14,65 @@ function fromCharArray(a) {
 }
 
 class ChatMessage {
-    static descramble(buff, off, len) {
+    static descramble(buffer, offset, length) {
         try {
-            let newLen = 0;
-            let l = -1;
+            let newLength = 0;
+            let leftShift = -1;
 
-            for (let idx = 0; idx < len; idx++) {
-                let current = buff[off++] & 0xff;
-                let k1 = (current >> 4) & 0xf;
+            for (let i = 0; i < length; i++) {
+                const current = buffer[offset++] & 0xff;
+                let charMapIndex = (current >> 4) & 0xf;
 
-                if (l === -1) {
-                    if (k1 < 13) {
-                        ChatMessage.chars[newLen++] = ChatMessage.charMap[k1];
+                if (leftShift === -1) {
+                    if (charMapIndex < 13) {
+                        ChatMessage.chars[newLength++] =
+                            ChatMessage.charMap[charMapIndex];
                     } else {
-                        l = k1;
+                        leftShift = charMapIndex;
                     }
                 } else {
-                    ChatMessage.chars[newLen++] =
-                        ChatMessage.charMap[(l << 4) + k1 - 195];
-                    l = -1;
+                    ChatMessage.chars[newLength++] =
+                        ChatMessage.charMap[
+                            (leftShift << 4) + charMapIndex - 195
+                        ];
+
+                    leftShift = -1;
                 }
 
-                k1 = current & 0xf;
+                charMapIndex = current & 0xf;
 
-                if (l === -1) {
-                    if (k1 < 13) {
-                        ChatMessage.chars[newLen++] = ChatMessage.charMap[k1];
+                if (leftShift === -1) {
+                    if (charMapIndex < 13) {
+                        ChatMessage.chars[newLength++] =
+                            ChatMessage.charMap[charMapIndex];
                     } else {
-                        l = k1;
+                        leftShift = charMapIndex;
                     }
                 } else {
-                    ChatMessage.chars[newLen++] =
-                        ChatMessage.charMap[(l << 4) + k1 - 195];
-                    l = -1;
+                    ChatMessage.chars[newLength++] =
+                        ChatMessage.charMap[
+                            (leftShift << 4) + charMapIndex - 195
+                        ];
+
+                    leftShift = -1;
                 }
             }
 
             let flag = true;
 
-            for (let l1 = 0; l1 < newLen; l1++) {
-                let currentChar = ChatMessage.chars[l1];
+            for (let i = 0; i < newLength; i++) {
+                const currentChar = ChatMessage.chars[i];
 
-                if (l1 > 4 && currentChar === C_AT) {
-                    ChatMessage.chars[l1] = C_SPACE;
+                if (i > 4 && currentChar === C_AT) {
+                    ChatMessage.chars[i] = C_SPACE;
                 }
 
                 if (currentChar === C_PRCNT) {
-                    ChatMessage.chars[l1] = C_SPACE;
+                    ChatMessage.chars[i] = C_SPACE;
                 }
 
                 if (flag && currentChar >= C_A && currentChar <= C_Z) {
-                    ChatMessage.chars[l1] += C_CENT;
+                    ChatMessage.chars[i] += C_CENT;
                     flag = false;
                 }
 
@@ -73,61 +81,62 @@ class ChatMessage {
                 }
             }
 
-            return fromCharArray(ChatMessage.chars.slice(0, newLen));
+            return fromCharArray(ChatMessage.chars.slice(0, newLength));
         } catch (e) {
             return '.';
         }
     }
 
-    static scramble(s) {
-        if (s.length > 80) {
-            s = s.slice(0, 80);
+    static scramble(message) {
+        if (message.length > 80) {
+            message = message.slice(0, 80);
         }
 
-        s = s.toLowerCase();
+        message = message.toLowerCase();
 
-        let off = 0;
-        let lshift = -1;
+        let offset = 0;
+        let leftShift = -1;
 
-        for (let k = 0; k < s.length; k++) {
-            let currentChar = s.charCodeAt(k);
-            let foundCharMapIdx = 0;
+        for (let i = 0; i < message.length; i++) {
+            const currentChar = message.charCodeAt(i);
+            let charMapIndex = 0;
 
-            for (let n = 0; n < ChatMessage.charMap.length; n++) {
-                if (currentChar !== ChatMessage.charMap[n]) {
-                    continue;
+            for (let j = 0; j < ChatMessage.charMap.length; j++) {
+                if (currentChar === ChatMessage.charMap[j]) {
+                    charMapIndex = j;
+                    break;
                 }
-
-                foundCharMapIdx = n;
-                break;
             }
 
-            if (foundCharMapIdx > 12) {
-                foundCharMapIdx += 195;
+            if (charMapIndex > 12) {
+                charMapIndex += 195;
             }
 
-            if (lshift === -1) {
-                if (foundCharMapIdx < 13) {
-                    lshift = foundCharMapIdx;
+            if (leftShift === -1) {
+                if (charMapIndex < 13) {
+                    leftShift = charMapIndex;
                 } else {
-                    ChatMessage.scrambledBytes[off++] = foundCharMapIdx & 0xff;
+                    ChatMessage.scrambledBytes[offset++] =
+                        charMapIndex & 0xff;
                 }
-            } else if (foundCharMapIdx < 13) {
-                ChatMessage.scrambledBytes[off++] =
-                    ((lshift << 4) + foundCharMapIdx) & 0xff;
-                lshift = -1;
+            } else if (charMapIndex < 13) {
+                ChatMessage.scrambledBytes[offset++] =
+                    ((leftShift << 4) + charMapIndex) & 0xff;
+
+                leftShift = -1;
             } else {
-                ChatMessage.scrambledBytes[off++] =
-                    ((lshift << 4) + (foundCharMapIdx >> 4)) & 0xff;
-                lshift = foundCharMapIdx & 0xf;
+                ChatMessage.scrambledBytes[offset++] =
+                    ((leftShift << 4) + (charMapIndex >> 4)) & 0xff;
+
+                leftShift = charMapIndex & 0xf;
             }
         }
 
-        if (lshift !== -1) {
-            ChatMessage.scrambledBytes[off++] = (lshift << 4) & 0xff;
+        if (leftShift !== -1) {
+            ChatMessage.scrambledBytes[offset++] = (leftShift << 4) & 0xff;
         }
 
-        return off;
+        return offset;
     }
 }
 

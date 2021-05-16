@@ -2,7 +2,7 @@ const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.REGION_NPCS]: function (data, size) {
         this.npcCacheCount = this.npcCount;
         this.npcCount = 0;
@@ -107,5 +107,3 @@ const handlers = {
         }
     }
 };
-
-module.exports = handlers;

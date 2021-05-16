@@ -2,11 +2,11 @@ const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.REGION_OBJECTS]: function (data, size) {
         for (let offset = 1; offset < size; ) {
             if (Utility.getUnsignedByte(data[offset]) === 255) {
-                let objectIndex = 0;
+                let index = 0;
                 const l14 = (this.localRegionX + data[offset + 1]) >> 3;
                 const k19 = (this.localRegionY + data[offset + 2]) >> 3;
 
@@ -17,19 +17,19 @@ const handlers = {
                     const k29 = (this.objectY[i] >> 3) - k19;
 
                     if (l26 !== 0 || k29 !== 0) {
-                        if (i !== objectIndex) {
-                            this.objectModel[objectIndex] = this.objectModel[i];
-                            this.objectModel[objectIndex].key = objectIndex;
-                            this.objectX[objectIndex] = this.objectX[i];
-                            this.objectY[objectIndex] = this.objectY[i];
-                            this.objectId[objectIndex] = this.objectId[i];
+                        if (i !== index) {
+                            this.objectModel[index] = this.objectModel[i];
+                            this.objectModel[index].key = index;
+                            this.objectX[index] = this.objectX[i];
+                            this.objectY[index] = this.objectY[i];
+                            this.objectId[index] = this.objectId[i];
 
                             this.objectDirection[
-                                objectIndex
+                                index
                             ] = this.objectDirection[i];
                         }
 
-                        objectIndex++;
+                        index++;
                     } else {
                         this.scene.removeModel(this.objectModel[i]);
 
@@ -41,7 +41,7 @@ const handlers = {
                     }
                 }
 
-                this.objectCount = objectIndex;
+                this.objectCount = index;
             } else {
                 const objectID = Utility.getUnsignedShort(data, offset);
                 offset += 2;
@@ -131,5 +131,3 @@ const handlers = {
         }
     }
 };
-
-module.exports = handlers;

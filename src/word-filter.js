@@ -17,7 +17,7 @@ const C_X = 'x'.charCodeAt(0);
 const C_Z = 'z'.charCodeAt(0);
 
 function toCharArray(s) {
-    let a = new Uint16Array(s.length);
+    const a = new Uint16Array(s.length);
 
     for (let i = 0; i < s.length; i += 1) {
         a[i] = s.charCodeAt(i);
@@ -37,30 +37,30 @@ class WordFilter {
         WordFilter.loadBad(bad);
         WordFilter.loadHost(host);
         WordFilter.loadFragments(fragments);
-        WordFilter.loadTld(tld);
+        WordFilter.loadTLD(tld);
     }
 
-    static loadTld(buffer) {
-        let wordCount = buffer.getUnsignedInt();
+    static loadTLD(buffer) {
+        const tldCount = buffer.getUnsignedInt();
 
         WordFilter.tldList = [];
-        WordFilter.tldType = new Int32Array(wordCount);
+        WordFilter.tldType = new Int32Array(tldCount);
 
-        for (let i = 0; i < wordCount; i++) {
+        for (let i = 0; i < tldCount; i++) {
             WordFilter.tldType[i] = buffer.getUnsignedByte();
 
-            let ac = new Uint16Array(buffer.getUnsignedByte());
+            const currentTLD = new Uint16Array(buffer.getUnsignedByte());
 
-            for (let j = 0; j < ac.length; j++) {
-                ac[j] = buffer.getUnsignedByte();
+            for (let j = 0; j < currentTLD.length; j++) {
+                currentTLD[j] = buffer.getUnsignedByte();
             }
 
-            WordFilter.tldList.push(ac);
+            WordFilter.tldList.push(currentTLD);
         }
     }
 
     static loadBad(buffer) {
-        let wordCount = buffer.getUnsignedInt();
+        const wordCount = buffer.getUnsignedInt();
 
         WordFilter.badList = [];
         WordFilter.badList.length = wordCount;
@@ -77,7 +77,7 @@ class WordFilter {
     }
 
     static loadHost(buffer) {
-        let wordCount = buffer.getUnsignedInt();
+        const wordCount = buffer.getUnsignedInt();
 
         WordFilter.hostList = [];
         WordFilter.hostList.length = wordCount;
@@ -101,9 +101,9 @@ class WordFilter {
         }
     }
 
-    static readBuffer(buffer, wordList, charIds) {
+    static readBuffer(buffer, wordList, charIDs) {
         for (let i = 0; i < wordList.length; i++) {
-            let currentWord = new Uint16Array(buffer.getUnsignedByte());
+            const currentWord = new Uint16Array(buffer.getUnsignedByte());
 
             for (let j = 0; j < currentWord.length; j++) {
                 currentWord[j] = buffer.getUnsignedByte();
@@ -111,7 +111,7 @@ class WordFilter {
 
             wordList[i] = currentWord;
 
-            let ids = [];
+            const ids = [];
             ids.length = buffer.getUnsignedInt();
 
             for (let j = 0; j < ids.length; j++) {
@@ -122,43 +122,29 @@ class WordFilter {
             }
 
             if (ids.length > 0) {
-                charIds[i] = ids;
+                charIDs[i] = ids;
             }
         }
     }
 
     static filter(input) {
-        let inputChars = toCharArray(input.toLowerCase());
+        const inputChars = toCharArray(input.toLowerCase());
 
         WordFilter.applyDotSlashFilter(inputChars);
         WordFilter.applyBadwordFilter(inputChars);
         WordFilter.applyHostFilter(inputChars);
-        WordFilter.heywhathteufck(inputChars);
+        WordFilter.filterDigits(inputChars);
 
-        for (
-            let ignoreIdx = 0;
-            ignoreIdx < WordFilter.ignoreList.length;
-            ignoreIdx++
-        ) {
+        for (let i = 0; i < WordFilter.ignoreList.length; i++) {
             for (
-                let inputIgnoreIdx = -1;
-                (inputIgnoreIdx = input.indexOf(
-                    WordFilter.ignoreList[ignoreIdx],
-                    inputIgnoreIdx + 1
-                )) !== -1;
+                let j = -1;
+                (j = input.indexOf(WordFilter.ignoreList[i], j + 1)) !== -1;
 
             ) {
-                let ignoreWordChars = toCharArray(
-                    WordFilter.ignoreList[ignoreIdx]
-                );
+                const ignoreWordChars = toCharArray(WordFilter.ignoreList[i]);
 
-                for (
-                    let ignorewordIdx = 0;
-                    ignorewordIdx < ignoreWordChars.length;
-                    ignorewordIdx++
-                ) {
-                    inputChars[ignorewordIdx + inputIgnoreIdx] =
-                        ignoreWordChars[ignorewordIdx];
+                for (let k = 0; k < ignoreWordChars.length; k++) {
+                    inputChars[k + j] = ignoreWordChars[k];
                 }
             }
         }
@@ -183,15 +169,15 @@ class WordFilter {
         let isUpperCase = true;
 
         for (let i = 0; i < input.length; i++) {
-            let current = input[i];
+            const currentChar = input[i];
 
-            if (WordFilter.isLetter(current)) {
+            if (WordFilter.isLetter(currentChar)) {
                 if (isUpperCase) {
-                    if (WordFilter.isLowerCase(current)) {
+                    if (WordFilter.isLowerCase(currentChar)) {
                         isUpperCase = false;
                     }
-                } else if (WordFilter.isUpperCase(current)) {
-                    input[i] = current + 97 - 65;
+                } else if (WordFilter.isUpperCase(currentChar)) {
+                    input[i] = currentChar + 97 - 65;
                 }
             } else {
                 isUpperCase = true;
@@ -222,16 +208,16 @@ class WordFilter {
     }
 
     static applyDotSlashFilter(input) {
-        let input1 = input.slice();
-        let dot = toCharArray('dot');
+        const input1 = input.slice();
+        const dot = toCharArray('dot');
         WordFilter.applyWordFilter(input1, dot, null);
 
-        let input2 = input.slice();
-        let slash = toCharArray('slash');
+        const input2 = input.slice();
+        const slash = toCharArray('slash');
         WordFilter.applyWordFilter(input2, slash, null);
 
         for (let i = 0; i < WordFilter.tldList.length; i++) {
-            WordFilter.applyTldFilter(
+            WordFilter.applyTLDFilter(
                 input,
                 input1,
                 input2,
@@ -241,22 +227,18 @@ class WordFilter {
         }
     }
 
-    static applyTldFilter(input, input1, input2, tld, type) {
+    static applyTLDFilter(input, input1, input2, tld, type) {
         if (tld.length > input.length) {
             return;
         }
 
-        for (
-            let charIndex = 0;
-            charIndex <= input.length - tld.length;
-            charIndex++
-        ) {
-            let inputCharCount = charIndex;
+        for (let i = 0; i <= input.length - tld.length; i++) {
+            let inputCharCount = i;
             let l = 0;
 
             while (inputCharCount < input.length) {
                 let i1 = 0;
-                let current = input[inputCharCount];
+                const current = input[inputCharCount];
                 let next = 0;
 
                 if (inputCharCount + 1 < input.length) {
@@ -300,12 +282,14 @@ class WordFilter {
 
             if (l >= tld.length) {
                 let flag = false;
-                let startMatch = WordFilter.getAsteriskCount(
+
+                const startMatch = WordFilter.getAsteriskCount(
                     input,
                     input1,
-                    charIndex
+                    i
                 );
-                let endMatch = WordFilter.getAsteriskCount2(
+
+                const endMatch = WordFilter.getAsteriskCount2(
                     input,
                     input2,
                     inputCharCount - 1
@@ -313,7 +297,7 @@ class WordFilter {
 
                 if (WordFilter.DEBUGTLD) {
                     console.log(
-                        `Potential tld: ${tld} at char ${charIndex} ` +
+                        `Potential tld: ${tld} at char ${i} ` +
                             `(type="${type}, startmatch="${startMatch}, ` +
                             `endmatch=${endMatch})`
                     );
@@ -337,12 +321,10 @@ class WordFilter {
 
                 if (flag) {
                     if (WordFilter.DEBUGTLD) {
-                        console.log(
-                            `Filtered tld: ${tld} at char ${charIndex}`
-                        );
+                        console.log(`Filtered tld: ${tld} at char ${i}`);
                     }
 
-                    let l1 = charIndex;
+                    let l1 = i;
                     let i2 = inputCharCount - 1;
 
                     if (startMatch > 2) {
@@ -489,7 +471,7 @@ class WordFilter {
         return WordFilter.isSpecial(input[len + 1]) ? 1 : 0;
     }
 
-    static applyWordFilter(input, wordList, charIds) {
+    static applyWordFilter(input, wordList, charIDs) {
         if (wordList.length > input.length) {
             return;
         }
@@ -505,7 +487,7 @@ class WordFilter {
 
             while (inputCharCount < input.length) {
                 let l = 0;
-                let inputChar = input[inputCharCount];
+                const inputChar = input[inputCharCount];
                 let nextChar = 0;
 
                 if (inputCharCount + 1 < input.length) {
@@ -579,12 +561,16 @@ class WordFilter {
                         curChar = input[inputCharCount];
                     }
 
-                    let prevId = WordFilter.getCharId(prevChar);
-                    let curId = WordFilter.getCharId(curChar);
+                    const previousID = WordFilter.getCharId(prevChar);
+                    const currentID = WordFilter.getCharId(curChar);
 
                     if (
-                        charIds &&
-                        WordFilter.compareCharIds(charIds, prevId, curId)
+                        charIDs &&
+                        WordFilter.compareCharIds(
+                            charIDs,
+                            previousID,
+                            currentID
+                        )
                     ) {
                         filter = false;
                     }
@@ -622,7 +608,7 @@ class WordFilter {
                                 (!WordFilter.isSpecial(input[j1]) ||
                                     input[j1] === C_SINGLE_QUOTE)
                             ) {
-                                let ac2 = new Uint16Array(3);
+                                const ac2 = new Uint16Array(3);
                                 let k1;
 
                                 for (k1 = 0; k1 < 3; k1++) {
@@ -702,7 +688,7 @@ class WordFilter {
         }
 
         while (first !== last && first + 1 !== last) {
-            let middle = ((first + last) / 2) | 0;
+            const middle = ((first + last) / 2) | 0;
 
             if (
                 charIdData[middle][0] === prevCharId &&
@@ -1002,7 +988,7 @@ class WordFilter {
         return 27;
     }
 
-    static heywhathteufck(input) {
+    static filterDigits(input) {
         let digitIndex = 0;
         let fromIndex = 0;
         let k = 0;
@@ -1032,8 +1018,8 @@ class WordFilter {
 
             let j1 = 0;
 
-            for (let k1 = digitIndex; k1 < fromIndex; k1++) {
-                j1 = j1 * 10 + input[k1] - 48;
+            for (let i = digitIndex; i < fromIndex; i++) {
+                j1 = j1 * 10 + input[i] - 48;
             }
 
             if (j1 > 255 || fromIndex - digitIndex > 8) {
@@ -1113,7 +1099,7 @@ class WordFilter {
             return true;
         }
 
-        let inputHash = WordFilter.wordToHash(input);
+        const inputHash = WordFilter.wordToHash(input);
         let first = 0;
         let last = WordFilter.hashFragments.length - 1;
 
@@ -1125,7 +1111,7 @@ class WordFilter {
         }
 
         while (first != last && first + 1 != last) {
-            let middle = ((first + last) / 2) | 0;
+            const middle = ((first + last) / 2) | 0;
 
             if (inputHash === WordFilter.hashFragments[middle]) {
                 return true;
@@ -1149,15 +1135,15 @@ class WordFilter {
         let hash = 0;
 
         for (let i = 0; i < word.length; i++) {
-            let c = word[word.length - i - 1];
+            const currentChar = word[word.length - i - 1];
 
-            if (c >= C_A && c <= C_Z) {
-                hash = (hash * 38 + c - 97 + 1) | 0;
-            } else if (c === C_SINGLE_QUOTE) {
+            if (currentChar >= C_A && currentChar <= C_Z) {
+                hash = (hash * 38 + currentChar - 97 + 1) | 0;
+            } else if (currentChar === C_SINGLE_QUOTE) {
                 hash = (hash * 38 + 27) | 0;
-            } else if (c >= C_0 && c <= C_9) {
-                hash = (hash * 38 + c - 48 + 28) | 0;
-            } else if (c !== 0) {
+            } else if (currentChar >= C_0 && currentChar <= C_9) {
+                hash = (hash * 38 + currentChar - 48 + 28) | 0;
+            } else if (currentChar !== 0) {
                 if (WordFilter.DEBUGWORD) {
                     console.log(`wordToHash failed on ${fromCharArray(word)}`);
                 }
@@ -1176,4 +1162,3 @@ WordFilter.forceLowerCase = true;
 WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
-

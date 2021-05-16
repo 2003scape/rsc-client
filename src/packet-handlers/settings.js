@@ -1,7 +1,7 @@
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.PRIVACY_SETTINGS]: function (data) {
         this.settingsBlockChat = data[1];
         this.settingsBlockPrivate = data[2];
@@ -14,5 +14,3 @@ const handlers = {
         this.optionSoundDisabled = !!Utility.getUnsignedByte(data[3]);
     }
 };
-
-module.exports = handlers;

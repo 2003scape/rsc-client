@@ -2,7 +2,7 @@ const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.REGION_PLAYERS]: function (data, size) {
         this.knownPlayerCount = this.playerCount;
 
@@ -160,5 +160,3 @@ const handlers = {
         }
     }
 };
-
-module.exports = handlers;

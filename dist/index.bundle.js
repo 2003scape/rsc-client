@@ -11747,57 +11747,65 @@ function fromCharArray(a) {
 }
 
 class ChatMessage {
-    static descramble(buff, off, len) {
+    static descramble(buffer, offset, length) {
         try {
-            let newLen = 0;
-            let l = -1;
+            let newLength = 0;
+            let leftShift = -1;
 
-            for (let idx = 0; idx < len; idx++) {
-                let current = buff[off++] & 0xff;
-                let k1 = (current >> 4) & 0xf;
+            for (let i = 0; i < length; i++) {
+                const current = buffer[offset++] & 0xff;
+                let charMapIndex = (current >> 4) & 0xf;
 
-                if (l === -1) {
-                    if (k1 < 13) {
-                        ChatMessage.chars[newLen++] = ChatMessage.charMap[k1];
+                if (leftShift === -1) {
+                    if (charMapIndex < 13) {
+                        ChatMessage.chars[newLength++] =
+                            ChatMessage.charMap[charMapIndex];
                     } else {
-                        l = k1;
+                        leftShift = charMapIndex;
                     }
                 } else {
-                    ChatMessage.chars[newLen++] =
-                        ChatMessage.charMap[(l << 4) + k1 - 195];
-                    l = -1;
+                    ChatMessage.chars[newLength++] =
+                        ChatMessage.charMap[
+                            (leftShift << 4) + charMapIndex - 195
+                        ];
+
+                    leftShift = -1;
                 }
 
-                k1 = current & 0xf;
+                charMapIndex = current & 0xf;
 
-                if (l === -1) {
-                    if (k1 < 13) {
-                        ChatMessage.chars[newLen++] = ChatMessage.charMap[k1];
+                if (leftShift === -1) {
+                    if (charMapIndex < 13) {
+                        ChatMessage.chars[newLength++] =
+                            ChatMessage.charMap[charMapIndex];
                     } else {
-                        l = k1;
+                        leftShift = charMapIndex;
                     }
                 } else {
-                    ChatMessage.chars[newLen++] =
-                        ChatMessage.charMap[(l << 4) + k1 - 195];
-                    l = -1;
+                    ChatMessage.chars[newLength++] =
+                        ChatMessage.charMap[
+                            (leftShift << 4) + charMapIndex - 195
+                        ];
+
+                    leftShift = -1;
                 }
             }
 
             let flag = true;
 
-            for (let l1 = 0; l1 < newLen; l1++) {
-                let currentChar = ChatMessage.chars[l1];
+            for (let i = 0; i < newLength; i++) {
+                const currentChar = ChatMessage.chars[i];
 
-                if (l1 > 4 && currentChar === C_AT) {
-                    ChatMessage.chars[l1] = C_SPACE;
+                if (i > 4 && currentChar === C_AT) {
+                    ChatMessage.chars[i] = C_SPACE;
                 }
 
                 if (currentChar === C_PRCNT) {
-                    ChatMessage.chars[l1] = C_SPACE;
+                    ChatMessage.chars[i] = C_SPACE;
                 }
 
                 if (flag && currentChar >= C_A && currentChar <= C_Z) {
-                    ChatMessage.chars[l1] += C_CENT;
+                    ChatMessage.chars[i] += C_CENT;
                     flag = false;
                 }
 
@@ -11806,61 +11814,62 @@ class ChatMessage {
                 }
             }
 
-            return fromCharArray(ChatMessage.chars.slice(0, newLen));
+            return fromCharArray(ChatMessage.chars.slice(0, newLength));
         } catch (e) {
             return '.';
         }
     }
 
-    static scramble(s) {
-        if (s.length > 80) {
-            s = s.slice(0, 80);
+    static scramble(message) {
+        if (message.length > 80) {
+            message = message.slice(0, 80);
         }
 
-        s = s.toLowerCase();
+        message = message.toLowerCase();
 
-        let off = 0;
-        let lshift = -1;
+        let offset = 0;
+        let leftShift = -1;
 
-        for (let k = 0; k < s.length; k++) {
-            let currentChar = s.charCodeAt(k);
-            let foundCharMapIdx = 0;
+        for (let i = 0; i < message.length; i++) {
+            const currentChar = message.charCodeAt(i);
+            let charMapIndex = 0;
 
-            for (let n = 0; n < ChatMessage.charMap.length; n++) {
-                if (currentChar !== ChatMessage.charMap[n]) {
-                    continue;
+            for (let j = 0; j < ChatMessage.charMap.length; j++) {
+                if (currentChar === ChatMessage.charMap[j]) {
+                    charMapIndex = j;
+                    break;
                 }
-
-                foundCharMapIdx = n;
-                break;
             }
 
-            if (foundCharMapIdx > 12) {
-                foundCharMapIdx += 195;
+            if (charMapIndex > 12) {
+                charMapIndex += 195;
             }
 
-            if (lshift === -1) {
-                if (foundCharMapIdx < 13) {
-                    lshift = foundCharMapIdx;
+            if (leftShift === -1) {
+                if (charMapIndex < 13) {
+                    leftShift = charMapIndex;
                 } else {
-                    ChatMessage.scrambledBytes[off++] = foundCharMapIdx & 0xff;
+                    ChatMessage.scrambledBytes[offset++] =
+                        charMapIndex & 0xff;
                 }
-            } else if (foundCharMapIdx < 13) {
-                ChatMessage.scrambledBytes[off++] =
-                    ((lshift << 4) + foundCharMapIdx) & 0xff;
-                lshift = -1;
+            } else if (charMapIndex < 13) {
+                ChatMessage.scrambledBytes[offset++] =
+                    ((leftShift << 4) + charMapIndex) & 0xff;
+
+                leftShift = -1;
             } else {
-                ChatMessage.scrambledBytes[off++] =
-                    ((lshift << 4) + (foundCharMapIdx >> 4)) & 0xff;
-                lshift = foundCharMapIdx & 0xf;
+                ChatMessage.scrambledBytes[offset++] =
+                    ((leftShift << 4) + (charMapIndex >> 4)) & 0xff;
+
+                leftShift = charMapIndex & 0xf;
             }
         }
 
-        if (lshift !== -1) {
-            ChatMessage.scrambledBytes[off++] = (lshift << 4) & 0xff;
+        if (leftShift !== -1) {
+            ChatMessage.scrambledBytes[offset++] = (leftShift << 4) & 0xff;
         }
 
-        return off;
+        return offset;
     }
 }
 
@@ -12054,7 +12063,6 @@ const Long = require('long');
 const PacketStream = require('./packet-stream');
 const Utility = require('./utility');
 const clientOpcodes = require('./opcodes/client');
-const serverOpcodes = require('./opcodes/server');
 const sleep = require('sleep-promise');
 
 function fromCharArray(a) {
@@ -12136,10 +12144,13 @@ class GameConnection extends GameShell {
             );
 
             const encodedUsername = Utility.usernameToHash(username);
+
             this.packetStream.newPacket(clientOpcodes.SESSION);
+
             this.packetStream.putByte(
                 encodedUsername.shiftRight(16).and(31).toInt()
             );
+
             this.packetStream.flushPacket();
 
             const sessionID = await this.packetStream.getLong();
@@ -12540,6 +12551,7 @@ class GameConnection extends GameShell {
                         'been set',
                     ''
                 );
+
                 return;
             }
 
@@ -12566,15 +12578,18 @@ class GameConnection extends GameShell {
                         'later',
                     ''
                 );
+
                 return;
             }
 
             this.loginScreen = 3;
+
             this.panelRecoverUser.updateText(
                 this.controlRecoverInfo1,
                 '@yel@To prove this is your account please provide the ' +
                     'answers to'
             );
+
             this.panelRecoverUser.updateText(
                 this.controlRecoverInfo2,
                 '@yel@your security questions. You will then be able to ' +
@@ -12711,24 +12726,9 @@ class GameConnection extends GameShell {
                 this.incomingPacket[0] & 0xff
             );
 
-            this.handlePacket(opcode, length);
+            console.log('opcode:' + opcode + ' psize:' + length);
+            this.handleIncomingPacket(opcode, length, this.incomingPacket);
         }
-    }
-
-    handlePacket(opcode, size) {
-        console.log('opcode:' + opcode + ' psize:' + size);
-
-        if (opcode === serverOpcodes.CLOSE_CONNECTION) {
-            this.closeConnection();
-            return;
-        }
-
-        if (opcode === serverOpcodes.LOGOUT_DENY) {
-            this.cantLogout();
-            return;
-        }
-
-        this.handleIncomingPacket(opcode, size, this.incomingPacket);
     }
 
     sortFriendsList() {
@@ -12881,7 +12881,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./opcodes/server":55,"./packet-stream":68,"./utility":100,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":116,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13411,7 +13411,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":100,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":116,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14750,7 +14750,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":72,"./utility":100}],46:[function(require,module,exports){
+},{"./scene":88,"./utility":116}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -15435,7 +15435,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":74,"./utility":100,"./version":101,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":116,"./version":117,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -15929,7 +15929,6 @@ const applyUIComponents = require('./ui');
 const getPacketHandlers = require('./packet-handlers');
 const keycodes = require('./lib/keycodes');
 const clientOpcodes = require('./opcodes/client');
-const serverOpcodes = require('./opcodes/server');
 const version = require('./version');
 
 const ZOOM_MIN = 450;
@@ -17804,41 +17803,41 @@ class mudclient extends GameConnection {
             this.npcsServer[serverIndex].serverIndex = serverIndex;
         }
 
-        let character = this.npcsServer[serverIndex];
-        let foundNpc = false;
+        const npc = this.npcsServer[serverIndex];
+        let foundNPC = false;
 
         for (let i = 0; i < this.npcCacheCount; i++) {
             if (this.npcsCache[i].serverIndex !== serverIndex) {
                 continue;
             }
 
-            foundNpc = true;
+            foundNPC = true;
             break;
         }
 
-        if (foundNpc) {
-            character.npcId = type;
-            character.animationNext = sprite;
-            let waypointIdx = character.waypointCurrent;
+        if (foundNPC) {
+            npc.npcId = type;
+            npc.animationNext = sprite;
+            let waypointIdx = npc.waypointCurrent;
 
-            if (x !== character.waypointsX[waypointIdx] || y !== character.waypointsY[waypointIdx]) {
-                character.waypointCurrent = waypointIdx = (waypointIdx + 1) % 10;
-                character.waypointsX[waypointIdx] = x;
-                character.waypointsY[waypointIdx] = y;
+            if (x !== npc.waypointsX[waypointIdx] || y !== npc.waypointsY[waypointIdx]) {
+                npc.waypointCurrent = waypointIdx = (waypointIdx + 1) % 10;
+                npc.waypointsX[waypointIdx] = x;
+                npc.waypointsY[waypointIdx] = y;
             }
         } else {
-            character.serverIndex = serverIndex;
-            character.movingStep = 0;
-            character.waypointCurrent = 0;
-            character.waypointsX[0] = character.currentX = x;
-            character.waypointsY[0] = character.currentY = y;
-            character.npcId = type;
-            character.animationNext = character.animationCurrent = sprite;
-            character.stepCount = 0;
+            npc.serverIndex = serverIndex;
+            npc.movingStep = 0;
+            npc.waypointCurrent = 0;
+            npc.waypointsX[0] = npc.currentX = x;
+            npc.waypointsY[0] = npc.currentY = y;
+            npc.npcId = type;
+            npc.animationNext = npc.animationCurrent = sprite;
+            npc.stepCount = 0;
         }
 
-        this.npcs[this.npcCount++] = character;
-        return character;
+        this.npcs[this.npcCount++] = npc;
+        return npc;
     }
 
     resetLoginVars() {
@@ -18280,14 +18279,14 @@ class mudclient extends GameConnection {
     }
 
     drawPlayer(x, y, w, h, id, tx, ty) {
-        let character = this.players[id];
+        const player = this.players[id];
 
         // this means the character is invisible! MOD!!!
-        if (character.colourBottom === 255)  {
+        if (player.colourBottom === 255)  {
             return;
         }
 
-        let l1 = character.animationCurrent + (this.cameraRotation + 16) / 32 & 7;
+        let l1 = player.animationCurrent + (this.cameraRotation + 16) / 32 & 7;
         let flag = false;
         let i2 = l1;
 
@@ -18302,15 +18301,15 @@ class mudclient extends GameConnection {
             flag = true;
         }
 
-        let j2 = i2 * 3 + this.npcWalkModel[((character.stepCount / 6) | 0) % 4];
+        let j2 = i2 * 3 + this.npcWalkModel[((player.stepCount / 6) | 0) % 4];
 
-        if (character.animationCurrent === 8) {
+        if (player.animationCurrent === 8) {
             i2 = 5;
             l1 = 2;
             flag = false;
             x -= ((5 * ty) / 100) | 0;
             j2 = i2 * 3 + this.npcCombatModelArray1[((this.loginTimer / 5) | 0) % 8];
-        } else if (character.animationCurrent === 9) {
+        } else if (player.animationCurrent === 9) {
             i2 = 5;
             l1 = 2;
             flag = true;
@@ -18320,7 +18319,7 @@ class mudclient extends GameConnection {
 
         for (let k2 = 0; k2 < 12; k2++) {
             let l2 = this.npcAnimationArray[l1][k2];
-            let l3 = character.equippedItem[l2] - 1;
+            let l3 = player.equippedItem[l2] - 1;
 
             if (l3 >= 0) {
                 let k4 = 0;
@@ -18333,27 +18332,27 @@ class mudclient extends GameConnection {
                     } else if (l2 === 4 && i2 === 1) {
                         k4 = -22;
                         i5 = -3;
-                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((character.stepCount / 6) | 0)) % 4];
+                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((player.stepCount / 6) | 0)) % 4];
                     } else if (l2 === 4 && i2 === 2) {
                         k4 = 0;
                         i5 = -8;
-                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((character.stepCount / 6) | 0)) % 4];
+                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((player.stepCount / 6) | 0)) % 4];
                     } else if (l2 === 4 && i2 === 3) {
                         k4 = 26;
                         i5 = -5;
-                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((character.stepCount / 6) | 0)) % 4];
+                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((player.stepCount / 6) | 0)) % 4];
                     } else if (l2 === 3 && i2 === 1) {
                         k4 = 22;
                         i5 = 3;
-                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((character.stepCount / 6) | 0)) % 4];
+                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((player.stepCount / 6) | 0)) % 4];
                     } else if (l2 === 3 && i2 === 2) {
                         k4 = 0;
                         i5 = 8;
-                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((character.stepCount / 6) | 0)) % 4];
+                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((player.stepCount / 6) | 0)) % 4];
                     } else if (l2 === 3 && i2 === 3) {
                         k4 = -26;
                         i5 = 5;
-                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((character.stepCount / 6) | 0)) % 4];
+                        j5 = i2 * 3 + this.npcWalkModel[(2 + ((player.stepCount / 6) | 0)) % 4];
                     }
                 }
 
@@ -18369,14 +18368,14 @@ class mudclient extends GameConnection {
 
                     let i6 = GameData.animationCharacterColour[l3];
                     const skinColour =
-                        this.characterSkinColours[character.colourSkin];
+                        this.characterSkinColours[player.colourSkin];
 
                     if (i6 === 1) {
-                        i6 = this.characterHairColours[character.colourHair];
+                        i6 = this.characterHairColours[player.colourHair];
                     } else if (i6 === 2) {
-                        i6 = this.characterTopBottomColours[character.colourTop];
+                        i6 = this.characterTopBottomColours[player.colourTop];
                     } else if (i6 === 3) {
-                        i6 = this.characterTopBottomColours[character.colourBottom];
+                        i6 = this.characterTopBottomColours[player.colourBottom];
                     }
 
                     this.surface._spriteClipping_from9(x + k4, y + i5, l5, h, k5, i6, skinColour, tx, flag);
@@ -18384,63 +18383,63 @@ class mudclient extends GameConnection {
             }
         }
 
-        if (character.messageTimeout > 0) {
-            this.receivedMessageMidPoint[this.receivedMessagesCount] = (this.surface.textWidth(character.message, 1) / 2) | 0;
+        if (player.messageTimeout > 0) {
+            this.receivedMessageMidPoint[this.receivedMessagesCount] = (this.surface.textWidth(player.message, 1) / 2) | 0;
 
             if (this.receivedMessageMidPoint[this.receivedMessagesCount] > 150) {
                 this.receivedMessageMidPoint[this.receivedMessagesCount] = 150;
             }
 
-            this.receivedMessageHeight[this.receivedMessagesCount] = ((this.surface.textWidth(character.message, 1) / 300) | 0) * this.surface.textHeight(1);
+            this.receivedMessageHeight[this.receivedMessagesCount] = ((this.surface.textWidth(player.message, 1) / 300) | 0) * this.surface.textHeight(1);
             this.receivedMessageX[this.receivedMessagesCount] = x + ((w / 2) | 0);
             this.receivedMessageY[this.receivedMessagesCount] = y;
-            this.receivedMessages[this.receivedMessagesCount++] = character.message;
+            this.receivedMessages[this.receivedMessagesCount++] = player.message;
         }
 
-        if (character.bubbleTimeout > 0) {
+        if (player.bubbleTimeout > 0) {
             this.actionBubbleX[this.itemsAboveHeadCount] = x + ((w / 2) | 0);
             this.actionBubbleY[this.itemsAboveHeadCount] = y;
             this.actionBubbleScale[this.itemsAboveHeadCount] = ty;
-            this.actionBubbleItem[this.itemsAboveHeadCount++] = character.bubbleItem;
+            this.actionBubbleItem[this.itemsAboveHeadCount++] = player.bubbleItem;
         }
 
-        if (character.animationCurrent === 8 || character.animationCurrent === 9 || character.combatTimer !== 0) {
-            if (character.combatTimer > 0) {
+        if (player.animationCurrent === 8 || player.animationCurrent === 9 || player.combatTimer !== 0) {
+            if (player.combatTimer > 0) {
                 let i3 = x;
 
-                if (character.animationCurrent === 8) {
+                if (player.animationCurrent === 8) {
                     i3 -= ((20 * ty) / 100) | 0;
-                } else if (character.animationCurrent === 9) {
+                } else if (player.animationCurrent === 9) {
                     i3 += ((20 * ty) / 100) | 0;
                 }
 
-                let i4 = ((character.healthCurrent * 30) / character.healthMax) | 0;
+                let i4 = ((player.healthCurrent * 30) / player.healthMax) | 0;
 
                 this.healthBarX[this.healthBarCount] = i3 + ((w / 2) | 0);
                 this.healthBarY[this.healthBarCount] = y;
                 this.healthBarMissing[this.healthBarCount++] = i4;
             }
 
-            if (character.combatTimer > 150) {
+            if (player.combatTimer > 150) {
                 let j3 = x;
 
-                if (character.animationCurrent === 8) {
+                if (player.animationCurrent === 8) {
                     j3 -= ((10 * ty) / 100) | 0;
-                } else if (character.animationCurrent === 9) {
+                } else if (player.animationCurrent === 9) {
                     j3 += ((10 * ty) / 100) | 0;
                 }
 
                 this.surface._drawSprite_from3((j3 + ((w / 2) | 0)) - 12, (y + ((h / 2) | 0)) - 12, this.spriteMedia + 11);
-                this.surface.drawStringCenter(character.damageTaken.toString(), (j3 + ((w / 2) | 0)) - 1, y + ((h / 2) | 0) + 5, 3, 0xffffff);
+                this.surface.drawStringCenter(player.damageTaken.toString(), (j3 + ((w / 2) | 0)) - 1, y + ((h / 2) | 0) + 5, 3, 0xffffff);
             }
         }
 
-        if (character.skullVisible === 1 && character.bubbleTimeout === 0) {
+        if (player.skullVisible === 1 && player.bubbleTimeout === 0) {
             let k3 = tx + x + ((w / 2) | 0);
 
-            if (character.animationCurrent === 8) {
+            if (player.animationCurrent === 8) {
                 k3 -= ((20 * ty) / 100) | 0;
-            } else if (character.animationCurrent === 9) {
+            } else if (player.animationCurrent === 9) {
                 k3 += ((20 * ty) / 100) | 0;
             }
 
@@ -19412,14 +19411,14 @@ class mudclient extends GameConnection {
         if (type === 2 || type === 4 || type === 6) {
             for (; message.length > 5 && message[0] === '@' && message[4] === '@'; message = message.substring(5)) ;
 
-            let j = message.indexOf(':');
+            const colonIndex = message.indexOf(':');
 
-            if (j !== -1) {
-                let s1 = message.substring(0, j);
-                let l = Utility.usernameToHash(s1);
+            if (colonIndex !== -1) {
+                const username = message.substring(0, colonIndex);
+                const encodedUsername = Utility.usernameToHash(username);
 
                 for (let i1 = 0; i1 < this.ignoreListCount; i1++) {
-                    if (this.ignoreList[i1].equals(l)) {
+                    if (this.ignoreList[i1].equals(encodedUsername)) {
                         return;
                     }
                 }
@@ -19460,9 +19459,9 @@ class mudclient extends GameConnection {
             }
         }
 
-        for (let k = 4; k > 0; k--) {
-            this.messageHistory[k] = this.messageHistory[k - 1];
-            this.messageHistoryTimeout[k] = this.messageHistoryTimeout[k - 1];
+        for (let i = 4; i > 0; i--) {
+            this.messageHistory[i] = this.messageHistory[i - 1];
+            this.messageHistoryTimeout[i] = this.messageHistoryTimeout[i - 1];
         }
 
         this.messageHistory[0] = message;
@@ -19516,10 +19515,8 @@ class mudclient extends GameConnection {
             }
 
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, x, y, (x + width) - 1, (y + height) - 1, false, true);
-            return;
         } else {
             this._walkToActionSource_from8(this.localRegionX, this.localRegionY, x, y, (x + width) - 1, (y + height) - 1, true, true);
-            return;
         }
     }
 
@@ -19552,6 +19549,7 @@ class mudclient extends GameConnection {
         }
 
         const indexDat = Utility.loadData('index.dat', 0, texturesJag);
+
         this.scene.allocateTextures(GameData.textureCount, 7, 11);
 
         for (let i = 0; i < GameData.textureCount; i++) {
@@ -19588,18 +19586,18 @@ class mudclient extends GameConnection {
         }
     }
 
-    handleMouseDown(i, x, y) {
+    handleMouseDown(_, x, y) {
         this.mouseClickXHistory[this.mouseClickCount] = x;
         this.mouseClickYHistory[this.mouseClickCount] = y;
         this.mouseClickCount = this.mouseClickCount + 1 & 8191;
 
-        for (let l = 10; l < 4000; l++) {
-            let i1 = this.mouseClickCount - l & 8191;
+        for (let i = 10; i < 4000; i++) {
+            let i1 = this.mouseClickCount - i & 8191;
 
             if (this.mouseClickXHistory[i1] === x && this.mouseClickYHistory[i1] === y) {
                 let flag = false;
 
-                for (let j1 = 1; j1 < l; j1++) {
+                for (let j1 = 1; j1 < i; j1++) {
                     let k1 = this.mouseClickCount - j1 & 8191;
                     let l1 = i1 - j1 & 8191;
 
@@ -19611,7 +19609,7 @@ class mudclient extends GameConnection {
                         break;
                     }
 
-                    if (j1 === l - 1 && flag && this.combatTimeout === 0 && this.logoutTimeout === 0) {
+                    if (j1 === i - 1 && flag && this.combatTimeout === 0 && this.logoutTimeout === 0) {
                         this.sendLogout();
                         return;
                     }
@@ -19620,30 +19618,30 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawTeleportBubble(x, y, w, h, id) {
+    drawTeleportBubble(x, y, width, height, id) {
         const type = this.teleportBubbleType[id];
         const time = this.teleportBubbleTime[id];
 
         if (type === 0) {
             // blue bubble used for teleports
             const colour = 255 + time * 5 * 256;
-            this.surface.drawCircle(x + ((w / 2) | 0), y + ((h / 2) | 0), 20 + time * 2, colour, 255 - time * 5);
+            this.surface.drawCircle(x + ((width / 2) | 0), y + ((height / 2) | 0), 20 + time * 2, colour, 255 - time * 5);
         } else if (type === 1) {
             // red bubble used for telegrab
             const colour = 0xff0000 + time * 5 * 256;
-            this.surface.drawCircle(x + ((w / 2) | 0), y + ((h / 2) | 0), 10 + time, colour, 255 - time * 5);
+            this.surface.drawCircle(x + ((width / 2) | 0), y + ((height / 2) | 0), 10 + time, colour, 255 - time * 5);
         }
     }
 
-    showServerMessage(s) {
-        if (/^@bor@/.test(s)) {
-            this.showMessage(s, 4);
-        } else if (/^@que@/.test(s)) {
-            this.showMessage(`@whi@${s}`, 5);
-        } else if (/^@pri@/.test(s)) {
-            this.showMessage(s, 6);
+    showServerMessage(message) {
+        if (/^@bor@/.test(message)) {
+            this.showMessage(message, 4);
+        } else if (/^@que@/.test(message)) {
+            this.showMessage(`@whi@${message}`, 5);
+        } else if (/^@pri@/.test(message)) {
+            this.showMessage(message, 6);
         } else {
-            this.showMessage(s, 3);
+            this.showMessage(message, 3);
         }
     }
 
@@ -20171,791 +20169,12 @@ class mudclient extends GameConnection {
 
     handleIncomingPacket(opcode, size, data) {
         try {
-            if (opcode === serverOpcodes.REGION_PLAYER_UPDATE) {
-                const length = Utility.getUnsignedShort(data, 1);
-                let offset = 3;
-
-                for (let i = 0; i < length; i++) {
-                    const playerIndex = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    const player = this.playerServer[playerIndex];
-
-                    const updateType = data[offset];
-                    offset++;
-
-                    // speech bubble with an item in it
-                    if (updateType === 0) {
-                        const itemID = Utility.getUnsignedShort(data, offset);
-                        offset += 2;
-
-                        if (player !== null) {
-                            player.bubbleTimeout = 150;
-                            player.bubbleItem = itemID;
-                        }
-                    // chat
-                    } else if (updateType === 1) {
-                        const messageLength = data[offset];
-                        offset++;
-
-                        if (player !== null) {
-                            let message =
-                                ChatMessage.descramble(
-                                    data,
-                                    offset,
-                                    messageLength
-                                );
-
-                            if (this.options.wordFilter) {
-                                message = WordFilter.filter(message);
-                            }
-
-                            let ignored = false;
-
-                            for (let i = 0; i < this.ignoreListCount; i++) {
-                                if (this.ignoreList[i] === player.hash) {
-                                    ignored = true;
-                                    break;
-                                }
-                            }
-
-                            if (!ignored) {
-                                player.messageTimeout = 150;
-                                player.message = message;
-                                this.showMessage(
-                                    `${player.name}: ${player.message}`,
-                                    2
-                                );
-                            }
-                        }
-
-                        offset += messageLength;
-                    // combat damage and hp
-                    } else if (updateType === 2) {
-                        const damage = Utility.getUnsignedByte(data[offset]);
-                        offset++;
-
-                        const current = Utility.getUnsignedByte(data[offset]);
-                        offset++;
-
-                        const max = Utility.getUnsignedByte(data[offset]);
-                        offset++;
-
-                        if (player !== null) {
-                            player.damageTaken = damage;
-                            player.healthCurrent = current;
-                            player.healthMax = max;
-                            player.combatTimer = 200;
-
-                            if (player === this.localPlayer) {
-                                this.playerStatCurrent[3] = current;
-                                this.playerStatBase[3] = max;
-                                this.showDialogWelcome = false;
-                                this.showDialogServerMessage = false;
-                            }
-                        }
-                    // new incoming projectile to npc
-                    } else if (updateType === 3) {
-                        const projectileSprite = Utility.getUnsignedShort(data, offset);
-                        offset += 2;
-
-                        const npcIndex = Utility.getUnsignedShort(data, offset);
-                        offset += 2;
-
-                        if (player !== null) {
-                            player.incomingProjectileSprite = projectileSprite;
-                            player.attackingNpcServerIndex = npcIndex;
-                            player.attackingPlayerServerIndex = -1;
-                            player.projectileRange = this.projectileMaxRange;
-                        }
-                    // new incoming projectile from player
-                    } else if (updateType === 4) {
-                        const projectileSprite = Utility.getUnsignedShort(data, offset);
-                        offset += 2;
-
-                        const opponentIndex = Utility.getUnsignedShort(data, offset);
-                        offset += 2;
-
-                        if (player !== null) {
-                            player.incomingProjectileSprite = projectileSprite;
-                            player.attackingPlayerServerIndex = opponentIndex;
-                            player.attackingNpcServerIndex = -1;
-                            player.projectileRange = this.projectileMaxRange;
-                        }
-                    // player appearance update
-                    } else if (updateType === 5) {
-                        if (player !== null) {
-                            player.serverId = Utility.getUnsignedShort(data, offset);
-                            offset += 2;
-                            player.hash = Utility.getUnsignedLong(data, offset);
-                            offset += 8;
-                            player.name = Utility.hashToUsername(player.hash);
-
-                            const equippedCount = Utility.getUnsignedByte(data[offset]);
-                            offset++;
-
-                            for (let j = 0; j < equippedCount; j++) {
-                                player.equippedItem[j] = Utility.getUnsignedByte(data[offset]);
-                                offset++;
-                            }
-
-                            for (let j = equippedCount; j < 12; j++) {
-                                player.equippedItem[j] = 0;
-                            }
-
-                            player.colourHair = data[offset++] & 0xff;
-                            player.colourTop = data[offset++] & 0xff;
-                            player.colourBottom = data[offset++] & 0xff;
-                            player.colourSkin = data[offset++] & 0xff;
-                            player.level = data[offset++] & 0xff;
-                            player.skullVisible = data[offset++] & 0xff;
-                        } else {
-                            offset += 14;
-
-                            const unused = Utility.getUnsignedByte(data[offset]);
-                            offset += unused + 1;
-                        }
-                    // public chat
-                    } else if (updateType === 6) {
-                        const messageLength = data[offset];
-                        offset++;
-
-                        if (player !== null) {
-                            const message = ChatMessage.descramble(data, offset, messageLength);
-
-                            player.messageTimeout = 150;
-                            player.message = message;
-
-                            if (player === this.localPlayer) {
-                                this.showMessage(
-                                    `${player.name}: ${player.message}`,
-                                    5
-                                );
-                            }
-                        }
-
-                        offset += messageLength;
-                    }
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.REGION_WALL_OBJECTS) {
-                for (let offset = 1; offset < size; )
-                    if (Utility.getUnsignedByte(data[offset]) === 255) {
-                        let count = 0;
-                        let lX = this.localRegionX + data[offset + 1] >> 3;
-                        let lY = this.localRegionY + data[offset + 2] >> 3;
-
-                        offset += 3;
-
-                        for (let i = 0; i < this.wallObjectCount; i++) {
-                            let sX = (this.wallObjectX[i] >> 3) - lX;
-                            let sY = (this.wallObjectY[i] >> 3) - lY;
-
-                            if (sX !== 0 || sY !== 0) {
-                                if (i !== count) {
-                                    this.wallObjectModel[count] = this.wallObjectModel[i];
-                                    this.wallObjectModel[count].key = count + 10000;
-                                    this.wallObjectX[count] = this.wallObjectX[i];
-                                    this.wallObjectY[count] = this.wallObjectY[i];
-                                    this.wallObjectDirection[count] = this.wallObjectDirection[i];
-                                    this.wallObjectId[count] = this.wallObjectId[i];
-                                }
-
-                                count++;
-                            } else {
-                                this.scene.removeModel(this.wallObjectModel[i]);
-                                this.world.removeWallObject(this.wallObjectX[i], this.wallObjectY[i], this.wallObjectDirection[i], this.wallObjectId[i]);
-                            }
-                        }
-
-                        this.wallObjectCount = count;
-                    } else {
-                        const id = Utility.getUnsignedShort(data, offset);
-                        offset += 2;
-
-                        const lX = this.localRegionX + data[offset++];
-                        const lY = this.localRegionY + data[offset++];
-                        const direction = data[offset++];
-                        let count = 0;
-
-                        for (let i = 0; i < this.wallObjectCount; i++) {
-                            if (this.wallObjectX[i] !== lX || this.wallObjectY[i] !== lY || this.wallObjectDirection[i] !== direction) {
-                                if (i !== count) {
-                                    this.wallObjectModel[count] = this.wallObjectModel[i];
-                                    this.wallObjectModel[count].key = count + 10000;
-                                    this.wallObjectX[count] = this.wallObjectX[i];
-                                    this.wallObjectY[count] = this.wallObjectY[i];
-                                    this.wallObjectDirection[count] = this.wallObjectDirection[i];
-                                    this.wallObjectId[count] = this.wallObjectId[i];
-                                }
-
-                                count++;
-                            } else {
-                                this.scene.removeModel(this.wallObjectModel[i]);
-                                this.world.removeWallObject(this.wallObjectX[i], this.wallObjectY[i], this.wallObjectDirection[i], this.wallObjectId[i]);
-                            }
-                        }
-
-                        this.wallObjectCount = count;
-
-                        if (id !== 65535) {
-                            this.world._setObjectAdjacency_from4(lX, lY, direction, id);
-
-                            const model = this.createModel(lX, lY, direction, id, this.wallObjectCount);
-                            this.wallObjectModel[this.wallObjectCount] = model;
-                            this.wallObjectX[this.wallObjectCount] = lX;
-                            this.wallObjectY[this.wallObjectCount] = lY;
-                            this.wallObjectId[this.wallObjectCount] = id;
-                            this.wallObjectDirection[this.wallObjectCount++] = direction;
-                        }
-                    }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.REGION_NPC_UPDATE) {
-                const length = Utility.getUnsignedShort(data, 1);
-                let offset = 3;
-
-                for (let i = 0; i < length; i++) {
-                    const serverIndex = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    const npc = this.npcsServer[serverIndex];
-                    const updateType = Utility.getUnsignedByte(data[offset]);
-                    offset++;
-
-                    if (updateType === 1) {
-                        let target = Utility.getUnsignedShort(data, offset);
-                        offset += 2;
-
-                        let scrambledLength = data[offset];
-                        offset++;
-
-                        if (npc !== null) {
-                            const message =
-                                ChatMessage.descramble(data, offset, scrambledLength);
-
-                            npc.messageTimeout = 150;
-                            npc.message = message;
-
-                            if (target === this.localPlayer.serverIndex) {
-                                this.showMessage(
-                                    '@yel@' +
-                                        GameData.npcName[npc.npcId] + ': ' +
-                                        npc.message,
-                                    5
-                                );
-                            }
-                        }
-
-                        offset += scrambledLength;
-                    } else if (updateType === 2) {
-                        const damageTaken = Utility.getUnsignedByte(data[offset]);
-                        offset++;
-
-                        const currentHealth = Utility.getUnsignedByte(data[offset]);
-                        offset++;
-
-                        const maxHealth = Utility.getUnsignedByte(data[offset]);
-                        offset++;
-
-                        if (npc !== null) {
-                            npc.damageTaken = damageTaken;
-                            npc.healthCurrent = currentHealth;
-                            npc.healthMax = maxHealth;
-                            npc.combatTimer = 200;
-                        }
-                    }
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.WORLD_INFO) {
-                this.loadingArea = true;
-                this.localPlayerServerIndex = Utility.getUnsignedShort(data, 1);
-                this.planeWidth = Utility.getUnsignedShort(data, 3);
-                this.planeHeight = Utility.getUnsignedShort(data, 5);
-                this.planeIndex = Utility.getUnsignedShort(data, 7);
-                this.planeMultiplier = Utility.getUnsignedShort(data, 9);
-                this.planeHeight -= this.planeIndex * this.planeMultiplier;
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.PLAYER_DIED) {
-                this.deathScreenTimeout = 250;
-                return;
-            }
-
-            if (opcode === serverOpcodes.REGION_ENTITY_UPDATE) {
-                const length = ((size - 1) / 4) | 0;
-
-                for (let i = 0; i < length; i++) {
-                    const deltaX = this.localRegionX + Utility.getSignedShort(data, 1 + i * 4) >> 3;
-                    const deltaY = this.localRegionY + Utility.getSignedShort(data, 3 + i * 4) >> 3;
-                    let entityCount = 0;
-
-                    for (let j = 0; j < this.groundItemCount; j++) {
-                        const x = (this.groundItemX[j] >> 3) - deltaX;
-                        const y = (this.groundItemY[j] >> 3) - deltaY;
-
-                        if (x !== 0 || y !== 0) {
-                            if (j !== entityCount) {
-                                this.groundItemX[entityCount] = this.groundItemX[j];
-                                this.groundItemY[entityCount] = this.groundItemY[j];
-                                this.groundItemID[entityCount] = this.groundItemID[j];
-                                this.groundItemZ[entityCount] = this.groundItemZ[j];
-                            }
-
-                            entityCount++;
-                        }
-                    }
-
-                    this.groundItemCount = entityCount;
-                    entityCount = 0;
-
-                    for (let j = 0; j < this.objectCount; j++) {
-                        const x = (this.objectX[j] >> 3) - deltaX;
-                        const y = (this.objectY[j] >> 3) - deltaY;
-
-                        if (x !== 0 || y !== 0) {
-                            if (j !== entityCount) {
-                                this.objectModel[entityCount] = this.objectModel[j];
-                                this.objectModel[entityCount].key = entityCount;
-                                this.objectX[entityCount] = this.objectX[j];
-                                this.objectY[entityCount] = this.objectY[j];
-                                this.objectId[entityCount] = this.objectId[j];
-                                this.objectDirection[entityCount] = this.objectDirection[j];
-                            }
-
-                            entityCount++;
-                        } else {
-                            this.scene.removeModel(this.objectModel[j]);
-                            this.world.removeObject(this.objectX[j], this.objectY[j], this.objectId[j]);
-                        }
-                    }
-
-                    this.objectCount = entityCount;
-                    entityCount = 0;
-
-                    for (let j = 0; j < this.wallObjectCount; j++) {
-                        const x = (this.wallObjectX[j] >> 3) - deltaX;
-                        const y = (this.wallObjectY[j] >> 3) - deltaY;
-
-                        if (x !== 0 || y !== 0) {
-                            if (j !== entityCount) {
-                                this.wallObjectModel[entityCount] = this.wallObjectModel[j];
-                                this.wallObjectModel[entityCount].key = entityCount + 10000;
-                                this.wallObjectX[entityCount] = this.wallObjectX[j];
-                                this.wallObjectY[entityCount] = this.wallObjectY[j];
-                                this.wallObjectDirection[entityCount] = this.wallObjectDirection[j];
-                                this.wallObjectId[entityCount] = this.wallObjectId[j];
-                            }
-
-                            entityCount++;
-                        } else {
-                            this.scene.removeModel(this.wallObjectModel[j]);
-                            this.world.removeWallObject(this.wallObjectX[j], this.wallObjectY[j], this.wallObjectDirection[j], this.wallObjectId[j]);
-                        }
-                    }
-
-                    this.wallObjectCount = entityCount;
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.APPEARANCE) {
-                this.showAppearanceChange = true;
-                return;
-            }
-
-            if (opcode === serverOpcodes.TRADE_OPEN) {
-                const playerIndex = Utility.getUnsignedShort(data, 1);
-
-                if (this.playerServer[playerIndex] !== null) {
-                    this.tradeRecipientName = this.playerServer[playerIndex].name;
-                }
-
-                this.showDialogTrade = true;
-                this.tradeRecipientAccepted = false;
-                this.tradeAccepted = false;
-                this.tradeItemsCount = 0;
-                this.tradeRecipientItemsCount = 0;
-                return;
-            }
-
-            if (opcode === serverOpcodes.TRADE_CLOSE) {
-                this.showDialogTrade = false;
-                this.showDialogTradeConfirm = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.TRADE_ITEMS) {
-                this.tradeRecipientItemsCount = data[1] & 0xff;
-
-                let offset = 2;
-
-                for (let i = 0; i < this.tradeRecipientItemsCount; i++) {
-                    this.tradeRecipientItems[i] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.tradeRecipientItemCount[i] = Utility.getUnsignedInt(data, offset);
-                    offset += 4;
-                }
-
-                this.tradeRecipientAccepted = false;
-                this.tradeAccepted = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.TRADE_RECIPIENT_STATUS) {
-                this.tradeRecipientAccepted = !!data[1];
-                return;
-            }
-
-            if (opcode === serverOpcodes.SHOP_OPEN) {
-                this.showDialogShop = true;
-
-                let offset = 1;
-                const newItemCount = data[offset++] & 0xff;
-                const isGeneral = data[offset++];
-
-                this.shopSellPriceMod = data[offset++] & 0xff;
-                this.shopBuyPriceMod = data[offset++] & 0xff;
-
-                for (let itemIndex = 0; itemIndex < 40; itemIndex++) {
-                    this.shopItem[itemIndex] = -1;
-                }
-
-                for (let itemIndex = 0; itemIndex < newItemCount; itemIndex++) {
-                    this.shopItem[itemIndex] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.shopItemCount[itemIndex] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.shopItemPrice[itemIndex] = data[offset++];
-                }
-
-                if (isGeneral === 1) {
-                    let l28 = 39;
-
-                    for (let i = 0; i < this.inventoryItemsCount; i++) {
-                        if (l28 < newItemCount) {
-                            break;
-                        }
-
-                        let unsellable = false;
-
-                        for (let j = 0; j < 40; j++) {
-                            if (this.shopItem[j] !== this.inventoryItemId[i]) {
-                                continue;
-                            }
-
-                            unsellable = true;
-                            break;
-                        }
-
-                        if (this.inventoryItemId[i] === 10) {
-                            unsellable = true;
-                        }
-
-                        if (!unsellable) {
-                            this.shopItem[l28] = this.inventoryItemId[i] & 32767;
-                            this.shopItemCount[l28] = 0;
-                            this.shopItemPrice[l28] = 0;
-                            l28--;
-                        }
-                    }
-
-                }
-
-                if (this.shopSelectedItemIndex >= 0 && this.shopSelectedItemIndex < 40 && this.shopItem[this.shopSelectedItemIndex] !== this.shopSelectedItemType) {
-                    this.shopSelectedItemIndex = -1;
-                    this.shopSelectedItemType = -2;
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.SHOP_CLOSE) {
-                this.showDialogShop = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.TRADE_STATUS) {
-                this.tradeAccepted = !!data[1];
-                return;
-            }
-
-            if (opcode === serverOpcodes.PRAYER_STATUS) {
-                for (let i = 0; i < size - 1; i++) {
-                    const on = data[i + 1] === 1;
-
-                    if (!this.prayerOn[i] && on) {
-                        this.playSoundFile('prayeron');
-                    }
-
-                    if (this.prayerOn[i] && !on) {
-                        this.playSoundFile('prayeroff');
-                    }
-
-                    this.prayerOn[i] = on;
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.BANK_OPEN) {
-                this.showDialogBank = true;
-
-                let offset = 1;
-
-                this.newBankItemCount = data[offset++] & 0xff;
-                this.bankItemsMax = data[offset++] & 0xff;
-
-                for (let i = 0; i < this.newBankItemCount; i++) {
-                    this.newBankItems[i] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.newBankItemsCount[i] = Utility.getStackInt(data, offset);
-
-                    if (this.newBankItemsCount[i] >= 128) {
-                        offset += 4;
-                    } else {
-                        offset++;
-                    }
-                }
-
-                this.updateBankItems();
-                return;
-            }
-
-            if (opcode === serverOpcodes.BANK_CLOSE) {
-                this.showDialogBank = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.DUEL_OPEN) {
-                const playerIndex = Utility.getUnsignedShort(data, 1);
-
-                if (this.playerServer[playerIndex] !== null) {
-                    this.duelOpponentName = this.playerServer[playerIndex].name;
-                }
-
-                this.showDialogDuel = true;
-                this.duelOfferItemCount = 0;
-                this.duelOfferOpponentItemCount = 0;
-                this.duelOfferOpponentAccepted = false;
-                this.duelOfferAccepted = false;
-                this.duelSettingsRetreat = false;
-                this.duelSettingsMagic = false;
-                this.duelSettingsPrayer = false;
-                this.duelSettingsWeapons = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.DUEL_CLOSE) {
-                this.showDialogDuel = false;
-                this.showDialogDuelConfirm = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.TRADE_CONFIRM_OPEN) {
-                this.showDialogTradeConfirm = true;
-                this.tradeConfirmAccepted = false;
-                this.showDialogTrade = false;
-
-                let offset = 1;
-
-                this.tradeRecipientConfirmHash = Utility.getUnsignedLong(data, offset);
-                offset += 8;
-
-                this.tradeRecipientConfirmItemsCount = data[offset++] & 0xff;
-
-                for (let i = 0; i < this.tradeRecipientConfirmItemsCount; i++) {
-                    this.tradeRecipientConfirmItems[i] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.tradeRecipientConfirmItemCount[i] = Utility.getUnsignedInt(data, offset);
-                    offset += 4;
-                }
-
-                this.tradeConfirmItemsCount = data[offset++] & 0xff;
-
-                for (let i = 0; i < this.tradeConfirmItemsCount; i++) {
-                    this.tradeConfirmItems[i] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.tradeConfirmItemCount[i] = Utility.getUnsignedInt(data, offset);
-                    offset += 4;
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.DUEL_UPDATE) {
-                this.duelOfferOpponentItemCount = data[1] & 0xff;
-
-                let offset = 2;
-
-                for (let i = 0; i < this.duelOfferOpponentItemCount; i++) {
-                    this.duelOfferOpponentItemId[i] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-                    this.duelOfferOpponentItemStack[i] = Utility.getUnsignedInt(data, offset);
-                    offset += 4;
-                }
-
-                this.duelOfferOpponentAccepted = false;
-                this.duelOfferAccepted = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.DUEL_SETTINGS) {
-                this.duelSettingsRetreat = !!data[1];
-                this.duelSettingsMagic = !!data[2];
-                this.duelSettingsPrayer = !!data[3];
-                this.duelSettingsWeapons = !!data[4];
-                this.duelOfferOpponentAccepted = false;
-                this.duelOfferAccepted = false;
-                return;
-            }
-
-            if (opcode === serverOpcodes.BANK_UPDATE) {
-                let offset = 1;
-                const itemIndex = data[offset++] & 0xff;
-                const item = Utility.getUnsignedShort(data, offset);
-
-                offset += 2;
-
-                const itemCount = Utility.getStackInt(data, offset);
-
-                if (itemCount >= 128) {
-                    offset += 4;
-                } else {
-                    offset++;
-                }
-
-                if (itemCount === 0) {
-                    this.newBankItemCount--;
-
-                    for (let i = itemIndex; i < this.newBankItemCount; i++) {
-                        this.newBankItems[i] = this.newBankItems[i + 1];
-                        this.newBankItemsCount[i] = this.newBankItemsCount[i + 1];
-                    }
-                } else {
-                    this.newBankItems[itemIndex] = item;
-                    this.newBankItemsCount[itemIndex] = itemCount;
-
-                    if (itemIndex >= this.newBankItemCount) {
-                        this.newBankItemCount = itemIndex + 1;
-                    }
-                }
-
-                this.updateBankItems();
-                return;
-            }
-
-            if (opcode === serverOpcodes.DUEL_OPPONENT_ACCEPTED) {
-                this.duelOfferOpponentAccepted = !!data[1];
-                return;
-            }
-
-            if (opcode === serverOpcodes.DUEL_ACCEPTED) {
-                this.duelOfferAccepted = !!data[1];
-                return;
-            }
-
-            if (opcode === serverOpcodes.DUEL_CONFIRM_OPEN) {
-                this.showDialogDuelConfirm = true;
-                this.duelAccepted = false;
-                this.showDialogDuel = false;
-
-                let offset = 1;
-
-                this.duelOpponentNameHash = Utility.getUnsignedLong(data, offset);
-                offset += 8;
-
-                this.duelOpponentItemsCount = data[offset++] & 0xff;
-
-                for (let i = 0; i < this.duelOpponentItemsCount; i++) {
-                    this.duelOpponentItems[i] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.duelOpponentItemCount[i] = Utility.getUnsignedInt(data, offset);
-                    offset += 4;
-                }
-
-                this.duelItemsCount = data[offset++] & 0xff;
-
-                for (let i = 0; i < this.duelItemsCount; i++) {
-                    this.duelItems[i] = Utility.getUnsignedShort(data, offset);
-                    offset += 2;
-
-                    this.duelItemCount[i] = Utility.getUnsignedInt(data, offset);
-                    offset += 4;
-                }
-
-                this.duelOptionRetreat = data[offset++] & 0xff;
-                this.duelOptionMagic = data[offset++] & 0xff;
-                this.duelOptionPrayer = data[offset++] & 0xff;
-                this.duelOptionWeapons = data[offset++] & 0xff;
-                return;
-            }
-
-            if (opcode === serverOpcodes.SOUND) {
-                const soundName = fromCharArray(data.slice(1, size));
-                this.playSoundFile(soundName);
-                return;
-            }
-
-            if (opcode === serverOpcodes.TELEPORT_BUBBLE) {
-                if (this.teleportBubbleCount < 50) {
-                    const type = data[1] & 0xff;
-                    const x = data[2] + this.localRegionX;
-                    const y = data[3] + this.localRegionY;
-
-                    this.teleportBubbleType[this.teleportBubbleCount] = type;
-                    this.teleportBubbleTime[this.teleportBubbleCount] = 0;
-                    this.teleportBubbleX[this.teleportBubbleCount] = x;
-                    this.teleportBubbleY[this.teleportBubbleCount] = y;
-                    this.teleportBubbleCount++;
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.WELCOME) {
-                if (!this.welcomScreenAlreadyShown) {
-                    this.welcomeLastLoggedInIP = Utility.getUnsignedInt(data, 1);
-                    this.welcomeLastLoggedInDays = Utility.getUnsignedShort(data, 5);
-                    this.welcomeRecoverySetDays = data[7] & 0xff;
-                    this.welcomeUnreadMessages = Utility.getUnsignedShort(data, 8);
-                    this.showDialogWelcome = true;
-                    this.welcomScreenAlreadyShown = true;
-                    this.welcomeLastLoggedInHost = null;
-                }
-
-                return;
-            }
-
-            if (opcode === serverOpcodes.SYSTEM_UPDATE) {
-                this.systemUpdate = Utility.getUnsignedShort(data, 1) * 32;
-                return;
-            }
-
             const handler = this.packetHandlers[opcode];
 
             if (handler) {
                 handler(data, size);
             } else {
-                //throw new Error(`unhandled packet opcode ${opcode}`);
+                throw new Error(`unhandled packet opcode ${opcode}`);
             }
         } catch (e) {
             console.error(e);
@@ -21572,7 +20791,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./opcodes/server":55,"./packet-handlers":56,"./panel":69,"./scene":72,"./stream-audio-player":73,"./surface":74,"./ui":79,"./utility":100,"./version":101,"./word-filter":102,"./world":103,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":95,"./utility":116,"./version":117,"./word-filter":118,"./world":119,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -21718,10 +20937,209 @@ module.exports={
     "WORLD_INFO": 25
 }
 },{}],56:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.APPEARANCE]: function () {
+        this.showAppearanceChange = true;
+    }
+};
+
+},{"../opcodes/server":55}],57:[function(require,module,exports){
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.BANK_OPEN]: function (data) {
+        this.showDialogBank = true;
+
+        let offset = 1;
+
+        this.newBankItemCount = data[offset++] & 0xff;
+        this.bankItemsMax = data[offset++] & 0xff;
+
+        for (let i = 0; i < this.newBankItemCount; i++) {
+            this.newBankItems[i] = Utility.getUnsignedShort(data, offset);
+            offset += 2;
+
+            this.newBankItemsCount[i] = Utility.getStackInt(data, offset);
+
+            if (this.newBankItemsCount[i] >= 128) {
+                offset += 4;
+            } else {
+                offset++;
+            }
+        }
+
+        this.updateBankItems();
+    },
+    [serverOpcodes.BANK_CLOSE]: function () {
+        this.showDialogBank = false;
+    },
+    [serverOpcodes.BANK_UPDATE]: function (data) {
+        let offset = 1;
+
+        const itemIndex = data[offset++] & 0xff;
+
+        const item = Utility.getUnsignedShort(data, offset);
+        offset += 2;
+
+        const itemCount = Utility.getStackInt(data, offset);
+
+        if (itemCount >= 128) {
+            offset += 4;
+        } else {
+            offset++;
+        }
+
+        if (itemCount === 0) {
+            this.newBankItemCount--;
+
+            for (let i = itemIndex; i < this.newBankItemCount; i++) {
+                this.newBankItems[i] = this.newBankItems[i + 1];
+                this.newBankItemsCount[i] = this.newBankItemsCount[i + 1];
+            }
+        } else {
+            this.newBankItems[itemIndex] = item;
+            this.newBankItemsCount[itemIndex] = itemCount;
+
+            if (itemIndex >= this.newBankItemCount) {
+                this.newBankItemCount = itemIndex + 1;
+            }
+        }
+
+        this.updateBankItems();
+    }
+};
+
+},{"../opcodes/server":55,"../utility":116}],58:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.CLOSE_CONNECTION]: function () {
+        this.closeConnection();
+    }
+};
+
+},{"../opcodes/server":55}],59:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.PLAYER_DIED]: function () {
+        this.deathScreenTimeout = 250;
+    }
+};
+
+},{"../opcodes/server":55}],60:[function(require,module,exports){
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.DUEL_OPEN]: function (data) {
+        const playerIndex = Utility.getUnsignedShort(data, 1);
+
+        if (this.playerServer[playerIndex]) {
+            this.duelOpponentName = this.playerServer[playerIndex].name;
+        }
+
+        this.showDialogDuel = true;
+        this.duelOfferItemCount = 0;
+        this.duelOfferOpponentItemCount = 0;
+        this.duelOfferOpponentAccepted = false;
+        this.duelOfferAccepted = false;
+        this.duelSettingsRetreat = false;
+        this.duelSettingsMagic = false;
+        this.duelSettingsPrayer = false;
+        this.duelSettingsWeapons = false;
+    },
+    [serverOpcodes.DUEL_CLOSE]: function () {
+        this.showDialogDuel = false;
+        this.showDialogDuelConfirm = false;
+    },
+    [serverOpcodes.DUEL_UPDATE]: function (data) {
+        this.duelOfferOpponentItemCount = data[1] & 0xff;
+
+        let offset = 2;
+
+        for (let i = 0; i < this.duelOfferOpponentItemCount; i++) {
+            this.duelOfferOpponentItemId[i] = Utility.getUnsignedShort(
+                data,
+                offset
+            );
+
+            offset += 2;
+
+            this.duelOfferOpponentItemStack[i] = Utility.getUnsignedInt(
+                data,
+                offset
+            );
+
+            offset += 4;
+        }
+
+        this.duelOfferOpponentAccepted = false;
+        this.duelOfferAccepted = false;
+    },
+    [serverOpcodes.DUEL_SETTINGS]: function (data) {
+        this.duelSettingsRetreat = !!data[1];
+        this.duelSettingsMagic = !!data[2];
+        this.duelSettingsPrayer = !!data[3];
+        this.duelSettingsWeapons = !!data[4];
+        this.duelOfferOpponentAccepted = false;
+        this.duelOfferAccepted = false;
+    },
+    [serverOpcodes.DUEL_OPPONENT_ACCEPTED]: function (data) {
+        this.duelOfferOpponentAccepted = !!data[1];
+    },
+    [serverOpcodes.DUEL_ACCEPTED]: function (data) {
+        this.duelOfferAccepted = !!data[1];
+    },
+    [serverOpcodes.DUEL_CONFIRM_OPEN]: function (data) {
+        this.showDialogDuelConfirm = true;
+        this.duelAccepted = false;
+        this.showDialogDuel = false;
+
+        let offset = 1;
+
+        this.duelOpponentNameHash = Utility.getUnsignedLong(data, offset);
+        offset += 8;
+
+        this.duelOpponentItemsCount = data[offset++] & 0xff;
+
+        for (let i = 0; i < this.duelOpponentItemsCount; i++) {
+            this.duelOpponentItems[i] = Utility.getUnsignedShort(data, offset);
+            offset += 2;
+
+            this.duelOpponentItemCount[i] = Utility.getUnsignedInt(
+                data,
+                offset
+            );
+
+            offset += 4;
+        }
+
+        this.duelItemsCount = data[offset++] & 0xff;
+
+        for (let i = 0; i < this.duelItemsCount; i++) {
+            this.duelItems[i] = Utility.getUnsignedShort(data, offset);
+            offset += 2;
+
+            this.duelItemCount[i] = Utility.getUnsignedInt(data, offset);
+            offset += 4;
+        }
+
+        this.duelOptionRetreat = data[offset++] & 0xff;
+        this.duelOptionMagic = data[offset++] & 0xff;
+        this.duelOptionPrayer = data[offset++] & 0xff;
+        this.duelOptionWeapons = data[offset++] & 0xff;
+    }
+};
+
+},{"../opcodes/server":55,"../utility":116}],61:[function(require,module,exports){
 
 
 function getPacketHandlers(mudclient) {
-    const handlers = (function () {var f = require("./index.js");f["index"]=require("./index.js");f["inventory"]=require("./inventory.js");f["messages"]=require("./messages.js");f["option-list"]=require("./option-list.js");f["player-stats"]=require("./player-stats.js");f["region-ground-items"]=require("./region-ground-items.js");f["region-npcs"]=require("./region-npcs.js");f["region-objects"]=require("./region-objects.js");f["region-players"]=require("./region-players.js");f["settings"]=require("./settings.js");f["sleep"]=require("./sleep.js");f["social"]=require("./social.js");return f;})();
+    const handlers = (function () {var f = require("./index.js");f["appearance"]=require("./appearance.js");f["bank"]=require("./bank.js");f["close-connection"]=require("./close-connection.js");f["death"]=require("./death.js");f["duel"]=require("./duel.js");f["index"]=require("./index.js");f["inventory"]=require("./inventory.js");f["logout-deny"]=require("./logout-deny.js");f["messages"]=require("./messages.js");f["option-list"]=require("./option-list.js");f["player-stats"]=require("./player-stats.js");f["prayer"]=require("./prayer.js");f["region-entity-update"]=require("./region-entity-update.js");f["region-ground-items"]=require("./region-ground-items.js");f["region-npc-update"]=require("./region-npc-update.js");f["region-npcs"]=require("./region-npcs.js");f["region-objects"]=require("./region-objects.js");f["region-player-update"]=require("./region-player-update.js");f["region-players"]=require("./region-players.js");f["region-wall-objects"]=require("./region-wall-objects.js");f["settings"]=require("./settings.js");f["shop"]=require("./shop.js");f["sleep"]=require("./sleep.js");f["social"]=require("./social.js");f["sound"]=require("./sound.js");f["teleport-bubble"]=require("./teleport-bubble.js");f["trade"]=require("./trade.js");f["world-info"]=require("./world-info.js");return f;})();
     const packetMap = {};
 
     for (const [handlerName, handlerMap] of Object.entries(handlers)) {
@@ -21739,12 +21157,12 @@ function getPacketHandlers(mudclient) {
 
 module.exports = getPacketHandlers;
 
-},{"./index.js":56,"./inventory.js":57,"./messages.js":58,"./option-list.js":59,"./player-stats.js":60,"./region-ground-items.js":61,"./region-npcs.js":62,"./region-objects.js":63,"./region-players.js":64,"./settings.js":65,"./sleep.js":66,"./social.js":67}],57:[function(require,module,exports){
+},{"./appearance.js":56,"./bank.js":57,"./close-connection.js":58,"./death.js":59,"./duel.js":60,"./index.js":61,"./inventory.js":62,"./logout-deny.js":63,"./messages.js":64,"./option-list.js":65,"./player-stats.js":66,"./prayer.js":67,"./region-entity-update.js":68,"./region-ground-items.js":69,"./region-npc-update.js":70,"./region-npcs.js":71,"./region-objects.js":72,"./region-player-update.js":73,"./region-players.js":74,"./region-wall-objects.js":75,"./settings.js":76,"./shop.js":77,"./sleep.js":78,"./social.js":79,"./sound.js":80,"./teleport-bubble.js":81,"./trade.js":82,"./world-info.js":83}],62:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.INVENTORY_ITEMS]: function (data) {
         let offset = 1;
 
@@ -21817,9 +21235,17 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
+},{"../game-data":44,"../opcodes/server":55,"../utility":116}],63:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server');
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":100}],58:[function(require,module,exports){
+module.exports = {
+    [serverOpcodes.LOGOUT_DENY]: function () {
+        this.cantLogout();
+    }
+};
+
+},{"../opcodes/server":55}],64:[function(require,module,exports){
+const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
 function fromCharArray(a) {
@@ -21828,7 +21254,7 @@ function fromCharArray(a) {
         .join('');
 }
 
-const handlers = {
+module.exports = {
     [serverOpcodes.MESSAGE]: function (data, size) {
         const message = fromCharArray(data.slice(1, size));
         this.showServerMessage(message);
@@ -21842,12 +21268,26 @@ const handlers = {
         this.serverMessage = fromCharArray(data.slice(1, size));
         this.showDialogServerMessage = true;
         this.serverMessageBoxTop = true;
+    },
+    [serverOpcodes.WELCOME]: function (data) {
+        if (this.welcomScreenAlreadyShown) {
+            return;
+        }
+
+        this.welcomeLastLoggedInIP = Utility.getUnsignedInt(data, 1);
+        this.welcomeLastLoggedInDays = Utility.getUnsignedShort(data, 5);
+        this.welcomeRecoverySetDays = data[7] & 0xff;
+        this.welcomeUnreadMessages = Utility.getUnsignedShort(data, 8);
+        this.showDialogWelcome = true;
+        this.welcomScreenAlreadyShown = true;
+        this.welcomeLastLoggedInHost = null;
+    },
+    [serverOpcodes.SYSTEM_UPDATE]: function (data) {
+        this.systemUpdate = Utility.getUnsignedShort(data, 1) * 32;
     }
 };
 
-module.exports = handlers;
-
-},{"../opcodes/server":55}],59:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":116}],65:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -21855,7 +21295,7 @@ function fromCharArray(a) {
     return Array.from(a).map(c => String.fromCharCode(c)).join('');
 }
 
-const handlers = {
+module.exports = {
     [serverOpcodes.OPTION_LIST]: function (data) {
         this.showOptionMenu = true;
 
@@ -21879,13 +21319,11 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
-
-},{"../opcodes/server":55,"../utility":100}],60:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":116}],66:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.PLAYER_STAT_LIST]: function (data) {
         let offset = 1;
 
@@ -21944,18 +21382,150 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
+},{"../opcodes/server":55,"../utility":116}],67:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server');
 
-},{"../opcodes/server":55,"../utility":100}],61:[function(require,module,exports){
+module.exports = {
+    [serverOpcodes.PRAYER_STATUS]: function (data, size) {
+        for (let i = 0; i < size - 1; i++) {
+            const on = data[i + 1] === 1;
+
+            if (!this.prayerOn[i] && on) {
+                this.playSoundFile('prayeron');
+            }
+
+            if (this.prayerOn[i] && !on) {
+                this.playSoundFile('prayeroff');
+            }
+
+            this.prayerOn[i] = on;
+        }
+    }
+};
+
+},{"../opcodes/server":55}],68:[function(require,module,exports){
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.REGION_ENTITY_UPDATE]: function (data, size) {
+        const length = ((size - 1) / 4) | 0;
+
+        for (let i = 0; i < length; i++) {
+            const deltaX =
+                (this.localRegionX + Utility.getSignedShort(data, 1 + i * 4)) >>
+                3;
+
+            const deltaY =
+                (this.localRegionY + Utility.getSignedShort(data, 3 + i * 4)) >>
+                3;
+
+            let entityCount = 0;
+
+            for (let j = 0; j < this.groundItemCount; j++) {
+                const x = (this.groundItemX[j] >> 3) - deltaX;
+                const y = (this.groundItemY[j] >> 3) - deltaY;
+
+                if (x !== 0 || y !== 0) {
+                    if (j !== entityCount) {
+                        this.groundItemX[entityCount] = this.groundItemX[j];
+                        this.groundItemY[entityCount] = this.groundItemY[j];
+                        this.groundItemID[entityCount] = this.groundItemID[j];
+                        this.groundItemZ[entityCount] = this.groundItemZ[j];
+                    }
+
+                    entityCount++;
+                }
+            }
+
+            this.groundItemCount = entityCount;
+            entityCount = 0;
+
+            for (let j = 0; j < this.objectCount; j++) {
+                const x = (this.objectX[j] >> 3) - deltaX;
+                const y = (this.objectY[j] >> 3) - deltaY;
+
+                if (x !== 0 || y !== 0) {
+                    if (j !== entityCount) {
+                        this.objectModel[entityCount] = this.objectModel[j];
+                        this.objectModel[entityCount].key = entityCount;
+                        this.objectX[entityCount] = this.objectX[j];
+                        this.objectY[entityCount] = this.objectY[j];
+                        this.objectId[entityCount] = this.objectId[j];
+
+                        this.objectDirection[
+                            entityCount
+                        ] = this.objectDirection[j];
+                    }
+
+                    entityCount++;
+                } else {
+                    this.scene.removeModel(this.objectModel[j]);
+
+                    this.world.removeObject(
+                        this.objectX[j],
+                        this.objectY[j],
+                        this.objectId[j]
+                    );
+                }
+            }
+
+            this.objectCount = entityCount;
+            entityCount = 0;
+
+            for (let j = 0; j < this.wallObjectCount; j++) {
+                const x = (this.wallObjectX[j] >> 3) - deltaX;
+                const y = (this.wallObjectY[j] >> 3) - deltaY;
+
+                if (x !== 0 || y !== 0) {
+                    if (j !== entityCount) {
+                        this.wallObjectModel[
+                            entityCount
+                        ] = this.wallObjectModel[j];
+
+                        this.wallObjectModel[entityCount].key =
+                            entityCount + 10000;
+
+                        this.wallObjectX[entityCount] = this.wallObjectX[j];
+                        this.wallObjectY[entityCount] = this.wallObjectY[j];
+
+                        this.wallObjectDirection[
+                            entityCount
+                        ] = this.wallObjectDirection[j];
+
+                        this.wallObjectId[entityCount] = this.wallObjectId[j];
+                    }
+
+                    entityCount++;
+                } else {
+                    this.scene.removeModel(this.wallObjectModel[j]);
+
+                    this.world.removeWallObject(
+                        this.wallObjectX[j],
+                        this.wallObjectY[j],
+                        this.wallObjectDirection[j],
+                        this.wallObjectId[j]
+                    );
+                }
+            }
+
+            this.wallObjectCount = entityCount;
+        }
+
+        return;
+    }
+};
+
+},{"../opcodes/server":55,"../utility":116}],69:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.REGION_GROUND_ITEMS]: function (data, size) {
         for (let offset = 1; offset < size; ) {
             if (Utility.getUnsignedByte(data[offset]) === 255) {
-                let itemIndex = 0;
+                let index = 0;
                 const j14 = (this.localRegionX + data[offset + 1]) >> 3;
                 const i19 = (this.localRegionY + data[offset + 2]) >> 3;
 
@@ -21966,18 +21536,18 @@ const handlers = {
                     const j29 = (this.groundItemY[i] >> 3) - i19;
 
                     if (j26 !== 0 || j29 !== 0) {
-                        if (i !== itemIndex) {
-                            this.groundItemX[itemIndex] = this.groundItemX[i];
-                            this.groundItemY[itemIndex] = this.groundItemY[i];
-                            this.groundItemID[itemIndex] = this.groundItemID[i];
-                            this.groundItemZ[itemIndex] = this.groundItemZ[i];
+                        if (i !== index) {
+                            this.groundItemX[index] = this.groundItemX[i];
+                            this.groundItemY[index] = this.groundItemY[i];
+                            this.groundItemID[index] = this.groundItemID[i];
+                            this.groundItemZ[index] = this.groundItemZ[i];
                         }
 
-                        itemIndex++;
+                        index++;
                     }
                 }
 
-                this.groundItemCount = itemIndex;
+                this.groundItemCount = index;
             } else {
                 let itemID = Utility.getUnsignedShort(data, offset);
                 offset += 2;
@@ -22048,14 +21618,75 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
+},{"../game-data":44,"../opcodes/server":55,"../utility":116}],70:[function(require,module,exports){
+const ChatMessage = require('../chat-message');
+const GameData = require('../game-data');
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":100}],62:[function(require,module,exports){
+module.exports = {
+    [serverOpcodes.REGION_NPC_UPDATE]: function (data) {
+        const length = Utility.getUnsignedShort(data, 1);
+
+        let offset = 3;
+
+        for (let i = 0; i < length; i++) {
+            const serverIndex = Utility.getUnsignedShort(data, offset);
+            offset += 2;
+
+            const npc = this.npcsServer[serverIndex];
+            const updateType = Utility.getUnsignedByte(data[offset++]);
+
+            if (updateType === 1) {
+                // chat message
+                const targetIndex = Utility.getUnsignedShort(data, offset);
+                offset += 2;
+
+                const encodedLength = data[offset++];
+
+                if (npc !== null) {
+                    const message = ChatMessage.descramble(
+                        data,
+                        offset,
+                        encodedLength
+                    );
+
+                    npc.messageTimeout = 150;
+                    npc.message = message;
+
+                    if (targetIndex === this.localPlayer.serverIndex) {
+                        this.showMessage(
+                            `@yel@${GameData.npcName[npc.npcId]}: ` +
+                                npc.message,
+                            5
+                        );
+                    }
+                }
+
+                offset += encodedLength;
+            } else if (updateType === 2) {
+                // damage
+                const damageTaken = Utility.getUnsignedByte(data[offset++]);
+                const currentHealth = Utility.getUnsignedByte(data[offset++]);
+                const maxHealth = Utility.getUnsignedByte(data[offset++]);
+
+                if (npc !== null) {
+                    npc.damageTaken = damageTaken;
+                    npc.healthCurrent = currentHealth;
+                    npc.healthMax = maxHealth;
+                    npc.combatTimer = 200;
+                }
+            }
+        }
+    }
+};
+
+},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":116}],71:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.REGION_NPCS]: function (data, size) {
         this.npcCacheCount = this.npcCount;
         this.npcCount = 0;
@@ -22161,18 +21792,16 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
-
-},{"../game-data":44,"../opcodes/server":55,"../utility":100}],63:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":116}],72:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.REGION_OBJECTS]: function (data, size) {
         for (let offset = 1; offset < size; ) {
             if (Utility.getUnsignedByte(data[offset]) === 255) {
-                let objectIndex = 0;
+                let index = 0;
                 const l14 = (this.localRegionX + data[offset + 1]) >> 3;
                 const k19 = (this.localRegionY + data[offset + 2]) >> 3;
 
@@ -22183,19 +21812,19 @@ const handlers = {
                     const k29 = (this.objectY[i] >> 3) - k19;
 
                     if (l26 !== 0 || k29 !== 0) {
-                        if (i !== objectIndex) {
-                            this.objectModel[objectIndex] = this.objectModel[i];
-                            this.objectModel[objectIndex].key = objectIndex;
-                            this.objectX[objectIndex] = this.objectX[i];
-                            this.objectY[objectIndex] = this.objectY[i];
-                            this.objectId[objectIndex] = this.objectId[i];
+                        if (i !== index) {
+                            this.objectModel[index] = this.objectModel[i];
+                            this.objectModel[index].key = index;
+                            this.objectX[index] = this.objectX[i];
+                            this.objectY[index] = this.objectY[i];
+                            this.objectId[index] = this.objectId[i];
 
                             this.objectDirection[
-                                objectIndex
+                                index
                             ] = this.objectDirection[i];
                         }
 
-                        objectIndex++;
+                        index++;
                     } else {
                         this.scene.removeModel(this.objectModel[i]);
 
@@ -22207,7 +21836,7 @@ const handlers = {
                     }
                 }
 
-                this.objectCount = objectIndex;
+                this.objectCount = index;
             } else {
                 const objectID = Utility.getUnsignedShort(data, offset);
                 offset += 2;
@@ -22298,14 +21927,187 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
+},{"../game-data":44,"../opcodes/server":55,"../utility":116}],73:[function(require,module,exports){
+const ChatMessage = require('../chat-message');
+const Utility = require('../utility');
+const WordFilter = require('../word-filter');
+const serverOpcodes = require('../opcodes/server');
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":100}],64:[function(require,module,exports){
+module.exports = {
+    [serverOpcodes.REGION_PLAYER_UPDATE]: function (data) {
+        const length = Utility.getUnsignedShort(data, 1);
+        let offset = 3;
+
+        for (let i = 0; i < length; i++) {
+            const playerIndex = Utility.getUnsignedShort(data, offset);
+            offset += 2;
+
+            const player = this.playerServer[playerIndex];
+            const updateType = data[offset++];
+
+            if (updateType === 0) {
+                // speech bubble with an item in it
+                const itemID = Utility.getUnsignedShort(data, offset);
+                offset += 2;
+
+                if (player !== null) {
+                    player.bubbleTimeout = 150;
+                    player.bubbleItem = itemID;
+                }
+            } else if (updateType === 1) {
+                // chat
+                const messageLength = data[offset];
+                offset++;
+
+                if (player !== null) {
+                    let message = ChatMessage.descramble(
+                        data,
+                        offset,
+                        messageLength
+                    );
+
+                    if (this.options.wordFilter) {
+                        message = WordFilter.filter(message);
+                    }
+
+                    let ignored = false;
+
+                    for (let i = 0; i < this.ignoreListCount; i++) {
+                        if (this.ignoreList[i] === player.hash) {
+                            ignored = true;
+                            break;
+                        }
+                    }
+
+                    if (!ignored) {
+                        player.messageTimeout = 150;
+                        player.message = message;
+                        this.showMessage(
+                            `${player.name}: ${player.message}`,
+                            2
+                        );
+                    }
+                }
+
+                offset += messageLength;
+            } else if (updateType === 2) {
+                // combat damage and hp
+                const damage = Utility.getUnsignedByte(data[offset++]);
+                const current = Utility.getUnsignedByte(data[offset++]);
+                const max = Utility.getUnsignedByte(data[offset++]);
+
+                if (player !== null) {
+                    player.damageTaken = damage;
+                    player.healthCurrent = current;
+                    player.healthMax = max;
+                    player.combatTimer = 200;
+
+                    if (player === this.localPlayer) {
+                        this.playerStatCurrent[3] = current;
+                        this.playerStatBase[3] = max;
+                        this.showDialogWelcome = false;
+                        this.showDialogServerMessage = false;
+                    }
+                }
+            } else if (updateType === 3) {
+                // new incoming projectile to npc
+                const projectileSprite = Utility.getUnsignedShort(data, offset);
+                offset += 2;
+
+                const npcIndex = Utility.getUnsignedShort(data, offset);
+                offset += 2;
+
+                if (player !== null) {
+                    player.incomingProjectileSprite = projectileSprite;
+                    player.attackingNpcServerIndex = npcIndex;
+                    player.attackingPlayerServerIndex = -1;
+                    player.projectileRange = this.projectileMaxRange;
+                }
+            } else if (updateType === 4) {
+                // new incoming projectile from player
+                const projectileSprite = Utility.getUnsignedShort(data, offset);
+                offset += 2;
+
+                const opponentIndex = Utility.getUnsignedShort(data, offset);
+                offset += 2;
+
+                if (player !== null) {
+                    player.incomingProjectileSprite = projectileSprite;
+                    player.attackingPlayerServerIndex = opponentIndex;
+                    player.attackingNpcServerIndex = -1;
+                    player.projectileRange = this.projectileMaxRange;
+                }
+            } else if (updateType === 5) {
+                // player appearance update
+                if (player !== null) {
+                    player.serverId = Utility.getUnsignedShort(data, offset);
+                    offset += 2;
+
+                    player.hash = Utility.getUnsignedLong(data, offset);
+                    offset += 8;
+
+                    player.name = Utility.hashToUsername(player.hash);
+
+                    const equippedCount = Utility.getUnsignedByte(data[offset]);
+                    offset++;
+
+                    for (let j = 0; j < equippedCount; j++) {
+                        player.equippedItem[j] = Utility.getUnsignedByte(
+                            data[offset]
+                        );
+                        offset++;
+                    }
+
+                    for (let j = equippedCount; j < 12; j++) {
+                        player.equippedItem[j] = 0;
+                    }
+
+                    player.colourHair = data[offset++] & 0xff;
+                    player.colourTop = data[offset++] & 0xff;
+                    player.colourBottom = data[offset++] & 0xff;
+                    player.colourSkin = data[offset++] & 0xff;
+                    player.level = data[offset++] & 0xff;
+                    player.skullVisible = data[offset++] & 0xff;
+                } else {
+                    offset += 14;
+
+                    const unused = Utility.getUnsignedByte(data[offset]);
+                    offset += unused + 1;
+                }
+            } else if (updateType === 6) {
+                // public chat
+                const messageLength = data[offset++];
+
+                if (player !== null) {
+                    const message = ChatMessage.descramble(
+                        data,
+                        offset,
+                        messageLength
+                    );
+
+                    player.messageTimeout = 150;
+                    player.message = message;
+
+                    if (player === this.localPlayer) {
+                        this.showMessage(
+                            `${player.name}: ${player.message}`,
+                            5
+                        );
+                    }
+                }
+
+                offset += messageLength;
+            }
+        }
+    }
+};
+
+},{"../chat-message":40,"../opcodes/server":55,"../utility":116,"../word-filter":118}],74:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.REGION_PLAYERS]: function (data, size) {
         this.knownPlayerCount = this.playerCount;
 
@@ -22464,13 +22266,127 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
-
-},{"../opcodes/client":54,"../opcodes/server":55,"../utility":100}],65:[function(require,module,exports){
+},{"../opcodes/client":54,"../opcodes/server":55,"../utility":116}],75:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
+    [serverOpcodes.REGION_WALL_OBJECTS]: function (data, size) {
+        for (let offset = 1; offset < size; ) {
+            if (Utility.getUnsignedByte(data[offset]) === 255) {
+                let index = 0;
+                const lX = (this.localRegionX + data[offset + 1]) >> 3;
+                const lY = (this.localRegionY + data[offset + 2]) >> 3;
+
+                offset += 3;
+
+                for (let i = 0; i < this.wallObjectCount; i++) {
+                    const sX = (this.wallObjectX[i] >> 3) - lX;
+                    const sY = (this.wallObjectY[i] >> 3) - lY;
+
+                    if (sX !== 0 || sY !== 0) {
+                        if (i !== index) {
+                            this.wallObjectModel[index] = this.wallObjectModel[
+                                i
+                            ];
+
+                            this.wallObjectModel[index].key = index + 10000;
+                            this.wallObjectX[index] = this.wallObjectX[i];
+                            this.wallObjectY[index] = this.wallObjectY[i];
+
+                            this.wallObjectDirection[
+                                index
+                            ] = this.wallObjectDirection[i];
+
+                            this.wallObjectId[index] = this.wallObjectId[i];
+                        }
+
+                        index++;
+                    } else {
+                        this.scene.removeModel(this.wallObjectModel[i]);
+
+                        this.world.removeWallObject(
+                            this.wallObjectX[i],
+                            this.wallObjectY[i],
+                            this.wallObjectDirection[i],
+                            this.wallObjectId[i]
+                        );
+                    }
+                }
+
+                this.wallObjectCount = index;
+            } else {
+                const id = Utility.getUnsignedShort(data, offset);
+                offset += 2;
+
+                const lX = this.localRegionX + data[offset++];
+                const lY = this.localRegionY + data[offset++];
+                const direction = data[offset++];
+                let count = 0;
+
+                for (let i = 0; i < this.wallObjectCount; i++) {
+                    if (
+                        this.wallObjectX[i] !== lX ||
+                        this.wallObjectY[i] !== lY ||
+                        this.wallObjectDirection[i] !== direction
+                    ) {
+                        if (i !== count) {
+                            this.wallObjectModel[count] = this.wallObjectModel[
+                                i
+                            ];
+                            this.wallObjectModel[count].key = count + 10000;
+                            this.wallObjectX[count] = this.wallObjectX[i];
+                            this.wallObjectY[count] = this.wallObjectY[i];
+                            this.wallObjectDirection[
+                                count
+                            ] = this.wallObjectDirection[i];
+                            this.wallObjectId[count] = this.wallObjectId[i];
+                        }
+
+                        count++;
+                    } else {
+                        this.scene.removeModel(this.wallObjectModel[i]);
+                        this.world.removeWallObject(
+                            this.wallObjectX[i],
+                            this.wallObjectY[i],
+                            this.wallObjectDirection[i],
+                            this.wallObjectId[i]
+                        );
+                    }
+                }
+
+                this.wallObjectCount = count;
+
+                if (id !== 65535) {
+                    this.world._setObjectAdjacency_from4(lX, lY, direction, id);
+
+                    const model = this.createModel(
+                        lX,
+                        lY,
+                        direction,
+                        id,
+                        this.wallObjectCount
+                    );
+
+                    this.wallObjectModel[this.wallObjectCount] = model;
+                    this.wallObjectX[this.wallObjectCount] = lX;
+                    this.wallObjectY[this.wallObjectCount] = lY;
+                    this.wallObjectId[this.wallObjectCount] = id;
+
+                    this.wallObjectDirection[
+                        this.wallObjectCount++
+                    ] = direction;
+                }
+            }
+        }
+    }
+};
+
+},{"../opcodes/server":55,"../utility":116}],76:[function(require,module,exports){
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
     [serverOpcodes.PRIVACY_SETTINGS]: function (data) {
         this.settingsBlockChat = data[1];
         this.settingsBlockPrivate = data[2];
@@ -22484,13 +22400,92 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
-
-},{"../opcodes/server":55,"../utility":100}],66:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":116}],77:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
+    [serverOpcodes.SHOP_OPEN]: function (data) {
+        this.showDialogShop = true;
+
+        let offset = 1;
+
+        const newItemCount = data[offset++] & 0xff;
+        const isGeneral = data[offset++];
+
+        this.shopSellPriceMod = data[offset++] & 0xff;
+        this.shopBuyPriceMod = data[offset++] & 0xff;
+
+        for (let itemIndex = 0; itemIndex < 40; itemIndex++) {
+            this.shopItem[itemIndex] = -1;
+        }
+
+        for (let itemIndex = 0; itemIndex < newItemCount; itemIndex++) {
+            this.shopItem[itemIndex] = Utility.getUnsignedShort(data, offset);
+            offset += 2;
+
+            this.shopItemCount[itemIndex] = Utility.getUnsignedShort(
+                data,
+                offset
+            );
+
+            offset += 2;
+
+            this.shopItemPrice[itemIndex] = data[offset++];
+        }
+
+        if (isGeneral === 1) {
+            let shopIndex = 39;
+
+            for (let i = 0; i < this.inventoryItemsCount; i++) {
+                if (shopIndex < newItemCount) {
+                    break;
+                }
+
+                let unsellable = false;
+
+                for (let j = 0; j < 40; j++) {
+                    if (this.shopItem[j] !== this.inventoryItemId[i]) {
+                        continue;
+                    }
+
+                    unsellable = true;
+                    break;
+                }
+
+                if (this.inventoryItemId[i] === 10) {
+                    unsellable = true;
+                }
+
+                if (!unsellable) {
+                    this.shopItem[shopIndex] = this.inventoryItemId[i] & 32767;
+                    this.shopItemCount[shopIndex] = 0;
+                    this.shopItemPrice[shopIndex] = 0;
+                    shopIndex--;
+                }
+            }
+        }
+
+        if (
+            this.shopSelectedItemIndex >= 0 &&
+            this.shopSelectedItemIndex < 40 &&
+            this.shopItem[this.shopSelectedItemIndex] !==
+                this.shopSelectedItemType
+        ) {
+            this.shopSelectedItemIndex = -1;
+            this.shopSelectedItemType = -2;
+        }
+    },
+    [serverOpcodes.SHOP_CLOSE]: function () {
+        this.showDialogShop = false;
+    }
+};
+
+},{"../opcodes/server":55,"../utility":116}],78:[function(require,module,exports){
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
     [serverOpcodes.SLEEP_OPEN]: function (data) {
         if (!this.isSleeping) {
             this.fatigueSleeping = this.statFatigue;
@@ -22513,16 +22508,14 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
-
-},{"../opcodes/server":55,"../utility":100}],67:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":116}],79:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameConnection = require('../game-connection');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
 const serverOpcodes = require('../opcodes/server');
 
-const handlers = {
+module.exports = {
     [serverOpcodes.FRIEND_LIST]: function (data) {
         this.friendListCount = Utility.getUnsignedByte(data[1]);
 
@@ -22604,9 +22597,154 @@ const handlers = {
     }
 };
 
-module.exports = handlers;
+},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":116,"../word-filter":118}],80:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server');
 
-},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":100,"../word-filter":102}],68:[function(require,module,exports){
+function fromCharArray(a) {
+    return Array.from(a)
+        .map((c) => String.fromCharCode(c))
+        .join('');
+}
+
+module.exports = {
+    [serverOpcodes.SOUND]: function (data, size) {
+        const soundName = fromCharArray(data.slice(1, size));
+        this.playSoundFile(soundName);
+    }
+};
+
+},{"../opcodes/server":55}],81:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.TELEPORT_BUBBLE]: function (data) {
+        if (this.teleportBubbleCount < 50) {
+            const type = data[1] & 0xff;
+            const x = data[2] + this.localRegionX;
+            const y = data[3] + this.localRegionY;
+
+            this.teleportBubbleType[this.teleportBubbleCount] = type;
+            this.teleportBubbleTime[this.teleportBubbleCount] = 0;
+            this.teleportBubbleX[this.teleportBubbleCount] = x;
+            this.teleportBubbleY[this.teleportBubbleCount] = y;
+
+            this.teleportBubbleCount++;
+        }
+    }
+};
+
+},{"../opcodes/server":55}],82:[function(require,module,exports){
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.TRADE_OPEN]: function (data) {
+        const playerIndex = Utility.getUnsignedShort(data, 1);
+
+        if (this.playerServer[playerIndex] !== null) {
+            this.tradeRecipientName = this.playerServer[playerIndex].name;
+        }
+
+        this.showDialogTrade = true;
+        this.tradeRecipientAccepted = false;
+        this.tradeAccepted = false;
+        this.tradeItemsCount = 0;
+        this.tradeRecipientItemsCount = 0;
+    },
+    [serverOpcodes.TRADE_CLOSE]: function () {
+        this.showDialogTrade = false;
+        this.showDialogTradeConfirm = false;
+    },
+    [serverOpcodes.TRADE_ITEMS]: function (data) {
+        this.tradeRecipientItemsCount = data[1] & 0xff;
+
+        let offset = 2;
+
+        for (let i = 0; i < this.tradeRecipientItemsCount; i++) {
+            this.tradeRecipientItems[i] = Utility.getUnsignedShort(
+                data,
+                offset
+            );
+
+            offset += 2;
+
+            this.tradeRecipientItemCount[i] = Utility.getUnsignedInt(
+                data,
+                offset
+            );
+
+            offset += 4;
+        }
+
+        this.tradeRecipientAccepted = false;
+        this.tradeAccepted = false;
+    },
+    [serverOpcodes.TRADE_RECIPIENT_STATUS]: function (data) {
+        this.tradeRecipientAccepted = !!data[1];
+    },
+    [serverOpcodes.TRADE_STATUS]: function (data) {
+        this.tradeAccepted = !!data[1];
+    },
+    [serverOpcodes.TRADE_CONFIRM_OPEN]: function (data) {
+        this.showDialogTradeConfirm = true;
+        this.tradeConfirmAccepted = false;
+        this.showDialogTrade = false;
+
+        let offset = 1;
+
+        this.tradeRecipientConfirmHash = Utility.getUnsignedLong(data, offset);
+        offset += 8;
+
+        this.tradeRecipientConfirmItemsCount = data[offset++] & 0xff;
+
+        for (let i = 0; i < this.tradeRecipientConfirmItemsCount; i++) {
+            this.tradeRecipientConfirmItems[i] = Utility.getUnsignedShort(
+                data,
+                offset
+            );
+
+            offset += 2;
+
+            this.tradeRecipientConfirmItemCount[i] = Utility.getUnsignedInt(
+                data,
+                offset
+            );
+
+            offset += 4;
+        }
+
+        this.tradeConfirmItemsCount = data[offset++] & 0xff;
+
+        for (let i = 0; i < this.tradeConfirmItemsCount; i++) {
+            this.tradeConfirmItems[i] = Utility.getUnsignedShort(data, offset);
+            offset += 2;
+
+            this.tradeConfirmItemCount[i] = Utility.getUnsignedInt(
+                data,
+                offset
+            );
+            offset += 4;
+        }
+    }
+};
+
+},{"../opcodes/server":55,"../utility":116}],83:[function(require,module,exports){
+const Utility = require('../utility');
+const serverOpcodes = require('../opcodes/server');
+
+module.exports = {
+    [serverOpcodes.WORLD_INFO]: function (data) {
+        this.loadingArea = true;
+        this.localPlayerServerIndex = Utility.getUnsignedShort(data, 1);
+        this.planeWidth = Utility.getUnsignedShort(data, 3);
+        this.planeHeight = Utility.getUnsignedShort(data, 5);
+        this.planeIndex = Utility.getUnsignedShort(data, 7);
+        this.planeMultiplier = Utility.getUnsignedShort(data, 9);
+        this.planeHeight -= this.planeIndex * this.planeMultiplier;
+    }
+};
+
+},{"../opcodes/server":55,"../utility":116}],84:[function(require,module,exports){
 const Long = require('long');
 
 function toCharArray(s) {
@@ -22892,7 +23030,7 @@ PacketStream.anIntArray541 = new Int32Array(256);
 
 module.exports = PacketStream;
 
-},{"long":33}],69:[function(require,module,exports){
+},{"long":33}],85:[function(require,module,exports){
 const Surface = require('./surface');
 
 const controlTypes = {
@@ -24198,7 +24336,7 @@ Panel.textListEntryHeightMod = 0;
 
 module.exports = Panel;
 
-},{"./surface":74}],70:[function(require,module,exports){
+},{"./surface":90}],86:[function(require,module,exports){
 class Polygon {
     constructor() {
         this.minPlaneX = 0;
@@ -24222,7 +24360,7 @@ class Polygon {
 }
 
 module.exports = Polygon;
-},{}],71:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 class Scanline {
     constructor() {
         this.startX = 0;
@@ -24233,7 +24371,7 @@ class Scanline {
 }
 
 module.exports = Scanline;
-},{}],72:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 const Long = require('long');
 const Polygon = require('./polygon');
 const Scanline = require('./scanline');
@@ -28897,7 +29035,7 @@ Scene.textureCountLoaded = new Long(0);
 
 module.exports = Scene;
 
-},{"./polygon":70,"./scanline":71,"long":33}],73:[function(require,module,exports){
+},{"./polygon":86,"./scanline":87,"long":33}],89:[function(require,module,exports){
 const PCMPlayer = require('pcm-player');
 const { mulaw } = require('alawmulaw');
 
@@ -28925,7 +29063,7 @@ class StreamAudioPlayer {
 
 module.exports = StreamAudioPlayer;
 
-},{"alawmulaw":26,"pcm-player":35}],74:[function(require,module,exports){
+},{"alawmulaw":26,"pcm-player":35}],90:[function(require,module,exports){
 const Utility = require('./utility');
 
 const BLACK = 0;
@@ -31989,7 +32127,7 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":100}],75:[function(require,module,exports){
+},{"./utility":116}],91:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
@@ -32004,7 +32142,7 @@ module.exports = {
     orange: 0xff8000
 };
 
-},{}],76:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 const GameData = require('../game-data');
 const Panel = require('../panel');
 const clientOpcodes = require('../opcodes/client');
@@ -32280,7 +32418,7 @@ module.exports = {
     handleAppearancePanelInput
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../panel":69}],77:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../panel":85}],93:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -33015,7 +33153,7 @@ function drawDialogBank() {
 
 module.exports = { drawDialogBank };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":75}],78:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],94:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -33111,7 +33249,7 @@ module.exports = {
     drawDialogCombatStyle
 };
 
-},{"../opcodes/client":54,"./_colours":75}],79:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],95:[function(require,module,exports){
 
 
 function applyUIComponents(mudclient) {
@@ -33134,7 +33272,7 @@ function applyUIComponents(mudclient) {
 
 module.exports = applyUIComponents;
 
-},{"./_colours.js":75,"./appearance-panel.js":76,"./bank-dialog.js":77,"./combat-style.js":78,"./index.js":79,"./inventory-tab.js":80,"./login-panels.js":81,"./logout-dialog.js":82,"./magic-tab.js":83,"./minimap-tab.js":84,"./option-menu.js":85,"./options-tab.js":86,"./password-dialog.js":87,"./player-info-tab.js":88,"./recovery-panel.js":89,"./report-dialog.js":90,"./server-message-dialog.js":91,"./shop-dialog.js":92,"./sleep.js":93,"./social-dialog.js":94,"./social-tab.js":95,"./trade-confirm-dialog.js":96,"./trade-dialog.js":97,"./welcome-dialog.js":98,"./wilderness-dialog.js":99}],80:[function(require,module,exports){
+},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./combat-style.js":94,"./index.js":95,"./inventory-tab.js":96,"./login-panels.js":97,"./logout-dialog.js":98,"./magic-tab.js":99,"./minimap-tab.js":100,"./option-menu.js":101,"./options-tab.js":102,"./password-dialog.js":103,"./player-info-tab.js":104,"./recovery-panel.js":105,"./report-dialog.js":106,"./server-message-dialog.js":107,"./shop-dialog.js":108,"./sleep.js":109,"./social-dialog.js":110,"./social-tab.js":111,"./trade-confirm-dialog.js":112,"./trade-dialog.js":113,"./welcome-dialog.js":114,"./wilderness-dialog.js":115}],96:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
@@ -33304,7 +33442,7 @@ function drawUiTabInventory(noMenus) {
 
 module.exports = { drawUiTabInventory };
 
-},{"../game-data":44,"./_colours":75}],81:[function(require,module,exports){
+},{"../game-data":44,"./_colours":91}],97:[function(require,module,exports){
 const Panel = require('../panel');
 
 function createLoginPanels() {
@@ -34220,7 +34358,7 @@ module.exports = {
     renderLoginScreenViewports
 };
 
-},{"../panel":69}],82:[function(require,module,exports){
+},{"../panel":85}],98:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogLogout() {
@@ -34231,7 +34369,7 @@ function drawDialogLogout() {
 
 module.exports = { drawDialogLogout };
 
-},{"./_colours":75}],83:[function(require,module,exports){
+},{"./_colours":91}],99:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -34537,7 +34675,7 @@ module.exports = {
     uiTabMagicSubTab: 0
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":75}],84:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],100:[function(require,module,exports){
 const Scene = require('../scene');
 const colours = require('./_colours');
 
@@ -34779,7 +34917,7 @@ module.exports = {
     drawUiTabMinimap
 };
 
-},{"../scene":72,"./_colours":75}],85:[function(require,module,exports){
+},{"../scene":88,"./_colours":91}],101:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -34829,7 +34967,7 @@ function drawOptionMenu() {
 
 module.exports = { drawOptionMenu };
 
-},{"../opcodes/client":54,"./_colours":75}],86:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],102:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -35262,7 +35400,7 @@ function drawUiTabOptions(noMenus) {
 
 module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54,"./_colours":75}],87:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],103:[function(require,module,exports){
 const colours = require('./_colours');
 
 const DIALOG_X = 106;
@@ -35457,7 +35595,7 @@ module.exports = {
     showChangePasswordStep: 0
 };
 
-},{"./_colours":75}],88:[function(require,module,exports){
+},{"./_colours":91}],104:[function(require,module,exports){
 const colours = require('./_colours');
 
 const HEIGHT = 275;
@@ -35853,7 +35991,7 @@ module.exports = {
     uiTabPlayerInfoSubTab: 0
 };
 
-},{"./_colours":75}],89:[function(require,module,exports){
+},{"./_colours":91}],105:[function(require,module,exports){
 const selectedRecoverQuestions = [];
 selectedRecoverQuestions.length = 5;
 selectedRecoverQuestions.fill(null);
@@ -35868,7 +36006,7 @@ module.exports = {
     controlRecoverCreateButton: 0
 };
 
-},{}],90:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -36176,7 +36314,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":100,"./_colours":75}],91:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":116,"./_colours":91}],107:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -36254,7 +36392,7 @@ function drawDialogServerMessage() {
 
 module.exports = { drawDialogServerMessage };
 
-},{"./_colours":75}],92:[function(require,module,exports){
+},{"./_colours":91}],108:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -36634,7 +36772,7 @@ function drawDialogShop() {
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":75}],93:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],109:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -36808,7 +36946,7 @@ module.exports = {
     isSleeping: false
 };
 
-},{"../opcodes/client":54,"./_colours":75}],94:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],110:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -37022,7 +37160,7 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":100,"../word-filter":102,"./_colours":75}],95:[function(require,module,exports){
+},{"../chat-message":40,"../utility":116,"../word-filter":118,"./_colours":91}],111:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
@@ -37304,7 +37442,7 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":100,"./_colours":75}],96:[function(require,module,exports){
+},{"../utility":116,"./_colours":91}],112:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
@@ -37497,7 +37635,7 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":100,"./_colours":75}],97:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":116,"./_colours":91}],113:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -38015,7 +38153,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":75}],98:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],114:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -38264,7 +38402,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":75}],99:[function(require,module,exports){
+},{"./_colours":91}],115:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -38400,7 +38538,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":75}],100:[function(require,module,exports){
+},{"./_colours":91}],116:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -38789,7 +38927,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],101:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],117:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -38803,7 +38941,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],102:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -38823,7 +38961,7 @@ const C_X = 'x'.charCodeAt(0);
 const C_Z = 'z'.charCodeAt(0);
 
 function toCharArray(s) {
-    let a = new Uint16Array(s.length);
+    const a = new Uint16Array(s.length);
 
     for (let i = 0; i < s.length; i += 1) {
         a[i] = s.charCodeAt(i);
@@ -38843,30 +38981,30 @@ class WordFilter {
         WordFilter.loadBad(bad);
         WordFilter.loadHost(host);
         WordFilter.loadFragments(fragments);
-        WordFilter.loadTld(tld);
+        WordFilter.loadTLD(tld);
     }
 
-    static loadTld(buffer) {
-        let wordCount = buffer.getUnsignedInt();
+    static loadTLD(buffer) {
+        const tldCount = buffer.getUnsignedInt();
 
         WordFilter.tldList = [];
-        WordFilter.tldType = new Int32Array(wordCount);
+        WordFilter.tldType = new Int32Array(tldCount);
 
-        for (let i = 0; i < wordCount; i++) {
+        for (let i = 0; i < tldCount; i++) {
             WordFilter.tldType[i] = buffer.getUnsignedByte();
 
-            let ac = new Uint16Array(buffer.getUnsignedByte());
+            const currentTLD = new Uint16Array(buffer.getUnsignedByte());
 
-            for (let j = 0; j < ac.length; j++) {
-                ac[j] = buffer.getUnsignedByte();
+            for (let j = 0; j < currentTLD.length; j++) {
+                currentTLD[j] = buffer.getUnsignedByte();
             }
 
-            WordFilter.tldList.push(ac);
+            WordFilter.tldList.push(currentTLD);
         }
     }
 
     static loadBad(buffer) {
-        let wordCount = buffer.getUnsignedInt();
+        const wordCount = buffer.getUnsignedInt();
 
         WordFilter.badList = [];
         WordFilter.badList.length = wordCount;
@@ -38883,7 +39021,7 @@ class WordFilter {
     }
 
     static loadHost(buffer) {
-        let wordCount = buffer.getUnsignedInt();
+        const wordCount = buffer.getUnsignedInt();
 
         WordFilter.hostList = [];
         WordFilter.hostList.length = wordCount;
@@ -38907,9 +39045,9 @@ class WordFilter {
         }
     }
 
-    static readBuffer(buffer, wordList, charIds) {
+    static readBuffer(buffer, wordList, charIDs) {
         for (let i = 0; i < wordList.length; i++) {
-            let currentWord = new Uint16Array(buffer.getUnsignedByte());
+            const currentWord = new Uint16Array(buffer.getUnsignedByte());
 
             for (let j = 0; j < currentWord.length; j++) {
                 currentWord[j] = buffer.getUnsignedByte();
@@ -38917,7 +39055,7 @@ class WordFilter {
 
             wordList[i] = currentWord;
 
-            let ids = [];
+            const ids = [];
             ids.length = buffer.getUnsignedInt();
 
             for (let j = 0; j < ids.length; j++) {
@@ -38928,43 +39066,29 @@ class WordFilter {
             }
 
             if (ids.length > 0) {
-                charIds[i] = ids;
+                charIDs[i] = ids;
             }
         }
     }
 
     static filter(input) {
-        let inputChars = toCharArray(input.toLowerCase());
+        const inputChars = toCharArray(input.toLowerCase());
 
         WordFilter.applyDotSlashFilter(inputChars);
         WordFilter.applyBadwordFilter(inputChars);
         WordFilter.applyHostFilter(inputChars);
-        WordFilter.heywhathteufck(inputChars);
+        WordFilter.filterDigits(inputChars);
 
-        for (
-            let ignoreIdx = 0;
-            ignoreIdx < WordFilter.ignoreList.length;
-            ignoreIdx++
-        ) {
+        for (let i = 0; i < WordFilter.ignoreList.length; i++) {
             for (
-                let inputIgnoreIdx = -1;
-                (inputIgnoreIdx = input.indexOf(
-                    WordFilter.ignoreList[ignoreIdx],
-                    inputIgnoreIdx + 1
-                )) !== -1;
+                let j = -1;
+                (j = input.indexOf(WordFilter.ignoreList[i], j + 1)) !== -1;
 
             ) {
-                let ignoreWordChars = toCharArray(
-                    WordFilter.ignoreList[ignoreIdx]
-                );
+                const ignoreWordChars = toCharArray(WordFilter.ignoreList[i]);
 
-                for (
-                    let ignorewordIdx = 0;
-                    ignorewordIdx < ignoreWordChars.length;
-                    ignorewordIdx++
-                ) {
-                    inputChars[ignorewordIdx + inputIgnoreIdx] =
-                        ignoreWordChars[ignorewordIdx];
+                for (let k = 0; k < ignoreWordChars.length; k++) {
+                    inputChars[k + j] = ignoreWordChars[k];
                 }
             }
         }
@@ -38989,15 +39113,15 @@ class WordFilter {
         let isUpperCase = true;
 
         for (let i = 0; i < input.length; i++) {
-            let current = input[i];
+            const currentChar = input[i];
 
-            if (WordFilter.isLetter(current)) {
+            if (WordFilter.isLetter(currentChar)) {
                 if (isUpperCase) {
-                    if (WordFilter.isLowerCase(current)) {
+                    if (WordFilter.isLowerCase(currentChar)) {
                         isUpperCase = false;
                     }
-                } else if (WordFilter.isUpperCase(current)) {
-                    input[i] = current + 97 - 65;
+                } else if (WordFilter.isUpperCase(currentChar)) {
+                    input[i] = currentChar + 97 - 65;
                 }
             } else {
                 isUpperCase = true;
@@ -39028,16 +39152,16 @@ class WordFilter {
     }
 
     static applyDotSlashFilter(input) {
-        let input1 = input.slice();
-        let dot = toCharArray('dot');
+        const input1 = input.slice();
+        const dot = toCharArray('dot');
         WordFilter.applyWordFilter(input1, dot, null);
 
-        let input2 = input.slice();
-        let slash = toCharArray('slash');
+        const input2 = input.slice();
+        const slash = toCharArray('slash');
         WordFilter.applyWordFilter(input2, slash, null);
 
         for (let i = 0; i < WordFilter.tldList.length; i++) {
-            WordFilter.applyTldFilter(
+            WordFilter.applyTLDFilter(
                 input,
                 input1,
                 input2,
@@ -39047,22 +39171,18 @@ class WordFilter {
         }
     }
 
-    static applyTldFilter(input, input1, input2, tld, type) {
+    static applyTLDFilter(input, input1, input2, tld, type) {
         if (tld.length > input.length) {
             return;
         }
 
-        for (
-            let charIndex = 0;
-            charIndex <= input.length - tld.length;
-            charIndex++
-        ) {
-            let inputCharCount = charIndex;
+        for (let i = 0; i <= input.length - tld.length; i++) {
+            let inputCharCount = i;
             let l = 0;
 
             while (inputCharCount < input.length) {
                 let i1 = 0;
-                let current = input[inputCharCount];
+                const current = input[inputCharCount];
                 let next = 0;
 
                 if (inputCharCount + 1 < input.length) {
@@ -39106,12 +39226,14 @@ class WordFilter {
 
             if (l >= tld.length) {
                 let flag = false;
-                let startMatch = WordFilter.getAsteriskCount(
+
+                const startMatch = WordFilter.getAsteriskCount(
                     input,
                     input1,
-                    charIndex
+                    i
                 );
-                let endMatch = WordFilter.getAsteriskCount2(
+
+                const endMatch = WordFilter.getAsteriskCount2(
                     input,
                     input2,
                     inputCharCount - 1
@@ -39119,7 +39241,7 @@ class WordFilter {
 
                 if (WordFilter.DEBUGTLD) {
                     console.log(
-                        `Potential tld: ${tld} at char ${charIndex} ` +
+                        `Potential tld: ${tld} at char ${i} ` +
                             `(type="${type}, startmatch="${startMatch}, ` +
                             `endmatch=${endMatch})`
                     );
@@ -39143,12 +39265,10 @@ class WordFilter {
 
                 if (flag) {
                     if (WordFilter.DEBUGTLD) {
-                        console.log(
-                            `Filtered tld: ${tld} at char ${charIndex}`
-                        );
+                        console.log(`Filtered tld: ${tld} at char ${i}`);
                     }
 
-                    let l1 = charIndex;
+                    let l1 = i;
                     let i2 = inputCharCount - 1;
 
                     if (startMatch > 2) {
@@ -39295,7 +39415,7 @@ class WordFilter {
         return WordFilter.isSpecial(input[len + 1]) ? 1 : 0;
     }
 
-    static applyWordFilter(input, wordList, charIds) {
+    static applyWordFilter(input, wordList, charIDs) {
         if (wordList.length > input.length) {
             return;
         }
@@ -39311,7 +39431,7 @@ class WordFilter {
 
             while (inputCharCount < input.length) {
                 let l = 0;
-                let inputChar = input[inputCharCount];
+                const inputChar = input[inputCharCount];
                 let nextChar = 0;
 
                 if (inputCharCount + 1 < input.length) {
@@ -39385,12 +39505,16 @@ class WordFilter {
                         curChar = input[inputCharCount];
                     }
 
-                    let prevId = WordFilter.getCharId(prevChar);
-                    let curId = WordFilter.getCharId(curChar);
+                    const previousID = WordFilter.getCharId(prevChar);
+                    const currentID = WordFilter.getCharId(curChar);
 
                     if (
-                        charIds &&
-                        WordFilter.compareCharIds(charIds, prevId, curId)
+                        charIDs &&
+                        WordFilter.compareCharIds(
+                            charIDs,
+                            previousID,
+                            currentID
+                        )
                     ) {
                         filter = false;
                     }
@@ -39428,7 +39552,7 @@ class WordFilter {
                                 (!WordFilter.isSpecial(input[j1]) ||
                                     input[j1] === C_SINGLE_QUOTE)
                             ) {
-                                let ac2 = new Uint16Array(3);
+                                const ac2 = new Uint16Array(3);
                                 let k1;
 
                                 for (k1 = 0; k1 < 3; k1++) {
@@ -39508,7 +39632,7 @@ class WordFilter {
         }
 
         while (first !== last && first + 1 !== last) {
-            let middle = ((first + last) / 2) | 0;
+            const middle = ((first + last) / 2) | 0;
 
             if (
                 charIdData[middle][0] === prevCharId &&
@@ -39808,7 +39932,7 @@ class WordFilter {
         return 27;
     }
 
-    static heywhathteufck(input) {
+    static filterDigits(input) {
         let digitIndex = 0;
         let fromIndex = 0;
         let k = 0;
@@ -39838,8 +39962,8 @@ class WordFilter {
 
             let j1 = 0;
 
-            for (let k1 = digitIndex; k1 < fromIndex; k1++) {
-                j1 = j1 * 10 + input[k1] - 48;
+            for (let i = digitIndex; i < fromIndex; i++) {
+                j1 = j1 * 10 + input[i] - 48;
             }
 
             if (j1 > 255 || fromIndex - digitIndex > 8) {
@@ -39919,7 +40043,7 @@ class WordFilter {
             return true;
         }
 
-        let inputHash = WordFilter.wordToHash(input);
+        const inputHash = WordFilter.wordToHash(input);
         let first = 0;
         let last = WordFilter.hashFragments.length - 1;
 
@@ -39931,7 +40055,7 @@ class WordFilter {
         }
 
         while (first != last && first + 1 != last) {
-            let middle = ((first + last) / 2) | 0;
+            const middle = ((first + last) / 2) | 0;
 
             if (inputHash === WordFilter.hashFragments[middle]) {
                 return true;
@@ -39955,15 +40079,15 @@ class WordFilter {
         let hash = 0;
 
         for (let i = 0; i < word.length; i++) {
-            let c = word[word.length - i - 1];
+            const currentChar = word[word.length - i - 1];
 
-            if (c >= C_A && c <= C_Z) {
-                hash = (hash * 38 + c - 97 + 1) | 0;
-            } else if (c === C_SINGLE_QUOTE) {
+            if (currentChar >= C_A && currentChar <= C_Z) {
+                hash = (hash * 38 + currentChar - 97 + 1) | 0;
+            } else if (currentChar === C_SINGLE_QUOTE) {
                 hash = (hash * 38 + 27) | 0;
-            } else if (c >= C_0 && c <= C_9) {
-                hash = (hash * 38 + c - 48 + 28) | 0;
-            } else if (c !== 0) {
+            } else if (currentChar >= C_0 && currentChar <= C_9) {
+                hash = (hash * 38 + currentChar - 48 + 28) | 0;
+            } else if (currentChar !== 0) {
                 if (WordFilter.DEBUGWORD) {
                     console.log(`wordToHash failed on ${fromCharArray(word)}`);
                 }
@@ -39983,8 +40107,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
 
-
-},{}],103:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -42510,4 +42633,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":72,"./utility":100,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":116,"ndarray":34}]},{},[1]);

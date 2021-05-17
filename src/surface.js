@@ -18,7 +18,9 @@ function fixPixel(pixel) {
 }
 
 class Surface {
-    constructor(width, height, limit, component) {
+    constructor(width, height, limit, mudclient) {
+        this.mudclient = mudclient;
+
         this.image = null;
         this.landscapeColours = null;
         this.anIntArray340 = null;
@@ -56,12 +58,13 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
-        this.imageData = component._graphics.ctx.getImageData(
+        this.imageData = mudclient._graphics.ctx.getImageData(
             0,
             0,
             width,
             height
         );
+
         this.bufferedPixels = new Int32Array(width * height);
         this.pixelBytes = new Uint8ClampedArray(this.bufferedPixels.buffer);
 

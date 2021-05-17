@@ -25,6 +25,14 @@ const FONTS = [
     'h24b.jf'
 ];
 
+// using width: 0 bugs out on chrome
+const HIDDEN_STYLES = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    opacity: 0
+};
+
 class GameShell {
     constructor(canvas) {
         this._canvas = canvas;
@@ -42,7 +50,8 @@ class GameShell {
             accountManagement: true,
             messageScrollBack: true,
             retroFPSCounter: false,
-            retryLoginOnDisconnect: true
+            retryLoginOnDisconnect: true,
+            mobile: true
         };
 
         this.middleButtonDown = false;
@@ -94,6 +103,7 @@ class GameShell {
     async startApplication(width, height, title) {
         window.document.title = title;
 
+        this._canvas.tabIndex = 0;
         this._canvas.width = width;
         this._canvas.height = height;
 
@@ -107,41 +117,109 @@ class GameShell {
             this.mousePressed.bind(this)
         );
 
+        this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
+        this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
+        this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
+        this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
+
         // prevent right clicks
         this._canvas.addEventListener('contextmenu', (event) => {
             event.preventDefault();
             return false;
         });
 
-        this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
-        this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
-        this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
-        this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
+        this._canvas.addEventListener('keydown', this.keyPressed.bind(this));
+        this._canvas.addEventListener('keyup', this.keyReleased.bind(this));
 
         window.addEventListener('beforeunload', () => this.onClosing());
-        window.addEventListener('keydown', this.keyPressed.bind(this));
-        window.addEventListener('keyup', this.keyReleased.bind(this));
+
+        if (this.options.mobile) {
+            this.toggleKeyboard = false;
+
+            this.mobileInput = document.createElement('input');
+            Object.assign(this.mobileInput.style, HIDDEN_STYLES);
+
+            this.mobilePassword = document.createElement('input');
+            this.mobilePassword.type = 'password';
+            Object.assign(this.mobilePassword.style, HIDDEN_STYLES);
+
+            this.mobileInput.addEventListener(
+                'keydown',
+                this.mobileKeyDown.bind(this)
+            );
+
+            this.mobileInput.addEventListener(
+                'keyup',
+                this.mobileKeyUp.bind(this)
+            );
+
+            this.mobilePassword.addEventListener(
+                'keydown',
+                this.mobileKeyDown.bind(this)
+            );
+
+            this.mobilePassword.addEventListener(
+                'keyup',
+                this.mobileKeyUp.bind(this)
+            );
+
+            document.body.appendChild(this.mobileInput);
+            document.body.appendChild(this.mobilePassword);
+        }
 
         this.loadingStep = 1;
 
         await this.run();
     }
 
-    setTargetFps(i) {
-        this.targetFps = 1000 / i;
+    closeKeyboard() {
+        this.toggleKeyboard = false;
+        this._canvas.focus();
     }
 
-    resetTimings() {
-        for (let i = 0; i < 10; i += 1) {
-            this.timings[i] = 0;
+    openKeyboard(type = 'text', text, maxLength) {
+        this.keyboardType = type;
+        this.lastMobileInput = text;
+        this.toggleKeyboard = true;
+
+        const inputEl =
+            this.keyboardType === 'password'
+                ? this.mobilePassword
+                : this.mobileInput;
+
+        inputEl.value = text;
+        inputEl.maxLength = maxLength;
+    }
+
+    mobileKeyDown(e) {
+        if (e.keyCode === keycodes.ENTER) {
+            this.keyPressed(e);
+            this.closeKeyboard();
         }
     }
 
-    keyPressed(e) {
-        e.preventDefault();
+    mobileKeyUp(e) {
+        const inputEl = e.target;
 
+        for (let i = 0; i < this.lastMobileInput.length; i += 1) {
+            this.keyPressed({ keyCode: keycodes.BACKSPACE });
+        }
+
+        const newInput = inputEl.value;
+
+        for (let i = 0; i < newInput.length; i += 1) {
+            const inputChar = newInput[i];
+            this.keyPressed({ key: inputChar });
+        }
+
+        this.lastMobileInput = newInput;
+    }
+
+    keyPressed(e) {
         const code = e.keyCode;
-        let charCode = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
+
+        let charCode =
+            e.key && e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
         if (
             [8, 10, 13, 9].includes(code) ||
@@ -218,8 +296,6 @@ class GameShell {
     }
 
     keyReleased(e) {
-        e.preventDefault();
-
         const code = e.keyCode;
 
         if (code === keycodes.LEFT_ARROW) {
@@ -241,8 +317,6 @@ class GameShell {
         } else if (code === keycodes.CTRL) {
             this.ctrl = false;
         }
-
-        return false;
     }
 
     mouseMoved(e) {
@@ -269,7 +343,22 @@ class GameShell {
     }
 
     mousePressed(e) {
-        e.preventDefault();
+        if (this.options.mobile) {
+            setTimeout(() => {
+                if (!this.toggleKeyboard) {
+                    return;
+                }
+
+                this.toggleKeyboard = false;
+
+                const inputEl =
+                    this.keyboardType === 'password'
+                        ? this.mobilePassword
+                        : this.mobileInput;
+
+                inputEl.focus();
+            }, 125);
+        }
 
         const x = e.offsetX;
         const y = e.offsetY;
@@ -313,6 +402,16 @@ class GameShell {
         }
 
         return false;
+    }
+
+    setTargetFps(i) {
+        this.targetFps = 1000 / i;
+    }
+
+    resetTimings() {
+        for (let i = 0; i < 10; i += 1) {
+            this.timings[i] = 0;
+        }
     }
 
     start() {
@@ -517,6 +616,7 @@ class GameShell {
                 x + 138,
                 y + 30
             );
+
             this.drawString(
                 this.graphics,
                 '\u00a92001-2002 Andrew Gower and Jagex Ltd',
@@ -526,6 +626,7 @@ class GameShell {
             );
         } else {
             this.graphics.setColor(new Color(132, 132, 152));
+
             this.drawString(
                 this.graphics,
                 '\u00a92001-2002 Andrew Gower and Jagex Ltd',

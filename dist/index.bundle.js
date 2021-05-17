@@ -14778,6 +14778,14 @@ const FONTS = [
     'h24b.jf'
 ];
 
+// using width: 0 bugs out on chrome
+const HIDDEN_STYLES = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    opacity: 0
+};
+
 class GameShell {
     constructor(canvas) {
         this._canvas = canvas;
@@ -14795,7 +14803,8 @@ class GameShell {
             accountManagement: true,
             messageScrollBack: true,
             retroFPSCounter: false,
-            retryLoginOnDisconnect: true
+            retryLoginOnDisconnect: true,
+            mobile: true
         };
 
         this.middleButtonDown = false;
@@ -14847,6 +14856,7 @@ class GameShell {
     async startApplication(width, height, title) {
         window.document.title = title;
 
+        this._canvas.tabIndex = 0;
         this._canvas.width = width;
         this._canvas.height = height;
 
@@ -14860,41 +14870,109 @@ class GameShell {
             this.mousePressed.bind(this)
         );
 
+        this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
+        this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
+        this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
+        this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
+
         // prevent right clicks
         this._canvas.addEventListener('contextmenu', (event) => {
             event.preventDefault();
             return false;
         });
 
-        this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
-        this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
-        this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
-        this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
+        this._canvas.addEventListener('keydown', this.keyPressed.bind(this));
+        this._canvas.addEventListener('keyup', this.keyReleased.bind(this));
 
         window.addEventListener('beforeunload', () => this.onClosing());
-        window.addEventListener('keydown', this.keyPressed.bind(this));
-        window.addEventListener('keyup', this.keyReleased.bind(this));
+
+        if (this.options.mobile) {
+            this.toggleKeyboard = false;
+
+            this.mobileInput = document.createElement('input');
+            Object.assign(this.mobileInput.style, HIDDEN_STYLES);
+
+            this.mobilePassword = document.createElement('input');
+            this.mobilePassword.type = 'password';
+            Object.assign(this.mobilePassword.style, HIDDEN_STYLES);
+
+            this.mobileInput.addEventListener(
+                'keydown',
+                this.mobileKeyDown.bind(this)
+            );
+
+            this.mobileInput.addEventListener(
+                'keyup',
+                this.mobileKeyUp.bind(this)
+            );
+
+            this.mobilePassword.addEventListener(
+                'keydown',
+                this.mobileKeyDown.bind(this)
+            );
+
+            this.mobilePassword.addEventListener(
+                'keyup',
+                this.mobileKeyUp.bind(this)
+            );
+
+            document.body.appendChild(this.mobileInput);
+            document.body.appendChild(this.mobilePassword);
+        }
 
         this.loadingStep = 1;
 
         await this.run();
     }
 
-    setTargetFps(i) {
-        this.targetFps = 1000 / i;
+    closeKeyboard() {
+        this.toggleKeyboard = false;
+        this._canvas.focus();
     }
 
-    resetTimings() {
-        for (let i = 0; i < 10; i += 1) {
-            this.timings[i] = 0;
+    openKeyboard(type = 'text', text, maxLength) {
+        this.keyboardType = type;
+        this.lastMobileInput = text;
+        this.toggleKeyboard = true;
+
+        const inputEl =
+            this.keyboardType === 'password'
+                ? this.mobilePassword
+                : this.mobileInput;
+
+        inputEl.value = text;
+        inputEl.maxLength = maxLength;
+    }
+
+    mobileKeyDown(e) {
+        if (e.keyCode === keycodes.ENTER) {
+            this.keyPressed(e);
+            this.closeKeyboard();
         }
     }
 
-    keyPressed(e) {
-        e.preventDefault();
+    mobileKeyUp(e) {
+        const inputEl = e.target;
 
+        for (let i = 0; i < this.lastMobileInput.length; i += 1) {
+            this.keyPressed({ keyCode: keycodes.BACKSPACE });
+        }
+
+        const newInput = inputEl.value;
+
+        for (let i = 0; i < newInput.length; i += 1) {
+            const inputChar = newInput[i];
+            this.keyPressed({ key: inputChar });
+        }
+
+        this.lastMobileInput = newInput;
+    }
+
+    keyPressed(e) {
         const code = e.keyCode;
-        let charCode = e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
+
+        let charCode =
+            e.key && e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
 
         if (
             [8, 10, 13, 9].includes(code) ||
@@ -14971,8 +15049,6 @@ class GameShell {
     }
 
     keyReleased(e) {
-        e.preventDefault();
-
         const code = e.keyCode;
 
         if (code === keycodes.LEFT_ARROW) {
@@ -14994,8 +15070,6 @@ class GameShell {
         } else if (code === keycodes.CTRL) {
             this.ctrl = false;
         }
-
-        return false;
     }
 
     mouseMoved(e) {
@@ -15022,7 +15096,22 @@ class GameShell {
     }
 
     mousePressed(e) {
-        e.preventDefault();
+        if (this.options.mobile) {
+            setTimeout(() => {
+                if (!this.toggleKeyboard) {
+                    return;
+                }
+
+                this.toggleKeyboard = false;
+
+                const inputEl =
+                    this.keyboardType === 'password'
+                        ? this.mobilePassword
+                        : this.mobileInput;
+
+                inputEl.focus();
+            }, 125);
+        }
 
         const x = e.offsetX;
         const y = e.offsetY;
@@ -15066,6 +15155,16 @@ class GameShell {
         }
 
         return false;
+    }
+
+    setTargetFps(i) {
+        this.targetFps = 1000 / i;
+    }
+
+    resetTimings() {
+        for (let i = 0; i < 10; i += 1) {
+            this.timings[i] = 0;
+        }
     }
 
     start() {
@@ -15270,6 +15369,7 @@ class GameShell {
                 x + 138,
                 y + 30
             );
+
             this.drawString(
                 this.graphics,
                 '\u00a92001-2002 Andrew Gower and Jagex Ltd',
@@ -15279,6 +15379,7 @@ class GameShell {
             );
         } else {
             this.graphics.setColor(new Color(132, 132, 152));
+
             this.drawString(
                 this.graphics,
                 '\u00a92001-2002 Andrew Gower and Jagex Ltd',
@@ -15956,15 +16057,14 @@ const ANIMATED_MODELS = [
     'clawspell3', 'clawspell4', 'clawspell5', 'spellcharge2', 'spellcharge3'
 ];
 
-function fromCharArray(a) {
-    return Array.from(a).map(c => String.fromCharCode(c)).join('');
-}
-
 class mudclient extends GameConnection {
     constructor(canvas) {
         super(canvas);
 
+        // attach methods and properties from files in ./ui/
         applyUIComponents(this);
+
+        // { opcode: function handler (data) { } }
         this.packetHandlers = getPacketHandlers(this);
 
         this.localRegionX = 0;
@@ -23050,6 +23150,10 @@ const controlTypes = {
     CHECKBOX: 14
 };
 
+const CHAR_SET =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"£$%^&*()' +
+    "-_=+[{]};:'@#~,<.>/?\\| ";
+
 class Panel {
     constructor(surface, max) {
         this.controlCount = 0;
@@ -23113,74 +23217,75 @@ class Panel {
         );
     }
 
-    handleMouse(mx, my, lastMb, mbDown, mScrollDelta = 0) {
-        this.mouseX = mx;
-        this.mouseY = my;
-        this.mouseButtonDown = mbDown;
-        this.mouseScrollDelta = mScrollDelta;
+    handleMouse(x, y, lastButton, isDown, scrollDelta = 0) {
+        this.mouseX = x;
+        this.mouseY = y;
+        this.mouseButtonDown = isDown;
+        this.mouseScrollDelta = scrollDelta;
 
-        if (lastMb !== 0) {
-            this.mouseLastButtonDown = lastMb;
+        if (lastButton !== 0) {
+            this.mouseLastButtonDown = lastButton;
         }
 
-        if (lastMb === 1) {
-            for (let i1 = 0; i1 < this.controlCount; i1++) {
+        if (lastButton === 1) {
+            for (let i = 0; i < this.controlCount; i++) {
                 if (
-                    this.controlShown[i1] &&
-                    this.controlType[i1] === controlTypes.BUTTON &&
-                    this.mouseX >= this.controlX[i1] &&
-                    this.mouseY >= this.controlY[i1] &&
-                    this.mouseX <= this.controlX[i1] + this.controlWidth[i1] &&
-                    this.mouseY <= this.controlY[i1] + this.controlHeight[i1]
+                    this.controlShown[i] &&
+                    this.controlType[i] === controlTypes.BUTTON &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
+                    this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
                 ) {
-                    this.controlClicked[i1] = true;
+                    this.controlClicked[i] = true;
                 }
 
                 if (
-                    this.controlShown[i1] &&
-                    this.controlType[i1] === controlTypes.CHECKBOX &&
-                    this.mouseX >= this.controlX[i1] &&
-                    this.mouseY >= this.controlY[i1] &&
-                    this.mouseX <= this.controlX[i1] + this.controlWidth[i1] &&
-                    this.mouseY <= this.controlY[i1] + this.controlHeight[i1]
+                    this.controlShown[i] &&
+                    this.controlType[i] === controlTypes.CHECKBOX &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
+                    this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
                 ) {
-                    this.controlListEntryMouseButtonDown[i1] =
-                        1 - this.controlListEntryMouseButtonDown[i1];
+                    this.controlListEntryMouseButtonDown[i] =
+                        1 - this.controlListEntryMouseButtonDown[i];
                 }
             }
         }
 
-        if (mbDown === 1) {
+        if (isDown === 1) {
             this.mouseMetaButtonHeld++;
         } else {
             this.mouseMetaButtonHeld = 0;
         }
 
-        if (lastMb === 1 || this.mouseMetaButtonHeld > 20) {
-            for (let j1 = 0; j1 < this.controlCount; j1++) {
+        // TODO i don't think we need this? what was controlType 15?
+        /*if (lastButton === 1 || this.mouseMetaButtonHeld > 20) {
+            for (let i = 0; i < this.controlCount; i++) {
                 if (
-                    this.controlShown[j1] &&
-                    this.controlType[j1] === 15 &&
-                    this.mouseX >= this.controlX[j1] &&
-                    this.mouseY >= this.controlY[j1] &&
-                    this.mouseX <= this.controlX[j1] + this.controlWidth[j1] &&
-                    this.mouseY <= this.controlY[j1] + this.controlHeight[j1]
+                    this.controlShown[i] &&
+                    this.controlType[i] === 15 &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
+                    this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
                 ) {
-                    this.controlClicked[j1] = true;
+                    this.controlClicked[i] = true;
                 }
             }
 
             this.mouseMetaButtonHeld -= 5;
-        }
+        }*/
     }
 
-    isClicked(i) {
-        if (this.controlShown[i] && this.controlClicked[i]) {
-            this.controlClicked[i] = false;
+    isClicked(control) {
+        if (this.controlShown[control] && this.controlClicked[control]) {
+            this.controlClicked[control] = false;
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     keyPress(key) {
@@ -23205,13 +23310,9 @@ class Panel {
                 this.controlClicked[this.focusControlIndex] = true;
             }
 
-            const charSet =
-                'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567' +
-                '89!"£$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
-
             if (inputLen < this.controlInputMaxLen[this.focusControlIndex]) {
-                for (let k = 0; k < charSet.length; k++) {
-                    if (key === charSet.charCodeAt(k)) {
+                for (let k = 0; k < CHAR_SET.length; k++) {
+                    if (key === CHAR_SET.charCodeAt(k)) {
                         this.controlText[
                             this.focusControlIndex
                         ] += String.fromCharCode(key);
@@ -23393,13 +23494,16 @@ class Panel {
     }
 
     drawTextInput(control, x, y, width, height, text, textSize) {
-        // password
-        if (this.controlMaskText[control]) {
-            const len = text.length;
-            text = '';
+        const isPassword = this.controlMaskText[control];
+        let displayText = text;
 
-            for (let i2 = 0; i2 < len; i2++) {
-                text = text + 'X';
+        if (isPassword) {
+            const length = displayText.length;
+
+            displayText = '';
+
+            for (let i = 0; i < length; i++) {
+                displayText += 'X';
             }
         }
 
@@ -23421,22 +23525,31 @@ class Panel {
                 this.mouseX <= x + width / 2 &&
                 this.mouseY <= y + ((height / 2) | 0)
             ) {
+                console.log('focusing on text input: ', control);
+
+                this.surface.mudclient.openKeyboard(
+                    isPassword ? 'password' : 'text',
+                    text,
+                    this.controlInputMaxLen[control]
+                );
+
                 this.focusControlIndex = control;
             }
 
-            x -= (this.surface.textWidth(text, textSize) / 2) | 0;
+            x -= (this.surface.textWidth(displayText, textSize) / 2) | 0;
         }
 
         if (this.focusControlIndex === control) {
-            text = text + '*';
+            displayText = displayText + '*';
         }
 
         const y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
-        this.drawString(control, x, y2, text, textSize);
+        this.drawString(control, x, y2, displayText, textSize);
     }
 
     drawBox(x, y, width, height) {
         this.surface.setBounds(x, y, x + width, y + height);
+
         this.surface.drawGradient(
             x,
             y,
@@ -23661,6 +23774,7 @@ class Panel {
 
                     const l3 =
                         this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
+
                     listEntryPosition =
                         ((l3 * listEntryCount) / (height - 24)) | 0;
 
@@ -23682,11 +23796,13 @@ class Panel {
                 (((height - 27 - cornerBottomLeft) * listEntryPosition) /
                     (listEntryCount - displayedEntryCount)) |
                 0;
+
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
 
         const entryListStartY =
             height - displayedEntryCount * this.surface.textHeight(textSize);
+
         let y2 =
             (y +
                 ((this.surface.textHeight(textSize) * 5) / 6 +
@@ -23812,6 +23928,7 @@ class Panel {
 
     drawOptionListVert(control, x, y, textSize, listEntries) {
         const listEntryCount = listEntries.length;
+
         let listTotalTextHeightMid =
             y -
             (((this.surface.textHeight(textSize) * (listEntryCount - 1)) / 2) |
@@ -24138,10 +24255,10 @@ class Panel {
         return this.controlCount++;
     }
 
-    addTextInput(x, y, width, height, size, maxLength, flag, flag1) {
+    addTextInput(x, y, width, height, size, maxLength, isPassword, flag1) {
         this.controlType[this.controlCount] = controlTypes.TEXT_INPUT;
         this.controlShown[this.controlCount] = true;
-        this.controlMaskText[this.controlCount] = flag;
+        this.controlMaskText[this.controlCount] = isPassword;
         this.controlClicked[this.controlCount] = false;
         this.controlTextSize[this.controlCount] = size;
         this.controlUseAlternativeColour[this.controlCount] = flag1;
@@ -24155,15 +24272,7 @@ class Panel {
         return this.controlCount++;
     }
 
-    addTextListInteractive(
-        x,
-        y,
-        width,
-        height,
-        textSize,
-        maxLength,
-        flag
-    ) {
+    addTextListInteractive(x, y, width, height, textSize, maxLength, flag) {
         this.controlType[this.controlCount] = controlTypes.I_TEXT_LIST;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
@@ -24319,6 +24428,7 @@ class Panel {
     }
 
     setFocus(control) {
+        // TODO hook input
         this.focusControlIndex = control;
     }
 
@@ -29084,7 +29194,9 @@ function fixPixel(pixel) {
 }
 
 class Surface {
-    constructor(width, height, limit, component) {
+    constructor(width, height, limit, mudclient) {
+        this.mudclient = mudclient;
+
         this.image = null;
         this.landscapeColours = null;
         this.anIntArray340 = null;
@@ -29122,12 +29234,13 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
-        this.imageData = component._graphics.ctx.getImageData(
+        this.imageData = mudclient._graphics.ctx.getImageData(
             0,
             0,
             width,
             height
         );
+
         this.bufferedPixels = new Int32Array(width * height);
         this.pixelBytes = new Uint8ClampedArray(this.bufferedPixels.buffer);
 
@@ -33850,6 +33963,7 @@ function createLoginPanels() {
         y += 30;
 
         this.panelLoginExistingUser.addButtonBackground(x + 154, y, 160, 25);
+
         this.panelLoginExistingUser.addTextCentre(
             x + 154,
             y,
@@ -33857,6 +33971,7 @@ function createLoginPanels() {
             4,
             false
         );
+
         this.controlLoginRecover = this.panelLoginExistingUser.addButton(
             x + 154,
             y,
@@ -34205,6 +34320,7 @@ async function handleLoginScreenInput() {
                 this.panelLoginNewUser.setFocus(
                     this.controlRegisterConfirmPassword
                 );
+
                 return;
             }
 
@@ -34323,6 +34439,7 @@ async function handleLoginScreenInput() {
             this.loginUser = this.panelLoginExistingUser.getText(
                 this.controlLoginUser
             );
+
             this.loginPass = this.panelLoginExistingUser.getText(
                 this.controlLoginPassword
             );
@@ -34340,6 +34457,7 @@ async function handleLoginScreenInput() {
                     'You must enter your username to recover your password',
                     ''
                 );
+
                 return;
             }
 

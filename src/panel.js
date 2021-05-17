@@ -17,6 +17,10 @@ const controlTypes = {
     CHECKBOX: 14
 };
 
+const CHAR_SET =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"£$%^&*()' +
+    "-_=+[{]};:'@#~,<.>/?\\| ";
+
 class Panel {
     constructor(surface, max) {
         this.controlCount = 0;
@@ -80,74 +84,75 @@ class Panel {
         );
     }
 
-    handleMouse(mx, my, lastMb, mbDown, mScrollDelta = 0) {
-        this.mouseX = mx;
-        this.mouseY = my;
-        this.mouseButtonDown = mbDown;
-        this.mouseScrollDelta = mScrollDelta;
+    handleMouse(x, y, lastButton, isDown, scrollDelta = 0) {
+        this.mouseX = x;
+        this.mouseY = y;
+        this.mouseButtonDown = isDown;
+        this.mouseScrollDelta = scrollDelta;
 
-        if (lastMb !== 0) {
-            this.mouseLastButtonDown = lastMb;
+        if (lastButton !== 0) {
+            this.mouseLastButtonDown = lastButton;
         }
 
-        if (lastMb === 1) {
-            for (let i1 = 0; i1 < this.controlCount; i1++) {
+        if (lastButton === 1) {
+            for (let i = 0; i < this.controlCount; i++) {
                 if (
-                    this.controlShown[i1] &&
-                    this.controlType[i1] === controlTypes.BUTTON &&
-                    this.mouseX >= this.controlX[i1] &&
-                    this.mouseY >= this.controlY[i1] &&
-                    this.mouseX <= this.controlX[i1] + this.controlWidth[i1] &&
-                    this.mouseY <= this.controlY[i1] + this.controlHeight[i1]
+                    this.controlShown[i] &&
+                    this.controlType[i] === controlTypes.BUTTON &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
+                    this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
                 ) {
-                    this.controlClicked[i1] = true;
+                    this.controlClicked[i] = true;
                 }
 
                 if (
-                    this.controlShown[i1] &&
-                    this.controlType[i1] === controlTypes.CHECKBOX &&
-                    this.mouseX >= this.controlX[i1] &&
-                    this.mouseY >= this.controlY[i1] &&
-                    this.mouseX <= this.controlX[i1] + this.controlWidth[i1] &&
-                    this.mouseY <= this.controlY[i1] + this.controlHeight[i1]
+                    this.controlShown[i] &&
+                    this.controlType[i] === controlTypes.CHECKBOX &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
+                    this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
                 ) {
-                    this.controlListEntryMouseButtonDown[i1] =
-                        1 - this.controlListEntryMouseButtonDown[i1];
+                    this.controlListEntryMouseButtonDown[i] =
+                        1 - this.controlListEntryMouseButtonDown[i];
                 }
             }
         }
 
-        if (mbDown === 1) {
+        if (isDown === 1) {
             this.mouseMetaButtonHeld++;
         } else {
             this.mouseMetaButtonHeld = 0;
         }
 
-        if (lastMb === 1 || this.mouseMetaButtonHeld > 20) {
-            for (let j1 = 0; j1 < this.controlCount; j1++) {
+        // TODO i don't think we need this? what was controlType 15?
+        /*if (lastButton === 1 || this.mouseMetaButtonHeld > 20) {
+            for (let i = 0; i < this.controlCount; i++) {
                 if (
-                    this.controlShown[j1] &&
-                    this.controlType[j1] === 15 &&
-                    this.mouseX >= this.controlX[j1] &&
-                    this.mouseY >= this.controlY[j1] &&
-                    this.mouseX <= this.controlX[j1] + this.controlWidth[j1] &&
-                    this.mouseY <= this.controlY[j1] + this.controlHeight[j1]
+                    this.controlShown[i] &&
+                    this.controlType[i] === 15 &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
+                    this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
                 ) {
-                    this.controlClicked[j1] = true;
+                    this.controlClicked[i] = true;
                 }
             }
 
             this.mouseMetaButtonHeld -= 5;
-        }
+        }*/
     }
 
-    isClicked(i) {
-        if (this.controlShown[i] && this.controlClicked[i]) {
-            this.controlClicked[i] = false;
+    isClicked(control) {
+        if (this.controlShown[control] && this.controlClicked[control]) {
+            this.controlClicked[control] = false;
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     keyPress(key) {
@@ -172,13 +177,9 @@ class Panel {
                 this.controlClicked[this.focusControlIndex] = true;
             }
 
-            const charSet =
-                'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567' +
-                '89!"£$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
-
             if (inputLen < this.controlInputMaxLen[this.focusControlIndex]) {
-                for (let k = 0; k < charSet.length; k++) {
-                    if (key === charSet.charCodeAt(k)) {
+                for (let k = 0; k < CHAR_SET.length; k++) {
+                    if (key === CHAR_SET.charCodeAt(k)) {
                         this.controlText[
                             this.focusControlIndex
                         ] += String.fromCharCode(key);
@@ -360,13 +361,16 @@ class Panel {
     }
 
     drawTextInput(control, x, y, width, height, text, textSize) {
-        // password
-        if (this.controlMaskText[control]) {
-            const len = text.length;
-            text = '';
+        const isPassword = this.controlMaskText[control];
+        let displayText = text;
 
-            for (let i2 = 0; i2 < len; i2++) {
-                text = text + 'X';
+        if (isPassword) {
+            const length = displayText.length;
+
+            displayText = '';
+
+            for (let i = 0; i < length; i++) {
+                displayText += 'X';
             }
         }
 
@@ -388,22 +392,31 @@ class Panel {
                 this.mouseX <= x + width / 2 &&
                 this.mouseY <= y + ((height / 2) | 0)
             ) {
+                console.log('focusing on text input: ', control);
+
+                this.surface.mudclient.openKeyboard(
+                    isPassword ? 'password' : 'text',
+                    text,
+                    this.controlInputMaxLen[control]
+                );
+
                 this.focusControlIndex = control;
             }
 
-            x -= (this.surface.textWidth(text, textSize) / 2) | 0;
+            x -= (this.surface.textWidth(displayText, textSize) / 2) | 0;
         }
 
         if (this.focusControlIndex === control) {
-            text = text + '*';
+            displayText = displayText + '*';
         }
 
         const y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
-        this.drawString(control, x, y2, text, textSize);
+        this.drawString(control, x, y2, displayText, textSize);
     }
 
     drawBox(x, y, width, height) {
         this.surface.setBounds(x, y, x + width, y + height);
+
         this.surface.drawGradient(
             x,
             y,
@@ -628,6 +641,7 @@ class Panel {
 
                     const l3 =
                         this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
+
                     listEntryPosition =
                         ((l3 * listEntryCount) / (height - 24)) | 0;
 
@@ -649,11 +663,13 @@ class Panel {
                 (((height - 27 - cornerBottomLeft) * listEntryPosition) /
                     (listEntryCount - displayedEntryCount)) |
                 0;
+
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
 
         const entryListStartY =
             height - displayedEntryCount * this.surface.textHeight(textSize);
+
         let y2 =
             (y +
                 ((this.surface.textHeight(textSize) * 5) / 6 +
@@ -779,6 +795,7 @@ class Panel {
 
     drawOptionListVert(control, x, y, textSize, listEntries) {
         const listEntryCount = listEntries.length;
+
         let listTotalTextHeightMid =
             y -
             (((this.surface.textHeight(textSize) * (listEntryCount - 1)) / 2) |
@@ -1105,10 +1122,10 @@ class Panel {
         return this.controlCount++;
     }
 
-    addTextInput(x, y, width, height, size, maxLength, flag, flag1) {
+    addTextInput(x, y, width, height, size, maxLength, isPassword, flag1) {
         this.controlType[this.controlCount] = controlTypes.TEXT_INPUT;
         this.controlShown[this.controlCount] = true;
-        this.controlMaskText[this.controlCount] = flag;
+        this.controlMaskText[this.controlCount] = isPassword;
         this.controlClicked[this.controlCount] = false;
         this.controlTextSize[this.controlCount] = size;
         this.controlUseAlternativeColour[this.controlCount] = flag1;
@@ -1122,15 +1139,7 @@ class Panel {
         return this.controlCount++;
     }
 
-    addTextListInteractive(
-        x,
-        y,
-        width,
-        height,
-        textSize,
-        maxLength,
-        flag
-    ) {
+    addTextListInteractive(x, y, width, height, textSize, maxLength, flag) {
         this.controlType[this.controlCount] = controlTypes.I_TEXT_LIST;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
@@ -1286,6 +1295,7 @@ class Panel {
     }
 
     setFocus(control) {
+        // TODO hook input
         this.focusControlIndex = control;
     }
 

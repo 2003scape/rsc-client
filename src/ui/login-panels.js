@@ -405,6 +405,7 @@ function createLoginPanels() {
         y += 30;
 
         this.panelLoginExistingUser.addButtonBackground(x + 154, y, 160, 25);
+
         this.panelLoginExistingUser.addTextCentre(
             x + 154,
             y,
@@ -412,6 +413,7 @@ function createLoginPanels() {
             4,
             false
         );
+
         this.controlLoginRecover = this.panelLoginExistingUser.addButton(
             x + 154,
             y,
@@ -760,6 +762,7 @@ async function handleLoginScreenInput() {
                 this.panelLoginNewUser.setFocus(
                     this.controlRegisterConfirmPassword
                 );
+
                 return;
             }
 
@@ -878,6 +881,7 @@ async function handleLoginScreenInput() {
             this.loginUser = this.panelLoginExistingUser.getText(
                 this.controlLoginUser
             );
+
             this.loginPass = this.panelLoginExistingUser.getText(
                 this.controlLoginPassword
             );
@@ -895,6 +899,7 @@ async function handleLoginScreenInput() {
                     'You must enter your username to recover your password',
                     ''
                 );
+
                 return;
             }
 

@@ -45,15 +45,14 @@ const ANIMATED_MODELS = [
     'clawspell3', 'clawspell4', 'clawspell5', 'spellcharge2', 'spellcharge3'
 ];
 
-function fromCharArray(a) {
-    return Array.from(a).map(c => String.fromCharCode(c)).join('');
-}
-
 class mudclient extends GameConnection {
     constructor(canvas) {
         super(canvas);
 
+        // attach methods and properties from files in ./ui/
         applyUIComponents(this);
+
+        // { opcode: function handler (data) { } }
         this.packetHandlers = getPacketHandlers(this);
 
         this.localRegionX = 0;

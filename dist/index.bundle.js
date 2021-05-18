@@ -14779,11 +14779,16 @@ const FONTS = [
 ];
 
 // using width: 0 bugs out on chrome
-const HIDDEN_STYLES = {
+const INPUT_STYLES = {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    opacity: 0
+    display: 'none',
+    padding: 0,
+    border: 0,
+    outline: 0,
+    opacity: 0,
+    textAlign: 'center',
+    fontFamily: 'sans',
+    fontSize: '14px'
 };
 
 class GameShell {
@@ -14876,8 +14881,8 @@ class GameShell {
         this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
         // prevent right clicks
-        this._canvas.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
+        this._canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
             return false;
         });
 
@@ -14887,23 +14892,21 @@ class GameShell {
         window.addEventListener('beforeunload', () => this.onClosing());
 
         if (this.options.mobile) {
+            this.mobileInputCaret = -1;
             this.toggleKeyboard = false;
 
+            // we can't re-use the mobileInput for passwords since browsers
+            // turn off autocomplete once it's switched back to text
             this.mobileInput = document.createElement('input');
-            Object.assign(this.mobileInput.style, HIDDEN_STYLES);
+            Object.assign(this.mobileInput.style, INPUT_STYLES);
 
             this.mobilePassword = document.createElement('input');
             this.mobilePassword.type = 'password';
-            Object.assign(this.mobilePassword.style, HIDDEN_STYLES);
+            Object.assign(this.mobilePassword.style, INPUT_STYLES);
 
             this.mobileInput.addEventListener(
                 'keydown',
                 this.mobileKeyDown.bind(this)
-            );
-
-            this.mobileInput.addEventListener(
-                'keyup',
-                this.mobileKeyUp.bind(this)
             );
 
             this.mobilePassword.addEventListener(
@@ -14911,9 +14914,14 @@ class GameShell {
                 this.mobileKeyDown.bind(this)
             );
 
+            this.mobileInput.addEventListener(
+                'blur',
+                this.closeKeyboard.bind(this)
+            );
+
             this.mobilePassword.addEventListener(
-                'keyup',
-                this.mobileKeyUp.bind(this)
+                'blur',
+                this.closeKeyboard.bind(this)
             );
 
             document.body.appendChild(this.mobileInput);
@@ -14926,43 +14934,69 @@ class GameShell {
     }
 
     closeKeyboard() {
-        this.toggleKeyboard = false;
+        clearInterval(this.keyboardUpdateInterval);
+        this.mobileInputEl.style.display = 'none';
         this._canvas.focus();
     }
 
-    openKeyboard(type = 'text', text, maxLength) {
-        this.keyboardType = type;
+    openKeyboard(
+        type = 'text',
+        text,
+        maxLength,
+        x = 0,
+        y = 0,
+        width = 100,
+        height = 20
+    ) {
         this.lastMobileInput = text;
         this.toggleKeyboard = true;
 
-        const inputEl =
-            this.keyboardType === 'password'
-                ? this.mobilePassword
-                : this.mobileInput;
+        if (type === 'password') {
+            this.mobileInputEl = this.mobilePassword;
+        } else {
+            this.mobileInputEl = this.mobileInput;
+        }
 
-        inputEl.value = text;
-        inputEl.maxLength = maxLength;
+        this.mobileInputEl.value = text;
+        this.mobileInputEl.maxLength = maxLength;
+
+        this.mobileInputEl.style.display = 'block';
+
+        this.mobileInputEl.style.top = `${y - Math.floor(height / 2)}px`;
+        this.mobileInputEl.style.left = `${x - Math.floor(width / 2)}px`;
+
+        if (width && height) {
+            this.mobileInputEl.style.width = `${width}px`;
+            this.mobileInputEl.style.height = `${height}px`;
+        }
+
+        this.keyboardUpdateInterval = setInterval(() => {
+            this.mobileKeyboardUpdate();
+        }, 125);
     }
 
     mobileKeyDown(e) {
         if (e.keyCode === keycodes.ENTER) {
-            this.keyPressed(e);
             this.closeKeyboard();
+            this.keyPressed(e);
         }
     }
 
-    mobileKeyUp(e) {
-        const inputEl = e.target;
+    mobileKeyboardUpdate() {
+        this.mobileInputCaret = this.mobileInputEl.selectionStart;
+
+        const newInput = this.mobileInputEl.value;
+
+        if (newInput === this.lastMobileInput) {
+            return;
+        }
 
         for (let i = 0; i < this.lastMobileInput.length; i += 1) {
             this.keyPressed({ keyCode: keycodes.BACKSPACE });
         }
 
-        const newInput = inputEl.value;
-
         for (let i = 0; i < newInput.length; i += 1) {
-            const inputChar = newInput[i];
-            this.keyPressed({ key: inputChar });
+            this.keyPressed({ key: newInput[i] });
         }
 
         this.lastMobileInput = newInput;
@@ -15045,7 +15079,18 @@ class GameShell {
             }
         }
 
-        return false;
+        if (this.options.mobile) {
+            // inputs can only be focused when a user performs an action,
+            // and we set toggleKeyboard to true after an event has occured
+            setTimeout(() => {
+                if (!this.toggleKeyboard) {
+                    return;
+                }
+
+                this.toggleKeyboard = false;
+                this.mobileInputEl.focus();
+            }, 125);
+        }
     }
 
     keyReleased(e) {
@@ -15097,19 +15142,15 @@ class GameShell {
 
     mousePressed(e) {
         if (this.options.mobile) {
+            // inputs can only be focused when a user performs an action,
+            // and we set toggleKeyboard to true after an event has occured
             setTimeout(() => {
                 if (!this.toggleKeyboard) {
                     return;
                 }
 
                 this.toggleKeyboard = false;
-
-                const inputEl =
-                    this.keyboardType === 'password'
-                        ? this.mobilePassword
-                        : this.mobileInput;
-
-                inputEl.focus();
+                this.mobileInputEl.focus();
             }, 125);
         }
 
@@ -15123,7 +15164,8 @@ class GameShell {
             this.middleButtonDown = true;
             this.originRotation = this.cameraRotation;
             this.originMouseX = this.mouseX;
-            return false;
+
+            return;
         }
 
         if (e.metaKey || e.button === 2) {
@@ -15134,9 +15176,8 @@ class GameShell {
 
         this.lastMouseButtonDown = this.mouseButtonDown;
         this.mouseActionTimeout = 0;
-        this.handleMouseDown(this.mouseButtonDown, x, y);
 
-        return false;
+        this.handleMouseDown(this.mouseButtonDown, x, y);
     }
 
     mouseWheel(e) {
@@ -15404,10 +15445,8 @@ class GameShell {
     }
 
     showLoadingProgress(percent, text) {
-        let x = ((this.appletWidth - 281) / 2) | 0;
-        let y = ((this.appletHeight - 148) / 2) | 0;
-        x += 2;
-        y += 90;
+        const x = (((this.appletWidth - 281) / 2) | 0) + 2;
+        const y = (((this.appletHeight - 148) / 2) | 0) + 90;
 
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;
@@ -23494,10 +23533,9 @@ class Panel {
     }
 
     drawTextInput(control, x, y, width, height, text, textSize) {
-        const isPassword = this.controlMaskText[control];
         let displayText = text;
 
-        if (isPassword) {
+        if (this.controlMaskText[control]) {
             const length = displayText.length;
 
             displayText = '';
@@ -23525,22 +23563,25 @@ class Panel {
                 this.mouseX <= x + width / 2 &&
                 this.mouseY <= y + ((height / 2) | 0)
             ) {
-                console.log('focusing on text input: ', control);
-
-                this.surface.mudclient.openKeyboard(
-                    isPassword ? 'password' : 'text',
-                    text,
-                    this.controlInputMaxLen[control]
-                );
-
                 this.focusControlIndex = control;
+                this.setMobileFocus(control, text);
             }
 
             x -= (this.surface.textWidth(displayText, textSize) / 2) | 0;
         }
 
         if (this.focusControlIndex === control) {
-            displayText = displayText + '*';
+            const { mudclient } = this.surface;
+            const caret = mudclient.mobileInputCaret;
+
+            if (mudclient.options.mobile && caret !== -1) {
+                displayText =
+                    displayText.slice(0, caret) +
+                    '*' +
+                    displayText.slice(caret);
+            } else {
+                displayText += '*';
+            }
         }
 
         const y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
@@ -23573,73 +23614,86 @@ class Panel {
         }
 
         this.surface.drawLineHoriz(x, y, width, this.colourBoxTopNBottom);
+
         this.surface.drawLineHoriz(
             x + 1,
             y + 1,
             width - 2,
             this.colourBoxTopNBottom
         );
+
         this.surface.drawLineHoriz(
             x + 2,
             y + 2,
             width - 4,
             this.colourBoxTopNBottom2
         );
+
         this.surface.drawLineVert(x, y, height, this.colourBoxTopNBottom);
+
         this.surface.drawLineVert(
             x + 1,
             y + 1,
             height - 2,
             this.colourBoxTopNBottom
         );
+
         this.surface.drawLineVert(
             x + 2,
             y + 2,
             height - 4,
             this.colourBoxTopNBottom2
         );
+
         this.surface.drawLineHoriz(
             x,
             y + height - 1,
             width,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineHoriz(
             x + 1,
             y + height - 2,
             width - 2,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineHoriz(
             x + 2,
             y + height - 3,
             width - 4,
             this.colourBoxLeftNRight2
         );
+
         this.surface.drawLineVert(
             x + width - 1,
             y,
             height,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineVert(
             x + width - 2,
             y + 1,
             height - 2,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineVert(
             x + width - 3,
             y + 2,
             height - 4,
             this.colourBoxLeftNRight2
         );
+
         this.surface.resetBounds();
     }
 
     drawRoundedBox(x, y, width, height) {
         this.surface.drawBox(x, y, width, height, 0);
         this.surface.drawBoxEdge(x, y, width, height, this.colourRoundedBoxOut);
+
         this.surface.drawBoxEdge(
             x + 1,
             y + 1,
@@ -23647,6 +23701,7 @@ class Panel {
             height - 2,
             this.colourRoundedBoxMid
         );
+
         this.surface.drawBoxEdge(
             x + 2,
             y + 2,
@@ -23654,17 +23709,21 @@ class Panel {
             height - 4,
             this.colourRoundedBoxIn
         );
+
         this.surface._drawSprite_from3(x, y, 2 + Panel.baseSpriteStart);
+
         this.surface._drawSprite_from3(
             x + width - 7,
             y,
             3 + Panel.baseSpriteStart
         );
+
         this.surface._drawSprite_from3(
             x,
             y + height - 7,
             4 + Panel.baseSpriteStart
         );
+
         this.surface._drawSprite_from3(
             x + width - 7,
             y + height - 7,
@@ -23824,14 +23883,20 @@ class Panel {
     drawListContainer(x, y, width, height, corner1, corner2) {
         const x2 = x + width - 12;
         this.surface.drawBoxEdge(x2, y, 12, height, 0);
-        this.surface._drawSprite_from3(x2 + 1, y + 1, Panel.baseSpriteStart); // up arrow?
+
+        // up arrow
+        this.surface._drawSprite_from3(x2 + 1, y + 1, Panel.baseSpriteStart);
+
+        // down arrow
         this.surface._drawSprite_from3(
             x2 + 1,
             y + height - 12,
-            1 + Panel.baseSpriteStart
-        ); // down arrow?
+            Panel.baseSpriteStart + 1
+        );
+
         this.surface.drawLineHoriz(x2, y + 13, 12, 0);
         this.surface.drawLineHoriz(x2, y + height - 13, 12, 0);
+
         this.surface.drawGradient(
             x2 + 1,
             y + 14,
@@ -23840,6 +23905,7 @@ class Panel {
             this.colourScrollbarTop,
             this.colourScrollbarBottom
         );
+
         this.surface.drawBox(
             x2 + 3,
             corner1 + y + 14,
@@ -23847,12 +23913,14 @@ class Panel {
             corner2,
             this.colourScrollbarHandleMid
         );
+
         this.surface.drawLineVert(
             x2 + 2,
             corner1 + y + 14,
             corner2,
             this.colourScrollbarHandleLeft
         );
+
         this.surface.drawLineVert(
             x2 + 2 + 8,
             corner1 + y + 14,
@@ -23922,6 +23990,7 @@ class Panel {
                 textSize,
                 colour
             );
+
             left += this.surface.textWidth(listEntries[idx] + '  ', textSize);
         }
     }
@@ -24428,12 +24497,32 @@ class Panel {
     }
 
     setFocus(control) {
-        // TODO hook input
         this.focusControlIndex = control;
+        this.setMobileFocus(control, '');
     }
 
     getListEntryIndex(control) {
         return this.controlListEntryMouseOver[control];
+    }
+
+    setMobileFocus(control, text) {
+        const { mudclient } = this.surface;
+
+        if (!mudclient.options.mobile) {
+            return;
+        }
+
+        const isPassword = this.controlMaskText[control];
+
+        this.surface.mudclient.openKeyboard(
+            isPassword ? 'password' : 'text',
+            text,
+            this.controlInputMaxLen[control],
+            this.controlX[control],
+            this.controlY[control],
+            this.controlWidth[control],
+            this.controlHeight[control]
+        );
     }
 }
 

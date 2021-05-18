@@ -361,10 +361,9 @@ class Panel {
     }
 
     drawTextInput(control, x, y, width, height, text, textSize) {
-        const isPassword = this.controlMaskText[control];
         let displayText = text;
 
-        if (isPassword) {
+        if (this.controlMaskText[control]) {
             const length = displayText.length;
 
             displayText = '';
@@ -392,22 +391,25 @@ class Panel {
                 this.mouseX <= x + width / 2 &&
                 this.mouseY <= y + ((height / 2) | 0)
             ) {
-                console.log('focusing on text input: ', control);
-
-                this.surface.mudclient.openKeyboard(
-                    isPassword ? 'password' : 'text',
-                    text,
-                    this.controlInputMaxLen[control]
-                );
-
                 this.focusControlIndex = control;
+                this.setMobileFocus(control, text);
             }
 
             x -= (this.surface.textWidth(displayText, textSize) / 2) | 0;
         }
 
         if (this.focusControlIndex === control) {
-            displayText = displayText + '*';
+            const { mudclient } = this.surface;
+            const caret = mudclient.mobileInputCaret;
+
+            if (mudclient.options.mobile && caret !== -1) {
+                displayText =
+                    displayText.slice(0, caret) +
+                    '*' +
+                    displayText.slice(caret);
+            } else {
+                displayText += '*';
+            }
         }
 
         const y2 = y + ((this.surface.textHeight(textSize) / 3) | 0);
@@ -440,73 +442,86 @@ class Panel {
         }
 
         this.surface.drawLineHoriz(x, y, width, this.colourBoxTopNBottom);
+
         this.surface.drawLineHoriz(
             x + 1,
             y + 1,
             width - 2,
             this.colourBoxTopNBottom
         );
+
         this.surface.drawLineHoriz(
             x + 2,
             y + 2,
             width - 4,
             this.colourBoxTopNBottom2
         );
+
         this.surface.drawLineVert(x, y, height, this.colourBoxTopNBottom);
+
         this.surface.drawLineVert(
             x + 1,
             y + 1,
             height - 2,
             this.colourBoxTopNBottom
         );
+
         this.surface.drawLineVert(
             x + 2,
             y + 2,
             height - 4,
             this.colourBoxTopNBottom2
         );
+
         this.surface.drawLineHoriz(
             x,
             y + height - 1,
             width,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineHoriz(
             x + 1,
             y + height - 2,
             width - 2,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineHoriz(
             x + 2,
             y + height - 3,
             width - 4,
             this.colourBoxLeftNRight2
         );
+
         this.surface.drawLineVert(
             x + width - 1,
             y,
             height,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineVert(
             x + width - 2,
             y + 1,
             height - 2,
             this.colourBoxLeftNRight
         );
+
         this.surface.drawLineVert(
             x + width - 3,
             y + 2,
             height - 4,
             this.colourBoxLeftNRight2
         );
+
         this.surface.resetBounds();
     }
 
     drawRoundedBox(x, y, width, height) {
         this.surface.drawBox(x, y, width, height, 0);
         this.surface.drawBoxEdge(x, y, width, height, this.colourRoundedBoxOut);
+
         this.surface.drawBoxEdge(
             x + 1,
             y + 1,
@@ -514,6 +529,7 @@ class Panel {
             height - 2,
             this.colourRoundedBoxMid
         );
+
         this.surface.drawBoxEdge(
             x + 2,
             y + 2,
@@ -521,17 +537,21 @@ class Panel {
             height - 4,
             this.colourRoundedBoxIn
         );
+
         this.surface._drawSprite_from3(x, y, 2 + Panel.baseSpriteStart);
+
         this.surface._drawSprite_from3(
             x + width - 7,
             y,
             3 + Panel.baseSpriteStart
         );
+
         this.surface._drawSprite_from3(
             x,
             y + height - 7,
             4 + Panel.baseSpriteStart
         );
+
         this.surface._drawSprite_from3(
             x + width - 7,
             y + height - 7,
@@ -691,14 +711,20 @@ class Panel {
     drawListContainer(x, y, width, height, corner1, corner2) {
         const x2 = x + width - 12;
         this.surface.drawBoxEdge(x2, y, 12, height, 0);
-        this.surface._drawSprite_from3(x2 + 1, y + 1, Panel.baseSpriteStart); // up arrow?
+
+        // up arrow
+        this.surface._drawSprite_from3(x2 + 1, y + 1, Panel.baseSpriteStart);
+
+        // down arrow
         this.surface._drawSprite_from3(
             x2 + 1,
             y + height - 12,
-            1 + Panel.baseSpriteStart
-        ); // down arrow?
+            Panel.baseSpriteStart + 1
+        );
+
         this.surface.drawLineHoriz(x2, y + 13, 12, 0);
         this.surface.drawLineHoriz(x2, y + height - 13, 12, 0);
+
         this.surface.drawGradient(
             x2 + 1,
             y + 14,
@@ -707,6 +733,7 @@ class Panel {
             this.colourScrollbarTop,
             this.colourScrollbarBottom
         );
+
         this.surface.drawBox(
             x2 + 3,
             corner1 + y + 14,
@@ -714,12 +741,14 @@ class Panel {
             corner2,
             this.colourScrollbarHandleMid
         );
+
         this.surface.drawLineVert(
             x2 + 2,
             corner1 + y + 14,
             corner2,
             this.colourScrollbarHandleLeft
         );
+
         this.surface.drawLineVert(
             x2 + 2 + 8,
             corner1 + y + 14,
@@ -789,6 +818,7 @@ class Panel {
                 textSize,
                 colour
             );
+
             left += this.surface.textWidth(listEntries[idx] + '  ', textSize);
         }
     }
@@ -1295,12 +1325,32 @@ class Panel {
     }
 
     setFocus(control) {
-        // TODO hook input
         this.focusControlIndex = control;
+        this.setMobileFocus(control, '');
     }
 
     getListEntryIndex(control) {
         return this.controlListEntryMouseOver[control];
+    }
+
+    setMobileFocus(control, text) {
+        const { mudclient } = this.surface;
+
+        if (!mudclient.options.mobile) {
+            return;
+        }
+
+        const isPassword = this.controlMaskText[control];
+
+        this.surface.mudclient.openKeyboard(
+            isPassword ? 'password' : 'text',
+            text,
+            this.controlInputMaxLen[control],
+            this.controlX[control],
+            this.controlY[control],
+            this.controlWidth[control],
+            this.controlHeight[control]
+        );
     }
 }
 

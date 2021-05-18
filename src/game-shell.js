@@ -26,11 +26,16 @@ const FONTS = [
 ];
 
 // using width: 0 bugs out on chrome
-const HIDDEN_STYLES = {
+const INPUT_STYLES = {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    opacity: 0
+    display: 'none',
+    padding: 0,
+    border: 0,
+    outline: 0,
+    opacity: 0,
+    textAlign: 'center',
+    fontFamily: 'sans',
+    fontSize: '14px'
 };
 
 class GameShell {
@@ -123,8 +128,8 @@ class GameShell {
         this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
         // prevent right clicks
-        this._canvas.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
+        this._canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
             return false;
         });
 
@@ -134,23 +139,21 @@ class GameShell {
         window.addEventListener('beforeunload', () => this.onClosing());
 
         if (this.options.mobile) {
+            this.mobileInputCaret = -1;
             this.toggleKeyboard = false;
 
+            // we can't re-use the mobileInput for passwords since browsers
+            // turn off autocomplete once it's switched back to text
             this.mobileInput = document.createElement('input');
-            Object.assign(this.mobileInput.style, HIDDEN_STYLES);
+            Object.assign(this.mobileInput.style, INPUT_STYLES);
 
             this.mobilePassword = document.createElement('input');
             this.mobilePassword.type = 'password';
-            Object.assign(this.mobilePassword.style, HIDDEN_STYLES);
+            Object.assign(this.mobilePassword.style, INPUT_STYLES);
 
             this.mobileInput.addEventListener(
                 'keydown',
                 this.mobileKeyDown.bind(this)
-            );
-
-            this.mobileInput.addEventListener(
-                'keyup',
-                this.mobileKeyUp.bind(this)
             );
 
             this.mobilePassword.addEventListener(
@@ -158,9 +161,14 @@ class GameShell {
                 this.mobileKeyDown.bind(this)
             );
 
+            this.mobileInput.addEventListener(
+                'blur',
+                this.closeKeyboard.bind(this)
+            );
+
             this.mobilePassword.addEventListener(
-                'keyup',
-                this.mobileKeyUp.bind(this)
+                'blur',
+                this.closeKeyboard.bind(this)
             );
 
             document.body.appendChild(this.mobileInput);
@@ -173,43 +181,69 @@ class GameShell {
     }
 
     closeKeyboard() {
-        this.toggleKeyboard = false;
+        clearInterval(this.keyboardUpdateInterval);
+        this.mobileInputEl.style.display = 'none';
         this._canvas.focus();
     }
 
-    openKeyboard(type = 'text', text, maxLength) {
-        this.keyboardType = type;
+    openKeyboard(
+        type = 'text',
+        text,
+        maxLength,
+        x = 0,
+        y = 0,
+        width = 100,
+        height = 20
+    ) {
         this.lastMobileInput = text;
         this.toggleKeyboard = true;
 
-        const inputEl =
-            this.keyboardType === 'password'
-                ? this.mobilePassword
-                : this.mobileInput;
+        if (type === 'password') {
+            this.mobileInputEl = this.mobilePassword;
+        } else {
+            this.mobileInputEl = this.mobileInput;
+        }
 
-        inputEl.value = text;
-        inputEl.maxLength = maxLength;
+        this.mobileInputEl.value = text;
+        this.mobileInputEl.maxLength = maxLength;
+
+        this.mobileInputEl.style.display = 'block';
+
+        this.mobileInputEl.style.top = `${y - Math.floor(height / 2)}px`;
+        this.mobileInputEl.style.left = `${x - Math.floor(width / 2)}px`;
+
+        if (width && height) {
+            this.mobileInputEl.style.width = `${width}px`;
+            this.mobileInputEl.style.height = `${height}px`;
+        }
+
+        this.keyboardUpdateInterval = setInterval(() => {
+            this.mobileKeyboardUpdate();
+        }, 125);
     }
 
     mobileKeyDown(e) {
         if (e.keyCode === keycodes.ENTER) {
-            this.keyPressed(e);
             this.closeKeyboard();
+            this.keyPressed(e);
         }
     }
 
-    mobileKeyUp(e) {
-        const inputEl = e.target;
+    mobileKeyboardUpdate() {
+        this.mobileInputCaret = this.mobileInputEl.selectionStart;
+
+        const newInput = this.mobileInputEl.value;
+
+        if (newInput === this.lastMobileInput) {
+            return;
+        }
 
         for (let i = 0; i < this.lastMobileInput.length; i += 1) {
             this.keyPressed({ keyCode: keycodes.BACKSPACE });
         }
 
-        const newInput = inputEl.value;
-
         for (let i = 0; i < newInput.length; i += 1) {
-            const inputChar = newInput[i];
-            this.keyPressed({ key: inputChar });
+            this.keyPressed({ key: newInput[i] });
         }
 
         this.lastMobileInput = newInput;
@@ -292,7 +326,18 @@ class GameShell {
             }
         }
 
-        return false;
+        if (this.options.mobile) {
+            // inputs can only be focused when a user performs an action,
+            // and we set toggleKeyboard to true after an event has occured
+            setTimeout(() => {
+                if (!this.toggleKeyboard) {
+                    return;
+                }
+
+                this.toggleKeyboard = false;
+                this.mobileInputEl.focus();
+            }, 125);
+        }
     }
 
     keyReleased(e) {
@@ -344,19 +389,15 @@ class GameShell {
 
     mousePressed(e) {
         if (this.options.mobile) {
+            // inputs can only be focused when a user performs an action,
+            // and we set toggleKeyboard to true after an event has occured
             setTimeout(() => {
                 if (!this.toggleKeyboard) {
                     return;
                 }
 
                 this.toggleKeyboard = false;
-
-                const inputEl =
-                    this.keyboardType === 'password'
-                        ? this.mobilePassword
-                        : this.mobileInput;
-
-                inputEl.focus();
+                this.mobileInputEl.focus();
             }, 125);
         }
 
@@ -370,7 +411,8 @@ class GameShell {
             this.middleButtonDown = true;
             this.originRotation = this.cameraRotation;
             this.originMouseX = this.mouseX;
-            return false;
+
+            return;
         }
 
         if (e.metaKey || e.button === 2) {
@@ -381,9 +423,8 @@ class GameShell {
 
         this.lastMouseButtonDown = this.mouseButtonDown;
         this.mouseActionTimeout = 0;
-        this.handleMouseDown(this.mouseButtonDown, x, y);
 
-        return false;
+        this.handleMouseDown(this.mouseButtonDown, x, y);
     }
 
     mouseWheel(e) {
@@ -651,10 +692,8 @@ class GameShell {
     }
 
     showLoadingProgress(percent, text) {
-        let x = ((this.appletWidth - 281) / 2) | 0;
-        let y = ((this.appletHeight - 148) / 2) | 0;
-        x += 2;
-        y += 90;
+        const x = (((this.appletWidth - 281) / 2) | 0) + 2;
+        const y = (((this.appletHeight - 148) / 2) | 0) + 90;
 
         this.loadingProgressPercent = percent;
         this.loadingProgessText = text;

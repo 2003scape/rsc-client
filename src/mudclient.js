@@ -609,7 +609,10 @@ class mudclient extends GameConnection {
         this.controlTextListAll = this.panelMessageTabs.addTextListInput(7, 324, 498, 14, 1, 80, false, true);
         this.controlTextListQuest = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
         this.controlTextListPrivate = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
-        this.panelMessageTabs.setFocus(this.controlTextListAll);
+
+        if (!this.options.mobile) {
+            this.panelMessageTabs.setFocus(this.controlTextListAll);
+        }
     }
 
     disposeAndCollect() {

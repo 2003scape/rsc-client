@@ -879,6 +879,7 @@ class Panel {
                 textSize,
                 colour
             );
+
             listTotalTextHeightMid += this.surface.textHeight(textSize);
         }
     }
@@ -896,6 +897,7 @@ class Panel {
     ) {
         const displayedEntryCount =
             (height / this.surface.textHeight(textSize)) | 0;
+
         const maxEntries = listEntryCount - displayedEntryCount;
 
         if (displayedEntryCount < listEntryCount) {
@@ -997,8 +999,10 @@ class Panel {
         }
 
         this.controlListEntryMouseOver[control] = -1;
+
         const k2 =
             height - displayedEntryCount * this.surface.textHeight(textSize);
+
         let i3 =
             y +
             (((((this.surface.textHeight(textSize) * 5) / 6) | 0) + k2 / 2) |
@@ -1258,7 +1262,7 @@ class Panel {
     }
 
     toggleCheckbox(control, activated) {
-        this.controlListEntryMouseButtonDown[control] = activated ? 1 : 0;
+        this.controlListEntryMouseButtonDown[control] = +activated;
     }
 
     isActivated(control) {

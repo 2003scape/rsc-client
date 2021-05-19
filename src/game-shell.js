@@ -139,7 +139,6 @@ class GameShell {
         window.addEventListener('beforeunload', () => this.onClosing());
 
         if (this.options.mobile) {
-            this.mobileInputCaret = -1;
             this.toggleKeyboard = false;
 
             // we can't re-use the mobileInput for passwords since browsers
@@ -195,14 +194,12 @@ class GameShell {
         width = 100,
         height = 20
     ) {
+        this.mobileInputCaret = -1;
         this.lastMobileInput = text;
         this.toggleKeyboard = true;
 
-        if (type === 'password') {
-            this.mobileInputEl = this.mobilePassword;
-        } else {
-            this.mobileInputEl = this.mobileInput;
-        }
+        this.mobileInputEl =
+            type === 'password' ? this.mobilePassword : this.mobileInput;
 
         this.mobileInputEl.value = text;
         this.mobileInputEl.maxLength = maxLength;
@@ -211,11 +208,8 @@ class GameShell {
 
         this.mobileInputEl.style.top = `${y - Math.floor(height / 2)}px`;
         this.mobileInputEl.style.left = `${x - Math.floor(width / 2)}px`;
-
-        if (width && height) {
-            this.mobileInputEl.style.width = `${width}px`;
-            this.mobileInputEl.style.height = `${height}px`;
-        }
+        this.mobileInputEl.style.width = `${width}px`;
+        this.mobileInputEl.style.height = `${height}px`;
 
         this.keyboardUpdateInterval = setInterval(() => {
             this.mobileKeyboardUpdate();
@@ -254,6 +248,10 @@ class GameShell {
 
         let charCode =
             e.key && e.key.length === 1 ? e.key.charCodeAt(0) : 65535;
+
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
 
         if (
             [8, 10, 13, 9].includes(code) ||
@@ -341,6 +339,8 @@ class GameShell {
     }
 
     keyReleased(e) {
+        e.preventDefault();
+
         const code = e.keyCode;
 
         if (code === keycodes.LEFT_ARROW) {

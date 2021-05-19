@@ -3,8 +3,8 @@ const Panel = require('../panel');
 function createLoginPanels() {
     this.panelLoginWelcome = new Panel(this.surface, 50);
 
-    let y = 40;
     const x = (this.gameWidth / 2) | 0;
+    let y = 40;
 
     if (!this.members) {
         this.panelLoginWelcome.addTextCentre(
@@ -149,7 +149,7 @@ function createLoginPanels() {
         this.panelLoginNewUser.addButtonBackground(x, y + 17, 150, 34);
         this.panelLoginNewUser.addTextCentre(x, y + 17, 'Ok', 5, false);
 
-        this.controlLoginNewOk = this.panelLoginNewUser.addButton(
+        this.controlLoginNewOK = this.panelLoginNewUser.addButton(
             x,
             y + 17,
             150,
@@ -189,7 +189,7 @@ function createLoginPanels() {
             false
         );
 
-        this.panelLoginNewUser.setFocus(this.controlRegisterUser);
+        //this.panelLoginNewUser.setFocus(this.controlRegisterUser);
 
         offsetY += 40;
 
@@ -422,7 +422,7 @@ function createLoginPanels() {
         );
     }
 
-    this.panelLoginExistingUser.setFocus(this.controlLoginUser);
+    //this.panelLoginExistingUser.setFocus(this.controlLoginUser);
 }
 
 function renderLoginScreenViewports() {
@@ -746,6 +746,25 @@ async function handleLoginScreenInput() {
         );
 
         if (this.options.accountManagement) {
+            // allow mobile to click the entire text to agree to ToS
+            if (
+                this.options.mobile &&
+                this.lastMouseButtonDown === 1 &&
+                this.mouseX >= 74 &&
+                this.mouseX <= 474 &&
+                this.mouseY >= 188 &&
+                this.mouseY <= 216
+            ) {
+                this.panelLoginNewUser.toggleCheckbox(
+                    this.controlRegisterCheckbox,
+                    !this.panelLoginNewUser.isActivated(
+                        this.controlRegisterCheckbox
+                    )
+                );
+
+                this.lastMouseButtonDown = 0;
+            }
+
             if (this.panelLoginNewUser.isClicked(this.controlRegisterCancel)) {
                 this.loginScreen = 0;
                 return;
@@ -851,13 +870,10 @@ async function handleLoginScreenInput() {
                 );
 
                 await this.register(this.registerUser, this.registerPassword);
-
-                return;
             }
         } else {
             if (this.panelLoginNewUser.isClicked(this.controlLoginNewOk)) {
                 this.loginScreen = 0;
-                return;
             }
         }
     } else if (this.loginScreen === 2) {

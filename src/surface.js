@@ -1,5 +1,8 @@
 const Utility = require('./utility');
 
+const SLEEP_WIDTH = 255;
+const SLEEP_HEIGHT = 40;
+
 const BLACK = 0;
 const DARK_GREY = 0xa0a0a0;
 const LIGHT_GREY = 0xdcdcdc;
@@ -44,12 +47,15 @@ class Surface {
         this.surfacePixels = [];
         this.surfacePixels.length = limit;
         this.surfacePixels.fill(null);
+
         this.spriteColoursUsed = [];
         this.spriteColoursUsed.length = limit;
         this.spriteColoursUsed.fill(null);
+
         this.spriteColourList = [];
         this.spriteColourList.length = limit;
         this.spriteColourList.fill(null);
+
         this.spriteTranslate = new Int8Array(limit);
         this.spriteWidth = new Int32Array(limit);
         this.spriteHeight = new Int32Array(limit);
@@ -117,31 +123,32 @@ class Surface {
         this.boundsBottomY = this.height2;
     }
 
-    draw(g, x, y) {
-        // blit our canvas to the page's canvas
+    draw(graphics, x, y) {
         this.setComplete();
-        g.drawImage(this.imageData, x, y);
+
+        // blit our canvas to the page's canvas
+        graphics.drawImage(this.imageData, x, y);
     }
 
     blackScreen() {
-        let area = this.width2 * this.height2;
+        const area = this.width2 * this.height2;
 
         if (!this.interlace) {
-            for (let j = 0; j < area; j++) {
-                this.pixels[j] = 0;
+            for (let i = 0; i < area; i++) {
+                this.pixels[i] = 0;
             }
 
             return;
         }
 
-        let k = 0;
+        let pixelIdx = 0;
 
-        for (let l = -this.height2; l < 0; l += 2) {
-            for (let i1 = -this.width2; i1 < 0; i1++) {
-                this.pixels[k++] = 0;
+        for (let y = -this.height2; y < 0; y += 2) {
+            for (let x = -this.width2; x < 0; x++) {
+                this.pixels[pixelIdx++] = 0;
             }
 
-            k += this.width2;
+            pixelIdx += this.width2;
         }
     }
 
@@ -223,10 +230,11 @@ class Surface {
             height = this.boundsBottomY - y;
         }
 
-        let bgAlpha = 256 - alpha;
-        let red = ((colour >> 16) & 0xff) * alpha;
-        let green = ((colour >> 8) & 0xff) * alpha;
-        let blue = (colour & 0xff) * alpha;
+        const backgroundAlpha = 256 - alpha;
+        const red = ((colour >> 16) & 0xff) * alpha;
+        const green = ((colour >> 8) & 0xff) * alpha;
+        const blue = (colour & 0xff) * alpha;
+
         let j3 = this.width2 - width; // wat
         let vertInc = 1;
 
@@ -242,15 +250,22 @@ class Surface {
 
         let pixelIdx = x + y * this.width2;
 
-        for (let l3 = 0; l3 < height; l3 += vertInc) {
-            for (let i4 = -width; i4 < 0; i4++) {
-                let bgRed = ((this.pixels[pixelIdx] >> 16) & 0xff) * bgAlpha;
-                let bgGreen = ((this.pixels[pixelIdx] >> 8) & 0xff) * bgAlpha;
-                let bgBlue = (this.pixels[pixelIdx] & 0xff) * bgAlpha;
-                let newColour =
-                    (((red + bgRed) >> 8) << 16) +
-                    (((green + bgGreen) >> 8) << 8) +
-                    ((blue + bgBlue) >> 8);
+        for (let i = 0; i < height; i += vertInc) {
+            for (let j = -width; j < 0; j++) {
+                const backgroundRed =
+                    ((this.pixels[pixelIdx] >> 16) & 0xff) * backgroundAlpha;
+
+                const backgroundGreen =
+                    ((this.pixels[pixelIdx] >> 8) & 0xff) * backgroundAlpha;
+
+                const backgroundBlue =
+                    (this.pixels[pixelIdx] & 0xff) * backgroundAlpha;
+
+                const newColour =
+                    (((red + backgroundRed) >> 8) << 16) +
+                    (((green + backgroundGreen) >> 8) << 8) +
+                    ((blue + backgroundBlue) >> 8);
+
                 this.pixels[pixelIdx++] = newColour;
             }
 
@@ -268,12 +283,13 @@ class Surface {
             width = this.boundsBottomX - x;
         }
 
-        let btmRed = (colourBottom >> 16) & 0xff;
-        let btmGreen = (colourBottom >> 8) & 0xff;
-        let btmBlue = colourBottom & 0xff;
-        let topRed = (colourTop >> 16) & 0xff;
-        let topGreen = (colourTop >> 8) & 0xff;
-        let topBlue = colourTop & 0xff;
+        const bottomRed = (colourBottom >> 16) & 0xff;
+        const bottomGreen = (colourBottom >> 8) & 0xff;
+        const bottomBlue = colourBottom & 0xff;
+        const topRed = (colourTop >> 16) & 0xff;
+        const topGreen = (colourTop >> 8) & 0xff;
+        const topBlue = colourTop & 0xff;
+
         let i3 = this.width2 - width; // wat
         let vertInc = 1;
 
@@ -289,15 +305,15 @@ class Surface {
 
         let pixelIdx = x + y * this.width2;
 
-        for (let k3 = 0; k3 < height; k3 += vertInc) {
-            if (k3 + y >= this.boundsTopY && k3 + y < this.boundsBottomY) {
-                let newColour =
-                    (((btmRed * k3 + topRed * (height - k3)) / height) << 16) +
-                    (((btmGreen * k3 + topGreen * (height - k3)) / height) <<
+        for (let i = 0; i < height; i += vertInc) {
+            if (i + y >= this.boundsTopY && i + y < this.boundsBottomY) {
+                const newColour =
+                    (((bottomRed * i + topRed * (height - i)) / height) << 16) +
+                    (((bottomGreen * i + topGreen * (height - i)) / height) <<
                         8) +
-                    (((btmBlue * k3 + topBlue * (height - k3)) / height) | 0);
+                    (((bottomBlue * i + topBlue * (height - i)) / height) | 0);
 
-                for (let i4 = -width; i4 < 0; i4++) {
+                for (let j = -width; j < 0; j++) {
                     this.pixels[pixelIdx++] = newColour;
                 }
 
@@ -408,11 +424,9 @@ class Surface {
             y >= this.boundsBottomY
         ) {
             return;
-        } else {
-            this.pixels[x + y * this.width2] = colour;
-
-            return;
         }
+
+        this.pixels[x + y * this.width2] = colour;
     }
 
     fadeToBlack() {
@@ -465,45 +479,51 @@ class Surface {
         }
     }
 
-    parseSprite(spriteId, spriteData, indexData, frameCount) {
-        let indexOff = Utility.getUnsignedShort(spriteData, 0);
-        let fullWidth = Utility.getUnsignedShort(indexData, indexOff);
-        indexOff += 2;
+    parseSprite(spriteID, spriteData, indexData, frameCount) {
+        let indexOffset = Utility.getUnsignedShort(spriteData, 0);
 
-        let fullHeight = Utility.getUnsignedShort(indexData, indexOff);
-        indexOff += 2;
+        const fullWidth = Utility.getUnsignedShort(indexData, indexOffset);
+        indexOffset += 2;
 
-        let colourCount = indexData[indexOff++] & 0xff;
-        let colours = new Int32Array(colourCount);
+        const fullHeight = Utility.getUnsignedShort(indexData, indexOffset);
+        indexOffset += 2;
+
+        const colourCount = indexData[indexOffset++] & 0xff;
+
+        const colours = new Int32Array(colourCount);
         colours[0] = 0xff00ff;
 
         for (let i = 0; i < colourCount - 1; i++) {
             colours[i + 1] =
-                ((indexData[indexOff] & 0xff) << 16) +
-                ((indexData[indexOff + 1] & 0xff) << 8) +
-                (indexData[indexOff + 2] & 0xff);
-            indexOff += 3;
+                ((indexData[indexOffset] & 0xff) << 16) +
+                ((indexData[indexOffset + 1] & 0xff) << 8) +
+                (indexData[indexOffset + 2] & 0xff);
+
+            indexOffset += 3;
         }
 
-        let spriteOff = 2;
+        let spriteOffset = 2;
 
-        for (let id = spriteId; id < spriteId + frameCount; id++) {
-            this.spriteTranslateX[id] = indexData[indexOff++] & 0xff;
-            this.spriteTranslateY[id] = indexData[indexOff++] & 0xff;
+        for (let id = spriteID; id < spriteID + frameCount; id++) {
+            this.spriteTranslateX[id] = indexData[indexOffset++] & 0xff;
+            this.spriteTranslateY[id] = indexData[indexOffset++] & 0xff;
+
             this.spriteWidth[id] = Utility.getUnsignedShort(
                 indexData,
-                indexOff
+                indexOffset
             );
-            indexOff += 2;
+
+            indexOffset += 2;
 
             this.spriteHeight[id] = Utility.getUnsignedShort(
                 indexData,
-                indexOff
+                indexOffset
             );
-            indexOff += 2;
 
-            let unknown = indexData[indexOff++] & 0xff;
-            let size = this.spriteWidth[id] * this.spriteHeight[id];
+            indexOffset += 2;
+
+            const unknown = indexData[indexOffset++] & 0xff;
+            const size = this.spriteWidth[id] * this.spriteHeight[id];
 
             this.spriteColoursUsed[id] = new Int8Array(size);
             this.spriteColourList[id] = colours;
@@ -521,7 +541,8 @@ class Surface {
 
             if (unknown === 0) {
                 for (let pixel = 0; pixel < size; pixel++) {
-                    this.spriteColoursUsed[id][pixel] = spriteData[spriteOff++];
+                    this.spriteColoursUsed[id][pixel] =
+                        spriteData[spriteOffset++];
 
                     if (this.spriteColoursUsed[id][pixel] === 0) {
                         this.spriteTranslate[id] = true;
@@ -532,7 +553,7 @@ class Surface {
                     for (let y = 0; y < this.spriteHeight[id]; y++) {
                         this.spriteColoursUsed[id][
                             x + y * this.spriteWidth[id]
-                        ] = spriteData[spriteOff++];
+                        ] = spriteData[spriteOffset++];
 
                         if (
                             this.spriteColoursUsed[id][
@@ -547,16 +568,18 @@ class Surface {
         }
     }
 
-    readSleepWord(spriteId, spriteData) {
-        const pixels = (this.surfacePixels[spriteId] = new Int32Array(10200));
+    readSleepWord(spriteID, spriteData) {
+        const pixels = (this.surfacePixels[spriteID] = new Int32Array(
+            SLEEP_WIDTH * SLEEP_HEIGHT
+        ));
 
-        this.spriteWidth[spriteId] = 255;
-        this.spriteHeight[spriteId] = 40;
-        this.spriteTranslateX[spriteId] = 0;
-        this.spriteTranslateY[spriteId] = 0;
-        this.spriteWidthFull[spriteId] = 255;
-        this.spriteHeightFull[spriteId] = 40;
-        this.spriteTranslate[spriteId] = false;
+        this.spriteWidth[spriteID] = SLEEP_WIDTH;
+        this.spriteHeight[spriteID] = SLEEP_HEIGHT;
+        this.spriteTranslateX[spriteID] = 0;
+        this.spriteTranslateY[spriteID] = 0;
+        this.spriteWidthFull[spriteID] = SLEEP_WIDTH;
+        this.spriteHeightFull[spriteID] = SLEEP_HEIGHT;
+        this.spriteTranslate[spriteID] = false;
 
         let colour = 0;
         let packetOffset = 1;
@@ -595,6 +618,7 @@ class Surface {
     drawWorld(spriteId) {
         let spriteSize =
             this.spriteWidth[spriteId] * this.spriteHeight[spriteId];
+
         let spritePixels = this.surfacePixels[spriteId];
         let ai1 = new Int32Array(32768);
 
@@ -680,15 +704,15 @@ class Surface {
         this.surfacePixels[spriteId] = null;
     }
 
-    loadSprite(spriteId) {
-        if (this.spriteColoursUsed[spriteId] === null) {
+    loadSprite(spriteID) {
+        if (this.spriteColoursUsed[spriteID] === null) {
             return;
         }
 
-        let size = this.spriteWidth[spriteId] * this.spriteHeight[spriteId];
-        let idx = this.spriteColoursUsed[spriteId];
-        let cols = this.spriteColourList[spriteId];
-        let pixels = new Int32Array(size);
+        const size = this.spriteWidth[spriteID] * this.spriteHeight[spriteID];
+        const idx = this.spriteColoursUsed[spriteID];
+        const cols = this.spriteColourList[spriteID];
+        const pixels = new Int32Array(size);
 
         for (let pixel = 0; pixel < size; pixel++) {
             let colour = cols[idx[pixel] & 0xff];
@@ -702,9 +726,9 @@ class Surface {
             pixels[pixel] = colour;
         }
 
-        this.surfacePixels[spriteId] = pixels;
-        this.spriteColoursUsed[spriteId] = null;
-        this.spriteColourList[spriteId] = null;
+        this.surfacePixels[spriteID] = pixels;
+        this.spriteColoursUsed[spriteID] = null;
+        this.spriteColourList[spriteID] = null;
     }
 
     // used from World
@@ -716,11 +740,9 @@ class Surface {
         this.spriteTranslateY[sprite] = 0;
         this.spriteWidthFull[sprite] = width;
         this.spriteHeightFull[sprite] = height;
+        this.surfacePixels[sprite] = new Int32Array(width * height);
 
-        let area = width * height;
         let pixel = 0;
-
-        this.surfacePixels[sprite] = new Int32Array(area);
 
         for (let xx = x; xx < x + width; xx++) {
             for (let yy = y; yy < y + height; yy++) {
@@ -740,11 +762,9 @@ class Surface {
         this.spriteTranslateY[sprite] = 0;
         this.spriteWidthFull[sprite] = width;
         this.spriteHeightFull[sprite] = height;
+        this.surfacePixels[sprite] = new Int32Array(width * height);
 
-        let area = width * height;
         let pixel = 0;
-
-        this.surfacePixels[sprite] = new Int32Array(area);
 
         for (let yy = y; yy < y + height; yy++) {
             for (let xx = x; xx < x + width; xx++) {
@@ -827,7 +847,6 @@ class Surface {
                 h2,
                 inc
             );
-            return;
         } else {
             this._drawSprite_from10(
                 this.pixels,
@@ -841,14 +860,13 @@ class Surface {
                 h2,
                 inc
             );
-            return;
         }
     }
 
     _spriteClipping_from5(x, y, width, height, spriteId) {
         try {
-            let spriteWidth = this.spriteWidth[spriteId];
-            let spriteHeight = this.spriteHeight[spriteId];
+            const spriteWidth = this.spriteWidth[spriteId];
+            const spriteHeight = this.spriteHeight[spriteId];
             let l1 = 0;
             let i2 = 0;
             let j2 = ((spriteWidth << 16) / width) | 0;
@@ -863,6 +881,7 @@ class Surface {
                 x +=
                     ((this.spriteTranslateX[spriteId] * width + l2 - 1) / l2) |
                     0;
+
                 y +=
                     ((this.spriteTranslateY[spriteId] * height + j3 - 1) / j3) |
                     0;
@@ -889,6 +908,7 @@ class Surface {
                 width =
                     ((width * (this.spriteWidth[spriteId] - (l1 >> 16))) / l2) |
                     0;
+
                 height =
                     ((height * (this.spriteHeight[spriteId] - (i2 >> 16))) /
                         j3) |
@@ -954,7 +974,7 @@ class Surface {
                 yInc
             );
         } catch (e) {
-            console.log('error in sprite clipping routine');
+            console.error(e);
         }
     }
 
@@ -969,6 +989,7 @@ class Surface {
                 tx,
                 ty
             );
+
             return;
         }
 
@@ -985,10 +1006,9 @@ class Surface {
         if (id >= 5000) {
             this.mudclientref.drawPlayer(x, y, w, h, id - 5000, tx, ty);
             return;
-        } else {
-            this._spriteClipping_from5(x, y, w, h, id);
-            return;
         }
+
+        this._spriteClipping_from5(x, y, w, h, id);
     }
 
     _drawSpriteAlpha_from4(x, y, spriteId, alpha) {
@@ -1064,7 +1084,6 @@ class Surface {
                 yInc,
                 alpha
             );
-            return;
         } else {
             this._drawSpriteAlpha_from11(
                 this.pixels,
@@ -1079,22 +1098,22 @@ class Surface {
                 yInc,
                 alpha
             );
-            return;
         }
     }
 
     drawActionBubble(x, y, scaleX, scaleY, sprite, alpha) {
         try {
-            let spriteWidth = this.spriteWidth[sprite];
-            let spriteHeight = this.spriteHeight[sprite];
+            const spriteWidth = this.spriteWidth[sprite];
+            const spriteHeight = this.spriteHeight[sprite];
             let i2 = 0;
             let j2 = 0;
             let k2 = ((spriteWidth << 16) / scaleX) | 0;
             let l2 = ((spriteHeight << 16) / scaleY) | 0;
 
             if (this.spriteTranslate[sprite]) {
-                let i3 = this.spriteWidthFull[sprite];
-                let k3 = this.spriteHeightFull[sprite];
+                const i3 = this.spriteWidthFull[sprite];
+                const k3 = this.spriteHeightFull[sprite];
+
                 k2 = ((i3 << 16) / scaleX) | 0;
                 l2 = ((k3 << 16) / scaleY) | 0;
 
@@ -1126,6 +1145,7 @@ class Surface {
                 scaleX =
                     ((scaleX * (this.spriteWidth[sprite] - (i2 >> 16))) / i3) |
                     0;
+
                 scaleY =
                     ((scaleY * (this.spriteHeight[sprite] - (j2 >> 16))) / k3) |
                     0;
@@ -1189,9 +1209,8 @@ class Surface {
                 yInc,
                 alpha
             );
-            return;
         } catch (e) {
-            console.log('error in sprite clipping routine');
+            console.error(e);
         }
     }
 
@@ -1207,11 +1226,14 @@ class Surface {
             if (this.spriteTranslate[spriteId]) {
                 let i3 = this.spriteWidthFull[spriteId];
                 let k3 = this.spriteHeightFull[spriteId];
+
                 k2 = ((i3 << 16) / width) | 0;
                 l2 = ((k3 << 16) / height) | 0;
+
                 x +=
                     ((this.spriteTranslateX[spriteId] * width + i3 - 1) / i3) |
                     0;
+
                 y +=
                     ((this.spriteTranslateY[spriteId] * height + k3 - 1) / k3) |
                     0;
@@ -1238,6 +1260,7 @@ class Surface {
                 width =
                     ((width * (this.spriteWidth[spriteId] - (i2 >> 16))) / i3) |
                     0;
+
                 height =
                     ((height * (this.spriteHeight[spriteId] - (j2 >> 16))) /
                         k3) |
@@ -1303,9 +1326,7 @@ class Surface {
                 yInc,
                 colour
             );
-            return;
         } catch (e) {
-            console.log('error in sprite clipping routine');
             console.error(e);
         }
     }
@@ -1463,10 +1484,8 @@ class Surface {
                 j = l2;
                 destPos += i1;
             }
-
-            return;
         } catch (e) {
-            console.log('error in plotScale');
+            console.error(e);
         }
     }
 
@@ -1574,9 +1593,10 @@ class Surface {
 
                     if (i !== 0) {
                         let j4 = dest[destPos];
+
                         dest[destPos++] =
                             ((((i & 0xff00ff) * alpha + (j4 & 0xff00ff) * i3) &
-                                -16711936) +
+                                -0xff0100) +
                                 (((i & 0xff00) * alpha + (j4 & 0xff00) * i3) &
                                     0xff0000)) >>
                             8;
@@ -1591,10 +1611,8 @@ class Surface {
                 j = j3;
                 destPos += i1;
             }
-
-            return;
         } catch (e) {
-            console.log('error in tranScale');
+            console.error(e);
         }
     }
 
@@ -1623,6 +1641,7 @@ class Surface {
 
             for (let i4 = -height; i4 < 0; i4 += yInc) {
                 let j4 = (k >> 16) * j2;
+
                 for (let k4 = -width; k4 < 0; k4++) {
                     i = pixels[(j >> 16) + j4];
 
@@ -1650,10 +1669,8 @@ class Surface {
                 j = l3;
                 l += i1;
             }
-
-            return;
         } catch (e) {
-            console.log('error in plotScale');
+            console.error(e);
         }
     }
 
@@ -1665,11 +1682,12 @@ class Surface {
         if (this.landscapeColours === null) {
             this.landscapeColours = new Int32Array(512);
 
-            for (let l1 = 0; l1 < 256; l1++) {
-                this.landscapeColours[l1] =
-                    (Math.sin(l1 * 0.02454369) * 32768) | 0;
-                this.landscapeColours[l1 + 256] =
-                    (Math.cos(l1 * 0.02454369) * 32768) | 0;
+            for (let i = 0; i < 256; i++) {
+                this.landscapeColours[i] =
+                    (Math.sin(i * 0.02454369) * 32768) | 0;
+
+                this.landscapeColours[i + 256] =
+                    (Math.cos(i * 0.02454369) * 32768) | 0;
             }
         }
 
@@ -1687,7 +1705,9 @@ class Surface {
         let j3 = j2;
         let k3 = i2;
         let l3 = l2;
+
         rotation &= 0xff;
+
         let i4 = this.landscapeColours[rotation] * scale;
         let j4 = this.landscapeColours[rotation + 256] * scale;
         let k4 = x + ((j2 * i4 + i2 * j4) >> 22);
@@ -1800,11 +1820,14 @@ class Surface {
             k7 = k1 - 1;
         }
 
-        for (let l9 = j7; l9 <= k7; l9++) {
-            this.anIntArray340[l9] = this.anIntArray341[l9] = l7;
+        for (let i = j7; i <= k7; i++) {
+            this.anIntArray340[i] = this.anIntArray341[i] = l7;
+
             l7 += i8;
-            this.anIntArray342[l9] = this.anIntArray343[l9] = 0;
-            this.anIntArray344[l9] = this.anIntArray345[l9] = l8;
+
+            this.anIntArray342[i] = this.anIntArray343[i] = 0;
+            this.anIntArray344[i] = this.anIntArray345[i] = l8;
+
             l8 += i9;
         }
 
@@ -1837,17 +1860,17 @@ class Surface {
             k7 = k1 - 1;
         }
 
-        for (let i10 = j7; i10 <= k7; i10++) {
-            if (l7 < this.anIntArray340[i10]) {
-                this.anIntArray340[i10] = l7;
-                this.anIntArray342[i10] = j8;
-                this.anIntArray344[i10] = 0;
+        for (let i = j7; i <= k7; i++) {
+            if (l7 < this.anIntArray340[i]) {
+                this.anIntArray340[i] = l7;
+                this.anIntArray342[i] = j8;
+                this.anIntArray344[i] = 0;
             }
 
-            if (l7 > this.anIntArray341[i10]) {
-                this.anIntArray341[i10] = l7;
-                this.anIntArray343[i10] = j8;
-                this.anIntArray345[i10] = 0;
+            if (l7 > this.anIntArray341[i]) {
+                this.anIntArray341[i] = l7;
+                this.anIntArray343[i] = j8;
+                this.anIntArray345[i] = 0;
             }
 
             l7 += i8;
@@ -1883,17 +1906,17 @@ class Surface {
             k7 = k1 - 1;
         }
 
-        for (let j10 = j7; j10 <= k7; j10++) {
-            if (l7 < this.anIntArray340[j10]) {
-                this.anIntArray340[j10] = l7;
-                this.anIntArray342[j10] = j8;
-                this.anIntArray344[j10] = l8;
+        for (let i = j7; i <= k7; i++) {
+            if (l7 < this.anIntArray340[i]) {
+                this.anIntArray340[i] = l7;
+                this.anIntArray342[i] = j8;
+                this.anIntArray344[i] = l8;
             }
 
-            if (l7 > this.anIntArray341[j10]) {
-                this.anIntArray341[j10] = l7;
-                this.anIntArray343[j10] = j8;
-                this.anIntArray345[j10] = l8;
+            if (l7 > this.anIntArray341[i]) {
+                this.anIntArray341[i] = l7;
+                this.anIntArray343[i] = j8;
+                this.anIntArray345[i] = l8;
             }
 
             l7 += i8;
@@ -1929,17 +1952,17 @@ class Surface {
             k7 = k1 - 1;
         }
 
-        for (let k10 = j7; k10 <= k7; k10++) {
-            if (l7 < this.anIntArray340[k10]) {
-                this.anIntArray340[k10] = l7;
-                this.anIntArray342[k10] = j8;
-                this.anIntArray344[k10] = l8;
+        for (let i = j7; i <= k7; i++) {
+            if (l7 < this.anIntArray340[i]) {
+                this.anIntArray340[i] = l7;
+                this.anIntArray342[i] = j8;
+                this.anIntArray344[i] = l8;
             }
 
-            if (l7 > this.anIntArray341[k10]) {
-                this.anIntArray341[k10] = l7;
-                this.anIntArray343[k10] = j8;
-                this.anIntArray345[k10] = l8;
+            if (l7 > this.anIntArray341[i]) {
+                this.anIntArray341[i] = l7;
+                this.anIntArray343[i] = j8;
+                this.anIntArray345[i] = l8;
             }
 
             l7 += i8;
@@ -1949,19 +1972,22 @@ class Surface {
         let l10 = k6 * j1;
         let ai = this.surfacePixels[sprite];
 
-        for (let i11 = k6; i11 < l6; i11++) {
-            let j11 = this.anIntArray340[i11] >> 8;
-            let k11 = this.anIntArray341[i11] >> 8;
+        for (let i = k6; i < l6; i++) {
+            let j11 = this.anIntArray340[i] >> 8;
+            let k11 = this.anIntArray341[i] >> 8;
 
             if (k11 - j11 <= 0) {
                 l10 += j1;
             } else {
-                let l11 = this.anIntArray342[i11] << 9;
+                let l11 = this.anIntArray342[i] << 9;
+
                 let i12 =
-                    (((this.anIntArray343[i11] << 9) - l11) / (k11 - j11)) | 0;
-                let j12 = this.anIntArray344[i11] << 9;
+                    (((this.anIntArray343[i] << 9) - l11) / (k11 - j11)) | 0;
+
+                let j12 = this.anIntArray344[i] << 9;
+
                 let k12 =
-                    (((this.anIntArray345[i11] << 9) - j12) / (k11 - j11)) | 0;
+                    (((this.anIntArray345[i] << 9) - j12) / (k11 - j11)) | 0;
 
                 if (j11 < this.boundsTopX) {
                     l11 += (this.boundsTopX - j11) * i12;
@@ -1973,7 +1999,7 @@ class Surface {
                     k11 = this.boundsBottomX;
                 }
 
-                if (!this.interlace || (i11 & 1) === 0) {
+                if (!this.interlace || (i & 1) === 0) {
                     if (!this.spriteTranslate[sprite]) {
                         this.drawMinimap(
                             this.pixels,
@@ -2041,8 +2067,8 @@ class Surface {
                 colour2 = 0xffffff;
             }
 
-            let width = this.spriteWidth[sprite];
-            let height = this.spriteHeight[sprite];
+            const width = this.spriteWidth[sprite];
+            const height = this.spriteHeight[sprite];
             let k2 = 0;
             let l2 = 0;
             let i3 = l1 << 16;
@@ -2051,10 +2077,12 @@ class Surface {
             let l3 = -(((l1 << 16) / h) | 0);
 
             if (this.spriteTranslate[sprite]) {
-                let fullWidth = this.spriteWidthFull[sprite];
-                let fullHeight = this.spriteHeightFull[sprite];
+                const fullWidth = this.spriteWidthFull[sprite];
+                const fullHeight = this.spriteHeightFull[sprite];
+
                 j3 = ((fullWidth << 16) / w) | 0;
                 k3 = ((fullHeight << 16) / h) | 0;
+
                 let j5 = this.spriteTranslateX[sprite];
                 let k5 = this.spriteTranslateY[sprite];
 
@@ -2063,7 +2091,9 @@ class Surface {
                 }
 
                 x += ((j5 * w + fullWidth - 1) / fullWidth) | 0;
+
                 let l5 = ((k5 * h + fullHeight - 1) / fullHeight) | 0;
+
                 y += l5;
                 i3 += l5 * l3;
 
@@ -2125,6 +2155,7 @@ class Surface {
                             l3,
                             i5
                         );
+
                         return;
                     } else {
                         this._transparentSpritePlot_from15(
@@ -2144,6 +2175,7 @@ class Surface {
                             l3,
                             i5
                         );
+
                         return;
                     }
                 }
@@ -2167,6 +2199,7 @@ class Surface {
                         l3,
                         i5
                     );
+
                     return;
                 } else {
                     this._transparentSpritePlot_from16A(
@@ -2187,6 +2220,7 @@ class Surface {
                         l3,
                         i5
                     );
+
                     return;
                 }
             }
@@ -2211,6 +2245,7 @@ class Surface {
                         l3,
                         i5
                     );
+
                     return;
                 } else {
                     this._transparentSpritePlot_from16(
@@ -2231,6 +2266,7 @@ class Surface {
                         l3,
                         i5
                     );
+
                     return;
                 }
             }
@@ -2255,7 +2291,6 @@ class Surface {
                     l3,
                     i5
                 );
-                return;
             } else {
                 this._transparentSpritePlot_from17(
                     this.pixels,
@@ -2276,10 +2311,8 @@ class Surface {
                     l3,
                     i5
                 );
-                return;
             }
         } catch (e) {
-            console.log('error in sprite clipping routine');
             console.error(e);
         }
     }
@@ -2357,10 +2390,8 @@ class Surface {
                 destPos += this.width2;
                 k2 += l2;
             }
-
-            return;
         } catch (e) {
-            console.error('error in transparent sprite plot routine');
+            console.error(e);
         }
     }
 
@@ -2444,10 +2475,8 @@ class Surface {
                 destPos += this.width2;
                 l2 += i3;
             }
-
-            return;
         } catch (e) {
-            console.log('error in transparent sprite plot routine');
+            console.error(e);
         }
     }
 
@@ -2525,10 +2554,8 @@ class Surface {
                 l += this.width2;
                 k2 += l2;
             }
-
-            return;
         } catch (e) {
-            console.log('error in transparent sprite plot routine');
+            console.error(e);
         }
     }
 
@@ -2614,10 +2641,8 @@ class Surface {
                 l += this.width2;
                 l2 += i3;
             }
-
-            return;
         } catch (e) {
-            console.log('error in transparent sprite plot routine');
+            console.error(e);
         }
     }
 
@@ -2691,7 +2716,6 @@ class Surface {
 
             if (width > 0) {
                 this.drawStringCenter(text.slice(start), x, y, font, colour);
-                return;
             }
         } catch (e) {
             console.error(e);
@@ -2816,7 +2840,6 @@ class Surface {
             }
         } catch (e) {
             console.error(e);
-            return;
         }
     }
 
@@ -2974,38 +2997,34 @@ class Surface {
 
         if (fontId === 7) {
             return 29;
-        } else {
-            return this.textHeightFont(fontId);
         }
+
+        return this.textHeightFont(fontId);
     }
 
     textHeightFont(fontId) {
         if (fontId === 0) {
             return Surface.gameFonts[fontId][8] - 2;
-        } else {
-            return Surface.gameFonts[fontId][8] - 1;
         }
+
+        return Surface.gameFonts[fontId][8] - 1;
     }
 
-    textWidth(text, fontId) {
+    textWidth(text, fontID) {
         let total = 0;
-        let font = Surface.gameFonts[fontId];
+        const font = Surface.gameFonts[fontID];
 
-        for (let idx = 0; idx < text.length; idx++) {
-            if (
-                text[idx] === '@' &&
-                idx + 4 < text.length &&
-                text[idx + 4] === '@'
-            ) {
-                idx += 4;
+        for (let i = 0; i < text.length; i++) {
+            if (text[i] === '@' && i + 4 < text.length && text[i + 4] === '@') {
+                i += 4;
             } else if (
-                text[idx] === '~' &&
-                idx + 4 < text.length &&
-                text[idx + 4] === '~'
+                text[i] === '~' &&
+                i + 4 < text.length &&
+                text[i + 4] === '~'
             ) {
-                idx += 4;
+                i += 4;
             } else {
-                total += font[Surface.characterWidth[text.charCodeAt(idx)] + 7];
+                total += font[Surface.characterWidth[text.charCodeAt(i)] + 7];
             }
         }
 

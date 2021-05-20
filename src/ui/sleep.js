@@ -107,7 +107,9 @@ function drawSleep() {
     );
 
     this.surface.drawStringCenter(
-        '@yel@click here@whi@ to get a different one',
+        `@yel@${
+            this.options.mobile ? 'tap' : 'click'
+        } here@whi@ to get a different one`,
         (this.gameWidth / 2) | 0,
         305,
         1,

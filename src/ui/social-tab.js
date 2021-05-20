@@ -21,7 +21,9 @@ function drawUiTabSocial(noMenus) {
         colours.lightGrey,
         128
     );
+
     this.surface.drawLineHoriz(UI_X, UI_Y + HEIGHT - 16, WIDTH, colours.black);
+
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -67,6 +69,8 @@ function drawUiTabSocial(noMenus) {
 
     this.panelSocialList.drawPanel();
 
+    const click = this.options.mobile ? 'Tap' : 'Click';
+
     if (this.uiTabSocialSubTab === 0) {
         const friendIndex = this.panelSocialList.getListEntryIndex(
             this.controlListSocialPlayers
@@ -79,7 +83,7 @@ function drawUiTabSocial(noMenus) {
 
             if (this.mouseX > 429) {
                 this.surface.drawStringCenter(
-                    `Click to remove ${username}`,
+                    `${click} to remove ${username}`,
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
@@ -87,7 +91,7 @@ function drawUiTabSocial(noMenus) {
                 );
             } else if (this.friendListOnline[friendIndex] === 255) {
                 this.surface.drawStringCenter(
-                    `Click to message ${username}`,
+                    `${click} to message ${username}`,
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
@@ -124,7 +128,7 @@ function drawUiTabSocial(noMenus) {
             }
         } else {
             this.surface.drawStringCenter(
-                'Click a name to send a message',
+                `${click} a name to send a message`,
                 UI_X + HALF_WIDTH,
                 UI_Y + 35,
                 1,
@@ -146,7 +150,7 @@ function drawUiTabSocial(noMenus) {
         }
 
         this.surface.drawStringCenter(
-            'Click here to add a friend',
+            `${click} here to add a friend`,
             UI_X + HALF_WIDTH,
             UI_Y + HEIGHT - 3,
             1,
@@ -160,7 +164,7 @@ function drawUiTabSocial(noMenus) {
         if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
             if (this.mouseX > 429) {
                 this.surface.drawStringCenter(
-                    'Click to remove ' +
+                    `${click} to remove ` +
                         Utility.hashToUsername(this.ignoreList[ignoreIndex]),
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
@@ -192,7 +196,7 @@ function drawUiTabSocial(noMenus) {
         }
 
         this.surface.drawStringCenter(
-            'Click here to add a name',
+            `${click} here to add a name`,
             UI_X + HALF_WIDTH,
             UI_Y + HEIGHT - 3,
             1,

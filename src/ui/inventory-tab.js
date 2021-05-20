@@ -1,40 +1,59 @@
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
-const UI_X = 512 - 248;
-const UI_Y = 36;
+const SLOT_WIDTH = 49;
+const SLOT_HEIGHT = 34;
+
+const WIDTH = SLOT_WIDTH * 5;
+const HEIGHT = SLOT_HEIGHT * 6;
 
 function drawUiTabInventory(noMenus) {
-    this.surface._drawSprite_from3(UI_X, 3, this.spriteMedia + 1);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX -= 32;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(uiX, 3, this.spriteMedia + 1);
+    }
 
     for (let i = 0; i < this.inventoryMaxItemCount; i++) {
-        const slotX = UI_X + (i % 5) * 49;
-        const slotY = 36 + ((i / 5) | 0) * 34;
+        const slotX = uiX + (i % 5) * SLOT_WIDTH;
+        const slotY = uiY + ((i / 5) | 0) * SLOT_HEIGHT;
 
         if (i < this.inventoryItemsCount && this.inventoryEquipped[i] === 1) {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, colours.red, 128);
+            this.surface.drawBoxAlpha(
+                slotX,
+                slotY,
+                SLOT_WIDTH,
+                SLOT_HEIGHT,
+                colours.red,
+                128
+            );
         } else {
             this.surface.drawBoxAlpha(
                 slotX,
                 slotY,
-                49,
-                34,
+                SLOT_WIDTH,
+                SLOT_HEIGHT,
                 colours.darkGrey,
                 128
             );
         }
 
         if (i < this.inventoryItemsCount) {
-            const spriteId =
+            const spriteID =
                 this.spriteItem + GameData.itemPicture[this.inventoryItemId[i]];
+
             const spriteMask = GameData.itemMask[this.inventoryItemId[i]];
 
             this.surface._spriteClipping_from9(
                 slotX,
                 slotY,
-                48,
-                32,
-                spriteId,
+                SLOT_WIDTH,
+                SLOT_HEIGHT - 2,
+                spriteID,
                 spriteMask,
                 0,
                 0,
@@ -53,34 +72,40 @@ function drawUiTabInventory(noMenus) {
         }
     }
 
-    // rows and columns
+    // row and column lines
     for (let i = 1; i <= 4; i++) {
         this.surface.drawLineVert(
-            UI_X + i * 49,
-            36,
-            ((this.inventoryMaxItemCount / 5) | 0) * 34,
+            uiX + i * SLOT_WIDTH,
+            uiY,
+            ((this.inventoryMaxItemCount / 5) | 0) * SLOT_HEIGHT,
             colours.black
         );
     }
 
     for (let i = 1; i <= ((this.inventoryMaxItemCount / 5) | 0) - 1; i++) {
-        this.surface.drawLineHoriz(UI_X, 36 + i * 34, 245, colours.black);
+        this.surface.drawLineHoriz(
+            uiX,
+            uiY + i * SLOT_HEIGHT,
+            245,
+            colours.black
+        );
     }
 
     if (!noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (
         mouseX >= 0 &&
         mouseY >= 0 &&
-        mouseX < 248 &&
-        mouseY < ((this.inventoryMaxItemCount / 5) | 0) * 34
+        mouseX < WIDTH &&
+        mouseY < ((this.inventoryMaxItemCount / 5) | 0) * SLOT_HEIGHT
     ) {
-        const itemIndex = ((mouseX / 49) | 0) + ((mouseY / 34) | 0) * 5;
+        const itemIndex =
+            ((mouseX / SLOT_WIDTH) | 0) + ((mouseY / SLOT_HEIGHT) | 0) * 5;
 
         if (itemIndex < this.inventoryItemsCount) {
             const itemID = this.inventoryItemId[itemIndex];
@@ -91,13 +116,16 @@ function drawUiTabInventory(noMenus) {
                     this.menuItemText1[this.menuItemsCount] = `Cast ${
                         GameData.spellName[this.selectedSpell]
                     } on`;
+
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 600;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
+
                     this.menuSourceIndex[
                         this.menuItemsCount
                     ] = this.selectedSpell;
                     this.menuItemsCount++;
+
                     return;
                 }
             } else {
@@ -105,13 +133,16 @@ function drawUiTabInventory(noMenus) {
                     this.menuItemText1[
                         this.menuItemsCount
                     ] = `Use ${this.selectedItemName} with:`;
+
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 610;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
+
                     this.menuSourceIndex[
                         this.menuItemsCount
                     ] = this.selectedItemInventoryIndex;
                     this.menuItemsCount++;
+
                     return;
                 }
 
@@ -137,6 +168,7 @@ function drawUiTabInventory(noMenus) {
                 if (GameData.itemCommand[itemID] !== '') {
                     this.menuItemText1[this.menuItemsCount] =
                         GameData.itemCommand[itemID];
+
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 640;
                     this.menuIndex[this.menuItemsCount] = itemIndex;

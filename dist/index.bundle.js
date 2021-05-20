@@ -12881,7 +12881,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":116,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":117,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13411,7 +13411,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":116,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":117,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14750,7 +14750,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":88,"./utility":116}],46:[function(require,module,exports){
+},{"./scene":88,"./utility":117}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -15575,7 +15575,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":116,"./version":117,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":117,"./version":118,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -16194,15 +16194,22 @@ class mudclient extends GameConnection {
         this.cameraRotationTime = 0;
         this.duelOpponentItemsCount = 0;
         this.duelItemsCount = 0;
-        this.characterSkinColours = new Int32Array([
-            0xecded0, 0xccb366, 0xb38c40, 0x997326, 0x906020
-        ]);
         this.duelOfferOpponentItemCount = 0;
+
+        this.characterHairColours = new Int32Array([
+            0xffc030, 0xffa040, 0x805030, 0x604020, 0x303030, 0xff6020, 0xff4000, 0xffffff, 65280, 65535
+        ]);
+
         this.characterTopBottomColours = new Int32Array([
             0xff0000, 0xff8000, 0xffe000, 0xa0e000, 0x00e000,
             0x008000, 0x00a080, 0x00b0ff, 0x0080ff, 0x0030f0,
             0xe000e0, 0x303030, 0x604000, 0x805000, 0xffffff
         ]);
+
+        this.characterSkinColours = new Int32Array([
+            0xecded0, 0xccb366, 0xb38c40, 0x997326, 0x906020
+        ]);
+
         this.itemsAboveHeadCount = 0;
         this.selectedItemInventoryIndex = 0;
         this.statFatigue = 0;
@@ -16221,9 +16228,6 @@ class mudclient extends GameConnection {
         this.planeHeight = 0;
         this.planeMultiplier = 0;
         this.playerQuestPoints = 0;
-        this.characterHairColours = new Int32Array([
-            0xffc030, 0xffa040, 0x805030, 0x604020, 0x303030, 0xff6020, 0xff4000, 0xffffff, 65280, 65535
-        ]);
         this.bankActivePage = 0;
         this.welcomeLastLoggedInDays = 0;
         this.inventoryItemsCount = 0;
@@ -16344,7 +16348,6 @@ class mudclient extends GameConnection {
         this.gameModels.fill(null);
         this.showDialogDuel = false;
         this.serverMessage = '';
-        this.serverMessageBoxTop = false;
         this.duelOpponentItems = new Int32Array(8);
         this.duelOpponentItemCount = new Int32Array(8);
         this.duelItems = new Int32Array(8);
@@ -16696,7 +16699,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawUi() {
+    drawUI() {
         if (this.logoutTimeout !== 0) {
             this.drawDialogLogout();
         } else if (this.showDialogWelcome) {
@@ -16735,7 +16738,7 @@ class mudclient extends GameConnection {
                 this.drawDialogCombatStyle();
             }
 
-            this.setActiveUiTab();
+            this.setActiveUITab();
 
             const noMenus = !this.showOptionMenu && !this.showRightClickMenu;
 
@@ -16743,6 +16746,7 @@ class mudclient extends GameConnection {
                 this.menuItemsCount = 0;
             }
 
+            // TODO bounds check open UI in mobile
             if (this.showUiTab === 0 && noMenus) {
                 this.createRightClickMenu();
             }
@@ -17695,7 +17699,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    setActiveUiTab() {
+    setActiveUITab() {
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 35) {
             this.showUiTab = 1;
         }
@@ -17765,9 +17769,12 @@ class mudclient extends GameConnection {
         }
     }
 
+    setActiveMobileUITab() {
+    }
+
     drawNpc(x, y, w, h, id, tx, ty) {
-        let character = this.npcs[id];
-        let l1 = character.animationCurrent + (this.cameraRotation + 16) / 32 & 7;
+        const npc = this.npcs[id];
+        let l1 = npc.animationCurrent + (this.cameraRotation + 16) / 32 & 7;
         let flag = false;
         let i2 = l1;
 
@@ -17782,25 +17789,25 @@ class mudclient extends GameConnection {
             flag = true;
         }
 
-        let j2 = i2 * 3 + this.npcWalkModel[((character.stepCount / GameData.npcWalkModel[character.npcId]) | 0) % 4];
+        let j2 = i2 * 3 + this.npcWalkModel[((npc.stepCount / GameData.npcWalkModel[npc.npcId]) | 0) % 4];
 
-        if (character.animationCurrent === 8) {
+        if (npc.animationCurrent === 8) {
             i2 = 5;
             l1 = 2;
             flag = false;
-            x -= ((GameData.npcCombatAnimation[character.npcId] * ty) / 100) | 0;
-            j2 = i2 * 3 + this.npcCombatModelArray1[(((this.loginTimer / (GameData.npcCombatModel[character.npcId]) | 0) - 1)) % 8];
-        } else if (character.animationCurrent === 9) {
+            x -= ((GameData.npcCombatAnimation[npc.npcId] * ty) / 100) | 0;
+            j2 = i2 * 3 + this.npcCombatModelArray1[(((this.loginTimer / (GameData.npcCombatModel[npc.npcId]) | 0) - 1)) % 8];
+        } else if (npc.animationCurrent === 9) {
             i2 = 5;
             l1 = 2;
             flag = true;
-            x += ((GameData.npcCombatAnimation[character.npcId] * ty) / 100) | 0;
-            j2 = i2 * 3 + this.npcCombatModelArray2[((this.loginTimer / GameData.npcCombatModel[character.npcId]) | 0) % 8];
+            x += ((GameData.npcCombatAnimation[npc.npcId] * ty) / 100) | 0;
+            j2 = i2 * 3 + this.npcCombatModelArray2[((this.loginTimer / GameData.npcCombatModel[npc.npcId]) | 0) % 8];
         }
 
         for (let k2 = 0; k2 < 12; k2++) {
             let l2 = this.npcAnimationArray[l1][k2];
-            let k3 = GameData.npcSprite.get(character.npcId, l2);
+            let k3 = GameData.npcSprite.get(npc.npcId, l2);
 
             if (k3 >= 0) {
                 let i4 = 0;
@@ -17825,14 +17832,14 @@ class mudclient extends GameConnection {
                     let skincol = 0;
 
                     if (col === 1) {
-                        col = GameData.npcColourHair[character.npcId];
-                        skincol = GameData.npcColourSkin[character.npcId];
+                        col = GameData.npcColourHair[npc.npcId];
+                        skincol = GameData.npcColourSkin[npc.npcId];
                     } else if (col === 2) {
-                        col = GameData.npcColourTop[character.npcId];
-                        skincol = GameData.npcColourSkin[character.npcId];
+                        col = GameData.npcColourTop[npc.npcId];
+                        skincol = GameData.npcColourSkin[npc.npcId];
                     } else if (col === 3) {
-                        col = GameData.npcColorBottom[character.npcId];
-                        skincol = GameData.npcColourSkin[character.npcId];
+                        col = GameData.npcColorBottom[npc.npcId];
+                        skincol = GameData.npcColourSkin[npc.npcId];
                     }
 
                     this.surface._spriteClipping_from9(x + i4, y + j4, i5, h, l4, col, skincol, tx, flag);
@@ -17840,47 +17847,47 @@ class mudclient extends GameConnection {
             }
         }
 
-        if (character.messageTimeout > 0) {
-            this.receivedMessageMidPoint[this.receivedMessagesCount] = (this.surface.textWidth(character.message, 1) / 2) | 0;
+        if (npc.messageTimeout > 0) {
+            this.receivedMessageMidPoint[this.receivedMessagesCount] = (this.surface.textWidth(npc.message, 1) / 2) | 0;
 
             if (this.receivedMessageMidPoint[this.receivedMessagesCount] > 150) {
                 this.receivedMessageMidPoint[this.receivedMessagesCount] = 150;
             }
 
-            this.receivedMessageHeight[this.receivedMessagesCount] = ((this.surface.textWidth(character.message, 1) / 300) | 0) * this.surface.textHeight(1);
+            this.receivedMessageHeight[this.receivedMessagesCount] = ((this.surface.textWidth(npc.message, 1) / 300) | 0) * this.surface.textHeight(1);
             this.receivedMessageX[this.receivedMessagesCount] = x + ((w / 2) | 0);
             this.receivedMessageY[this.receivedMessagesCount] = y;
-            this.receivedMessages[this.receivedMessagesCount++] = character.message;
+            this.receivedMessages[this.receivedMessagesCount++] = npc.message;
         }
 
-        if (character.animationCurrent === 8 || character.animationCurrent === 9 || character.combatTimer !== 0) {
-            if (character.combatTimer > 0) {
+        if (npc.animationCurrent === 8 || npc.animationCurrent === 9 || npc.combatTimer !== 0) {
+            if (npc.combatTimer > 0) {
                 let i3 = x;
 
-                if (character.animationCurrent === 8) {
+                if (npc.animationCurrent === 8) {
                     i3 -= ((20 * ty) / 100) | 0;
-                } else if (character.animationCurrent === 9) {
+                } else if (npc.animationCurrent === 9) {
                     i3 += ((20 * ty) / 100) | 0;
                 }
 
-                let l3 = ((character.healthCurrent * 30) / character.healthMax) | 0;
+                let l3 = ((npc.healthCurrent * 30) / npc.healthMax) | 0;
 
                 this.healthBarX[this.healthBarCount] = i3 + ((w / 2) | 0);
                 this.healthBarY[this.healthBarCount] = y;
                 this.healthBarMissing[this.healthBarCount++] = l3;
             }
 
-            if (character.combatTimer > 150) {
+            if (npc.combatTimer > 150) {
                 let j3 = x;
 
-                if (character.animationCurrent === 8) {
+                if (npc.animationCurrent === 8) {
                     j3 -= ((10 * ty) / 100) | 0;
-                } else if (character.animationCurrent === 9) {
+                } else if (npc.animationCurrent === 9) {
                     j3 += ((10 * ty) / 100) | 0;
                 }
 
                 this.surface._drawSprite_from3((j3 + ((w / 2) | 0)) - 12, (y + ((h / 2) | 0)) - 12, this.spriteMedia + 12);
-                this.surface.drawStringCenter(character.damageTaken.toString(), (j3 + ((w / 2) | 0)) - 1, y + ((h / 2) | 0) + 5, 3, 0xffffff);
+                this.surface.drawStringCenter(npc.damageTaken.toString(), (j3 + ((w / 2) | 0)) - 1, y + ((h / 2) | 0) + 5, 3, 0xffffff);
             }
         }
     }
@@ -18728,8 +18735,13 @@ class mudclient extends GameConnection {
 
         this.setTargetFps(50);
 
-        this.surface = new Surface(this.gameWidth, this.gameHeight + 12, 4000,
-            this);
+        this.surface = new Surface(
+            this.gameWidth,
+            this.gameHeight + 12,
+            4000,
+            this
+        );
+
         this.surface.mudclientref = this;
         this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
@@ -18744,6 +18756,7 @@ class mudclient extends GameConnection {
         this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
         this.panelSocialList = new Panel(this.surface, 5);
         this.controlListSocialPlayers = this.panelSocialList.addTextListInteractive(x, y + 40, 196, 126, 1, 500, true);
+
         this.panelQuestList = new Panel(this.surface, 5);
         this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
 
@@ -19189,11 +19202,23 @@ class mudclient extends GameConnection {
         Panel.textListEntryHeightMod = 2;
         this.panelMessageTabs.drawPanel();
         Panel.textListEntryHeightMod = 0;
-        this.surface._drawSpriteAlpha_from4(this.surface.width2 - 3 - 197, 3, this.spriteMedia, 128);
-        this.drawUi();
+
+        if (!this.options.mobile) {
+            this.surface._drawSpriteAlpha_from4(
+                this.surface.width2 - 3 - 197, 3,
+                this.spriteMedia,
+                128
+            );
+        }
+
+        this.drawUI();
         this.surface.loggedIn = false;
         this.drawChatMessageTabs();
         this.surface.draw(this.graphics, 0, 0);
+
+        if (this.options.mobile) {
+            this.drawMobileUI();
+        }
     }
 
     async loadSounds() {
@@ -20069,6 +20094,7 @@ class mudclient extends GameConnection {
             case 650:
                 this.selectedItemInventoryIndex = menuIndex;
                 this.showUiTab = 0;
+
                 this.selectedItemName =
                         GameData.itemName[this.inventoryItemId[
                             this.selectedItemInventoryIndex]];
@@ -20079,6 +20105,7 @@ class mudclient extends GameConnection {
                 this.packetStream.sendPacket();
                 this.selectedItemInventoryIndex = -1;
                 this.showUiTab = 0;
+
                 this.showMessage(
                     'Dropping ' +
                         GameData.itemName[this.inventoryItemId[menuIndex]],
@@ -20094,6 +20121,7 @@ class mudclient extends GameConnection {
 
                 this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
                     x, y, true);
+
                 this.packetStream.newPacket(clientOpcodes.CAST_NPC);
                 this.packetStream.putShort(menuIndex);
                 this.packetStream.putShort(menuSourceIndex);
@@ -20933,7 +20961,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":95,"./utility":116,"./version":117,"./word-filter":118,"./world":119,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":95,"./utility":117,"./version":118,"./word-filter":119,"./world":120,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -21154,7 +21182,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],58:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],58:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21277,7 +21305,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],61:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],61:[function(require,module,exports){
 
 
 function getPacketHandlers(mudclient) {
@@ -21377,7 +21405,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":116}],63:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":117}],63:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21429,7 +21457,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],65:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],65:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -21461,7 +21489,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],66:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],66:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -21524,7 +21552,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],67:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],67:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21658,7 +21686,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],69:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],69:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
@@ -21760,7 +21788,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":116}],70:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":117}],70:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameData = require('../game-data');
 const Utility = require('../utility');
@@ -21823,7 +21851,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":116}],71:[function(require,module,exports){
+},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":117}],71:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
@@ -21934,7 +21962,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":116}],72:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":117}],72:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
@@ -22069,7 +22097,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":116}],73:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":117}],73:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
@@ -22244,7 +22272,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../opcodes/server":55,"../utility":116,"../word-filter":118}],74:[function(require,module,exports){
+},{"../chat-message":40,"../opcodes/server":55,"../utility":117,"../word-filter":119}],74:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const serverOpcodes = require('../opcodes/server');
@@ -22408,7 +22436,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/client":54,"../opcodes/server":55,"../utility":116}],75:[function(require,module,exports){
+},{"../opcodes/client":54,"../opcodes/server":55,"../utility":117}],75:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22524,7 +22552,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],76:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],76:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22542,7 +22570,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],77:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],77:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22623,7 +22651,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],78:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],78:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22650,7 +22678,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],79:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],79:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameConnection = require('../game-connection');
 const Utility = require('../utility');
@@ -22739,7 +22767,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":116,"../word-filter":118}],80:[function(require,module,exports){
+},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":117,"../word-filter":119}],80:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 function fromCharArray(a) {
@@ -22870,7 +22898,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],83:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],83:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22886,7 +22914,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":116}],84:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":117}],84:[function(require,module,exports){
 const Long = require('long');
 
 function toCharArray(s) {
@@ -32355,7 +32383,7 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":116}],91:[function(require,module,exports){
+},{"./utility":117}],91:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
@@ -33481,7 +33509,7 @@ module.exports = {
 
 
 function applyUIComponents(mudclient) {
-    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["appearance-panel"]=require("./appearance-panel.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["appearance-panel"]=require("./appearance-panel.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["mobile-ui"]=require("./mobile-ui.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
 
     for (const [componentName, component] of Object.entries(components)) {
         if (/^_|index/.test(componentName)) {
@@ -33500,44 +33528,63 @@ function applyUIComponents(mudclient) {
 
 module.exports = applyUIComponents;
 
-},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./combat-style.js":94,"./index.js":95,"./inventory-tab.js":96,"./login-panels.js":97,"./logout-dialog.js":98,"./magic-tab.js":99,"./minimap-tab.js":100,"./option-menu.js":101,"./options-tab.js":102,"./password-dialog.js":103,"./player-info-tab.js":104,"./recovery-panel.js":105,"./report-dialog.js":106,"./server-message-dialog.js":107,"./shop-dialog.js":108,"./sleep.js":109,"./social-dialog.js":110,"./social-tab.js":111,"./trade-confirm-dialog.js":112,"./trade-dialog.js":113,"./welcome-dialog.js":114,"./wilderness-dialog.js":115}],96:[function(require,module,exports){
+},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./combat-style.js":94,"./index.js":95,"./inventory-tab.js":96,"./login-panels.js":97,"./logout-dialog.js":98,"./magic-tab.js":99,"./minimap-tab.js":100,"./mobile-ui.js":101,"./option-menu.js":102,"./options-tab.js":103,"./password-dialog.js":104,"./player-info-tab.js":105,"./recovery-panel.js":106,"./report-dialog.js":107,"./server-message-dialog.js":108,"./shop-dialog.js":109,"./sleep.js":110,"./social-dialog.js":111,"./social-tab.js":112,"./trade-confirm-dialog.js":113,"./trade-dialog.js":114,"./welcome-dialog.js":115,"./wilderness-dialog.js":116}],96:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
-const UI_X = 512 - 248;
-const UI_Y = 36;
+const SLOT_WIDTH = 49;
+const SLOT_HEIGHT = 34;
+
+const WIDTH = SLOT_WIDTH * 5;
+const HEIGHT = SLOT_HEIGHT * 6;
 
 function drawUiTabInventory(noMenus) {
-    this.surface._drawSprite_from3(UI_X, 3, this.spriteMedia + 1);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX -= 32;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(uiX, 3, this.spriteMedia + 1);
+    }
 
     for (let i = 0; i < this.inventoryMaxItemCount; i++) {
-        const slotX = UI_X + (i % 5) * 49;
-        const slotY = 36 + ((i / 5) | 0) * 34;
+        const slotX = uiX + (i % 5) * SLOT_WIDTH;
+        const slotY = uiY + ((i / 5) | 0) * SLOT_HEIGHT;
 
         if (i < this.inventoryItemsCount && this.inventoryEquipped[i] === 1) {
-            this.surface.drawBoxAlpha(slotX, slotY, 49, 34, colours.red, 128);
+            this.surface.drawBoxAlpha(
+                slotX,
+                slotY,
+                SLOT_WIDTH,
+                SLOT_HEIGHT,
+                colours.red,
+                128
+            );
         } else {
             this.surface.drawBoxAlpha(
                 slotX,
                 slotY,
-                49,
-                34,
+                SLOT_WIDTH,
+                SLOT_HEIGHT,
                 colours.darkGrey,
                 128
             );
         }
 
         if (i < this.inventoryItemsCount) {
-            const spriteId =
+            const spriteID =
                 this.spriteItem + GameData.itemPicture[this.inventoryItemId[i]];
+
             const spriteMask = GameData.itemMask[this.inventoryItemId[i]];
 
             this.surface._spriteClipping_from9(
                 slotX,
                 slotY,
-                48,
-                32,
-                spriteId,
+                SLOT_WIDTH,
+                SLOT_HEIGHT - 2,
+                spriteID,
                 spriteMask,
                 0,
                 0,
@@ -33556,34 +33603,40 @@ function drawUiTabInventory(noMenus) {
         }
     }
 
-    // rows and columns
+    // row and column lines
     for (let i = 1; i <= 4; i++) {
         this.surface.drawLineVert(
-            UI_X + i * 49,
-            36,
-            ((this.inventoryMaxItemCount / 5) | 0) * 34,
+            uiX + i * SLOT_WIDTH,
+            uiY,
+            ((this.inventoryMaxItemCount / 5) | 0) * SLOT_HEIGHT,
             colours.black
         );
     }
 
     for (let i = 1; i <= ((this.inventoryMaxItemCount / 5) | 0) - 1; i++) {
-        this.surface.drawLineHoriz(UI_X, 36 + i * 34, 245, colours.black);
+        this.surface.drawLineHoriz(
+            uiX,
+            uiY + i * SLOT_HEIGHT,
+            245,
+            colours.black
+        );
     }
 
     if (!noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (
         mouseX >= 0 &&
         mouseY >= 0 &&
-        mouseX < 248 &&
-        mouseY < ((this.inventoryMaxItemCount / 5) | 0) * 34
+        mouseX < WIDTH &&
+        mouseY < ((this.inventoryMaxItemCount / 5) | 0) * SLOT_HEIGHT
     ) {
-        const itemIndex = ((mouseX / 49) | 0) + ((mouseY / 34) | 0) * 5;
+        const itemIndex =
+            ((mouseX / SLOT_WIDTH) | 0) + ((mouseY / SLOT_HEIGHT) | 0) * 5;
 
         if (itemIndex < this.inventoryItemsCount) {
             const itemID = this.inventoryItemId[itemIndex];
@@ -33594,13 +33647,16 @@ function drawUiTabInventory(noMenus) {
                     this.menuItemText1[this.menuItemsCount] = `Cast ${
                         GameData.spellName[this.selectedSpell]
                     } on`;
+
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 600;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
+
                     this.menuSourceIndex[
                         this.menuItemsCount
                     ] = this.selectedSpell;
                     this.menuItemsCount++;
+
                     return;
                 }
             } else {
@@ -33608,13 +33664,16 @@ function drawUiTabInventory(noMenus) {
                     this.menuItemText1[
                         this.menuItemsCount
                     ] = `Use ${this.selectedItemName} with:`;
+
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 610;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
+
                     this.menuSourceIndex[
                         this.menuItemsCount
                     ] = this.selectedItemInventoryIndex;
                     this.menuItemsCount++;
+
                     return;
                 }
 
@@ -33640,6 +33699,7 @@ function drawUiTabInventory(noMenus) {
                 if (GameData.itemCommand[itemID] !== '') {
                     this.menuItemText1[this.menuItemsCount] =
                         GameData.itemCommand[itemID];
+
                     this.menuItemText2[this.menuItemsCount] = itemName;
                     this.menuType[this.menuItemsCount] = 640;
                     this.menuIndex[this.menuItemsCount] = itemIndex;
@@ -33678,12 +33738,13 @@ function createLoginPanels() {
 
     const x = (this.gameWidth / 2) | 0;
     let y = 40;
+    const click = this.options.mobile ? 'Tap' : 'Click';
 
     if (!this.members) {
         this.panelLoginWelcome.addTextCentre(
             x,
             200 + y,
-            'Click on an option',
+            `${click} on an option`,
             5,
             true
         );
@@ -33743,7 +33804,7 @@ function createLoginPanels() {
         this.panelLoginWelcome.addTextCentre(
             x,
             250 + y,
-            'Click here to login',
+            `${click} here to login`,
             5,
             false
         );
@@ -34436,6 +34497,8 @@ async function handleLoginScreenInput() {
                 );
 
                 this.lastMouseButtonDown = 0;
+
+                return;
             }
 
             if (this.panelLoginNewUser.isClicked(this.controlRegisterCancel)) {
@@ -34945,6 +35008,11 @@ function drawMinimapEntity(x, y, colour) {
 }
 
 function drawUiTabMinimap(noMenus) {
+    //let uiX = this.gameWidth - WIDTH - 3;
+    // 362
+    // 512-156 = 356
+
+
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 2);
 
     const x = UI_X + 40;
@@ -35167,6 +35235,64 @@ module.exports = {
 };
 
 },{"../scene":88,"./_colours":91}],101:[function(require,module,exports){
+const BUTTON_SIZE = 32;
+
+const mobileSprites = {
+    uiLeft: './ui-left.png',
+    uiRight: './ui-right.png'
+};
+
+for (const spriteName of Object.keys(mobileSprites)) {
+    const image = new Image();
+    image.src = mobileSprites[spriteName];
+    mobileSprites[spriteName] = image;
+}
+
+function drawMobileUI() {
+    const rightX = this.gameWidth - BUTTON_SIZE - 3;
+    const rightY = this.gameHeight / 2 - 49;
+
+    this.graphics.ctx.globalAlpha = 0.5;
+
+    let offsetY = rightY;
+
+    for (let i = 0; i < 3; i += 1) {
+        const isSelected = this.showUiTab === i + 1;
+
+        if (isSelected) {
+            this.graphics.ctx.globalAlpha = 1;
+        }
+
+        this.graphics.ctx.fillStyle = isSelected ? '#000083' : '#b5b5b4';
+        this.graphics.ctx.fillRect(rightX, offsetY, BUTTON_SIZE, BUTTON_SIZE);
+
+        if (isSelected) {
+            this.graphics.ctx.drawImage(
+                mobileSprites.uiRight,
+                0,
+                i * (BUTTON_SIZE + 1),
+                BUTTON_SIZE,
+                BUTTON_SIZE,
+                rightX,
+                offsetY,
+                BUTTON_SIZE,
+                BUTTON_SIZE
+            );
+
+            this.graphics.ctx.globalAlpha = 0.5;
+        }
+
+        offsetY += BUTTON_SIZE + 1;
+    }
+
+    this.graphics.ctx.drawImage(mobileSprites.uiRight, rightX, rightY);
+
+    this.graphics.ctx.globalAlpha = 1;
+}
+
+module.exports = { drawMobileUI };
+
+},{}],102:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -35216,7 +35342,7 @@ function drawOptionMenu() {
 
 module.exports = { drawOptionMenu };
 
-},{"../opcodes/client":54,"./_colours":91}],102:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],103:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -35240,7 +35366,7 @@ function drawUiTabOptions(noMenus) {
     let y = UI_Y + LINE_BREAK;
 
     this.surface.drawString(
-        'Game options - click to toggle',
+        `Game options - ${this.options.mobile ? 'tap' : 'click'} to toggle`,
         x,
         y,
         1,
@@ -35261,8 +35387,11 @@ function drawUiTabOptions(noMenus) {
     y += LINE_BREAK;
 
     this.surface.drawString(
-        'Mouse buttons - ' +
-            (this.optionMouseButtonOne ? '@red@One' : '@gre@Two'),
+        this.options.mobile
+            ? 'Single tap mode - ' +
+                  (this.optionMouseButtonOne ? '@gre@on' : '@red@off')
+            : 'Mouse buttons - ' +
+                  (this.optionMouseButtonOne ? '@red@One' : '@gre@Two'),
         x,
         y,
         1,
@@ -35291,7 +35420,7 @@ function drawUiTabOptions(noMenus) {
 
         y += LINE_BREAK;
 
-        let textColour = 0xffffff;
+        let textColour = colours.white;
 
         if (
             this.mouseX > x &&
@@ -35305,7 +35434,7 @@ function drawUiTabOptions(noMenus) {
         this.surface.drawString('Change password', x, y, 1, textColour);
 
         y += LINE_BREAK;
-        textColour = 0xffffff;
+        textColour = colours.white;
 
         if (
             this.mouseX > x &&
@@ -35472,7 +35601,13 @@ function drawUiTabOptions(noMenus) {
         textColour = colours.yellow;
     }
 
-    this.surface.drawString('Click here to logout', UI_X + 3, y, 1, textColour);
+    this.surface.drawString(
+        `${this.options.mobile ? 'Tap' : 'Click'} here to logout`,
+        UI_X + 3,
+        y,
+        1,
+        textColour
+    );
 
     if (!noMenus) {
         return;
@@ -35631,7 +35766,7 @@ function drawUiTabOptions(noMenus) {
             );
         }
 
-        y += 20;
+        y += LINE_BREAK + 5;
 
         if (
             this.mouseX > x &&
@@ -35649,7 +35784,7 @@ function drawUiTabOptions(noMenus) {
 
 module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54,"./_colours":91}],103:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],104:[function(require,module,exports){
 const colours = require('./_colours');
 
 const DIALOG_X = 106;
@@ -35844,15 +35979,17 @@ module.exports = {
     showChangePasswordStep: 0
 };
 
-},{"./_colours":91}],104:[function(require,module,exports){
+},{"./_colours":91}],105:[function(require,module,exports){
 const colours = require('./_colours');
 
 const HEIGHT = 275;
+const LINE_BREAK = 12;
 const UI_X = 313;
 const UI_Y = 36;
 const WIDTH = 196;
 
 const HALF_WIDTH = (WIDTH / 2) | 0;
+
 const TABS = ['Stats', 'Quests'];
 const TAB_HEIGHT = 24;
 
@@ -35986,7 +36123,9 @@ function drawUiTabPlayerInfo(noMenus) {
         colours.lightGrey,
         128
     );
+
     this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, colours.black);
+
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -36063,7 +36202,7 @@ function drawUiTabPlayerInfo(noMenus) {
             colours.white
         );
 
-        y += 12;
+        y += LINE_BREAK;
 
         this.surface.drawString(
             `Fatigue: @yel@${((this.statFatigue * 100) / 750) | 0}%`,
@@ -36083,7 +36222,7 @@ function drawUiTabPlayerInfo(noMenus) {
             colours.yellow
         );
 
-        y += 12;
+        y += LINE_BREAK;
 
         for (let i = 0; i < 3; i++) {
             this.surface.drawString(
@@ -36122,7 +36261,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 colours.yellow
             );
 
-            y += 12;
+            y += LINE_BREAK;
 
             let nextLevelAt = EXPERIENCE_ARRAY[0];
 
@@ -36141,7 +36280,9 @@ function drawUiTabPlayerInfo(noMenus) {
                 1,
                 colours.white
             );
-            y += 12;
+
+            y += LINE_BREAK;
+
             this.surface.drawString(
                 'Next level at: ' + ((nextLevelAt / 4) | 0),
                 UI_X + 5,
@@ -36157,7 +36298,8 @@ function drawUiTabPlayerInfo(noMenus) {
                 1,
                 colours.yellow
             );
-            y += 12;
+
+            y += LINE_BREAK;
 
             let totalLevel = 0;
 
@@ -36173,7 +36315,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 colours.white
             );
 
-            y += 12;
+            y += LINE_BREAK;
 
             this.surface.drawString(
                 `Combat level: ${this.localPlayer.level}`,
@@ -36183,11 +36325,12 @@ function drawUiTabPlayerInfo(noMenus) {
                 colours.white
             );
 
-            y += 12;
+            y += LINE_BREAK;
         }
     } else if (this.uiTabPlayerInfoSubTab === 1) {
         // the handler for the Quests tab
         this.panelQuestList.clearList(this.controlListQuest);
+
         this.panelQuestList.addListEntry(
             this.controlListQuest,
             0,
@@ -36240,7 +36383,7 @@ module.exports = {
     uiTabPlayerInfoSubTab: 0
 };
 
-},{"./_colours":91}],105:[function(require,module,exports){
+},{"./_colours":91}],106:[function(require,module,exports){
 const selectedRecoverQuestions = [];
 selectedRecoverQuestions.length = 5;
 selectedRecoverQuestions.fill(null);
@@ -36255,7 +36398,7 @@ module.exports = {
     controlRecoverCreateButton: 0
 };
 
-},{}],106:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -36563,7 +36706,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":116,"./_colours":91}],107:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":117,"./_colours":91}],108:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -36639,9 +36782,12 @@ function drawDialogServerMessage() {
     this.mouseButtonClick = 0;
 }
 
-module.exports = { drawDialogServerMessage };
+module.exports = {
+    serverMessageBoxTop: false,
+    drawDialogServerMessage
+};
 
-},{"./_colours":91}],108:[function(require,module,exports){
+},{"./_colours":91}],109:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -37021,7 +37167,7 @@ function drawDialogShop() {
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],109:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],110:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -37131,7 +37277,9 @@ function drawSleep() {
     );
 
     this.surface.drawStringCenter(
-        '@yel@click here@whi@ to get a different one',
+        `@yel@${
+            this.options.mobile ? 'tap' : 'click'
+        } here@whi@ to get a different one`,
         (this.gameWidth / 2) | 0,
         305,
         1,
@@ -37195,7 +37343,7 @@ module.exports = {
     isSleeping: false
 };
 
-},{"../opcodes/client":54,"./_colours":91}],110:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],111:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -37409,7 +37557,7 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":116,"../word-filter":118,"./_colours":91}],111:[function(require,module,exports){
+},{"../chat-message":40,"../utility":117,"../word-filter":119,"./_colours":91}],112:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
@@ -37433,7 +37581,9 @@ function drawUiTabSocial(noMenus) {
         colours.lightGrey,
         128
     );
+
     this.surface.drawLineHoriz(UI_X, UI_Y + HEIGHT - 16, WIDTH, colours.black);
+
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -37479,6 +37629,8 @@ function drawUiTabSocial(noMenus) {
 
     this.panelSocialList.drawPanel();
 
+    const click = this.options.mobile ? 'Tap' : 'Click';
+
     if (this.uiTabSocialSubTab === 0) {
         const friendIndex = this.panelSocialList.getListEntryIndex(
             this.controlListSocialPlayers
@@ -37491,7 +37643,7 @@ function drawUiTabSocial(noMenus) {
 
             if (this.mouseX > 429) {
                 this.surface.drawStringCenter(
-                    `Click to remove ${username}`,
+                    `${click} to remove ${username}`,
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
@@ -37499,7 +37651,7 @@ function drawUiTabSocial(noMenus) {
                 );
             } else if (this.friendListOnline[friendIndex] === 255) {
                 this.surface.drawStringCenter(
-                    `Click to message ${username}`,
+                    `${click} to message ${username}`,
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
                     1,
@@ -37536,7 +37688,7 @@ function drawUiTabSocial(noMenus) {
             }
         } else {
             this.surface.drawStringCenter(
-                'Click a name to send a message',
+                `${click} a name to send a message`,
                 UI_X + HALF_WIDTH,
                 UI_Y + 35,
                 1,
@@ -37558,7 +37710,7 @@ function drawUiTabSocial(noMenus) {
         }
 
         this.surface.drawStringCenter(
-            'Click here to add a friend',
+            `${click} here to add a friend`,
             UI_X + HALF_WIDTH,
             UI_Y + HEIGHT - 3,
             1,
@@ -37572,7 +37724,7 @@ function drawUiTabSocial(noMenus) {
         if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
             if (this.mouseX > 429) {
                 this.surface.drawStringCenter(
-                    'Click to remove ' +
+                    `${click} to remove ` +
                         Utility.hashToUsername(this.ignoreList[ignoreIndex]),
                     UI_X + HALF_WIDTH,
                     UI_Y + 35,
@@ -37604,7 +37756,7 @@ function drawUiTabSocial(noMenus) {
         }
 
         this.surface.drawStringCenter(
-            'Click here to add a name',
+            `${click} here to add a name`,
             UI_X + HALF_WIDTH,
             UI_Y + HEIGHT - 3,
             1,
@@ -37691,7 +37843,7 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":116,"./_colours":91}],112:[function(require,module,exports){
+},{"../utility":117,"./_colours":91}],113:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
@@ -37884,7 +38036,7 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":116,"./_colours":91}],113:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":117,"./_colours":91}],114:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -38402,7 +38554,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],114:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],115:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -38651,7 +38803,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":91}],115:[function(require,module,exports){
+},{"./_colours":91}],116:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -38787,7 +38939,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":91}],116:[function(require,module,exports){
+},{"./_colours":91}],117:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -39176,7 +39328,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],117:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],118:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -39190,7 +39342,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],118:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -40356,7 +40508,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
 
-},{}],119:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -42882,4 +43034,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":116,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":117,"ndarray":34}]},{},[1]);

@@ -18,6 +18,11 @@ function drawMinimapEntity(x, y, colour) {
 }
 
 function drawUiTabMinimap(noMenus) {
+    //let uiX = this.gameWidth - WIDTH - 3;
+    // 362
+    // 512-156 = 356
+
+
     this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 2);
 
     const x = UI_X + 40;

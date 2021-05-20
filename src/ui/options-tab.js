@@ -21,7 +21,7 @@ function drawUiTabOptions(noMenus) {
     let y = UI_Y + LINE_BREAK;
 
     this.surface.drawString(
-        'Game options - click to toggle',
+        `Game options - ${this.options.mobile ? 'tap' : 'click'} to toggle`,
         x,
         y,
         1,
@@ -42,8 +42,11 @@ function drawUiTabOptions(noMenus) {
     y += LINE_BREAK;
 
     this.surface.drawString(
-        'Mouse buttons - ' +
-            (this.optionMouseButtonOne ? '@red@One' : '@gre@Two'),
+        this.options.mobile
+            ? 'Single tap mode - ' +
+                  (this.optionMouseButtonOne ? '@gre@on' : '@red@off')
+            : 'Mouse buttons - ' +
+                  (this.optionMouseButtonOne ? '@red@One' : '@gre@Two'),
         x,
         y,
         1,
@@ -72,7 +75,7 @@ function drawUiTabOptions(noMenus) {
 
         y += LINE_BREAK;
 
-        let textColour = 0xffffff;
+        let textColour = colours.white;
 
         if (
             this.mouseX > x &&
@@ -86,7 +89,7 @@ function drawUiTabOptions(noMenus) {
         this.surface.drawString('Change password', x, y, 1, textColour);
 
         y += LINE_BREAK;
-        textColour = 0xffffff;
+        textColour = colours.white;
 
         if (
             this.mouseX > x &&
@@ -253,7 +256,13 @@ function drawUiTabOptions(noMenus) {
         textColour = colours.yellow;
     }
 
-    this.surface.drawString('Click here to logout', UI_X + 3, y, 1, textColour);
+    this.surface.drawString(
+        `${this.options.mobile ? 'Tap' : 'Click'} here to logout`,
+        UI_X + 3,
+        y,
+        1,
+        textColour
+    );
 
     if (!noMenus) {
         return;
@@ -412,7 +421,7 @@ function drawUiTabOptions(noMenus) {
             );
         }
 
-        y += 20;
+        y += LINE_BREAK + 5;
 
         if (
             this.mouseX > x &&

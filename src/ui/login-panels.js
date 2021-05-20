@@ -5,12 +5,13 @@ function createLoginPanels() {
 
     const x = (this.gameWidth / 2) | 0;
     let y = 40;
+    const click = this.options.mobile ? 'Tap' : 'Click';
 
     if (!this.members) {
         this.panelLoginWelcome.addTextCentre(
             x,
             200 + y,
-            'Click on an option',
+            `${click} on an option`,
             5,
             true
         );
@@ -70,7 +71,7 @@ function createLoginPanels() {
         this.panelLoginWelcome.addTextCentre(
             x,
             250 + y,
-            'Click here to login',
+            `${click} here to login`,
             5,
             false
         );
@@ -763,6 +764,8 @@ async function handleLoginScreenInput() {
                 );
 
                 this.lastMouseButtonDown = 0;
+
+                return;
             }
 
             if (this.panelLoginNewUser.isClicked(this.controlRegisterCancel)) {

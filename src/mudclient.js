@@ -143,15 +143,22 @@ class mudclient extends GameConnection {
         this.cameraRotationTime = 0;
         this.duelOpponentItemsCount = 0;
         this.duelItemsCount = 0;
-        this.characterSkinColours = new Int32Array([
-            0xecded0, 0xccb366, 0xb38c40, 0x997326, 0x906020
-        ]);
         this.duelOfferOpponentItemCount = 0;
+
+        this.characterHairColours = new Int32Array([
+            0xffc030, 0xffa040, 0x805030, 0x604020, 0x303030, 0xff6020, 0xff4000, 0xffffff, 65280, 65535
+        ]);
+
         this.characterTopBottomColours = new Int32Array([
             0xff0000, 0xff8000, 0xffe000, 0xa0e000, 0x00e000,
             0x008000, 0x00a080, 0x00b0ff, 0x0080ff, 0x0030f0,
             0xe000e0, 0x303030, 0x604000, 0x805000, 0xffffff
         ]);
+
+        this.characterSkinColours = new Int32Array([
+            0xecded0, 0xccb366, 0xb38c40, 0x997326, 0x906020
+        ]);
+
         this.itemsAboveHeadCount = 0;
         this.selectedItemInventoryIndex = 0;
         this.statFatigue = 0;
@@ -170,9 +177,6 @@ class mudclient extends GameConnection {
         this.planeHeight = 0;
         this.planeMultiplier = 0;
         this.playerQuestPoints = 0;
-        this.characterHairColours = new Int32Array([
-            0xffc030, 0xffa040, 0x805030, 0x604020, 0x303030, 0xff6020, 0xff4000, 0xffffff, 65280, 65535
-        ]);
         this.bankActivePage = 0;
         this.welcomeLastLoggedInDays = 0;
         this.inventoryItemsCount = 0;
@@ -293,7 +297,6 @@ class mudclient extends GameConnection {
         this.gameModels.fill(null);
         this.showDialogDuel = false;
         this.serverMessage = '';
-        this.serverMessageBoxTop = false;
         this.duelOpponentItems = new Int32Array(8);
         this.duelOpponentItemCount = new Int32Array(8);
         this.duelItems = new Int32Array(8);
@@ -645,7 +648,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawUi() {
+    drawUI() {
         if (this.logoutTimeout !== 0) {
             this.drawDialogLogout();
         } else if (this.showDialogWelcome) {
@@ -684,7 +687,7 @@ class mudclient extends GameConnection {
                 this.drawDialogCombatStyle();
             }
 
-            this.setActiveUiTab();
+            this.setActiveUITab();
 
             const noMenus = !this.showOptionMenu && !this.showRightClickMenu;
 
@@ -692,6 +695,7 @@ class mudclient extends GameConnection {
                 this.menuItemsCount = 0;
             }
 
+            // TODO bounds check open UI in mobile
             if (this.showUiTab === 0 && noMenus) {
                 this.createRightClickMenu();
             }
@@ -1644,7 +1648,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    setActiveUiTab() {
+    setActiveUITab() {
         if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 35) {
             this.showUiTab = 1;
         }
@@ -1714,9 +1718,12 @@ class mudclient extends GameConnection {
         }
     }
 
+    setActiveMobileUITab() {
+    }
+
     drawNpc(x, y, w, h, id, tx, ty) {
-        let character = this.npcs[id];
-        let l1 = character.animationCurrent + (this.cameraRotation + 16) / 32 & 7;
+        const npc = this.npcs[id];
+        let l1 = npc.animationCurrent + (this.cameraRotation + 16) / 32 & 7;
         let flag = false;
         let i2 = l1;
 
@@ -1731,25 +1738,25 @@ class mudclient extends GameConnection {
             flag = true;
         }
 
-        let j2 = i2 * 3 + this.npcWalkModel[((character.stepCount / GameData.npcWalkModel[character.npcId]) | 0) % 4];
+        let j2 = i2 * 3 + this.npcWalkModel[((npc.stepCount / GameData.npcWalkModel[npc.npcId]) | 0) % 4];
 
-        if (character.animationCurrent === 8) {
+        if (npc.animationCurrent === 8) {
             i2 = 5;
             l1 = 2;
             flag = false;
-            x -= ((GameData.npcCombatAnimation[character.npcId] * ty) / 100) | 0;
-            j2 = i2 * 3 + this.npcCombatModelArray1[(((this.loginTimer / (GameData.npcCombatModel[character.npcId]) | 0) - 1)) % 8];
-        } else if (character.animationCurrent === 9) {
+            x -= ((GameData.npcCombatAnimation[npc.npcId] * ty) / 100) | 0;
+            j2 = i2 * 3 + this.npcCombatModelArray1[(((this.loginTimer / (GameData.npcCombatModel[npc.npcId]) | 0) - 1)) % 8];
+        } else if (npc.animationCurrent === 9) {
             i2 = 5;
             l1 = 2;
             flag = true;
-            x += ((GameData.npcCombatAnimation[character.npcId] * ty) / 100) | 0;
-            j2 = i2 * 3 + this.npcCombatModelArray2[((this.loginTimer / GameData.npcCombatModel[character.npcId]) | 0) % 8];
+            x += ((GameData.npcCombatAnimation[npc.npcId] * ty) / 100) | 0;
+            j2 = i2 * 3 + this.npcCombatModelArray2[((this.loginTimer / GameData.npcCombatModel[npc.npcId]) | 0) % 8];
         }
 
         for (let k2 = 0; k2 < 12; k2++) {
             let l2 = this.npcAnimationArray[l1][k2];
-            let k3 = GameData.npcSprite.get(character.npcId, l2);
+            let k3 = GameData.npcSprite.get(npc.npcId, l2);
 
             if (k3 >= 0) {
                 let i4 = 0;
@@ -1774,14 +1781,14 @@ class mudclient extends GameConnection {
                     let skincol = 0;
 
                     if (col === 1) {
-                        col = GameData.npcColourHair[character.npcId];
-                        skincol = GameData.npcColourSkin[character.npcId];
+                        col = GameData.npcColourHair[npc.npcId];
+                        skincol = GameData.npcColourSkin[npc.npcId];
                     } else if (col === 2) {
-                        col = GameData.npcColourTop[character.npcId];
-                        skincol = GameData.npcColourSkin[character.npcId];
+                        col = GameData.npcColourTop[npc.npcId];
+                        skincol = GameData.npcColourSkin[npc.npcId];
                     } else if (col === 3) {
-                        col = GameData.npcColorBottom[character.npcId];
-                        skincol = GameData.npcColourSkin[character.npcId];
+                        col = GameData.npcColorBottom[npc.npcId];
+                        skincol = GameData.npcColourSkin[npc.npcId];
                     }
 
                     this.surface._spriteClipping_from9(x + i4, y + j4, i5, h, l4, col, skincol, tx, flag);
@@ -1789,47 +1796,47 @@ class mudclient extends GameConnection {
             }
         }
 
-        if (character.messageTimeout > 0) {
-            this.receivedMessageMidPoint[this.receivedMessagesCount] = (this.surface.textWidth(character.message, 1) / 2) | 0;
+        if (npc.messageTimeout > 0) {
+            this.receivedMessageMidPoint[this.receivedMessagesCount] = (this.surface.textWidth(npc.message, 1) / 2) | 0;
 
             if (this.receivedMessageMidPoint[this.receivedMessagesCount] > 150) {
                 this.receivedMessageMidPoint[this.receivedMessagesCount] = 150;
             }
 
-            this.receivedMessageHeight[this.receivedMessagesCount] = ((this.surface.textWidth(character.message, 1) / 300) | 0) * this.surface.textHeight(1);
+            this.receivedMessageHeight[this.receivedMessagesCount] = ((this.surface.textWidth(npc.message, 1) / 300) | 0) * this.surface.textHeight(1);
             this.receivedMessageX[this.receivedMessagesCount] = x + ((w / 2) | 0);
             this.receivedMessageY[this.receivedMessagesCount] = y;
-            this.receivedMessages[this.receivedMessagesCount++] = character.message;
+            this.receivedMessages[this.receivedMessagesCount++] = npc.message;
         }
 
-        if (character.animationCurrent === 8 || character.animationCurrent === 9 || character.combatTimer !== 0) {
-            if (character.combatTimer > 0) {
+        if (npc.animationCurrent === 8 || npc.animationCurrent === 9 || npc.combatTimer !== 0) {
+            if (npc.combatTimer > 0) {
                 let i3 = x;
 
-                if (character.animationCurrent === 8) {
+                if (npc.animationCurrent === 8) {
                     i3 -= ((20 * ty) / 100) | 0;
-                } else if (character.animationCurrent === 9) {
+                } else if (npc.animationCurrent === 9) {
                     i3 += ((20 * ty) / 100) | 0;
                 }
 
-                let l3 = ((character.healthCurrent * 30) / character.healthMax) | 0;
+                let l3 = ((npc.healthCurrent * 30) / npc.healthMax) | 0;
 
                 this.healthBarX[this.healthBarCount] = i3 + ((w / 2) | 0);
                 this.healthBarY[this.healthBarCount] = y;
                 this.healthBarMissing[this.healthBarCount++] = l3;
             }
 
-            if (character.combatTimer > 150) {
+            if (npc.combatTimer > 150) {
                 let j3 = x;
 
-                if (character.animationCurrent === 8) {
+                if (npc.animationCurrent === 8) {
                     j3 -= ((10 * ty) / 100) | 0;
-                } else if (character.animationCurrent === 9) {
+                } else if (npc.animationCurrent === 9) {
                     j3 += ((10 * ty) / 100) | 0;
                 }
 
                 this.surface._drawSprite_from3((j3 + ((w / 2) | 0)) - 12, (y + ((h / 2) | 0)) - 12, this.spriteMedia + 12);
-                this.surface.drawStringCenter(character.damageTaken.toString(), (j3 + ((w / 2) | 0)) - 1, y + ((h / 2) | 0) + 5, 3, 0xffffff);
+                this.surface.drawStringCenter(npc.damageTaken.toString(), (j3 + ((w / 2) | 0)) - 1, y + ((h / 2) | 0) + 5, 3, 0xffffff);
             }
         }
     }
@@ -2677,8 +2684,13 @@ class mudclient extends GameConnection {
 
         this.setTargetFps(50);
 
-        this.surface = new Surface(this.gameWidth, this.gameHeight + 12, 4000,
-            this);
+        this.surface = new Surface(
+            this.gameWidth,
+            this.gameHeight + 12,
+            4000,
+            this
+        );
+
         this.surface.mudclientref = this;
         this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
@@ -2693,6 +2705,7 @@ class mudclient extends GameConnection {
         this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
         this.panelSocialList = new Panel(this.surface, 5);
         this.controlListSocialPlayers = this.panelSocialList.addTextListInteractive(x, y + 40, 196, 126, 1, 500, true);
+
         this.panelQuestList = new Panel(this.surface, 5);
         this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
 
@@ -3138,11 +3151,23 @@ class mudclient extends GameConnection {
         Panel.textListEntryHeightMod = 2;
         this.panelMessageTabs.drawPanel();
         Panel.textListEntryHeightMod = 0;
-        this.surface._drawSpriteAlpha_from4(this.surface.width2 - 3 - 197, 3, this.spriteMedia, 128);
-        this.drawUi();
+
+        if (!this.options.mobile) {
+            this.surface._drawSpriteAlpha_from4(
+                this.surface.width2 - 3 - 197, 3,
+                this.spriteMedia,
+                128
+            );
+        }
+
+        this.drawUI();
         this.surface.loggedIn = false;
         this.drawChatMessageTabs();
         this.surface.draw(this.graphics, 0, 0);
+
+        if (this.options.mobile) {
+            this.drawMobileUI();
+        }
     }
 
     async loadSounds() {
@@ -4018,6 +4043,7 @@ class mudclient extends GameConnection {
             case 650:
                 this.selectedItemInventoryIndex = menuIndex;
                 this.showUiTab = 0;
+
                 this.selectedItemName =
                         GameData.itemName[this.inventoryItemId[
                             this.selectedItemInventoryIndex]];
@@ -4028,6 +4054,7 @@ class mudclient extends GameConnection {
                 this.packetStream.sendPacket();
                 this.selectedItemInventoryIndex = -1;
                 this.showUiTab = 0;
+
                 this.showMessage(
                     'Dropping ' +
                         GameData.itemName[this.inventoryItemId[menuIndex]],
@@ -4043,6 +4070,7 @@ class mudclient extends GameConnection {
 
                 this._walkToActionSource_from5(this.localRegionX, this.localRegionY,
                     x, y, true);
+
                 this.packetStream.newPacket(clientOpcodes.CAST_NPC);
                 this.packetStream.putShort(menuIndex);
                 this.packetStream.putShort(menuSourceIndex);

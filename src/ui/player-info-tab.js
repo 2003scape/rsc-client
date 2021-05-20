@@ -1,11 +1,13 @@
 const colours = require('./_colours');
 
 const HEIGHT = 275;
+const LINE_BREAK = 12;
 const UI_X = 313;
 const UI_Y = 36;
 const WIDTH = 196;
 
 const HALF_WIDTH = (WIDTH / 2) | 0;
+
 const TABS = ['Stats', 'Quests'];
 const TAB_HEIGHT = 24;
 
@@ -139,7 +141,9 @@ function drawUiTabPlayerInfo(noMenus) {
         colours.lightGrey,
         128
     );
+
     this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, colours.black);
+
     this.surface.drawTabs(
         UI_X,
         UI_Y,
@@ -216,7 +220,7 @@ function drawUiTabPlayerInfo(noMenus) {
             colours.white
         );
 
-        y += 12;
+        y += LINE_BREAK;
 
         this.surface.drawString(
             `Fatigue: @yel@${((this.statFatigue * 100) / 750) | 0}%`,
@@ -236,7 +240,7 @@ function drawUiTabPlayerInfo(noMenus) {
             colours.yellow
         );
 
-        y += 12;
+        y += LINE_BREAK;
 
         for (let i = 0; i < 3; i++) {
             this.surface.drawString(
@@ -275,7 +279,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 colours.yellow
             );
 
-            y += 12;
+            y += LINE_BREAK;
 
             let nextLevelAt = EXPERIENCE_ARRAY[0];
 
@@ -294,7 +298,9 @@ function drawUiTabPlayerInfo(noMenus) {
                 1,
                 colours.white
             );
-            y += 12;
+
+            y += LINE_BREAK;
+
             this.surface.drawString(
                 'Next level at: ' + ((nextLevelAt / 4) | 0),
                 UI_X + 5,
@@ -310,7 +316,8 @@ function drawUiTabPlayerInfo(noMenus) {
                 1,
                 colours.yellow
             );
-            y += 12;
+
+            y += LINE_BREAK;
 
             let totalLevel = 0;
 
@@ -326,7 +333,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 colours.white
             );
 
-            y += 12;
+            y += LINE_BREAK;
 
             this.surface.drawString(
                 `Combat level: ${this.localPlayer.level}`,
@@ -336,11 +343,12 @@ function drawUiTabPlayerInfo(noMenus) {
                 colours.white
             );
 
-            y += 12;
+            y += LINE_BREAK;
         }
     } else if (this.uiTabPlayerInfoSubTab === 1) {
         // the handler for the Quests tab
         this.panelQuestList.clearList(this.controlListQuest);
+
         this.panelQuestList.addListEntry(
             this.controlListQuest,
             0,

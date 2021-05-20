@@ -73,4 +73,7 @@ function drawDialogServerMessage() {
     this.mouseButtonClick = 0;
 }
 
-module.exports = { drawDialogServerMessage };
+module.exports = {
+    serverMessageBoxTop: false,
+    drawDialogServerMessage
+};

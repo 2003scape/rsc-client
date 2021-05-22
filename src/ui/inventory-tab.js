@@ -1,6 +1,8 @@
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
 const SLOT_WIDTH = 49;
 const SLOT_HEIGHT = 34;
 
@@ -15,8 +17,17 @@ function drawUiTabInventory(noMenus) {
         uiX -= 32;
         uiY = this.gameHeight / 2 - HEIGHT / 2;
     } else {
-        this.surface._drawSprite_from3(uiX, 3, this.spriteMedia + 1);
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 1
+        );
     }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     for (let i = 0; i < this.inventoryMaxItemCount; i++) {
         const slotX = uiX + (i % 5) * SLOT_WIDTH;

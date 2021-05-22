@@ -1,9 +1,9 @@
 const Scene = require('../scene');
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
 const HEIGHT = 152;
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 156;
 
 const HALF_HEIGHT = (HEIGHT / 2) | 0;
@@ -18,17 +18,27 @@ function drawMinimapEntity(x, y, colour) {
 }
 
 function drawUiTabMinimap(noMenus) {
-    //let uiX = this.gameWidth - WIDTH - 3;
-    // 362
-    // 512-156 = 356
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
 
+    if (this.options.mobile) {
+        uiX -= 32;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 2
+        );
+    }
 
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 2);
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
-    const x = UI_X + 40;
-
-    this.surface.drawBox(x, UI_Y, WIDTH, HEIGHT, 0);
-    this.surface.setBounds(x, UI_Y, x + WIDTH, UI_Y + HEIGHT);
+    this.surface.drawBox(uiX, uiY, WIDTH, HEIGHT, 0);
+    this.surface.setBounds(uiX, uiY, uiX + WIDTH, uiY + HEIGHT);
 
     const scale = 192 + this.minimapRandom2;
     const rotation = (this.cameraRotation + this.minimapRandom1) & 0xff;
@@ -44,8 +54,8 @@ function drawUiTabMinimap(noMenus) {
     playerX = tempX;
 
     this.surface.drawMinimapSprite(
-        x + HALF_WIDTH - playerX,
-        UI_Y + HALF_HEIGHT + playerY,
+        uiX + HALF_WIDTH - playerX,
+        uiY + HALF_HEIGHT + playerY,
         this.spriteMedia - 1,
         (rotation + 64) & 255,
         scale
@@ -76,8 +86,8 @@ function drawUiTabMinimap(noMenus) {
         objectX = tempX;
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + objectX,
-            UI_Y + HALF_HEIGHT - objectY,
+            uiX + HALF_WIDTH + objectX,
+            uiY + HALF_HEIGHT - objectY,
             colours.cyan
         );
     }
@@ -107,8 +117,8 @@ function drawUiTabMinimap(noMenus) {
         itemX = tempX;
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + itemX,
-            UI_Y + HALF_HEIGHT - itemY,
+            uiX + HALF_WIDTH + itemX,
+            uiY + HALF_HEIGHT - itemY,
             colours.red
         );
     }
@@ -130,8 +140,8 @@ function drawUiTabMinimap(noMenus) {
         npcX = tempX;
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + npcX,
-            UI_Y + HALF_HEIGHT - npcY,
+            uiX + HALF_WIDTH + npcX,
+            uiY + HALF_HEIGHT - npcY,
             colours.yellow
         );
     }
@@ -169,15 +179,15 @@ function drawUiTabMinimap(noMenus) {
         }
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + otherPlayerX,
-            UI_Y + HALF_HEIGHT - otherPlayerY,
+            uiX + HALF_WIDTH + otherPlayerX,
+            uiY + HALF_HEIGHT - otherPlayerY,
             playerColour
         );
     }
 
     this.surface.drawCircle(
-        x + HALF_WIDTH,
-        UI_Y + HALF_HEIGHT,
+        uiX + HALF_WIDTH,
+        uiY + HALF_HEIGHT,
         2,
         colours.white,
         255
@@ -185,55 +195,58 @@ function drawUiTabMinimap(noMenus) {
 
     // compass
     this.surface.drawMinimapSprite(
-        x + 19,
-        55,
+        uiX + 19,
+        uiY + 19,
         this.spriteMedia + 24,
         (this.cameraRotation + 128) & 255,
         128
     );
+
     this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
     if (!noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (
         this.options.resetCompass &&
         this.mouseButtonClick === 1 &&
-        mouseX > 42 &&
-        mouseX < 75 &&
-        mouseY > 3 &&
-        mouseY < UI_Y
+        mouseX > 0 &&
+        mouseX <= 32 &&
+        mouseY > 0 &&
+        mouseY <= 32
     ) {
         this.cameraRotation = 128;
         this.mouseButtonClick = 0;
         return;
     }
 
-    if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
-        let dX = (((this.mouseX - (x + HALF_WIDTH)) * 16384) / (3 * scale)) | 0;
+    if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH + 40 && mouseY < HEIGHT) {
+        let deltaY =
+            (((this.mouseX - (uiX + HALF_WIDTH)) * 16384) / (3 * scale)) | 0;
 
-        let dY =
-            (((this.mouseY - (UI_Y + HALF_HEIGHT)) * 16384) / (3 * scale)) | 0;
+        let deltaX =
+            (((this.mouseY - (uiY + HALF_HEIGHT)) * 16384) / (3 * scale)) | 0;
 
-        const tempX = (dY * sin + dX * cos) >> 15;
+        const tempX = (deltaX * sin + deltaY * cos) >> 15;
 
-        dY = (dY * cos - dX * sin) >> 15;
-        dX = tempX;
-        dX += this.localPlayer.currentX;
-        dY = this.localPlayer.currentY - dY;
+        deltaX = (deltaX * cos - deltaY * sin) >> 15;
+        deltaY = tempX;
+        deltaY += this.localPlayer.currentX;
+        deltaX = this.localPlayer.currentY - deltaX;
 
         if (this.mouseButtonClick === 1) {
             this._walkToActionSource_from5(
                 this.localRegionX,
                 this.localRegionY,
-                (dX / 128) | 0,
-                (dY / 128) | 0,
+                (deltaY / 128) | 0,
+                (deltaX / 128) | 0,
                 false
             );
+
             this.mouseButtonClick = 0;
         }
     }

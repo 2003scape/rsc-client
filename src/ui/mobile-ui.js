@@ -20,7 +20,7 @@ function drawMobileUI() {
     let offsetY = rightY;
 
     for (let i = 0; i < 3; i += 1) {
-        const isSelected = this.showUiTab === i + 1;
+        const isSelected = this.showUITab === i + 1;
 
         if (isSelected) {
             this.graphics.ctx.globalAlpha = 1;

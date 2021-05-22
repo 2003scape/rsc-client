@@ -717,17 +717,6 @@ class GameModel {
         }
     }
 
-    setLight(...args) {
-        switch (args.length) {
-            case 6:
-                return this._setLight_from6(...args);
-            case 5:
-                return this._setLight_from5(...args);
-            case 3:
-                return this._setLight_from3(...args);
-        }
-    }
-
     setVertexAmbience(v, ambience) {
         this.vertexAmbience[v] = ambience & 0xff;
     }

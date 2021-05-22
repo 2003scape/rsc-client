@@ -171,7 +171,7 @@ class mudclient extends GameConnection {
         this.menuWidth = 0;
         this.menuHeight = 0;
         this.menuItemsCount = 0;
-        this.showUiTab = 0;
+        this.showUITab = 0;
         this.tradeItemsCount = 0;
         this.planeWidth = 0;
         this.planeHeight = 0;
@@ -687,7 +687,11 @@ class mudclient extends GameConnection {
                 this.drawDialogCombatStyle();
             }
 
-            this.setActiveUITab();
+            if (this.options.mobile) {
+                this.setActiveMobileUITab();
+            } else {
+                this.setActiveUITab();
+            }
 
             const noMenus = !this.showOptionMenu && !this.showRightClickMenu;
 
@@ -695,31 +699,30 @@ class mudclient extends GameConnection {
                 this.menuItemsCount = 0;
             }
 
-            // TODO bounds check open UI in mobile
-            if (this.showUiTab === 0 && noMenus) {
+            if (this.showUITab === 0 && noMenus) {
                 this.createRightClickMenu();
             }
 
-            if (this.showUiTab === 1) {
+            if (this.showUITab === 1) {
                 this.drawUiTabInventory(noMenus);
-            } else if (this.showUiTab === 2) {
+            } else if (this.showUITab === 2) {
                 this.drawUiTabMinimap(noMenus);
-            } else if (this.showUiTab === 3) {
+            } else if (this.showUITab === 3) {
                 this.drawUiTabPlayerInfo(noMenus);
-            } else if (this.showUiTab === 4) {
+            } else if (this.showUITab === 4) {
                 this.drawUiTabMagic(noMenus);
-            } else if (this.showUiTab === 5) {
+            } else if (this.showUITab === 5) {
                 this.drawUiTabSocial(noMenus);
-            } else if (this.showUiTab === 6) {
+            } else if (this.showUITab === 6) {
                 this.drawUiTabOptions(noMenus);
             }
 
-            if (!this.showRightClickMenu && !this.showOptionMenu) {
-                this.createTopMouseMenu();
-            }
-
-            if (this.showRightClickMenu && !this.showOptionMenu) {
-                this.drawRightClickMenu();
+            if (!this.showOptionMenu) {
+                if (!this.showRightClickMenu) {
+                    this.createTopMouseMenu();
+                } else {
+                    this.drawRightClickMenu();
+                }
             }
         }
 
@@ -1211,7 +1214,7 @@ class mudclient extends GameConnection {
             }
         }
 
-        if (this.showUiTab !== 2) {
+        if (this.showUITab !== 2) {
             if (Surface.anInt346 > 0) {
                 this.sleepWordDelayTimer++;
             }
@@ -1516,7 +1519,7 @@ class mudclient extends GameConnection {
             this.cameraZoom = ZOOM_MAX;
         }
 
-        if (this.mouseScrollDelta !== 0 && (this.showUiTab === 2 || this.showUiTab === 0)) {
+        if (this.mouseScrollDelta !== 0 && (this.showUITab === 2 || this.showUITab === 0)) {
             if (this.messageTabSelected !== 0 && this.mouseY > (this.gameHeight - 64)) {
                 return;
             }
@@ -1646,79 +1649,6 @@ class mudclient extends GameConnection {
                 textColour
             );
         }
-    }
-
-    setActiveUITab() {
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 35) {
-            this.showUiTab = 1;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 35) {
-            this.showUiTab = 2;
-            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 35) {
-            this.showUiTab = 3;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 99 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 99 && this.mouseY < 35) {
-            this.showUiTab = 4;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 132 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 132 && this.mouseY < 35) {
-            this.showUiTab = 5;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 165 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 165 && this.mouseY < 35) {
-            this.showUiTab = 6;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 26) {
-            this.showUiTab = 1;
-        }
-
-        if (this.showUiTab !== 0 && this.showUiTab !== 2 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 26) {
-            this.showUiTab = 2;
-            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 26) {
-            this.showUiTab = 3;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 99 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 99 && this.mouseY < 26) {
-            this.showUiTab = 4;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 132 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 132 && this.mouseY < 26) {
-            this.showUiTab = 5;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 165 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 165 && this.mouseY < 26) {
-            this.showUiTab = 6;
-        }
-
-        if (this.showUiTab === 1 && (this.mouseX < this.surface.width2 - 248 || this.mouseY > 36 + ((this.inventoryMaxItemCount / 5) | 0) * 34)) {
-            this.showUiTab = 0;
-        }
-
-        if (this.showUiTab === 3 && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 316)) {
-            this.showUiTab = 0;
-        }
-
-        if ((this.showUiTab === 2 || this.showUiTab === 4 || this.showUiTab === 5) && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 240)) {
-            this.showUiTab = 0;
-        }
-
-        if (this.showUiTab === 6 && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 311)) {
-            this.showUiTab = 0;
-        }
-    }
-
-    setActiveMobileUITab() {
     }
 
     drawNpc(x, y, w, h, id, tx, ty) {
@@ -2707,6 +2637,12 @@ class mudclient extends GameConnection {
         this.controlListSocialPlayers = this.panelSocialList.addTextListInteractive(x, y + 40, 196, 126, 1, 500, true);
 
         this.panelQuestList = new Panel(this.surface, 5);
+
+        if (this.options.mobile) {
+            x -= 32;
+            y = (this.gameHeight / 2 - 275 / 2) | 0;
+        }
+
         this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
 
         await this.loadMedia();
@@ -4042,7 +3978,7 @@ class mudclient extends GameConnection {
                 break;
             case 650:
                 this.selectedItemInventoryIndex = menuIndex;
-                this.showUiTab = 0;
+                this.showUITab = 0;
 
                 this.selectedItemName =
                         GameData.itemName[this.inventoryItemId[
@@ -4053,7 +3989,7 @@ class mudclient extends GameConnection {
                 this.packetStream.putShort(menuIndex);
                 this.packetStream.sendPacket();
                 this.selectedItemInventoryIndex = -1;
-                this.showUiTab = 0;
+                this.showUITab = 0;
 
                 this.showMessage(
                     'Dropping ' +

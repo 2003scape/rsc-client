@@ -50,7 +50,7 @@ class Scene {
 
         this.gradientRamps = [];
 
-        for (let _i = 0; _i < this.rampCount; _i += 1) {
+        for (let i = 0; i < this.rampCount; i += 1) {
             this.gradientRamps.push(new Int32Array(256));
         }
 
@@ -93,7 +93,7 @@ class Scene {
         this.visiblePolygonsCount = 0;
         this.visiblePolygons = [];
 
-        for (let l = 0; l < polygonCount; l++) {
+        for (let i = 0; i < polygonCount; i++) {
             this.visiblePolygons.push(new Polygon());
         }
 
@@ -118,16 +118,16 @@ class Scene {
         this.cameraPitch = 0;
         this.cameraRoll = 0;
 
-        for (let i1 = 0; i1 < 256; i1++) {
-            Scene.sin512Cache[i1] = (Math.sin(i1 * 0.02454369) * 32768) | 0;
-            Scene.sin512Cache[i1 + 256] =
-                (Math.cos(i1 * 0.02454369) * 32768) | 0;
+        for (let i = 0; i < 256; i++) {
+            Scene.sin512Cache[i] = (Math.sin(i * 0.02454369) * 32768) | 0;
+            Scene.sin512Cache[i + 256] = (Math.cos(i * 0.02454369) * 32768) | 0;
         }
 
-        for (let j1 = 0; j1 < 1024; j1++) {
-            Scene.sinCosCache[j1] = (Math.sin(j1 * 0.00613592315) * 32768) | 0;
-            Scene.sinCosCache[j1 + 1024] =
-                (Math.cos(j1 * 0.00613592315) * 32768) | 0;
+        for (let i = 0; i < 1024; i++) {
+            Scene.sinCosCache[i] = (Math.sin(i * 0.00613592315) * 32768) | 0;
+
+            Scene.sinCosCache[i + 1024] =
+                (Math.cos(i * 0.00613592315) * 32768) | 0;
         }
     }
 
@@ -3919,15 +3919,6 @@ class Scene {
 
         for (let j1 = 0; j1 < this.modelCount; j1++) {
             this.models[j1]._setLight_from5(i, j, k, l, i1);
-        }
-    }
-
-    setLight(...args) {
-        switch (args.length) {
-            case 3:
-                return this._setLight_from3(...args);
-            case 5:
-                return this._setLight_from5(...args);
         }
     }
 

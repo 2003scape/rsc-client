@@ -12881,7 +12881,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":117,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":118,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13411,7 +13411,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":117,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":118,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14131,17 +14131,6 @@ class GameModel {
         }
     }
 
-    setLight(...args) {
-        switch (args.length) {
-            case 6:
-                return this._setLight_from6(...args);
-            case 5:
-                return this._setLight_from5(...args);
-            case 3:
-                return this._setLight_from3(...args);
-        }
-    }
-
     setVertexAmbience(v, ambience) {
         this.vertexAmbience[v] = ambience & 0xff;
     }
@@ -14750,7 +14739,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":88,"./utility":117}],46:[function(require,module,exports){
+},{"./scene":88,"./utility":118}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -14807,7 +14796,7 @@ class GameShell {
             wordFilter: true,
             accountManagement: true,
             messageScrollBack: true,
-            retroFPSCounter: false,
+            retroFPSCounter: true,
             retryLoginOnDisconnect: true,
             mobile: true
         };
@@ -14832,7 +14821,7 @@ class GameShell {
 
         this.appletWidth = 512;
         this.appletHeight = 346;
-        this.targetFps = 20;
+        this.targetFPS = 20;
         this.maxDrawTime = 1000;
         this.timings = [];
         this.loadingStep = 1;
@@ -15199,7 +15188,7 @@ class GameShell {
     }
 
     setTargetFps(i) {
-        this.targetFps = 1000 / i;
+        this.targetFPS = 1000 / i;
     }
 
     resetTimings() {
@@ -15216,7 +15205,7 @@ class GameShell {
 
     stop() {
         if (this.stopTimeout >= 0) {
-            this.stopTimeout = 4000 / this.targetFps;
+            this.stopTimeout = 4000 / this.targetFPS;
         }
     }
 
@@ -15261,7 +15250,7 @@ class GameShell {
                 j = k1;
                 delay = lastDelay;
             } else if (time > this.timings[i]) {
-                j = ((2560 * this.targetFps) / (time - this.timings[i])) | 0;
+                j = ((2560 * this.targetFPS) / (time - this.timings[i])) | 0;
             }
 
             if (j < 25) {
@@ -15270,7 +15259,7 @@ class GameShell {
 
             if (j > 256) {
                 j = 256;
-                delay = (this.targetFps - (time - this.timings[i]) / 10) | 0;
+                delay = (this.targetFPS - (time - this.timings[i]) / 10) | 0;
 
                 if (delay < this.threadSleep) {
                     delay = this.threadSleep;
@@ -15294,10 +15283,12 @@ class GameShell {
 
             while (i1 < 256) {
                 await this.handleInputs();
+
                 i1 += j;
 
                 if (++k2 > this.maxDrawTime) {
                     i1 = 0;
+
                     this.interlaceTimer += 6;
 
                     if (this.interlaceTimer > 25) {
@@ -15315,7 +15306,7 @@ class GameShell {
             this.draw();
 
             // calculate fps
-            this.fps = (1000 * j) / (this.targetFps * 256);
+            this.fps = (1000 * j) / (this.targetFPS * 256);
 
             this.mouseScrollDelta = 0;
         }
@@ -15326,7 +15317,7 @@ class GameShell {
     }
 
     paint() {
-        if (this.loadingStep === 2 && this.imageLogo !== null) {
+        if (this.loadingStep === 2 && this.imageLogo) {
             this.drawLoadingScreen(
                 this.loadingProgressPercent,
                 this.loadingProgessText
@@ -15355,7 +15346,7 @@ class GameShell {
             5
         );
 
-        if (jagexJag !== null) {
+        if (jagexJag) {
             for (let i = 0; i < FONTS.length; i += 1) {
                 const fontName = FONTS[i];
                 Surface.createFont(Utility.loadData(fontName, 0, fontsJag), i);
@@ -15575,7 +15566,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":117,"./version":118,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":118,"./version":119,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -16222,7 +16213,7 @@ class mudclient extends GameConnection {
         this.menuWidth = 0;
         this.menuHeight = 0;
         this.menuItemsCount = 0;
-        this.showUiTab = 0;
+        this.showUITab = 0;
         this.tradeItemsCount = 0;
         this.planeWidth = 0;
         this.planeHeight = 0;
@@ -16738,7 +16729,11 @@ class mudclient extends GameConnection {
                 this.drawDialogCombatStyle();
             }
 
-            this.setActiveUITab();
+            if (this.options.mobile) {
+                this.setActiveMobileUITab();
+            } else {
+                this.setActiveUITab();
+            }
 
             const noMenus = !this.showOptionMenu && !this.showRightClickMenu;
 
@@ -16746,31 +16741,30 @@ class mudclient extends GameConnection {
                 this.menuItemsCount = 0;
             }
 
-            // TODO bounds check open UI in mobile
-            if (this.showUiTab === 0 && noMenus) {
+            if (this.showUITab === 0 && noMenus) {
                 this.createRightClickMenu();
             }
 
-            if (this.showUiTab === 1) {
+            if (this.showUITab === 1) {
                 this.drawUiTabInventory(noMenus);
-            } else if (this.showUiTab === 2) {
+            } else if (this.showUITab === 2) {
                 this.drawUiTabMinimap(noMenus);
-            } else if (this.showUiTab === 3) {
+            } else if (this.showUITab === 3) {
                 this.drawUiTabPlayerInfo(noMenus);
-            } else if (this.showUiTab === 4) {
+            } else if (this.showUITab === 4) {
                 this.drawUiTabMagic(noMenus);
-            } else if (this.showUiTab === 5) {
+            } else if (this.showUITab === 5) {
                 this.drawUiTabSocial(noMenus);
-            } else if (this.showUiTab === 6) {
+            } else if (this.showUITab === 6) {
                 this.drawUiTabOptions(noMenus);
             }
 
-            if (!this.showRightClickMenu && !this.showOptionMenu) {
-                this.createTopMouseMenu();
-            }
-
-            if (this.showRightClickMenu && !this.showOptionMenu) {
-                this.drawRightClickMenu();
+            if (!this.showOptionMenu) {
+                if (!this.showRightClickMenu) {
+                    this.createTopMouseMenu();
+                } else {
+                    this.drawRightClickMenu();
+                }
             }
         }
 
@@ -17262,7 +17256,7 @@ class mudclient extends GameConnection {
             }
         }
 
-        if (this.showUiTab !== 2) {
+        if (this.showUITab !== 2) {
             if (Surface.anInt346 > 0) {
                 this.sleepWordDelayTimer++;
             }
@@ -17567,7 +17561,7 @@ class mudclient extends GameConnection {
             this.cameraZoom = ZOOM_MAX;
         }
 
-        if (this.mouseScrollDelta !== 0 && (this.showUiTab === 2 || this.showUiTab === 0)) {
+        if (this.mouseScrollDelta !== 0 && (this.showUITab === 2 || this.showUITab === 0)) {
             if (this.messageTabSelected !== 0 && this.mouseY > (this.gameHeight - 64)) {
                 return;
             }
@@ -17697,79 +17691,6 @@ class mudclient extends GameConnection {
                 textColour
             );
         }
-    }
-
-    setActiveUITab() {
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 35) {
-            this.showUiTab = 1;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 35) {
-            this.showUiTab = 2;
-            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 35) {
-            this.showUiTab = 3;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 99 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 99 && this.mouseY < 35) {
-            this.showUiTab = 4;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 132 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 132 && this.mouseY < 35) {
-            this.showUiTab = 5;
-        }
-
-        if (this.showUiTab === 0 && this.mouseX >= this.surface.width2 - 35 - 165 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 165 && this.mouseY < 35) {
-            this.showUiTab = 6;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 && this.mouseY < 26) {
-            this.showUiTab = 1;
-        }
-
-        if (this.showUiTab !== 0 && this.showUiTab !== 2 && this.mouseX >= this.surface.width2 - 35 - 33 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 33 && this.mouseY < 26) {
-            this.showUiTab = 2;
-            this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
-            this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 66 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 66 && this.mouseY < 26) {
-            this.showUiTab = 3;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 99 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 99 && this.mouseY < 26) {
-            this.showUiTab = 4;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 132 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 132 && this.mouseY < 26) {
-            this.showUiTab = 5;
-        }
-
-        if (this.showUiTab !== 0 && this.mouseX >= this.surface.width2 - 35 - 165 && this.mouseY >= 3 && this.mouseX < this.surface.width2 - 3 - 165 && this.mouseY < 26) {
-            this.showUiTab = 6;
-        }
-
-        if (this.showUiTab === 1 && (this.mouseX < this.surface.width2 - 248 || this.mouseY > 36 + ((this.inventoryMaxItemCount / 5) | 0) * 34)) {
-            this.showUiTab = 0;
-        }
-
-        if (this.showUiTab === 3 && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 316)) {
-            this.showUiTab = 0;
-        }
-
-        if ((this.showUiTab === 2 || this.showUiTab === 4 || this.showUiTab === 5) && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 240)) {
-            this.showUiTab = 0;
-        }
-
-        if (this.showUiTab === 6 && (this.mouseX < this.surface.width2 - 199 || this.mouseY > 311)) {
-            this.showUiTab = 0;
-        }
-    }
-
-    setActiveMobileUITab() {
     }
 
     drawNpc(x, y, w, h, id, tx, ty) {
@@ -18758,6 +18679,12 @@ class mudclient extends GameConnection {
         this.controlListSocialPlayers = this.panelSocialList.addTextListInteractive(x, y + 40, 196, 126, 1, 500, true);
 
         this.panelQuestList = new Panel(this.surface, 5);
+
+        if (this.options.mobile) {
+            x -= 32;
+            y = (this.gameHeight / 2 - 275 / 2) | 0;
+        }
+
         this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
 
         await this.loadMedia();
@@ -20093,7 +20020,7 @@ class mudclient extends GameConnection {
                 break;
             case 650:
                 this.selectedItemInventoryIndex = menuIndex;
-                this.showUiTab = 0;
+                this.showUITab = 0;
 
                 this.selectedItemName =
                         GameData.itemName[this.inventoryItemId[
@@ -20104,7 +20031,7 @@ class mudclient extends GameConnection {
                 this.packetStream.putShort(menuIndex);
                 this.packetStream.sendPacket();
                 this.selectedItemInventoryIndex = -1;
-                this.showUiTab = 0;
+                this.showUITab = 0;
 
                 this.showMessage(
                     'Dropping ' +
@@ -20961,7 +20888,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":95,"./utility":117,"./version":118,"./word-filter":119,"./world":120,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":95,"./utility":118,"./version":119,"./word-filter":120,"./world":121,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -21182,7 +21109,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],58:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],58:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21305,7 +21232,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],61:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],61:[function(require,module,exports){
 
 
 function getPacketHandlers(mudclient) {
@@ -21405,7 +21332,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":117}],63:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":118}],63:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21457,7 +21384,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],65:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],65:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -21489,7 +21416,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],66:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],66:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -21552,7 +21479,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],67:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],67:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21686,7 +21613,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],69:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],69:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
@@ -21788,7 +21715,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":117}],70:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":118}],70:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameData = require('../game-data');
 const Utility = require('../utility');
@@ -21851,7 +21778,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":117}],71:[function(require,module,exports){
+},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":118}],71:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
@@ -21962,7 +21889,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":117}],72:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":118}],72:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
@@ -22097,7 +22024,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":117}],73:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":118}],73:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
@@ -22272,7 +22199,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../opcodes/server":55,"../utility":117,"../word-filter":119}],74:[function(require,module,exports){
+},{"../chat-message":40,"../opcodes/server":55,"../utility":118,"../word-filter":120}],74:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const serverOpcodes = require('../opcodes/server');
@@ -22436,7 +22363,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/client":54,"../opcodes/server":55,"../utility":117}],75:[function(require,module,exports){
+},{"../opcodes/client":54,"../opcodes/server":55,"../utility":118}],75:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22552,7 +22479,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],76:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],76:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22570,7 +22497,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],77:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],77:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22651,7 +22578,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],78:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],78:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22678,7 +22605,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],79:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],79:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameConnection = require('../game-connection');
 const Utility = require('../utility');
@@ -22767,7 +22694,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":117,"../word-filter":119}],80:[function(require,module,exports){
+},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":118,"../word-filter":120}],80:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 function fromCharArray(a) {
@@ -22898,7 +22825,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],83:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],83:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22914,7 +22841,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":117}],84:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":118}],84:[function(require,module,exports){
 const Long = require('long');
 
 function toCharArray(s) {
@@ -24658,7 +24585,7 @@ class Scene {
 
         this.gradientRamps = [];
 
-        for (let _i = 0; _i < this.rampCount; _i += 1) {
+        for (let i = 0; i < this.rampCount; i += 1) {
             this.gradientRamps.push(new Int32Array(256));
         }
 
@@ -24701,7 +24628,7 @@ class Scene {
         this.visiblePolygonsCount = 0;
         this.visiblePolygons = [];
 
-        for (let l = 0; l < polygonCount; l++) {
+        for (let i = 0; i < polygonCount; i++) {
             this.visiblePolygons.push(new Polygon());
         }
 
@@ -24726,16 +24653,16 @@ class Scene {
         this.cameraPitch = 0;
         this.cameraRoll = 0;
 
-        for (let i1 = 0; i1 < 256; i1++) {
-            Scene.sin512Cache[i1] = (Math.sin(i1 * 0.02454369) * 32768) | 0;
-            Scene.sin512Cache[i1 + 256] =
-                (Math.cos(i1 * 0.02454369) * 32768) | 0;
+        for (let i = 0; i < 256; i++) {
+            Scene.sin512Cache[i] = (Math.sin(i * 0.02454369) * 32768) | 0;
+            Scene.sin512Cache[i + 256] = (Math.cos(i * 0.02454369) * 32768) | 0;
         }
 
-        for (let j1 = 0; j1 < 1024; j1++) {
-            Scene.sinCosCache[j1] = (Math.sin(j1 * 0.00613592315) * 32768) | 0;
-            Scene.sinCosCache[j1 + 1024] =
-                (Math.cos(j1 * 0.00613592315) * 32768) | 0;
+        for (let i = 0; i < 1024; i++) {
+            Scene.sinCosCache[i] = (Math.sin(i * 0.00613592315) * 32768) | 0;
+
+            Scene.sinCosCache[i + 1024] =
+                (Math.cos(i * 0.00613592315) * 32768) | 0;
         }
     }
 
@@ -28527,15 +28454,6 @@ class Scene {
 
         for (let j1 = 0; j1 < this.modelCount; j1++) {
             this.models[j1]._setLight_from5(i, j, k, l, i1);
-        }
-    }
-
-    setLight(...args) {
-        switch (args.length) {
-            case 3:
-                return this._setLight_from3(...args);
-            case 5:
-                return this._setLight_from5(...args);
         }
     }
 
@@ -32383,7 +32301,7 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":117}],91:[function(require,module,exports){
+},{"./utility":118}],91:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
@@ -33509,7 +33427,7 @@ module.exports = {
 
 
 function applyUIComponents(mudclient) {
-    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["appearance-panel"]=require("./appearance-panel.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["mobile-ui"]=require("./mobile-ui.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["appearance-panel"]=require("./appearance-panel.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["mobile-ui"]=require("./mobile-ui.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["set-active-ui-tab"]=require("./set-active-ui-tab.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
 
     for (const [componentName, component] of Object.entries(components)) {
         if (/^_|index/.test(componentName)) {
@@ -33528,9 +33446,11 @@ function applyUIComponents(mudclient) {
 
 module.exports = applyUIComponents;
 
-},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./combat-style.js":94,"./index.js":95,"./inventory-tab.js":96,"./login-panels.js":97,"./logout-dialog.js":98,"./magic-tab.js":99,"./minimap-tab.js":100,"./mobile-ui.js":101,"./option-menu.js":102,"./options-tab.js":103,"./password-dialog.js":104,"./player-info-tab.js":105,"./recovery-panel.js":106,"./report-dialog.js":107,"./server-message-dialog.js":108,"./shop-dialog.js":109,"./sleep.js":110,"./social-dialog.js":111,"./social-tab.js":112,"./trade-confirm-dialog.js":113,"./trade-dialog.js":114,"./welcome-dialog.js":115,"./wilderness-dialog.js":116}],96:[function(require,module,exports){
+},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./combat-style.js":94,"./index.js":95,"./inventory-tab.js":96,"./login-panels.js":97,"./logout-dialog.js":98,"./magic-tab.js":99,"./minimap-tab.js":100,"./mobile-ui.js":101,"./option-menu.js":102,"./options-tab.js":103,"./password-dialog.js":104,"./player-info-tab.js":105,"./recovery-panel.js":106,"./report-dialog.js":107,"./server-message-dialog.js":108,"./set-active-ui-tab.js":109,"./shop-dialog.js":110,"./sleep.js":111,"./social-dialog.js":112,"./social-tab.js":113,"./trade-confirm-dialog.js":114,"./trade-dialog.js":115,"./welcome-dialog.js":116,"./wilderness-dialog.js":117}],96:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
+
+const MENU_WIDTH = 245;
 
 const SLOT_WIDTH = 49;
 const SLOT_HEIGHT = 34;
@@ -33546,8 +33466,17 @@ function drawUiTabInventory(noMenus) {
         uiX -= 32;
         uiY = this.gameHeight / 2 - HEIGHT / 2;
     } else {
-        this.surface._drawSprite_from3(uiX, 3, this.spriteMedia + 1);
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 1
+        );
     }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     for (let i = 0; i < this.inventoryMaxItemCount; i++) {
         const slotX = uiX + (i % 5) * SLOT_WIDTH;
@@ -34991,9 +34920,9 @@ module.exports = {
 const Scene = require('../scene');
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
 const HEIGHT = 152;
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 156;
 
 const HALF_HEIGHT = (HEIGHT / 2) | 0;
@@ -35008,17 +34937,27 @@ function drawMinimapEntity(x, y, colour) {
 }
 
 function drawUiTabMinimap(noMenus) {
-    //let uiX = this.gameWidth - WIDTH - 3;
-    // 362
-    // 512-156 = 356
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
 
+    if (this.options.mobile) {
+        uiX -= 32;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 2
+        );
+    }
 
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 2);
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
-    const x = UI_X + 40;
-
-    this.surface.drawBox(x, UI_Y, WIDTH, HEIGHT, 0);
-    this.surface.setBounds(x, UI_Y, x + WIDTH, UI_Y + HEIGHT);
+    this.surface.drawBox(uiX, uiY, WIDTH, HEIGHT, 0);
+    this.surface.setBounds(uiX, uiY, uiX + WIDTH, uiY + HEIGHT);
 
     const scale = 192 + this.minimapRandom2;
     const rotation = (this.cameraRotation + this.minimapRandom1) & 0xff;
@@ -35034,8 +34973,8 @@ function drawUiTabMinimap(noMenus) {
     playerX = tempX;
 
     this.surface.drawMinimapSprite(
-        x + HALF_WIDTH - playerX,
-        UI_Y + HALF_HEIGHT + playerY,
+        uiX + HALF_WIDTH - playerX,
+        uiY + HALF_HEIGHT + playerY,
         this.spriteMedia - 1,
         (rotation + 64) & 255,
         scale
@@ -35066,8 +35005,8 @@ function drawUiTabMinimap(noMenus) {
         objectX = tempX;
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + objectX,
-            UI_Y + HALF_HEIGHT - objectY,
+            uiX + HALF_WIDTH + objectX,
+            uiY + HALF_HEIGHT - objectY,
             colours.cyan
         );
     }
@@ -35097,8 +35036,8 @@ function drawUiTabMinimap(noMenus) {
         itemX = tempX;
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + itemX,
-            UI_Y + HALF_HEIGHT - itemY,
+            uiX + HALF_WIDTH + itemX,
+            uiY + HALF_HEIGHT - itemY,
             colours.red
         );
     }
@@ -35120,8 +35059,8 @@ function drawUiTabMinimap(noMenus) {
         npcX = tempX;
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + npcX,
-            UI_Y + HALF_HEIGHT - npcY,
+            uiX + HALF_WIDTH + npcX,
+            uiY + HALF_HEIGHT - npcY,
             colours.yellow
         );
     }
@@ -35159,15 +35098,15 @@ function drawUiTabMinimap(noMenus) {
         }
 
         this.drawMinimapEntity(
-            x + HALF_WIDTH + otherPlayerX,
-            UI_Y + HALF_HEIGHT - otherPlayerY,
+            uiX + HALF_WIDTH + otherPlayerX,
+            uiY + HALF_HEIGHT - otherPlayerY,
             playerColour
         );
     }
 
     this.surface.drawCircle(
-        x + HALF_WIDTH,
-        UI_Y + HALF_HEIGHT,
+        uiX + HALF_WIDTH,
+        uiY + HALF_HEIGHT,
         2,
         colours.white,
         255
@@ -35175,55 +35114,58 @@ function drawUiTabMinimap(noMenus) {
 
     // compass
     this.surface.drawMinimapSprite(
-        x + 19,
-        55,
+        uiX + 19,
+        uiY + 19,
         this.spriteMedia + 24,
         (this.cameraRotation + 128) & 255,
         128
     );
+
     this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
     if (!noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (
         this.options.resetCompass &&
         this.mouseButtonClick === 1 &&
-        mouseX > 42 &&
-        mouseX < 75 &&
-        mouseY > 3 &&
-        mouseY < UI_Y
+        mouseX > 0 &&
+        mouseX <= 32 &&
+        mouseY > 0 &&
+        mouseY <= 32
     ) {
         this.cameraRotation = 128;
         this.mouseButtonClick = 0;
         return;
     }
 
-    if (mouseX >= 40 && mouseY >= 0 && mouseX < 196 && mouseY < 152) {
-        let dX = (((this.mouseX - (x + HALF_WIDTH)) * 16384) / (3 * scale)) | 0;
+    if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH + 40 && mouseY < HEIGHT) {
+        let deltaY =
+            (((this.mouseX - (uiX + HALF_WIDTH)) * 16384) / (3 * scale)) | 0;
 
-        let dY =
-            (((this.mouseY - (UI_Y + HALF_HEIGHT)) * 16384) / (3 * scale)) | 0;
+        let deltaX =
+            (((this.mouseY - (uiY + HALF_HEIGHT)) * 16384) / (3 * scale)) | 0;
 
-        const tempX = (dY * sin + dX * cos) >> 15;
+        const tempX = (deltaX * sin + deltaY * cos) >> 15;
 
-        dY = (dY * cos - dX * sin) >> 15;
-        dX = tempX;
-        dX += this.localPlayer.currentX;
-        dY = this.localPlayer.currentY - dY;
+        deltaX = (deltaX * cos - deltaY * sin) >> 15;
+        deltaY = tempX;
+        deltaY += this.localPlayer.currentX;
+        deltaX = this.localPlayer.currentY - deltaX;
 
         if (this.mouseButtonClick === 1) {
             this._walkToActionSource_from5(
                 this.localRegionX,
                 this.localRegionY,
-                (dX / 128) | 0,
-                (dY / 128) | 0,
+                (deltaY / 128) | 0,
+                (deltaX / 128) | 0,
                 false
             );
+
             this.mouseButtonClick = 0;
         }
     }
@@ -35257,7 +35199,7 @@ function drawMobileUI() {
     let offsetY = rightY;
 
     for (let i = 0; i < 3; i += 1) {
-        const isSelected = this.showUiTab === i + 1;
+        const isSelected = this.showUITab === i + 1;
 
         if (isSelected) {
             this.graphics.ctx.globalAlpha = 1;
@@ -35982,11 +35924,11 @@ module.exports = {
 },{"./_colours":91}],105:[function(require,module,exports){
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
+const WIDTH = 196;
 const HEIGHT = 275;
 const LINE_BREAK = 12;
-const UI_X = 313;
-const UI_Y = 36;
-const WIDTH = 196;
 
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
@@ -36113,22 +36055,39 @@ const MEMBERS_QUESTS = [
 const QUEST_NAMES = FREE_QUESTS.concat(MEMBERS_QUESTS);
 
 function drawUiTabPlayerInfo(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 3);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX -= 32;
+        uiY = (this.gameHeight / 2 - HEIGHT / 2) | 0;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 3
+        );
+    }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     this.surface.drawBoxAlpha(
-        UI_X,
-        UI_Y + TAB_HEIGHT,
+        uiX,
+        uiY + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
         colours.lightGrey,
         128
     );
 
-    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, colours.black);
+    this.surface.drawLineHoriz(uiX, uiY + TAB_HEIGHT, WIDTH, colours.black);
 
     this.surface.drawTabs(
-        UI_X,
-        UI_Y,
+        uiX,
+        uiY,
         WIDTH,
         TAB_HEIGHT,
         TABS,
@@ -36137,10 +36096,10 @@ function drawUiTabPlayerInfo(noMenus) {
 
     // the handler for the Stats tab
     if (this.uiTabPlayerInfoSubTab === 0) {
-        let y = 72;
+        let y = uiY + 36;
         let selectedSkill = -1;
 
-        this.surface.drawString('Skills', UI_X + 5, y, 3, colours.yellow);
+        this.surface.drawString('Skills', uiX + 5, y, 3, colours.yellow);
 
         y += 13;
 
@@ -36150,10 +36109,10 @@ function drawUiTabPlayerInfo(noMenus) {
             let textColour = colours.white;
 
             if (
-                this.mouseX > UI_X + 3 &&
+                this.mouseX > uiX + 3 &&
                 this.mouseY >= y - 11 &&
                 this.mouseY < y + 2 &&
-                this.mouseX < UI_X + 90
+                this.mouseX < uiX + 90
             ) {
                 textColour = colours.red;
                 selectedSkill = i;
@@ -36162,7 +36121,7 @@ function drawUiTabPlayerInfo(noMenus) {
             this.surface.drawString(
                 `${SHORT_SKILL_NAMES[i]}:@yel@${this.playerStatCurrent[i]}/` +
                     this.playerStatBase[i],
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 textColour
@@ -36172,10 +36131,10 @@ function drawUiTabPlayerInfo(noMenus) {
             textColour = colours.white;
 
             if (
-                this.mouseX >= UI_X + 90 &&
+                this.mouseX >= uiX + 90 &&
                 this.mouseY >= y - 13 - 11 &&
                 this.mouseY < y - 13 + 2 &&
-                this.mouseX < UI_X + 196
+                this.mouseX < uiX + 196
             ) {
                 textColour = colours.red;
                 selectedSkill = i + 9;
@@ -36185,7 +36144,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 `${SHORT_SKILL_NAMES[i + 9]}:@yel@` +
                     `${this.playerStatCurrent[i + 9]}/` +
                     this.playerStatBase[i + 9],
-                UI_X + HALF_WIDTH - 5,
+                uiX + HALF_WIDTH - 5,
                 y - 13,
                 1,
                 textColour
@@ -36196,7 +36155,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         this.surface.drawString(
             `Quest Points:@yel@${this.playerQuestPoints}`,
-            UI_X + HALF_WIDTH - 5,
+            uiX + HALF_WIDTH - 5,
             y - 13,
             1,
             colours.white
@@ -36206,7 +36165,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         this.surface.drawString(
             `Fatigue: @yel@${((this.statFatigue * 100) / 750) | 0}%`,
-            UI_X + 5,
+            uiX + 5,
             y - 13,
             1,
             colours.white
@@ -36216,7 +36175,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         this.surface.drawString(
             'Equipment Status',
-            UI_X + 5,
+            uiX + 5,
             y,
             3,
             colours.yellow
@@ -36228,7 +36187,7 @@ function drawUiTabPlayerInfo(noMenus) {
             this.surface.drawString(
                 `${EQUIPMENT_STAT_NAMES[i]}:@yel@` +
                     this.playerStatEquipment[i],
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -36238,7 +36197,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 this.surface.drawString(
                     `${EQUIPMENT_STAT_NAMES[i + 3]}:@yel@` +
                         this.playerStatEquipment[i + 3],
-                    UI_X + HALF_WIDTH + 25,
+                    uiX + HALF_WIDTH + 25,
                     y,
                     1,
                     colours.white
@@ -36250,12 +36209,12 @@ function drawUiTabPlayerInfo(noMenus) {
 
         y += 6;
 
-        this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, colours.black);
+        this.surface.drawLineHoriz(uiX, y - 15, WIDTH, colours.black);
 
         if (selectedSkill !== -1) {
             this.surface.drawString(
                 `${SKILL_NAMES[selectedSkill]} skill`,
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.yellow
@@ -36275,7 +36234,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 'Total xp: ' + ((this.playerExperience[selectedSkill] / 4) | 0),
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -36285,7 +36244,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 'Next level at: ' + ((nextLevelAt / 4) | 0),
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -36293,7 +36252,7 @@ function drawUiTabPlayerInfo(noMenus) {
         } else {
             this.surface.drawString(
                 'Overall levels',
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.yellow
@@ -36309,7 +36268,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 `Skill total: ${totalLevel}`,
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -36319,7 +36278,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 `Combat level: ${this.localPlayer.level}`,
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -36352,16 +36311,16 @@ function drawUiTabPlayerInfo(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     // handle clicking of Stats and Quest tab, and the scroll wheel for the
     // quest list
     if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < HEIGHT) {
         if (this.uiTabPlayerInfoSubTab === 1) {
             this.panelQuestList.handleMouse(
-                mouseX + UI_X,
-                mouseY + UI_Y,
+                mouseX + uiX,
+                mouseY + uiY,
                 this.lastMouseButtonDown,
                 this.mouseButtonDown,
                 this.mouseScrollDelta
@@ -36706,7 +36665,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":117,"./_colours":91}],108:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":118,"./_colours":91}],108:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -36788,6 +36747,203 @@ module.exports = {
 };
 
 },{"./_colours":91}],109:[function(require,module,exports){
+const BUTTON_SIZE = 32;
+
+function setActiveUITab() {
+    if (
+        this.showUITab === 0 &&
+        this.mouseX >= this.gameWidth - 35 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 &&
+        this.mouseY < 35
+    ) {
+        this.showUITab = 1;
+    }
+
+    if (
+        this.showUITab === 0 &&
+        this.mouseX >= this.gameWidth - 35 - 33 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 33 &&
+        this.mouseY < 35
+    ) {
+        this.showUITab = 2;
+        this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
+        this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
+    }
+
+    if (
+        this.showUITab === 0 &&
+        this.mouseX >= this.gameWidth - 35 - 66 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 66 &&
+        this.mouseY < 35
+    ) {
+        this.showUITab = 3;
+    }
+
+    if (
+        this.showUITab === 0 &&
+        this.mouseX >= this.gameWidth - 35 - 99 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 99 &&
+        this.mouseY < 35
+    ) {
+        this.showUITab = 4;
+    }
+
+    if (
+        this.showUITab === 0 &&
+        this.mouseX >= this.gameWidth - 35 - 132 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 132 &&
+        this.mouseY < 35
+    ) {
+        this.showUITab = 5;
+    }
+
+    if (
+        this.showUITab === 0 &&
+        this.mouseX >= this.gameWidth - 35 - 165 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 165 &&
+        this.mouseY < 35
+    ) {
+        this.showUITab = 6;
+    }
+
+    if (
+        this.showUITab !== 0 &&
+        this.mouseX >= this.gameWidth - 35 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 &&
+        this.mouseY < 26
+    ) {
+        this.showUITab = 1;
+    }
+
+    if (
+        this.showUITab !== 0 &&
+        this.showUITab !== 2 &&
+        this.mouseX >= this.gameWidth - 35 - 33 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 33 &&
+        this.mouseY < 26
+    ) {
+        this.showUITab = 2;
+        this.minimapRandom1 = ((Math.random() * 13) | 0) - 6;
+        this.minimapRandom2 = ((Math.random() * 23) | 0) - 11;
+    }
+
+    if (
+        this.showUITab !== 0 &&
+        this.mouseX >= this.gameWidth - 35 - 66 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 66 &&
+        this.mouseY < 26
+    ) {
+        this.showUITab = 3;
+    }
+
+    if (
+        this.showUITab !== 0 &&
+        this.mouseX >= this.gameWidth - 35 - 99 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 99 &&
+        this.mouseY < 26
+    ) {
+        this.showUITab = 4;
+    }
+
+    if (
+        this.showUITab !== 0 &&
+        this.mouseX >= this.gameWidth - 35 - 132 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 132 &&
+        this.mouseY < 26
+    ) {
+        this.showUITab = 5;
+    }
+
+    if (
+        this.showUITab !== 0 &&
+        this.mouseX >= this.gameWidth - 35 - 165 &&
+        this.mouseY >= 3 &&
+        this.mouseX < this.gameWidth - 3 - 165 &&
+        this.mouseY < 26
+    ) {
+        this.showUITab = 6;
+    }
+
+    if (
+        this.showUITab === 1 &&
+        (this.mouseX < this.gameWidth - 248 ||
+            this.mouseY > 36 + ((this.inventoryMaxItemCount / 5) | 0) * 34)
+    ) {
+        this.showUITab = 0;
+    }
+
+    if (
+        this.showUITab === 3 &&
+        (this.mouseX < this.gameWidth - 199 || this.mouseY > 316)
+    ) {
+        this.showUITab = 0;
+    }
+
+    if (
+        (this.showUITab === 2 ||
+            this.showUITab === 4 ||
+            this.showUITab === 5) &&
+        (this.mouseX < this.gameWidth - 199 || this.mouseY > 240)
+    ) {
+        this.showUITab = 0;
+    }
+
+    if (
+        this.showUITab === 6 &&
+        (this.mouseX < this.gameWidth - 199 || this.mouseY > 311)
+    ) {
+        this.showUITab = 0;
+    }
+}
+
+function setActiveMobileUITab() {
+    const rightX = this.gameWidth - BUTTON_SIZE - 3;
+    const rightY = this.gameHeight / 2 - 49;
+
+    if (this.showUITab === 0 && this.mouseX < rightX) {
+        return;
+    }
+
+    let offsetY = rightY;
+
+    for (let i = 0; i < 3; i += 1) {
+        if (this.mouseY >= offsetY && this.mouseY <= offsetY + BUTTON_SIZE) {
+            if (this.showUITab === 0) {
+                this.showUITab = i + 1;
+                return;
+            } else if (this.showUITab === i + 1) {
+                return;
+            }
+        }
+
+        offsetY += BUTTON_SIZE + 1;
+    }
+
+    if (
+        this.showUITab !== 0 &&
+        (this.mouseX < this.uiOpenX ||
+            this.mouseX > this.uiOpenX + this.uiOpenWidth ||
+            this.mouseY < this.uiOpenY ||
+            this.mouseY > this.uiOpenY + this.uiOpenHeight)
+    ) {
+        this.showUITab = 0;
+    }
+}
+
+module.exports = { setActiveUITab, setActiveMobileUITab };
+
+},{}],110:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -37167,7 +37323,7 @@ function drawDialogShop() {
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],110:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],111:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -37343,7 +37499,7 @@ module.exports = {
     isSleeping: false
 };
 
-},{"../opcodes/client":54,"./_colours":91}],111:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],112:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -37557,7 +37713,7 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":117,"../word-filter":119,"./_colours":91}],112:[function(require,module,exports){
+},{"../chat-message":40,"../utility":118,"../word-filter":120,"./_colours":91}],113:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
@@ -37843,7 +37999,7 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":117,"./_colours":91}],113:[function(require,module,exports){
+},{"../utility":118,"./_colours":91}],114:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
@@ -38036,7 +38192,7 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":117,"./_colours":91}],114:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":118,"./_colours":91}],115:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -38554,7 +38710,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],115:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],116:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -38803,7 +38959,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":91}],116:[function(require,module,exports){
+},{"./_colours":91}],117:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -38939,7 +39095,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":91}],117:[function(require,module,exports){
+},{"./_colours":91}],118:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -39328,7 +39484,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],118:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],119:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -39342,7 +39498,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],119:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -40508,7 +40664,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -43034,4 +43190,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":117,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":118,"ndarray":34}]},{},[1]);

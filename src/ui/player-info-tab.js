@@ -1,10 +1,10 @@
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
+const WIDTH = 196;
 const HEIGHT = 275;
 const LINE_BREAK = 12;
-const UI_X = 313;
-const UI_Y = 36;
-const WIDTH = 196;
 
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
@@ -131,22 +131,39 @@ const MEMBERS_QUESTS = [
 const QUEST_NAMES = FREE_QUESTS.concat(MEMBERS_QUESTS);
 
 function drawUiTabPlayerInfo(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 3);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX -= 32;
+        uiY = (this.gameHeight / 2 - HEIGHT / 2) | 0;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 3
+        );
+    }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     this.surface.drawBoxAlpha(
-        UI_X,
-        UI_Y + TAB_HEIGHT,
+        uiX,
+        uiY + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
         colours.lightGrey,
         128
     );
 
-    this.surface.drawLineHoriz(UI_X, UI_Y + TAB_HEIGHT, WIDTH, colours.black);
+    this.surface.drawLineHoriz(uiX, uiY + TAB_HEIGHT, WIDTH, colours.black);
 
     this.surface.drawTabs(
-        UI_X,
-        UI_Y,
+        uiX,
+        uiY,
         WIDTH,
         TAB_HEIGHT,
         TABS,
@@ -155,10 +172,10 @@ function drawUiTabPlayerInfo(noMenus) {
 
     // the handler for the Stats tab
     if (this.uiTabPlayerInfoSubTab === 0) {
-        let y = 72;
+        let y = uiY + 36;
         let selectedSkill = -1;
 
-        this.surface.drawString('Skills', UI_X + 5, y, 3, colours.yellow);
+        this.surface.drawString('Skills', uiX + 5, y, 3, colours.yellow);
 
         y += 13;
 
@@ -168,10 +185,10 @@ function drawUiTabPlayerInfo(noMenus) {
             let textColour = colours.white;
 
             if (
-                this.mouseX > UI_X + 3 &&
+                this.mouseX > uiX + 3 &&
                 this.mouseY >= y - 11 &&
                 this.mouseY < y + 2 &&
-                this.mouseX < UI_X + 90
+                this.mouseX < uiX + 90
             ) {
                 textColour = colours.red;
                 selectedSkill = i;
@@ -180,7 +197,7 @@ function drawUiTabPlayerInfo(noMenus) {
             this.surface.drawString(
                 `${SHORT_SKILL_NAMES[i]}:@yel@${this.playerStatCurrent[i]}/` +
                     this.playerStatBase[i],
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 textColour
@@ -190,10 +207,10 @@ function drawUiTabPlayerInfo(noMenus) {
             textColour = colours.white;
 
             if (
-                this.mouseX >= UI_X + 90 &&
+                this.mouseX >= uiX + 90 &&
                 this.mouseY >= y - 13 - 11 &&
                 this.mouseY < y - 13 + 2 &&
-                this.mouseX < UI_X + 196
+                this.mouseX < uiX + 196
             ) {
                 textColour = colours.red;
                 selectedSkill = i + 9;
@@ -203,7 +220,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 `${SHORT_SKILL_NAMES[i + 9]}:@yel@` +
                     `${this.playerStatCurrent[i + 9]}/` +
                     this.playerStatBase[i + 9],
-                UI_X + HALF_WIDTH - 5,
+                uiX + HALF_WIDTH - 5,
                 y - 13,
                 1,
                 textColour
@@ -214,7 +231,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         this.surface.drawString(
             `Quest Points:@yel@${this.playerQuestPoints}`,
-            UI_X + HALF_WIDTH - 5,
+            uiX + HALF_WIDTH - 5,
             y - 13,
             1,
             colours.white
@@ -224,7 +241,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         this.surface.drawString(
             `Fatigue: @yel@${((this.statFatigue * 100) / 750) | 0}%`,
-            UI_X + 5,
+            uiX + 5,
             y - 13,
             1,
             colours.white
@@ -234,7 +251,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
         this.surface.drawString(
             'Equipment Status',
-            UI_X + 5,
+            uiX + 5,
             y,
             3,
             colours.yellow
@@ -246,7 +263,7 @@ function drawUiTabPlayerInfo(noMenus) {
             this.surface.drawString(
                 `${EQUIPMENT_STAT_NAMES[i]}:@yel@` +
                     this.playerStatEquipment[i],
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -256,7 +273,7 @@ function drawUiTabPlayerInfo(noMenus) {
                 this.surface.drawString(
                     `${EQUIPMENT_STAT_NAMES[i + 3]}:@yel@` +
                         this.playerStatEquipment[i + 3],
-                    UI_X + HALF_WIDTH + 25,
+                    uiX + HALF_WIDTH + 25,
                     y,
                     1,
                     colours.white
@@ -268,12 +285,12 @@ function drawUiTabPlayerInfo(noMenus) {
 
         y += 6;
 
-        this.surface.drawLineHoriz(UI_X, y - 15, WIDTH, colours.black);
+        this.surface.drawLineHoriz(uiX, y - 15, WIDTH, colours.black);
 
         if (selectedSkill !== -1) {
             this.surface.drawString(
                 `${SKILL_NAMES[selectedSkill]} skill`,
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.yellow
@@ -293,7 +310,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 'Total xp: ' + ((this.playerExperience[selectedSkill] / 4) | 0),
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -303,7 +320,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 'Next level at: ' + ((nextLevelAt / 4) | 0),
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -311,7 +328,7 @@ function drawUiTabPlayerInfo(noMenus) {
         } else {
             this.surface.drawString(
                 'Overall levels',
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.yellow
@@ -327,7 +344,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 `Skill total: ${totalLevel}`,
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -337,7 +354,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
             this.surface.drawString(
                 `Combat level: ${this.localPlayer.level}`,
-                UI_X + 5,
+                uiX + 5,
                 y,
                 1,
                 colours.white
@@ -370,16 +387,16 @@ function drawUiTabPlayerInfo(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     // handle clicking of Stats and Quest tab, and the scroll wheel for the
     // quest list
     if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < HEIGHT) {
         if (this.uiTabPlayerInfoSubTab === 1) {
             this.panelQuestList.handleMouse(
-                mouseX + UI_X,
-                mouseY + UI_Y,
+                mouseX + uiX,
+                mouseY + uiY,
                 this.lastMouseButtonDown,
                 this.mouseButtonDown,
                 this.mouseScrollDelta

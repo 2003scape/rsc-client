@@ -54,7 +54,7 @@ class GameShell {
             wordFilter: true,
             accountManagement: true,
             messageScrollBack: true,
-            retroFPSCounter: false,
+            retroFPSCounter: true,
             retryLoginOnDisconnect: true,
             mobile: true
         };
@@ -79,7 +79,7 @@ class GameShell {
 
         this.appletWidth = 512;
         this.appletHeight = 346;
-        this.targetFps = 20;
+        this.targetFPS = 20;
         this.maxDrawTime = 1000;
         this.timings = [];
         this.loadingStep = 1;
@@ -446,7 +446,7 @@ class GameShell {
     }
 
     setTargetFps(i) {
-        this.targetFps = 1000 / i;
+        this.targetFPS = 1000 / i;
     }
 
     resetTimings() {
@@ -463,7 +463,7 @@ class GameShell {
 
     stop() {
         if (this.stopTimeout >= 0) {
-            this.stopTimeout = 4000 / this.targetFps;
+            this.stopTimeout = 4000 / this.targetFPS;
         }
     }
 
@@ -508,7 +508,7 @@ class GameShell {
                 j = k1;
                 delay = lastDelay;
             } else if (time > this.timings[i]) {
-                j = ((2560 * this.targetFps) / (time - this.timings[i])) | 0;
+                j = ((2560 * this.targetFPS) / (time - this.timings[i])) | 0;
             }
 
             if (j < 25) {
@@ -517,7 +517,7 @@ class GameShell {
 
             if (j > 256) {
                 j = 256;
-                delay = (this.targetFps - (time - this.timings[i]) / 10) | 0;
+                delay = (this.targetFPS - (time - this.timings[i]) / 10) | 0;
 
                 if (delay < this.threadSleep) {
                     delay = this.threadSleep;
@@ -541,10 +541,12 @@ class GameShell {
 
             while (i1 < 256) {
                 await this.handleInputs();
+
                 i1 += j;
 
                 if (++k2 > this.maxDrawTime) {
                     i1 = 0;
+
                     this.interlaceTimer += 6;
 
                     if (this.interlaceTimer > 25) {
@@ -562,7 +564,7 @@ class GameShell {
             this.draw();
 
             // calculate fps
-            this.fps = (1000 * j) / (this.targetFps * 256);
+            this.fps = (1000 * j) / (this.targetFPS * 256);
 
             this.mouseScrollDelta = 0;
         }
@@ -573,7 +575,7 @@ class GameShell {
     }
 
     paint() {
-        if (this.loadingStep === 2 && this.imageLogo !== null) {
+        if (this.loadingStep === 2 && this.imageLogo) {
             this.drawLoadingScreen(
                 this.loadingProgressPercent,
                 this.loadingProgessText
@@ -602,7 +604,7 @@ class GameShell {
             5
         );
 
-        if (jagexJag !== null) {
+        if (jagexJag) {
             for (let i = 0; i < FONTS.length; i += 1) {
                 const fontName = FONTS[i];
                 Surface.createFont(Utility.loadData(fontName, 0, fontsJag), i);

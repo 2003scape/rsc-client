@@ -25,7 +25,6 @@ class Surface {
         this.mudclient = mudclient;
 
         this.image = null;
-        this.landscapeColours = null;
         this.anIntArray340 = null;
         this.anIntArray341 = null;
         this.anIntArray342 = null;
@@ -125,8 +124,6 @@ class Surface {
 
     draw(graphics, x, y) {
         this.setComplete();
-
-        // blit our canvas to the page's canvas
         graphics.drawImage(this.imageData, x, y);
     }
 
@@ -157,6 +154,7 @@ class Surface {
         const red = ((colour >> 16) & 0xff) * alpha;
         const green = ((colour >> 8) & 0xff) * alpha;
         const blue = (colour & 0xff) * alpha;
+
         let top = y - radius;
 
         if (top < 0) {
@@ -1679,14 +1677,14 @@ class Surface {
         let j1 = this.width2;
         let k1 = this.height2;
 
-        if (this.landscapeColours === null) {
-            this.landscapeColours = new Int32Array(512);
+        if (!this.sinCosCache) {
+            this.sinCosCache = new Int32Array(512);
 
             for (let i = 0; i < 256; i++) {
-                this.landscapeColours[i] =
+                this.sinCosCache[i] =
                     (Math.sin(i * 0.02454369) * 32768) | 0;
 
-                this.landscapeColours[i + 256] =
+                this.sinCosCache[i + 256] =
                     (Math.cos(i * 0.02454369) * 32768) | 0;
             }
         }
@@ -1708,8 +1706,8 @@ class Surface {
 
         rotation &= 0xff;
 
-        let i4 = this.landscapeColours[rotation] * scale;
-        let j4 = this.landscapeColours[rotation + 256] * scale;
+        let i4 = this.sinCosCache[rotation] * scale;
+        let j4 = this.sinCosCache[rotation + 256] * scale;
         let k4 = x + ((j2 * i4 + i2 * j4) >> 22);
         let l4 = y + ((j2 * j4 - i2 * i4) >> 22);
         let i5 = x + ((j3 * i4 + i3 * j4) >> 22);
@@ -2663,7 +2661,7 @@ class Surface {
     drawParagraph(text, x, y, font, colour, max) {
         try {
             let width = 0;
-            let fontData = Surface.gameFonts[font];
+            const fontData = Surface.gameFonts[font];
             let start = 0;
             let end = 0;
 
@@ -2708,8 +2706,10 @@ class Surface {
                         font,
                         colour
                     );
+
                     width = 0;
                     start = index = end + 1;
+
                     y += this.textHeight(font);
                 }
             }
@@ -2724,7 +2724,7 @@ class Surface {
 
     drawString(text, x, y, font, colour) {
         try {
-            let fontData = Surface.gameFonts[font];
+            const fontData = Surface.gameFonts[font];
 
             for (let i = 0; i < text.length; i++) {
                 if (
@@ -2827,7 +2827,7 @@ class Surface {
 
                     i += 4;
                 } else {
-                    let width = Surface.characterWidth[text.charCodeAt(i)];
+                    const width = Surface.characterWidth[text.charCodeAt(i)];
 
                     if (this.loggedIn && colour !== 0) {
                         this.drawCharacter(width, x + 1, y, 0, fontData);
@@ -2835,6 +2835,7 @@ class Surface {
                     }
 
                     this.drawCharacter(width, x, y, colour, fontData);
+
                     x += fontData[width + 7];
                 }
             }
@@ -3033,25 +3034,26 @@ class Surface {
 
     drawTabs(x, y, width, height, tabs, selected) {
         const tabWidth = (width / tabs.length) | 0;
-        let xOffset = 0;
+        let offsetX = 0;
 
         for (let i = 0; i < tabs.length; i += 1) {
             const tabColour = selected === i ? LIGHT_GREY : DARK_GREY;
 
-            this.drawBoxAlpha(x + xOffset, y, tabWidth, height, tabColour, 128);
+            this.drawBoxAlpha(x + offsetX, y, tabWidth, height, tabColour, 128);
+
             this.drawStringCenter(
                 tabs[i],
-                x + xOffset + ((tabWidth / 2) | 0),
+                x + offsetX + ((tabWidth / 2) | 0),
                 y + 16,
                 4,
                 BLACK
             );
 
             if (i > 0) {
-                this.drawLineVert(x + xOffset, y, height, BLACK);
+                this.drawLineVert(x + offsetX, y, height, BLACK);
             }
 
-            xOffset += tabWidth;
+            offsetX += tabWidth;
         }
 
         this.drawLineHoriz(x, y + height, width, BLACK);
@@ -3068,17 +3070,18 @@ Surface.gameFonts.fill(null);
 
 Surface.characterWidth = new Int32Array(256);
 
-let s =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
+const CHAR_SET =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"£$%^&*()' +
+    "-_=+[{]};:'@#~,<.>/?\\| ";
 
 for (let i = 0; i < 256; i++) {
-    let j = s.indexOf(String.fromCharCode(i));
+    let charCode = CHAR_SET.indexOf(String.fromCharCode(i));
 
-    if (j === -1) {
-        j = 74;
+    if (charCode === -1) {
+        charCode = 74;
     }
 
-    Surface.characterWidth[i] = j * 9;
+    Surface.characterWidth[i] = charCode * 9;
 }
 
 module.exports = Surface;

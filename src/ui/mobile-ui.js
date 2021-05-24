@@ -13,30 +13,32 @@ for (const spriteName of Object.keys(mobileSprites)) {
 
 function drawMobileUI() {
     const rightX = this.gameWidth - BUTTON_SIZE - 3;
-    const rightY = this.gameHeight / 2 - 49;
+    const leftX = 3;
+    const uiY = this.gameHeight / 2 - 49;
 
     this.graphics.ctx.globalAlpha = 0.5;
 
-    let offsetY = rightY;
+    let offsetY = uiY;
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
         const isSelected = this.showUITab === i + 1;
+        const buttonX = i > 2 ? leftX : rightX;
 
         if (isSelected) {
             this.graphics.ctx.globalAlpha = 1;
         }
 
         this.graphics.ctx.fillStyle = isSelected ? '#000083' : '#b5b5b4';
-        this.graphics.ctx.fillRect(rightX, offsetY, BUTTON_SIZE, BUTTON_SIZE);
+        this.graphics.ctx.fillRect(buttonX, offsetY, BUTTON_SIZE, BUTTON_SIZE);
 
         if (isSelected) {
             this.graphics.ctx.drawImage(
-                mobileSprites.uiRight,
+                i > 2 ? mobileSprites.uiLeft : mobileSprites.uiRight,
                 0,
-                i * (BUTTON_SIZE + 1),
+                i > 2 ? (i - 3) * (BUTTON_SIZE + 1) : i * (BUTTON_SIZE + 1),
                 BUTTON_SIZE,
                 BUTTON_SIZE,
-                rightX,
+                buttonX,
                 offsetY,
                 BUTTON_SIZE,
                 BUTTON_SIZE
@@ -45,10 +47,15 @@ function drawMobileUI() {
             this.graphics.ctx.globalAlpha = 0.5;
         }
 
-        offsetY += BUTTON_SIZE + 1;
+        if (i === 2) {
+            offsetY = uiY;
+        } else {
+            offsetY += BUTTON_SIZE + 1;
+        }
     }
 
-    this.graphics.ctx.drawImage(mobileSprites.uiRight, rightX, rightY);
+    this.graphics.ctx.drawImage(mobileSprites.uiRight, rightX, uiY);
+    this.graphics.ctx.drawImage(mobileSprites.uiLeft, leftX, uiY);
 
     this.graphics.ctx.globalAlpha = 1;
 }

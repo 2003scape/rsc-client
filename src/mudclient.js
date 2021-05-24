@@ -606,18 +606,6 @@ class mudclient extends GameConnection {
         this._walkToActionSource_from8(sx, sy, dx, dy, dx, dy, false, action);
     }
 
-    createMessageTabPanel() {
-        this.panelMessageTabs = new Panel(this.surface, 10);
-        this.controlTextListChat = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
-        this.controlTextListAll = this.panelMessageTabs.addTextListInput(7, 324, 498, 14, 1, 80, false, true);
-        this.controlTextListQuest = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
-        this.controlTextListPrivate = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
-
-        if (!this.options.mobile) {
-            this.panelMessageTabs.setFocus(this.controlTextListAll);
-        }
-    }
-
     disposeAndCollect() {
         if (this.surface !== null) {
             this.surface.clear();
@@ -816,7 +804,7 @@ class mudclient extends GameConnection {
                 this.showDialogSocialInput === 0 &&
                 this.showDialogReportAbuseStep === 0 &&
                 !this.isSleeping &&
-                this.panelMessageTabs !== null
+                this.panelMessageTabs
             ) {
                 // for scrolling through messages the player previously sent
                 if (this.options.messageScrollBack) {
@@ -1346,7 +1334,9 @@ class mudclient extends GameConnection {
                 }
             } else {
                 const encodedMessage = ChatMessage.scramble(message);
+
                 this.sendChatMessage(ChatMessage.scrambledBytes, encodedMessage);
+
                 message = ChatMessage.descramble(ChatMessage.scrambledBytes, 0, encodedMessage);
 
                 if (this.options.wordFilter) {
@@ -1355,6 +1345,7 @@ class mudclient extends GameConnection {
 
                 this.localPlayer.messageTimeout = 150;
                 this.localPlayer.message = message;
+
                 this.showMessage(`${this.localPlayer.name}: ${message}`, 2);
             }
         }
@@ -2541,56 +2532,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawChatMessageTabs() {
-        this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 23);
-
-        let colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 0) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashAll % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('All messages', 54, this.gameHeight + 6, 0, colour);
-        colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 1) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashHistory % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('Chat history', 155, this.gameHeight + 6, 0, colour);
-        colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 2) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashQuest % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('Quest history', 255, this.gameHeight + 6, 0, colour);
-        colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 3) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashPrivate % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('Private history', 355, this.gameHeight + 6, 0, colour);
-        this.surface.drawStringCenter('Report abuse', 457, this.gameHeight + 6, 0, 0xffffff);
-    }
-
     async startGame() {
         this.port = this.port || 43595;
         this.maxReadTries = 1000;
@@ -2633,8 +2574,6 @@ class mudclient extends GameConnection {
         let y = 36;
 
         this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
-        this.panelSocialList = new Panel(this.surface, 5);
-        this.controlListSocialPlayers = this.panelSocialList.addTextListInteractive(x, y + 40, 196, 126, 1, 500, true);
 
         this.panelQuestList = new Panel(this.surface, 5);
 
@@ -2644,6 +2583,24 @@ class mudclient extends GameConnection {
         }
 
         this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
+
+        this.panelSocialList = new Panel(this.surface, 5);
+
+        if (this.options.mobile) {
+            x = 35;
+            y = (this.gameHeight / 2 - 182 / 2) | 0;
+        }
+
+        this.controlListSocialPlayers =
+            this.panelSocialList.addTextListInteractive(
+                x,
+                y + 40,
+                196,
+                126,
+                1,
+                500,
+                true
+            );
 
         await this.loadMedia();
 

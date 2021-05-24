@@ -12881,7 +12881,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":118,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":119,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13411,7 +13411,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":118,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":119,"ndarray":34}],45:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -14739,7 +14739,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":88,"./utility":118}],46:[function(require,module,exports){
+},{"./scene":88,"./utility":119}],46:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -14798,7 +14798,7 @@ class GameShell {
             messageScrollBack: true,
             retroFPSCounter: true,
             retryLoginOnDisconnect: true,
-            mobile: true
+            mobile: false
         };
 
         this.middleButtonDown = false;
@@ -15566,7 +15566,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":118,"./version":119,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":119,"./version":120,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -16317,7 +16317,7 @@ class mudclient extends GameConnection {
         this.magicLoc = 128;
         this.errorLoadingMemory = false;
         this.fogOfWar = false;
-        this.gameWidth = 512;
+        this.gameWidth = 612;
         this.gameHeight = 334;
         this.const_9 = 9;
         this.tradeConfirmItems = new Int32Array(14);
@@ -16648,18 +16648,6 @@ class mudclient extends GameConnection {
         this._walkToActionSource_from8(sx, sy, dx, dy, dx, dy, false, action);
     }
 
-    createMessageTabPanel() {
-        this.panelMessageTabs = new Panel(this.surface, 10);
-        this.controlTextListChat = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
-        this.controlTextListAll = this.panelMessageTabs.addTextListInput(7, 324, 498, 14, 1, 80, false, true);
-        this.controlTextListQuest = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
-        this.controlTextListPrivate = this.panelMessageTabs.addTextList(5, 269, 502, 56, 1, 20, true);
-
-        if (!this.options.mobile) {
-            this.panelMessageTabs.setFocus(this.controlTextListAll);
-        }
-    }
-
     disposeAndCollect() {
         if (this.surface !== null) {
             this.surface.clear();
@@ -16858,7 +16846,7 @@ class mudclient extends GameConnection {
                 this.showDialogSocialInput === 0 &&
                 this.showDialogReportAbuseStep === 0 &&
                 !this.isSleeping &&
-                this.panelMessageTabs !== null
+                this.panelMessageTabs
             ) {
                 // for scrolling through messages the player previously sent
                 if (this.options.messageScrollBack) {
@@ -17388,7 +17376,9 @@ class mudclient extends GameConnection {
                 }
             } else {
                 const encodedMessage = ChatMessage.scramble(message);
+
                 this.sendChatMessage(ChatMessage.scrambledBytes, encodedMessage);
+
                 message = ChatMessage.descramble(ChatMessage.scrambledBytes, 0, encodedMessage);
 
                 if (this.options.wordFilter) {
@@ -17397,6 +17387,7 @@ class mudclient extends GameConnection {
 
                 this.localPlayer.messageTimeout = 150;
                 this.localPlayer.message = message;
+
                 this.showMessage(`${this.localPlayer.name}: ${message}`, 2);
             }
         }
@@ -18583,56 +18574,6 @@ class mudclient extends GameConnection {
         }
     }
 
-    drawChatMessageTabs() {
-        this.surface._drawSprite_from3(0, this.gameHeight - 4, this.spriteMedia + 23);
-
-        let colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 0) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashAll % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('All messages', 54, this.gameHeight + 6, 0, colour);
-        colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 1) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashHistory % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('Chat history', 155, this.gameHeight + 6, 0, colour);
-        colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 2) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashQuest % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('Quest history', 255, this.gameHeight + 6, 0, colour);
-        colour = Surface.rgbToInt(200, 200, 255);
-
-        if (this.messageTabSelected === 3) {
-            colour = Surface.rgbToInt(255, 200, 50);
-        }
-
-        if (this.messageTabFlashPrivate % 30 > 15) {
-            colour = Surface.rgbToInt(255, 50, 50);
-        }
-
-        this.surface.drawStringCenter('Private history', 355, this.gameHeight + 6, 0, colour);
-        this.surface.drawStringCenter('Report abuse', 457, this.gameHeight + 6, 0, 0xffffff);
-    }
-
     async startGame() {
         this.port = this.port || 43595;
         this.maxReadTries = 1000;
@@ -18675,8 +18616,6 @@ class mudclient extends GameConnection {
         let y = 36;
 
         this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
-        this.panelSocialList = new Panel(this.surface, 5);
-        this.controlListSocialPlayers = this.panelSocialList.addTextListInteractive(x, y + 40, 196, 126, 1, 500, true);
 
         this.panelQuestList = new Panel(this.surface, 5);
 
@@ -18686,6 +18625,24 @@ class mudclient extends GameConnection {
         }
 
         this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
+
+        this.panelSocialList = new Panel(this.surface, 5);
+
+        if (this.options.mobile) {
+            x = 35;
+            y = (this.gameHeight / 2 - 182 / 2) | 0;
+        }
+
+        this.controlListSocialPlayers =
+            this.panelSocialList.addTextListInteractive(
+                x,
+                y + 40,
+                196,
+                126,
+                1,
+                500,
+                true
+            );
 
         await this.loadMedia();
 
@@ -20888,7 +20845,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":95,"./utility":118,"./version":119,"./word-filter":120,"./world":121,"long":33}],54:[function(require,module,exports){
+},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":96,"./utility":119,"./version":120,"./word-filter":121,"./world":122,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -21109,7 +21066,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],58:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],58:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21232,7 +21189,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],61:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],61:[function(require,module,exports){
 
 
 function getPacketHandlers(mudclient) {
@@ -21332,7 +21289,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":118}],63:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":119}],63:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21384,7 +21341,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],65:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],65:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -21416,7 +21373,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],66:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],66:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -21479,7 +21436,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],67:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],67:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 module.exports = {
@@ -21613,7 +21570,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],69:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],69:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
@@ -21715,7 +21672,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":118}],70:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":119}],70:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameData = require('../game-data');
 const Utility = require('../utility');
@@ -21778,7 +21735,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":118}],71:[function(require,module,exports){
+},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":119}],71:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
@@ -21889,7 +21846,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":118}],72:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":119}],72:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
 const serverOpcodes = require('../opcodes/server');
@@ -22024,7 +21981,7 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":118}],73:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/server":55,"../utility":119}],73:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
@@ -22199,7 +22156,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../opcodes/server":55,"../utility":118,"../word-filter":120}],74:[function(require,module,exports){
+},{"../chat-message":40,"../opcodes/server":55,"../utility":119,"../word-filter":121}],74:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const serverOpcodes = require('../opcodes/server');
@@ -22363,7 +22320,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/client":54,"../opcodes/server":55,"../utility":118}],75:[function(require,module,exports){
+},{"../opcodes/client":54,"../opcodes/server":55,"../utility":119}],75:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22479,7 +22436,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],76:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],76:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22497,7 +22454,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],77:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],77:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22578,7 +22535,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],78:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],78:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22605,7 +22562,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],79:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],79:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameConnection = require('../game-connection');
 const Utility = require('../utility');
@@ -22694,7 +22651,7 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":118,"../word-filter":120}],80:[function(require,module,exports){
+},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":119,"../word-filter":121}],80:[function(require,module,exports){
 const serverOpcodes = require('../opcodes/server');
 
 function fromCharArray(a) {
@@ -22825,7 +22782,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],83:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],83:[function(require,module,exports){
 const Utility = require('../utility');
 const serverOpcodes = require('../opcodes/server');
 
@@ -22841,7 +22798,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":118}],84:[function(require,module,exports){
+},{"../opcodes/server":55,"../utility":119}],84:[function(require,module,exports){
 const Long = require('long');
 
 function toCharArray(s) {
@@ -23817,22 +23774,29 @@ class Panel {
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
 
-        const entryListStartY =
+        const listStartY =
             height - displayedEntryCount * this.surface.textHeight(textSize);
 
-        let y2 =
+        let listY =
             (y +
                 ((this.surface.textHeight(textSize) * 5) / 6 +
-                    entryListStartY / 2)) |
+                    listStartY / 2)) |
             0;
 
         for (let entry = listEntryPosition; entry < listEntryCount; entry++) {
-            this.drawString(control, x + 2, y2, listEntries[entry], textSize);
-            y2 +=
+            this.drawString(
+                control,
+                x + 2,
+                listY,
+                listEntries[entry],
+                textSize
+            );
+
+            listY +=
                 this.surface.textHeight(textSize) -
                 Panel.textListEntryHeightMod;
 
-            if (y2 >= y + height) {
+            if (listY >= y + height) {
                 return;
             }
         }
@@ -23906,12 +23870,12 @@ class Panel {
         const bottom = y + ((this.surface.textHeight(textSize) / 3) | 0);
 
         for (let idx = 0; idx < listEntryCount; idx++) {
-            let colour;
+            let textColour;
 
             if (this.controlUseAlternativeColour[control]) {
-                colour = 0xffffff;
+                textColour = 0xffffff;
             } else {
-                colour = 0;
+                textColour = 0;
             }
 
             if (
@@ -23922,9 +23886,9 @@ class Panel {
                 this.mouseY > bottom - this.surface.textHeight(textSize)
             ) {
                 if (this.controlUseAlternativeColour[control]) {
-                    colour = 0x808080;
+                    textColour = 0x808080;
                 } else {
-                    colour = 0xffffff;
+                    textColour = 0xffffff;
                 }
 
                 if (this.mouseLastButtonDown === 1) {
@@ -23935,9 +23899,9 @@ class Panel {
 
             if (this.controlListEntryMouseButtonDown[control] === idx) {
                 if (this.controlUseAlternativeColour[control]) {
-                    colour = 0xff0000;
+                    textColour = 0xff0000;
                 } else {
-                    colour = 0xc00000;
+                    textColour = 0xc00000;
                 }
             }
 
@@ -23946,7 +23910,7 @@ class Panel {
                 left,
                 bottom,
                 textSize,
-                colour
+                textColour
             );
 
             left += this.surface.textWidth(listEntries[idx] + '  ', textSize);
@@ -24032,6 +23996,7 @@ class Panel {
 
         if (displayedEntryCount < listEntryCount) {
             const cornerTopRight = x + width - 12;
+
             let cornerBottomLeft =
                 (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
 
@@ -24101,6 +24066,7 @@ class Panel {
 
                     const l3 =
                         this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
+
                     listEntryPosition =
                         ((l3 * listEntryCount) / (height - 24)) | 0;
 
@@ -24122,6 +24088,7 @@ class Panel {
                 (((height - 27 - cornerBottomLeft) * listEntryPosition) /
                     maxEntries) |
                 0;
+
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         } else {
             listEntryPosition = 0;
@@ -24130,34 +24097,36 @@ class Panel {
 
         this.controlListEntryMouseOver[control] = -1;
 
-        const k2 =
+        const listStartY =
             height - displayedEntryCount * this.surface.textHeight(textSize);
 
-        let i3 =
+        let listY =
             y +
-            (((((this.surface.textHeight(textSize) * 5) / 6) | 0) + k2 / 2) |
+            (((((this.surface.textHeight(textSize) * 5) / 6) | 0) +
+                listStartY / 2) |
                 0);
 
         for (let k3 = listEntryPosition; k3 < listEntryCount; k3++) {
-            let i4;
+            let textColour;
 
             if (this.controlUseAlternativeColour[control]) {
-                i4 = 0xffffff;
+                textColour = 0xffffff;
             } else {
-                i4 = 0;
+                textColour = 0;
             }
 
             if (
                 this.mouseX >= x + 2 &&
                 this.mouseX <=
-                    x + 2 + this.surface.textWidth(listEntries[k3], textSize) &&
-                this.mouseY - 2 <= i3 &&
-                this.mouseY - 2 > i3 - this.surface.textHeight(textSize)
+                    //x + 2 + this.surface.textWidth(listEntries[k3], textSize) &&
+                    x + width - 12 &&
+                this.mouseY - 2 <= listY &&
+                this.mouseY - 2 > listY - this.surface.textHeight(textSize)
             ) {
                 if (this.controlUseAlternativeColour[control]) {
-                    i4 = 0x808080;
+                    textColour = 0x808080;
                 } else {
-                    i4 = 0xffffff;
+                    textColour = 0xffffff;
                 }
 
                 this.controlListEntryMouseOver[control] = k3;
@@ -24172,13 +24141,20 @@ class Panel {
                 this.controlListEntryMouseButtonDown[control] === k3 &&
                 this.aBoolean219
             ) {
-                i4 = 0xff0000;
+                textColour = 0xff0000;
             }
 
-            this.surface.drawString(listEntries[k3], x + 2, i3, textSize, i4);
-            i3 += this.surface.textHeight(textSize);
+            this.surface.drawString(
+                listEntries[k3],
+                x + 2,
+                listY,
+                textSize,
+                textColour
+            );
 
-            if (i3 >= y + height) {
+            listY += this.surface.textHeight(textSize);
+
+            if (listY >= y + height) {
                 return;
             }
         }
@@ -24234,16 +24210,16 @@ class Panel {
     }
 
     addSprite(x, y, spriteId) {
-        const imgWidth = this.surface.spriteWidth[spriteId];
-        const imgHeight = this.surface.spriteHeight[spriteId];
+        const width = this.surface.spriteWidth[spriteId];
+        const height = this.surface.spriteHeight[spriteId];
 
         this.controlType[this.controlCount] = controlTypes.IMAGE;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
-        this.controlX[this.controlCount] = x - ((imgWidth / 2) | 0);
-        this.controlY[this.controlCount] = y - ((imgHeight / 2) | 0);
-        this.controlWidth[this.controlCount] = imgWidth;
-        this.controlHeight[this.controlCount] = imgHeight;
+        this.controlX[this.controlCount] = x - ((width / 2) | 0);
+        this.controlY[this.controlCount] = y - ((height / 2) | 0);
+        this.controlWidth[this.controlCount] = width;
+        this.controlHeight[this.controlCount] = height;
         this.controlTextSize[this.controlCount] = spriteId;
 
         return this.controlCount++;
@@ -28375,10 +28351,12 @@ class Scene {
         }
 
         for (let i1 = 0; i1 < colourCount; i1++) {
-            let colour = colours[i1]; // ??
+            let colour = colours[i1];
             colours[colourCount + i1] = (colour - (colour >>> 3)) & 0xf8f8ff;
+
             colours[colourCount * 2 + i1] =
                 (colour - (colour >>> 2)) & 0xf8f8ff;
+
             colours[colourCount * 3 + i1] =
                 (colour - (colour >>> 2) - (colour >>> 3)) & 0xf8f8ff;
         }
@@ -28492,9 +28470,9 @@ class Scene {
 
         if (j < l) {
             return true;
-        } else {
-            return flag;
         }
+
+        return flag;
     }
 
     method308(i, j, k, flag) {
@@ -28508,9 +28486,9 @@ class Scene {
 
         if (j < k) {
             return true;
-        } else {
-            return flag;
         }
+
+        return flag;
     }
 
     intersect(ai, ai1, ai2, ai3) {
@@ -28557,6 +28535,7 @@ class Scene {
         if (ai1[k] < ai3[i1]) {
             for (l = k; ai1[l] < ai3[i1]; l = (l + 1) % i);
             for (; ai1[k] < ai3[i1]; k = (k - 1 + i) % i);
+
             let k1 = this.method306(
                 ai[(k + 1) % i],
                 ai1[(k + 1) % i],
@@ -28564,6 +28543,7 @@ class Scene {
                 ai1[k],
                 ai3[i1]
             );
+
             let k6 = this.method306(
                 ai[(l - 1 + i) % i],
                 ai1[(l - 1 + i) % i],
@@ -28571,6 +28551,7 @@ class Scene {
                 ai1[l],
                 ai3[i1]
             );
+
             let l10 = ai2[i1];
             flag = (k1 < l10) | (k6 < l10);
 
@@ -28587,7 +28568,9 @@ class Scene {
         } else {
             for (j1 = i1; ai3[j1] < ai1[k]; j1 = (j1 + 1) % j);
             for (; ai3[i1] < ai1[k]; i1 = (i1 - 1 + j) % j);
+
             let l1 = ai[k];
+
             let i11 = this.method306(
                 ai2[(i1 + 1) % j],
                 ai3[(i1 + 1) % j],
@@ -28595,6 +28578,7 @@ class Scene {
                 ai3[i1],
                 ai1[k]
             );
+
             let l15 = this.method306(
                 ai2[(j1 - 1 + j) % j],
                 ai3[(j1 - 1 + j) % j],
@@ -28602,6 +28586,7 @@ class Scene {
                 ai3[j1],
                 ai1[k]
             );
+
             flag = (l1 < i11) | (l1 < l15);
 
             if (this.method308(i11, l15, l1, !flag)) {
@@ -28621,6 +28606,7 @@ class Scene {
                 if (ai1[k] < ai3[i1]) {
                     if (ai1[k] < ai3[j1]) {
                         let i2 = ai[k];
+
                         let l6 = this.method306(
                             ai[(l - 1 + i) % i],
                             ai1[(l - 1 + i) % i],
@@ -28628,6 +28614,7 @@ class Scene {
                             ai1[l],
                             ai1[k]
                         );
+
                         let j11 = this.method306(
                             ai2[(i1 + 1) % j],
                             ai3[(i1 + 1) % j],
@@ -28635,6 +28622,7 @@ class Scene {
                             ai3[i1],
                             ai1[k]
                         );
+
                         let i16 = this.method306(
                             ai2[(j1 - 1 + j) % j],
                             ai3[(j1 - 1 + j) % j],
@@ -28660,6 +28648,7 @@ class Scene {
                             ai1[k],
                             ai3[j1]
                         );
+
                         let i7 = this.method306(
                             ai[(l - 1 + i) % i],
                             ai1[(l - 1 + i) % i],
@@ -28667,6 +28656,7 @@ class Scene {
                             ai1[l],
                             ai3[j1]
                         );
+
                         let k11 = this.method306(
                             ai2[(i1 + 1) % j],
                             ai3[(i1 + 1) % j],
@@ -28674,6 +28664,7 @@ class Scene {
                             ai3[i1],
                             ai3[j1]
                         );
+
                         let j16 = ai2[j1];
 
                         if (this.method307(j2, i7, k11, j16, flag)) {
@@ -28694,6 +28685,7 @@ class Scene {
                         ai1[k],
                         ai3[i1]
                     );
+
                     let j7 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -28701,7 +28693,9 @@ class Scene {
                         ai1[l],
                         ai3[i1]
                     );
+
                     let l11 = ai2[i1];
+
                     let k16 = this.method306(
                         ai2[(j1 - 1 + j) % j],
                         ai3[(j1 - 1 + j) % j],
@@ -28727,6 +28721,7 @@ class Scene {
                         ai1[k],
                         ai3[j1]
                     );
+
                     let k7 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -28734,6 +28729,7 @@ class Scene {
                         ai1[l],
                         ai3[j1]
                     );
+
                     let i12 = this.method306(
                         ai2[(i1 + 1) % j],
                         ai3[(i1 + 1) % j],
@@ -28741,6 +28737,7 @@ class Scene {
                         ai3[i1],
                         ai3[j1]
                     );
+
                     let l16 = ai2[j1];
 
                     if (this.method307(l2, k7, i12, l16, flag)) {
@@ -28762,7 +28759,9 @@ class Scene {
                         ai1[k],
                         ai1[l]
                     );
+
                     let l7 = ai[l];
+
                     let j12 = this.method306(
                         ai2[(i1 + 1) % j],
                         ai3[(i1 + 1) % j],
@@ -28770,6 +28769,7 @@ class Scene {
                         ai3[i1],
                         ai1[l]
                     );
+
                     let i17 = this.method306(
                         ai2[(j1 - 1 + j) % j],
                         ai3[(j1 - 1 + j) % j],
@@ -28795,6 +28795,7 @@ class Scene {
                         ai1[k],
                         ai3[j1]
                     );
+
                     let i8 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -28802,6 +28803,7 @@ class Scene {
                         ai1[l],
                         ai3[j1]
                     );
+
                     let k12 = this.method306(
                         ai2[(i1 + 1) % j],
                         ai3[(i1 + 1) % j],
@@ -28809,6 +28811,7 @@ class Scene {
                         ai3[i1],
                         ai3[j1]
                     );
+
                     let j17 = ai2[j1];
 
                     if (this.method307(j3, i8, k12, j17, flag)) {
@@ -28829,6 +28832,7 @@ class Scene {
                     ai1[k],
                     ai3[i1]
                 );
+
                 let j8 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -28836,7 +28840,9 @@ class Scene {
                     ai1[l],
                     ai3[i1]
                 );
+
                 let l12 = ai2[i1];
+
                 let k17 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -28862,6 +28868,7 @@ class Scene {
                     ai1[k],
                     ai3[j1]
                 );
+
                 let k8 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -28869,6 +28876,7 @@ class Scene {
                     ai1[l],
                     ai3[j1]
                 );
+
                 let i13 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -28876,6 +28884,7 @@ class Scene {
                     ai3[i1],
                     ai3[j1]
                 );
+
                 let l17 = ai2[j1];
 
                 if (this.method307(l3, k8, i13, l17, flag)) {
@@ -28901,6 +28910,7 @@ class Scene {
                         ai3[i1],
                         ai1[k]
                     );
+
                     let i18 = this.method306(
                         ai2[(j1 - 1 + j) % j],
                         ai3[(j1 - 1 + j) % j],
@@ -28908,8 +28918,10 @@ class Scene {
                         ai3[j1],
                         ai1[k]
                     );
+
                     return this.method308(j13, i18, i4, !flag);
                 }
+
                 let j4 = this.method306(
                     ai[(k + 1) % i],
                     ai1[(k + 1) % i],
@@ -28917,6 +28929,7 @@ class Scene {
                     ai1[k],
                     ai3[j1]
                 );
+
                 let l8 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -28924,6 +28937,7 @@ class Scene {
                     ai1[l],
                     ai3[j1]
                 );
+
                 let k13 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -28931,6 +28945,7 @@ class Scene {
                     ai3[i1],
                     ai3[j1]
                 );
+
                 let j18 = ai2[j1];
 
                 if (this.method307(j4, l8, k13, j18, flag)) {
@@ -28950,6 +28965,7 @@ class Scene {
                     ai1[k],
                     ai3[i1]
                 );
+
                 let i9 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -28957,7 +28973,9 @@ class Scene {
                     ai1[l],
                     ai3[i1]
                 );
+
                 let l13 = ai2[i1];
+
                 let k18 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -28983,6 +29001,7 @@ class Scene {
                     ai1[k],
                     ai3[j1]
                 );
+
                 let j9 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -28990,6 +29009,7 @@ class Scene {
                     ai1[l],
                     ai3[j1]
                 );
+
                 let i14 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -28997,6 +29017,7 @@ class Scene {
                     ai3[i1],
                     ai3[j1]
                 );
+
                 let l18 = ai2[j1];
 
                 if (this.method307(l4, j9, i14, l18, flag)) {
@@ -29021,6 +29042,7 @@ class Scene {
                         ai1[k],
                         ai3[i1]
                     );
+
                     let k9 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -29028,6 +29050,7 @@ class Scene {
                         ai1[l],
                         ai3[i1]
                     );
+
                     let j14 = ai2[i1];
 
                     return this.method308(i5, k9, j14, flag);
@@ -29040,7 +29063,9 @@ class Scene {
                     ai1[k],
                     ai1[l]
                 );
+
                 let l9 = ai[l];
+
                 let k14 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -29048,6 +29073,7 @@ class Scene {
                     ai3[i1],
                     ai1[l]
                 );
+
                 let i19 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -29067,6 +29093,7 @@ class Scene {
                 }
             } else if (ai1[k] < ai1[l]) {
                 let k5 = ai[k];
+
                 let i10 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -29074,6 +29101,7 @@ class Scene {
                     ai1[l],
                     ai1[k]
                 );
+
                 let l14 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -29081,6 +29109,7 @@ class Scene {
                     ai3[i1],
                     ai1[k]
                 );
+
                 let j19 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -29106,7 +29135,9 @@ class Scene {
                     ai1[k],
                     ai1[l]
                 );
+
                 let j10 = ai[l];
+
                 let i15 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -29114,6 +29145,7 @@ class Scene {
                     ai3[i1],
                     ai1[l]
                 );
+
                 let k19 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -29136,6 +29168,7 @@ class Scene {
 
         if (ai1[k] < ai3[i1]) {
             let i6 = ai[k];
+
             let j15 = this.method306(
                 ai2[(i1 + 1) % j],
                 ai3[(i1 + 1) % j],
@@ -29143,6 +29176,7 @@ class Scene {
                 ai3[i1],
                 ai1[k]
             );
+
             let l19 = this.method306(
                 ai2[(j1 - 1 + j) % j],
                 ai3[(j1 - 1 + j) % j],
@@ -29161,6 +29195,7 @@ class Scene {
             ai1[k],
             ai3[i1]
         );
+
         let k10 = this.method306(
             ai[(l - 1 + i) % i],
             ai1[(l - 1 + i) % i],
@@ -29168,6 +29203,7 @@ class Scene {
             ai1[l],
             ai3[i1]
         );
+
         let k15 = ai2[i1];
 
         return this.method308(j6, k10, k15, flag);
@@ -29243,7 +29279,6 @@ class Surface {
         this.mudclient = mudclient;
 
         this.image = null;
-        this.landscapeColours = null;
         this.anIntArray340 = null;
         this.anIntArray341 = null;
         this.anIntArray342 = null;
@@ -29343,8 +29378,6 @@ class Surface {
 
     draw(graphics, x, y) {
         this.setComplete();
-
-        // blit our canvas to the page's canvas
         graphics.drawImage(this.imageData, x, y);
     }
 
@@ -29375,6 +29408,7 @@ class Surface {
         const red = ((colour >> 16) & 0xff) * alpha;
         const green = ((colour >> 8) & 0xff) * alpha;
         const blue = (colour & 0xff) * alpha;
+
         let top = y - radius;
 
         if (top < 0) {
@@ -30897,14 +30931,14 @@ class Surface {
         let j1 = this.width2;
         let k1 = this.height2;
 
-        if (this.landscapeColours === null) {
-            this.landscapeColours = new Int32Array(512);
+        if (!this.sinCosCache) {
+            this.sinCosCache = new Int32Array(512);
 
             for (let i = 0; i < 256; i++) {
-                this.landscapeColours[i] =
+                this.sinCosCache[i] =
                     (Math.sin(i * 0.02454369) * 32768) | 0;
 
-                this.landscapeColours[i + 256] =
+                this.sinCosCache[i + 256] =
                     (Math.cos(i * 0.02454369) * 32768) | 0;
             }
         }
@@ -30926,8 +30960,8 @@ class Surface {
 
         rotation &= 0xff;
 
-        let i4 = this.landscapeColours[rotation] * scale;
-        let j4 = this.landscapeColours[rotation + 256] * scale;
+        let i4 = this.sinCosCache[rotation] * scale;
+        let j4 = this.sinCosCache[rotation + 256] * scale;
         let k4 = x + ((j2 * i4 + i2 * j4) >> 22);
         let l4 = y + ((j2 * j4 - i2 * i4) >> 22);
         let i5 = x + ((j3 * i4 + i3 * j4) >> 22);
@@ -31881,7 +31915,7 @@ class Surface {
     drawParagraph(text, x, y, font, colour, max) {
         try {
             let width = 0;
-            let fontData = Surface.gameFonts[font];
+            const fontData = Surface.gameFonts[font];
             let start = 0;
             let end = 0;
 
@@ -31926,8 +31960,10 @@ class Surface {
                         font,
                         colour
                     );
+
                     width = 0;
                     start = index = end + 1;
+
                     y += this.textHeight(font);
                 }
             }
@@ -31942,7 +31978,7 @@ class Surface {
 
     drawString(text, x, y, font, colour) {
         try {
-            let fontData = Surface.gameFonts[font];
+            const fontData = Surface.gameFonts[font];
 
             for (let i = 0; i < text.length; i++) {
                 if (
@@ -32045,7 +32081,7 @@ class Surface {
 
                     i += 4;
                 } else {
-                    let width = Surface.characterWidth[text.charCodeAt(i)];
+                    const width = Surface.characterWidth[text.charCodeAt(i)];
 
                     if (this.loggedIn && colour !== 0) {
                         this.drawCharacter(width, x + 1, y, 0, fontData);
@@ -32053,6 +32089,7 @@ class Surface {
                     }
 
                     this.drawCharacter(width, x, y, colour, fontData);
+
                     x += fontData[width + 7];
                 }
             }
@@ -32251,25 +32288,26 @@ class Surface {
 
     drawTabs(x, y, width, height, tabs, selected) {
         const tabWidth = (width / tabs.length) | 0;
-        let xOffset = 0;
+        let offsetX = 0;
 
         for (let i = 0; i < tabs.length; i += 1) {
             const tabColour = selected === i ? LIGHT_GREY : DARK_GREY;
 
-            this.drawBoxAlpha(x + xOffset, y, tabWidth, height, tabColour, 128);
+            this.drawBoxAlpha(x + offsetX, y, tabWidth, height, tabColour, 128);
+
             this.drawStringCenter(
                 tabs[i],
-                x + xOffset + ((tabWidth / 2) | 0),
+                x + offsetX + ((tabWidth / 2) | 0),
                 y + 16,
                 4,
                 BLACK
             );
 
             if (i > 0) {
-                this.drawLineVert(x + xOffset, y, height, BLACK);
+                this.drawLineVert(x + offsetX, y, height, BLACK);
             }
 
-            xOffset += tabWidth;
+            offsetX += tabWidth;
         }
 
         this.drawLineHoriz(x, y + height, width, BLACK);
@@ -32286,22 +32324,23 @@ Surface.gameFonts.fill(null);
 
 Surface.characterWidth = new Int32Array(256);
 
-let s =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&*()-_=+[{]};:\'@#~,<.>/?\\| ';
+const CHAR_SET =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"£$%^&*()' +
+    "-_=+[{]};:'@#~,<.>/?\\| ";
 
 for (let i = 0; i < 256; i++) {
-    let j = s.indexOf(String.fromCharCode(i));
+    let charCode = CHAR_SET.indexOf(String.fromCharCode(i));
 
-    if (j === -1) {
-        j = 74;
+    if (charCode === -1) {
+        charCode = 74;
     }
 
-    Surface.characterWidth[i] = j * 9;
+    Surface.characterWidth[i] = charCode * 9;
 }
 
 module.exports = Surface;
 
-},{"./utility":118}],91:[function(require,module,exports){
+},{"./utility":119}],91:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
@@ -32309,11 +32348,15 @@ module.exports = {
     darkGrey : 0xb5b5b5,
     lightGrey: 0xdcdcdc,
     lightGrey2: 0xd0d0d0,
+    lightGrey3: 0xc9c9c9,
     red : 0xff0000,
     yellow : 0xffff00,
     cyan: 0x00ffff,
     green: 0x00ff00,
-    orange: 0xff8000
+    orange: 0xff8000,
+    chatPurple: 0xc8c8ff,
+    chatOrange: 0xffc832,
+    chatRed: 0xff3232
 };
 
 },{}],92:[function(require,module,exports){
@@ -33328,6 +33371,149 @@ function drawDialogBank() {
 module.exports = { drawDialogBank };
 
 },{"../game-data":44,"../opcodes/client":54,"./_colours":91}],94:[function(require,module,exports){
+const Panel = require('../panel');
+const colours = require('./_colours');
+
+function createMessageTabPanel() {
+    this.panelMessageTabs = new Panel(this.surface, 10);
+
+    this.controlTextListChat = this.panelMessageTabs.addTextList(
+        5,
+        269,
+        502,
+        56,
+        1,
+        20,
+        true
+    );
+
+    this.controlTextListAll = this.panelMessageTabs.addTextListInput(
+        7,
+        324,
+        498,
+        14,
+        1,
+        80,
+        false,
+        true
+    );
+
+    this.controlTextListQuest = this.panelMessageTabs.addTextList(
+        5,
+        269,
+        502,
+        56,
+        1,
+        20,
+        true
+    );
+
+    this.controlTextListPrivate = this.panelMessageTabs.addTextList(
+        5,
+        269,
+        502,
+        56,
+        1,
+        20,
+        true
+    );
+
+    if (!this.options.mobile) {
+        this.panelMessageTabs.setFocus(this.controlTextListAll);
+    }
+}
+
+function drawChatMessageTabs() {
+    this.surface._drawSprite_from3(
+        0,
+        this.gameHeight - 4,
+        this.spriteMedia + 23
+    );
+
+    let textColour = colours.chatPurple;
+
+    if (this.messageTabSelected === 0) {
+        textColour = colours.chatOrange;
+    }
+
+    if (this.messageTabFlashAll % 30 > 15) {
+        textColour = colours.chatRed;
+    }
+
+    this.surface.drawStringCenter(
+        'All messages',
+        54,
+        this.gameHeight + 6,
+        0,
+        textColour
+    );
+
+    textColour = colours.chatPurple;
+
+    if (this.messageTabSelected === 1) {
+        textColour = colours.chatOrange;
+    }
+
+    if (this.messageTabFlashHistory % 30 > 15) {
+        textColour = colours.chatRed;
+    }
+
+    this.surface.drawStringCenter(
+        'Chat history',
+        155,
+        this.gameHeight + 6,
+        0,
+        textColour
+    );
+
+    textColour = colours.chatPurple;
+
+    if (this.messageTabSelected === 2) {
+        textColour = colours.chatOrange;
+    }
+
+    if (this.messageTabFlashQuest % 30 > 15) {
+        textColour = colours.chatRed;
+    }
+
+    this.surface.drawStringCenter(
+        'Quest history',
+        255,
+        this.gameHeight + 6,
+        0,
+        textColour
+    );
+
+    textColour = colours.chatPurple;
+
+    if (this.messageTabSelected === 3) {
+        textColour = colours.chatOrange;
+    }
+
+    if (this.messageTabFlashPrivate % 30 > 15) {
+        textColour = colours.chatRed;
+    }
+
+    this.surface.drawStringCenter(
+        'Private history',
+        355,
+        this.gameHeight + 6,
+        0,
+        textColour
+    );
+
+    this.surface.drawStringCenter(
+        'Report abuse',
+        457,
+        this.gameHeight + 6,
+        0,
+        colours.white
+    );
+}
+
+module.exports = { createMessageTabPanel, drawChatMessageTabs };
+
+},{"../panel":85,"./_colours":91}],95:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -33423,11 +33609,11 @@ module.exports = {
     drawDialogCombatStyle
 };
 
-},{"../opcodes/client":54,"./_colours":91}],95:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],96:[function(require,module,exports){
 
 
 function applyUIComponents(mudclient) {
-    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["appearance-panel"]=require("./appearance-panel.js");f["bank-dialog"]=require("./bank-dialog.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["mobile-ui"]=require("./mobile-ui.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["set-active-ui-tab"]=require("./set-active-ui-tab.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
+    const components = (function () {var f = require("./index.js");f["_colours"]=require("./_colours.js");f["appearance-panel"]=require("./appearance-panel.js");f["bank-dialog"]=require("./bank-dialog.js");f["chat-message-tabs"]=require("./chat-message-tabs.js");f["combat-style"]=require("./combat-style.js");f["index"]=require("./index.js");f["inventory-tab"]=require("./inventory-tab.js");f["login-panels"]=require("./login-panels.js");f["logout-dialog"]=require("./logout-dialog.js");f["magic-tab"]=require("./magic-tab.js");f["minimap-tab"]=require("./minimap-tab.js");f["mobile-ui"]=require("./mobile-ui.js");f["option-menu"]=require("./option-menu.js");f["options-tab"]=require("./options-tab.js");f["password-dialog"]=require("./password-dialog.js");f["player-info-tab"]=require("./player-info-tab.js");f["recovery-panel"]=require("./recovery-panel.js");f["report-dialog"]=require("./report-dialog.js");f["server-message-dialog"]=require("./server-message-dialog.js");f["set-active-ui-tab"]=require("./set-active-ui-tab.js");f["shop-dialog"]=require("./shop-dialog.js");f["sleep"]=require("./sleep.js");f["social-dialog"]=require("./social-dialog.js");f["social-tab"]=require("./social-tab.js");f["trade-confirm-dialog"]=require("./trade-confirm-dialog.js");f["trade-dialog"]=require("./trade-dialog.js");f["welcome-dialog"]=require("./welcome-dialog.js");f["wilderness-dialog"]=require("./wilderness-dialog.js");return f;})();
 
     for (const [componentName, component] of Object.entries(components)) {
         if (/^_|index/.test(componentName)) {
@@ -33446,7 +33632,7 @@ function applyUIComponents(mudclient) {
 
 module.exports = applyUIComponents;
 
-},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./combat-style.js":94,"./index.js":95,"./inventory-tab.js":96,"./login-panels.js":97,"./logout-dialog.js":98,"./magic-tab.js":99,"./minimap-tab.js":100,"./mobile-ui.js":101,"./option-menu.js":102,"./options-tab.js":103,"./password-dialog.js":104,"./player-info-tab.js":105,"./recovery-panel.js":106,"./report-dialog.js":107,"./server-message-dialog.js":108,"./set-active-ui-tab.js":109,"./shop-dialog.js":110,"./sleep.js":111,"./social-dialog.js":112,"./social-tab.js":113,"./trade-confirm-dialog.js":114,"./trade-dialog.js":115,"./welcome-dialog.js":116,"./wilderness-dialog.js":117}],96:[function(require,module,exports){
+},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./chat-message-tabs.js":94,"./combat-style.js":95,"./index.js":96,"./inventory-tab.js":97,"./login-panels.js":98,"./logout-dialog.js":99,"./magic-tab.js":100,"./minimap-tab.js":101,"./mobile-ui.js":102,"./option-menu.js":103,"./options-tab.js":104,"./password-dialog.js":105,"./player-info-tab.js":106,"./recovery-panel.js":107,"./report-dialog.js":108,"./server-message-dialog.js":109,"./set-active-ui-tab.js":110,"./shop-dialog.js":111,"./sleep.js":112,"./social-dialog.js":113,"./social-tab.js":114,"./trade-confirm-dialog.js":115,"./trade-dialog.js":116,"./welcome-dialog.js":117,"./wilderness-dialog.js":118}],97:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
@@ -33659,7 +33845,7 @@ function drawUiTabInventory(noMenus) {
 
 module.exports = { drawUiTabInventory };
 
-},{"../game-data":44,"./_colours":91}],97:[function(require,module,exports){
+},{"../game-data":44,"./_colours":91}],98:[function(require,module,exports){
 const Panel = require('../panel');
 
 function createLoginPanels() {
@@ -34599,7 +34785,7 @@ module.exports = {
     renderLoginScreenViewports
 };
 
-},{"../panel":85}],98:[function(require,module,exports){
+},{"../panel":85}],99:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogLogout() {
@@ -34610,7 +34796,7 @@ function drawDialogLogout() {
 
 module.exports = { drawDialogLogout };
 
-},{"./_colours":91}],99:[function(require,module,exports){
+},{"./_colours":91}],100:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -34916,7 +35102,7 @@ module.exports = {
     uiTabMagicSubTab: 0
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],100:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],101:[function(require,module,exports){
 const Scene = require('../scene');
 const colours = require('./_colours');
 
@@ -35176,7 +35362,7 @@ module.exports = {
     drawUiTabMinimap
 };
 
-},{"../scene":88,"./_colours":91}],101:[function(require,module,exports){
+},{"../scene":88,"./_colours":91}],102:[function(require,module,exports){
 const BUTTON_SIZE = 32;
 
 const mobileSprites = {
@@ -35192,30 +35378,32 @@ for (const spriteName of Object.keys(mobileSprites)) {
 
 function drawMobileUI() {
     const rightX = this.gameWidth - BUTTON_SIZE - 3;
-    const rightY = this.gameHeight / 2 - 49;
+    const leftX = 3;
+    const uiY = this.gameHeight / 2 - 49;
 
     this.graphics.ctx.globalAlpha = 0.5;
 
-    let offsetY = rightY;
+    let offsetY = uiY;
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
         const isSelected = this.showUITab === i + 1;
+        const buttonX = i > 2 ? leftX : rightX;
 
         if (isSelected) {
             this.graphics.ctx.globalAlpha = 1;
         }
 
         this.graphics.ctx.fillStyle = isSelected ? '#000083' : '#b5b5b4';
-        this.graphics.ctx.fillRect(rightX, offsetY, BUTTON_SIZE, BUTTON_SIZE);
+        this.graphics.ctx.fillRect(buttonX, offsetY, BUTTON_SIZE, BUTTON_SIZE);
 
         if (isSelected) {
             this.graphics.ctx.drawImage(
-                mobileSprites.uiRight,
+                i > 2 ? mobileSprites.uiLeft : mobileSprites.uiRight,
                 0,
-                i * (BUTTON_SIZE + 1),
+                i > 2 ? (i - 3) * (BUTTON_SIZE + 1) : i * (BUTTON_SIZE + 1),
                 BUTTON_SIZE,
                 BUTTON_SIZE,
-                rightX,
+                buttonX,
                 offsetY,
                 BUTTON_SIZE,
                 BUTTON_SIZE
@@ -35224,17 +35412,22 @@ function drawMobileUI() {
             this.graphics.ctx.globalAlpha = 0.5;
         }
 
-        offsetY += BUTTON_SIZE + 1;
+        if (i === 2) {
+            offsetY = uiY;
+        } else {
+            offsetY += BUTTON_SIZE + 1;
+        }
     }
 
-    this.graphics.ctx.drawImage(mobileSprites.uiRight, rightX, rightY);
+    this.graphics.ctx.drawImage(mobileSprites.uiRight, rightX, uiY);
+    this.graphics.ctx.drawImage(mobileSprites.uiLeft, leftX, uiY);
 
     this.graphics.ctx.globalAlpha = 1;
 }
 
 module.exports = { drawMobileUI };
 
-},{}],102:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -35284,28 +35477,60 @@ function drawOptionMenu() {
 
 module.exports = { drawOptionMenu };
 
-},{"../opcodes/client":54,"./_colours":91}],103:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],104:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
-const DARK_GREY = 0xb5b5b5;
-const LIGHT_GREY = 0xc9c9c9;
+const MENU_WIDTH = 245;
 
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 196;
+const HEIGHT = 265;
 const LINE_BREAK = 15;
 
 function drawUiTabOptions(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 6);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
 
-    this.surface.drawBoxAlpha(UI_X, 36, WIDTH, 65, DARK_GREY, 160);
-    this.surface.drawBoxAlpha(UI_X, 101, WIDTH, 65, LIGHT_GREY, 160);
-    this.surface.drawBoxAlpha(UI_X, 166, WIDTH, 95, DARK_GREY, 160);
-    this.surface.drawBoxAlpha(UI_X, 261, WIDTH, 40, LIGHT_GREY, 160);
+    if (this.options.mobile) {
+        uiX = 35;
+        uiY = (this.gameHeight / 2 - HEIGHT / 2) | 0;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 6
+        );
+    }
 
-    const x = UI_X + 3;
-    let y = UI_Y + LINE_BREAK;
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
+
+    this.surface.drawBoxAlpha(uiX, uiY, WIDTH, 65, colours.darkGrey, 160);
+
+    this.surface.drawBoxAlpha(
+        uiX,
+        uiY + 65,
+        WIDTH,
+        65,
+        colours.lightGrey3,
+        160
+    );
+
+    this.surface.drawBoxAlpha(uiX, uiY + 130, WIDTH, 95, colours.darkGrey, 160);
+
+    this.surface.drawBoxAlpha(
+        uiX,
+        uiY + 225,
+        WIDTH,
+        40,
+        colours.lightGrey3,
+        160
+    );
+
+    const x = uiX + 3;
+    let y = uiY + LINE_BREAK;
 
     this.surface.drawString(
         `Game options - ${this.options.mobile ? 'tap' : 'click'} to toggle`,
@@ -35376,6 +35601,7 @@ function drawUiTabOptions(noMenus) {
         this.surface.drawString('Change password', x, y, 1, textColour);
 
         y += LINE_BREAK;
+
         textColour = colours.white;
 
         if (
@@ -35458,7 +35684,7 @@ function drawUiTabOptions(noMenus) {
 
     this.surface.drawString(
         'Privacy settings. Will be applied to',
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.black
@@ -35468,7 +35694,7 @@ function drawUiTabOptions(noMenus) {
 
     this.surface.drawString(
         'all people not on your friends list',
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.black
@@ -35479,7 +35705,7 @@ function drawUiTabOptions(noMenus) {
     this.surface.drawString(
         'Block chat messages: ' +
             (!this.settingsBlockChat ? '@red@<off>' : '@gre@<on>'),
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.white
@@ -35490,7 +35716,7 @@ function drawUiTabOptions(noMenus) {
     this.surface.drawString(
         'Block private messages: ' +
             (!this.settingsBlockPrivate ? '@red@<off>' : '@gre@<on>'),
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.white
@@ -35501,7 +35727,7 @@ function drawUiTabOptions(noMenus) {
     this.surface.drawString(
         'Block trade requests: ' +
             (!this.settingsBlockTrade ? '@red@<off>' : '@gre@<on>'),
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.white
@@ -35513,7 +35739,7 @@ function drawUiTabOptions(noMenus) {
         this.surface.drawString(
             'Block duel requests: ' +
                 (!this.settingsBlockDuel ? '@red@<off>' : '@gre@<on>'),
-            UI_X + 3,
+            uiX + 3,
             y,
             1,
             colours.white
@@ -35545,7 +35771,7 @@ function drawUiTabOptions(noMenus) {
 
     this.surface.drawString(
         `${this.options.mobile ? 'Tap' : 'Click'} here to logout`,
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         textColour
@@ -35555,12 +35781,12 @@ function drawUiTabOptions(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - (this.surface.width2 - 199);
-    const mouseY = this.mouseY - 36;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 265) {
-        const x = UI_X + 3;
-        let y = UI_Y + 30;
+        const x = uiX + 3;
+        let y = uiY + 30;
 
         if (
             this.mouseX > x &&
@@ -35726,7 +35952,7 @@ function drawUiTabOptions(noMenus) {
 
 module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54,"./_colours":91}],104:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],105:[function(require,module,exports){
 const colours = require('./_colours');
 
 const DIALOG_X = 106;
@@ -35921,7 +36147,7 @@ module.exports = {
     showChangePasswordStep: 0
 };
 
-},{"./_colours":91}],105:[function(require,module,exports){
+},{"./_colours":91}],106:[function(require,module,exports){
 const colours = require('./_colours');
 
 const MENU_WIDTH = 245;
@@ -36342,7 +36568,7 @@ module.exports = {
     uiTabPlayerInfoSubTab: 0
 };
 
-},{"./_colours":91}],106:[function(require,module,exports){
+},{"./_colours":91}],107:[function(require,module,exports){
 const selectedRecoverQuestions = [];
 selectedRecoverQuestions.length = 5;
 selectedRecoverQuestions.fill(null);
@@ -36357,7 +36583,7 @@ module.exports = {
     controlRecoverCreateButton: 0
 };
 
-},{}],107:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -36665,7 +36891,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":118,"./_colours":91}],108:[function(require,module,exports){
+},{"../opcodes/client":54,"../utility":119,"./_colours":91}],109:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -36746,7 +36972,7 @@ module.exports = {
     drawDialogServerMessage
 };
 
-},{"./_colours":91}],109:[function(require,module,exports){
+},{"./_colours":91}],110:[function(require,module,exports){
 const BUTTON_SIZE = 32;
 
 function setActiveUITab() {
@@ -36909,16 +37135,20 @@ function setActiveUITab() {
 
 function setActiveMobileUITab() {
     const rightX = this.gameWidth - BUTTON_SIZE - 3;
-    const rightY = this.gameHeight / 2 - 49;
+    const leftX = 3;
+    const uiY = this.gameHeight / 2 - 49;
 
-    if (this.showUITab === 0 && this.mouseX < rightX) {
-        return;
-    }
+    let offsetY = uiY;
 
-    let offsetY = rightY;
+    for (let i = 0; i < 6; i += 1) {
+        const buttonX = i > 2 ? leftX : rightX;
 
-    for (let i = 0; i < 3; i += 1) {
-        if (this.mouseY >= offsetY && this.mouseY <= offsetY + BUTTON_SIZE) {
+        if (
+            this.mouseX >= buttonX &&
+            this.mouseX <= buttonX + BUTTON_SIZE &&
+            this.mouseY >= offsetY &&
+            this.mouseY <= offsetY + BUTTON_SIZE
+        ) {
             if (this.showUITab === 0) {
                 this.showUITab = i + 1;
                 return;
@@ -36927,7 +37157,11 @@ function setActiveMobileUITab() {
             }
         }
 
-        offsetY += BUTTON_SIZE + 1;
+        if (i === 2) {
+            offsetY = uiY;
+        } else {
+            offsetY += BUTTON_SIZE + 1;
+        }
     }
 
     if (
@@ -36943,7 +37177,7 @@ function setActiveMobileUITab() {
 
 module.exports = { setActiveUITab, setActiveMobileUITab };
 
-},{}],110:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -37323,7 +37557,7 @@ function drawDialogShop() {
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],111:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],112:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -37499,7 +37733,7 @@ module.exports = {
     isSleeping: false
 };
 
-},{"../opcodes/client":54,"./_colours":91}],112:[function(require,module,exports){
+},{"../opcodes/client":54,"./_colours":91}],113:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -37713,13 +37947,13 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":118,"../word-filter":120,"./_colours":91}],113:[function(require,module,exports){
+},{"../chat-message":40,"../utility":119,"../word-filter":121,"./_colours":91}],114:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
 const HEIGHT = 182;
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 196;
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
@@ -37727,22 +37961,39 @@ const TABS = ['Friends', 'Ignore'];
 const TAB_HEIGHT = 24;
 
 function drawUiTabSocial(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 5);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX = 35;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 5
+        );
+    }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     this.surface.drawBoxAlpha(
-        UI_X,
-        UI_Y + TAB_HEIGHT,
+        uiX,
+        uiY + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
         colours.lightGrey,
         128
     );
 
-    this.surface.drawLineHoriz(UI_X, UI_Y + HEIGHT - 16, WIDTH, colours.black);
+    this.surface.drawLineHoriz(uiX, uiY + HEIGHT - 16, WIDTH, colours.black);
 
     this.surface.drawTabs(
-        UI_X,
-        UI_Y,
+        uiX,
+        uiY,
         WIDTH,
         TAB_HEIGHT,
         TABS,
@@ -37766,9 +38017,8 @@ function drawUiTabSocial(noMenus) {
             this.panelSocialList.addListEntry(
                 this.controlListSocialPlayers,
                 i,
-                colour +
-                    Utility.hashToUsername(this.friendListHashes[i]) +
-                    '~439~@whi@Remove         WWWWWWWWWW'
+                `${colour}${Utility.hashToUsername(this.friendListHashes[i])}` +
+                    `~${uiX + 126}~@whi@Remove`
             );
         }
     } else if (this.uiTabSocialSubTab === 1) {
@@ -37776,9 +38026,8 @@ function drawUiTabSocial(noMenus) {
             this.panelSocialList.addListEntry(
                 this.controlListSocialPlayers,
                 i,
-                '@yel@' +
-                    Utility.hashToUsername(this.ignoreList[i]) +
-                    '~439~@whi@Remove         WWWWWWWWWW'
+                `@yel@${Utility.hashToUsername(this.ignoreList[i])}` +
+                    `~${uiX + 126}~@whi@Remove`
             );
         }
     }
@@ -37792,24 +38041,24 @@ function drawUiTabSocial(noMenus) {
             this.controlListSocialPlayers
         );
 
-        if (friendIndex >= 0 && this.mouseX < 489) {
+        if (friendIndex >= 0 && this.mouseX < uiX + 176) {
             const username = Utility.hashToUsername(
                 this.friendListHashes[friendIndex]
             );
 
-            if (this.mouseX > 429) {
+            if (this.mouseX > uiX + 116) {
                 this.surface.drawStringCenter(
                     `${click} to remove ${username}`,
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
             } else if (this.friendListOnline[friendIndex] === 255) {
                 this.surface.drawStringCenter(
                     `${click} to message ${username}`,
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
@@ -37818,8 +38067,8 @@ function drawUiTabSocial(noMenus) {
                     this.surface.drawStringCenter(
                         `${username} is on world ` +
                             (this.friendListOnline[friendIndex] - 9),
-                        UI_X + HALF_WIDTH,
-                        UI_Y + 35,
+                        uiX + HALF_WIDTH,
+                        uiY + 35,
                         1,
                         colours.white
                     );
@@ -37827,8 +38076,8 @@ function drawUiTabSocial(noMenus) {
                     this.surface.drawStringCenter(
                         `${username} is on classic ` +
                             (this.friendListOnline[friendIndex] - 219),
-                        UI_X + HALF_WIDTH,
-                        UI_Y + 35,
+                        uiX + HALF_WIDTH,
+                        uiY + 35,
                         1,
                         colours.white
                     );
@@ -37836,8 +38085,8 @@ function drawUiTabSocial(noMenus) {
             } else {
                 this.surface.drawStringCenter(
                     `${username} is offline`,
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
@@ -37845,8 +38094,8 @@ function drawUiTabSocial(noMenus) {
         } else {
             this.surface.drawStringCenter(
                 `${click} a name to send a message`,
-                UI_X + HALF_WIDTH,
-                UI_Y + 35,
+                uiX + HALF_WIDTH,
+                uiY + 35,
                 1,
                 colours.white
             );
@@ -37855,10 +38104,10 @@ function drawUiTabSocial(noMenus) {
         let textColour = colours.black;
 
         if (
-            this.mouseX > UI_X &&
-            this.mouseX < UI_X + WIDTH &&
-            this.mouseY > UI_Y + HEIGHT - 16 &&
-            this.mouseY < UI_Y + HEIGHT
+            this.mouseX > uiX &&
+            this.mouseX < uiX + WIDTH &&
+            this.mouseY > uiY + HEIGHT - 16 &&
+            this.mouseY < uiY + HEIGHT
         ) {
             textColour = colours.yellow;
         } else {
@@ -37867,8 +38116,8 @@ function drawUiTabSocial(noMenus) {
 
         this.surface.drawStringCenter(
             `${click} here to add a friend`,
-            UI_X + HALF_WIDTH,
-            UI_Y + HEIGHT - 3,
+            uiX + HALF_WIDTH,
+            uiY + HEIGHT - 3,
             1,
             textColour
         );
@@ -37877,13 +38126,17 @@ function drawUiTabSocial(noMenus) {
             this.controlListSocialPlayers
         );
 
-        if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
-            if (this.mouseX > 429) {
+        if (
+            ignoreIndex >= 0 &&
+            this.mouseX < uiX + 176 &&
+            this.mouseX > uiX + 116
+        ) {
+            if (this.mouseX > uiX + 116) {
                 this.surface.drawStringCenter(
                     `${click} to remove ` +
                         Utility.hashToUsername(this.ignoreList[ignoreIndex]),
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
@@ -37891,8 +38144,8 @@ function drawUiTabSocial(noMenus) {
         } else {
             this.surface.drawStringCenter(
                 'Blocking messages from:',
-                UI_X + HALF_WIDTH,
-                UI_Y + 35,
+                uiX + HALF_WIDTH,
+                uiY + 35,
                 1,
                 colours.white
             );
@@ -37901,10 +38154,10 @@ function drawUiTabSocial(noMenus) {
         let textColour = colours.black;
 
         if (
-            this.mouseX > UI_X &&
-            this.mouseX < UI_X + WIDTH &&
-            this.mouseY > UI_Y + HEIGHT - 16 &&
-            this.mouseY < UI_Y + HEIGHT
+            this.mouseX > uiX &&
+            this.mouseX < uiX + WIDTH &&
+            this.mouseY > uiY + HEIGHT - 16 &&
+            this.mouseY < uiY + HEIGHT
         ) {
             textColour = colours.yellow;
         } else {
@@ -37913,8 +38166,8 @@ function drawUiTabSocial(noMenus) {
 
         this.surface.drawStringCenter(
             `${click} here to add a name`,
-            UI_X + HALF_WIDTH,
-            UI_Y + HEIGHT - 3,
+            uiX + HALF_WIDTH,
+            uiY + HEIGHT - 3,
             1,
             textColour
         );
@@ -37924,13 +38177,13 @@ function drawUiTabSocial(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < 182) {
         this.panelSocialList.handleMouse(
-            mouseX + UI_X,
-            mouseY + UI_Y,
+            mouseX + uiX,
+            mouseY + uiY,
             this.lastMouseButtonDown,
             this.mouseButtonDown,
             this.mouseScrollDelta
@@ -37944,6 +38197,7 @@ function drawUiTabSocial(noMenus) {
                 );
             } else if (mouseX > HALF_WIDTH && this.uiTabSocialSubTab === 0) {
                 this.uiTabSocialSubTab = 1;
+
                 this.panelSocialList.resetListProps(
                     this.controlListSocialPlayers
                 );
@@ -37955,14 +38209,16 @@ function drawUiTabSocial(noMenus) {
                 this.controlListSocialPlayers
             );
 
-            if (friendIndex >= 0 && this.mouseX < 489) {
-                if (this.mouseX > 429) {
+            if (friendIndex >= 0 && mouseX < 176) {
+                if (mouseX > 116) {
                     this.friendRemove(this.friendListHashes[friendIndex]);
                 } else if (this.friendListOnline[friendIndex] !== 0) {
                     this.showDialogSocialInput = 2;
+
                     this.privateMessageTarget = this.friendListHashes[
                         friendIndex
                     ];
+
                     this.inputPMCurrent = '';
                     this.inputPMFinal = '';
                 }
@@ -37974,7 +38230,7 @@ function drawUiTabSocial(noMenus) {
                 this.controlListSocialPlayers
             );
 
-            if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
+            if (ignoreIndex >= 0 && mouseX < 176 && mouseX > 116) {
                 this.ignoreRemove(this.ignoreList[ignoreIndex]);
             }
         }
@@ -37999,7 +38255,7 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":118,"./_colours":91}],114:[function(require,module,exports){
+},{"../utility":119,"./_colours":91}],115:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
 const clientOpcodes = require('../opcodes/client');
@@ -38192,7 +38448,7 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":118,"./_colours":91}],115:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"../utility":119,"./_colours":91}],116:[function(require,module,exports){
 const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
@@ -38710,7 +38966,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],116:[function(require,module,exports){
+},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],117:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -38959,7 +39215,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":91}],117:[function(require,module,exports){
+},{"./_colours":91}],118:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -39095,7 +39351,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":91}],118:[function(require,module,exports){
+},{"./_colours":91}],119:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -39484,7 +39740,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],119:[function(require,module,exports){
+},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],120:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -39498,7 +39754,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -40664,7 +40920,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
 
-},{}],121:[function(require,module,exports){
+},{}],122:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -43190,4 +43446,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":118,"ndarray":34}]},{},[1]);
+},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":119,"ndarray":34}]},{},[1]);

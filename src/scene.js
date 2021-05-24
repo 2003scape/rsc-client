@@ -3840,10 +3840,12 @@ class Scene {
         }
 
         for (let i1 = 0; i1 < colourCount; i1++) {
-            let colour = colours[i1]; // ??
+            let colour = colours[i1];
             colours[colourCount + i1] = (colour - (colour >>> 3)) & 0xf8f8ff;
+
             colours[colourCount * 2 + i1] =
                 (colour - (colour >>> 2)) & 0xf8f8ff;
+
             colours[colourCount * 3 + i1] =
                 (colour - (colour >>> 2) - (colour >>> 3)) & 0xf8f8ff;
         }
@@ -3957,9 +3959,9 @@ class Scene {
 
         if (j < l) {
             return true;
-        } else {
-            return flag;
         }
+
+        return flag;
     }
 
     method308(i, j, k, flag) {
@@ -3973,9 +3975,9 @@ class Scene {
 
         if (j < k) {
             return true;
-        } else {
-            return flag;
         }
+
+        return flag;
     }
 
     intersect(ai, ai1, ai2, ai3) {
@@ -4022,6 +4024,7 @@ class Scene {
         if (ai1[k] < ai3[i1]) {
             for (l = k; ai1[l] < ai3[i1]; l = (l + 1) % i);
             for (; ai1[k] < ai3[i1]; k = (k - 1 + i) % i);
+
             let k1 = this.method306(
                 ai[(k + 1) % i],
                 ai1[(k + 1) % i],
@@ -4029,6 +4032,7 @@ class Scene {
                 ai1[k],
                 ai3[i1]
             );
+
             let k6 = this.method306(
                 ai[(l - 1 + i) % i],
                 ai1[(l - 1 + i) % i],
@@ -4036,6 +4040,7 @@ class Scene {
                 ai1[l],
                 ai3[i1]
             );
+
             let l10 = ai2[i1];
             flag = (k1 < l10) | (k6 < l10);
 
@@ -4052,7 +4057,9 @@ class Scene {
         } else {
             for (j1 = i1; ai3[j1] < ai1[k]; j1 = (j1 + 1) % j);
             for (; ai3[i1] < ai1[k]; i1 = (i1 - 1 + j) % j);
+
             let l1 = ai[k];
+
             let i11 = this.method306(
                 ai2[(i1 + 1) % j],
                 ai3[(i1 + 1) % j],
@@ -4060,6 +4067,7 @@ class Scene {
                 ai3[i1],
                 ai1[k]
             );
+
             let l15 = this.method306(
                 ai2[(j1 - 1 + j) % j],
                 ai3[(j1 - 1 + j) % j],
@@ -4067,6 +4075,7 @@ class Scene {
                 ai3[j1],
                 ai1[k]
             );
+
             flag = (l1 < i11) | (l1 < l15);
 
             if (this.method308(i11, l15, l1, !flag)) {
@@ -4086,6 +4095,7 @@ class Scene {
                 if (ai1[k] < ai3[i1]) {
                     if (ai1[k] < ai3[j1]) {
                         let i2 = ai[k];
+
                         let l6 = this.method306(
                             ai[(l - 1 + i) % i],
                             ai1[(l - 1 + i) % i],
@@ -4093,6 +4103,7 @@ class Scene {
                             ai1[l],
                             ai1[k]
                         );
+
                         let j11 = this.method306(
                             ai2[(i1 + 1) % j],
                             ai3[(i1 + 1) % j],
@@ -4100,6 +4111,7 @@ class Scene {
                             ai3[i1],
                             ai1[k]
                         );
+
                         let i16 = this.method306(
                             ai2[(j1 - 1 + j) % j],
                             ai3[(j1 - 1 + j) % j],
@@ -4125,6 +4137,7 @@ class Scene {
                             ai1[k],
                             ai3[j1]
                         );
+
                         let i7 = this.method306(
                             ai[(l - 1 + i) % i],
                             ai1[(l - 1 + i) % i],
@@ -4132,6 +4145,7 @@ class Scene {
                             ai1[l],
                             ai3[j1]
                         );
+
                         let k11 = this.method306(
                             ai2[(i1 + 1) % j],
                             ai3[(i1 + 1) % j],
@@ -4139,6 +4153,7 @@ class Scene {
                             ai3[i1],
                             ai3[j1]
                         );
+
                         let j16 = ai2[j1];
 
                         if (this.method307(j2, i7, k11, j16, flag)) {
@@ -4159,6 +4174,7 @@ class Scene {
                         ai1[k],
                         ai3[i1]
                     );
+
                     let j7 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -4166,7 +4182,9 @@ class Scene {
                         ai1[l],
                         ai3[i1]
                     );
+
                     let l11 = ai2[i1];
+
                     let k16 = this.method306(
                         ai2[(j1 - 1 + j) % j],
                         ai3[(j1 - 1 + j) % j],
@@ -4192,6 +4210,7 @@ class Scene {
                         ai1[k],
                         ai3[j1]
                     );
+
                     let k7 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -4199,6 +4218,7 @@ class Scene {
                         ai1[l],
                         ai3[j1]
                     );
+
                     let i12 = this.method306(
                         ai2[(i1 + 1) % j],
                         ai3[(i1 + 1) % j],
@@ -4206,6 +4226,7 @@ class Scene {
                         ai3[i1],
                         ai3[j1]
                     );
+
                     let l16 = ai2[j1];
 
                     if (this.method307(l2, k7, i12, l16, flag)) {
@@ -4227,7 +4248,9 @@ class Scene {
                         ai1[k],
                         ai1[l]
                     );
+
                     let l7 = ai[l];
+
                     let j12 = this.method306(
                         ai2[(i1 + 1) % j],
                         ai3[(i1 + 1) % j],
@@ -4235,6 +4258,7 @@ class Scene {
                         ai3[i1],
                         ai1[l]
                     );
+
                     let i17 = this.method306(
                         ai2[(j1 - 1 + j) % j],
                         ai3[(j1 - 1 + j) % j],
@@ -4260,6 +4284,7 @@ class Scene {
                         ai1[k],
                         ai3[j1]
                     );
+
                     let i8 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -4267,6 +4292,7 @@ class Scene {
                         ai1[l],
                         ai3[j1]
                     );
+
                     let k12 = this.method306(
                         ai2[(i1 + 1) % j],
                         ai3[(i1 + 1) % j],
@@ -4274,6 +4300,7 @@ class Scene {
                         ai3[i1],
                         ai3[j1]
                     );
+
                     let j17 = ai2[j1];
 
                     if (this.method307(j3, i8, k12, j17, flag)) {
@@ -4294,6 +4321,7 @@ class Scene {
                     ai1[k],
                     ai3[i1]
                 );
+
                 let j8 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -4301,7 +4329,9 @@ class Scene {
                     ai1[l],
                     ai3[i1]
                 );
+
                 let l12 = ai2[i1];
+
                 let k17 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -4327,6 +4357,7 @@ class Scene {
                     ai1[k],
                     ai3[j1]
                 );
+
                 let k8 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -4334,6 +4365,7 @@ class Scene {
                     ai1[l],
                     ai3[j1]
                 );
+
                 let i13 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -4341,6 +4373,7 @@ class Scene {
                     ai3[i1],
                     ai3[j1]
                 );
+
                 let l17 = ai2[j1];
 
                 if (this.method307(l3, k8, i13, l17, flag)) {
@@ -4366,6 +4399,7 @@ class Scene {
                         ai3[i1],
                         ai1[k]
                     );
+
                     let i18 = this.method306(
                         ai2[(j1 - 1 + j) % j],
                         ai3[(j1 - 1 + j) % j],
@@ -4373,8 +4407,10 @@ class Scene {
                         ai3[j1],
                         ai1[k]
                     );
+
                     return this.method308(j13, i18, i4, !flag);
                 }
+
                 let j4 = this.method306(
                     ai[(k + 1) % i],
                     ai1[(k + 1) % i],
@@ -4382,6 +4418,7 @@ class Scene {
                     ai1[k],
                     ai3[j1]
                 );
+
                 let l8 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -4389,6 +4426,7 @@ class Scene {
                     ai1[l],
                     ai3[j1]
                 );
+
                 let k13 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -4396,6 +4434,7 @@ class Scene {
                     ai3[i1],
                     ai3[j1]
                 );
+
                 let j18 = ai2[j1];
 
                 if (this.method307(j4, l8, k13, j18, flag)) {
@@ -4415,6 +4454,7 @@ class Scene {
                     ai1[k],
                     ai3[i1]
                 );
+
                 let i9 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -4422,7 +4462,9 @@ class Scene {
                     ai1[l],
                     ai3[i1]
                 );
+
                 let l13 = ai2[i1];
+
                 let k18 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -4448,6 +4490,7 @@ class Scene {
                     ai1[k],
                     ai3[j1]
                 );
+
                 let j9 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -4455,6 +4498,7 @@ class Scene {
                     ai1[l],
                     ai3[j1]
                 );
+
                 let i14 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -4462,6 +4506,7 @@ class Scene {
                     ai3[i1],
                     ai3[j1]
                 );
+
                 let l18 = ai2[j1];
 
                 if (this.method307(l4, j9, i14, l18, flag)) {
@@ -4486,6 +4531,7 @@ class Scene {
                         ai1[k],
                         ai3[i1]
                     );
+
                     let k9 = this.method306(
                         ai[(l - 1 + i) % i],
                         ai1[(l - 1 + i) % i],
@@ -4493,6 +4539,7 @@ class Scene {
                         ai1[l],
                         ai3[i1]
                     );
+
                     let j14 = ai2[i1];
 
                     return this.method308(i5, k9, j14, flag);
@@ -4505,7 +4552,9 @@ class Scene {
                     ai1[k],
                     ai1[l]
                 );
+
                 let l9 = ai[l];
+
                 let k14 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -4513,6 +4562,7 @@ class Scene {
                     ai3[i1],
                     ai1[l]
                 );
+
                 let i19 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -4532,6 +4582,7 @@ class Scene {
                 }
             } else if (ai1[k] < ai1[l]) {
                 let k5 = ai[k];
+
                 let i10 = this.method306(
                     ai[(l - 1 + i) % i],
                     ai1[(l - 1 + i) % i],
@@ -4539,6 +4590,7 @@ class Scene {
                     ai1[l],
                     ai1[k]
                 );
+
                 let l14 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -4546,6 +4598,7 @@ class Scene {
                     ai3[i1],
                     ai1[k]
                 );
+
                 let j19 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -4571,7 +4624,9 @@ class Scene {
                     ai1[k],
                     ai1[l]
                 );
+
                 let j10 = ai[l];
+
                 let i15 = this.method306(
                     ai2[(i1 + 1) % j],
                     ai3[(i1 + 1) % j],
@@ -4579,6 +4634,7 @@ class Scene {
                     ai3[i1],
                     ai1[l]
                 );
+
                 let k19 = this.method306(
                     ai2[(j1 - 1 + j) % j],
                     ai3[(j1 - 1 + j) % j],
@@ -4601,6 +4657,7 @@ class Scene {
 
         if (ai1[k] < ai3[i1]) {
             let i6 = ai[k];
+
             let j15 = this.method306(
                 ai2[(i1 + 1) % j],
                 ai3[(i1 + 1) % j],
@@ -4608,6 +4665,7 @@ class Scene {
                 ai3[i1],
                 ai1[k]
             );
+
             let l19 = this.method306(
                 ai2[(j1 - 1 + j) % j],
                 ai3[(j1 - 1 + j) % j],
@@ -4626,6 +4684,7 @@ class Scene {
             ai1[k],
             ai3[i1]
         );
+
         let k10 = this.method306(
             ai[(l - 1 + i) % i],
             ai1[(l - 1 + i) % i],
@@ -4633,6 +4692,7 @@ class Scene {
             ai1[l],
             ai3[i1]
         );
+
         let k15 = ai2[i1];
 
         return this.method308(j6, k10, k15, flag);

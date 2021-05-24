@@ -160,16 +160,20 @@ function setActiveUITab() {
 
 function setActiveMobileUITab() {
     const rightX = this.gameWidth - BUTTON_SIZE - 3;
-    const rightY = this.gameHeight / 2 - 49;
+    const leftX = 3;
+    const uiY = this.gameHeight / 2 - 49;
 
-    if (this.showUITab === 0 && this.mouseX < rightX) {
-        return;
-    }
+    let offsetY = uiY;
 
-    let offsetY = rightY;
+    for (let i = 0; i < 6; i += 1) {
+        const buttonX = i > 2 ? leftX : rightX;
 
-    for (let i = 0; i < 3; i += 1) {
-        if (this.mouseY >= offsetY && this.mouseY <= offsetY + BUTTON_SIZE) {
+        if (
+            this.mouseX >= buttonX &&
+            this.mouseX <= buttonX + BUTTON_SIZE &&
+            this.mouseY >= offsetY &&
+            this.mouseY <= offsetY + BUTTON_SIZE
+        ) {
             if (this.showUITab === 0) {
                 this.showUITab = i + 1;
                 return;
@@ -178,7 +182,11 @@ function setActiveMobileUITab() {
             }
         }
 
-        offsetY += BUTTON_SIZE + 1;
+        if (i === 2) {
+            offsetY = uiY;
+        } else {
+            offsetY += BUTTON_SIZE + 1;
+        }
     }
 
     if (

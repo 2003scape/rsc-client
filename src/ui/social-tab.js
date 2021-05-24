@@ -1,9 +1,9 @@
 const Utility = require('../utility');
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
 const HEIGHT = 182;
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 196;
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
@@ -11,22 +11,39 @@ const TABS = ['Friends', 'Ignore'];
 const TAB_HEIGHT = 24;
 
 function drawUiTabSocial(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 5);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX = 35;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 5
+        );
+    }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     this.surface.drawBoxAlpha(
-        UI_X,
-        UI_Y + TAB_HEIGHT,
+        uiX,
+        uiY + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
         colours.lightGrey,
         128
     );
 
-    this.surface.drawLineHoriz(UI_X, UI_Y + HEIGHT - 16, WIDTH, colours.black);
+    this.surface.drawLineHoriz(uiX, uiY + HEIGHT - 16, WIDTH, colours.black);
 
     this.surface.drawTabs(
-        UI_X,
-        UI_Y,
+        uiX,
+        uiY,
         WIDTH,
         TAB_HEIGHT,
         TABS,
@@ -50,9 +67,8 @@ function drawUiTabSocial(noMenus) {
             this.panelSocialList.addListEntry(
                 this.controlListSocialPlayers,
                 i,
-                colour +
-                    Utility.hashToUsername(this.friendListHashes[i]) +
-                    '~439~@whi@Remove         WWWWWWWWWW'
+                `${colour}${Utility.hashToUsername(this.friendListHashes[i])}` +
+                    `~${uiX + 126}~@whi@Remove`
             );
         }
     } else if (this.uiTabSocialSubTab === 1) {
@@ -60,9 +76,8 @@ function drawUiTabSocial(noMenus) {
             this.panelSocialList.addListEntry(
                 this.controlListSocialPlayers,
                 i,
-                '@yel@' +
-                    Utility.hashToUsername(this.ignoreList[i]) +
-                    '~439~@whi@Remove         WWWWWWWWWW'
+                `@yel@${Utility.hashToUsername(this.ignoreList[i])}` +
+                    `~${uiX + 126}~@whi@Remove`
             );
         }
     }
@@ -76,24 +91,24 @@ function drawUiTabSocial(noMenus) {
             this.controlListSocialPlayers
         );
 
-        if (friendIndex >= 0 && this.mouseX < 489) {
+        if (friendIndex >= 0 && this.mouseX < uiX + 176) {
             const username = Utility.hashToUsername(
                 this.friendListHashes[friendIndex]
             );
 
-            if (this.mouseX > 429) {
+            if (this.mouseX > uiX + 116) {
                 this.surface.drawStringCenter(
                     `${click} to remove ${username}`,
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
             } else if (this.friendListOnline[friendIndex] === 255) {
                 this.surface.drawStringCenter(
                     `${click} to message ${username}`,
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
@@ -102,8 +117,8 @@ function drawUiTabSocial(noMenus) {
                     this.surface.drawStringCenter(
                         `${username} is on world ` +
                             (this.friendListOnline[friendIndex] - 9),
-                        UI_X + HALF_WIDTH,
-                        UI_Y + 35,
+                        uiX + HALF_WIDTH,
+                        uiY + 35,
                         1,
                         colours.white
                     );
@@ -111,8 +126,8 @@ function drawUiTabSocial(noMenus) {
                     this.surface.drawStringCenter(
                         `${username} is on classic ` +
                             (this.friendListOnline[friendIndex] - 219),
-                        UI_X + HALF_WIDTH,
-                        UI_Y + 35,
+                        uiX + HALF_WIDTH,
+                        uiY + 35,
                         1,
                         colours.white
                     );
@@ -120,8 +135,8 @@ function drawUiTabSocial(noMenus) {
             } else {
                 this.surface.drawStringCenter(
                     `${username} is offline`,
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
@@ -129,8 +144,8 @@ function drawUiTabSocial(noMenus) {
         } else {
             this.surface.drawStringCenter(
                 `${click} a name to send a message`,
-                UI_X + HALF_WIDTH,
-                UI_Y + 35,
+                uiX + HALF_WIDTH,
+                uiY + 35,
                 1,
                 colours.white
             );
@@ -139,10 +154,10 @@ function drawUiTabSocial(noMenus) {
         let textColour = colours.black;
 
         if (
-            this.mouseX > UI_X &&
-            this.mouseX < UI_X + WIDTH &&
-            this.mouseY > UI_Y + HEIGHT - 16 &&
-            this.mouseY < UI_Y + HEIGHT
+            this.mouseX > uiX &&
+            this.mouseX < uiX + WIDTH &&
+            this.mouseY > uiY + HEIGHT - 16 &&
+            this.mouseY < uiY + HEIGHT
         ) {
             textColour = colours.yellow;
         } else {
@@ -151,8 +166,8 @@ function drawUiTabSocial(noMenus) {
 
         this.surface.drawStringCenter(
             `${click} here to add a friend`,
-            UI_X + HALF_WIDTH,
-            UI_Y + HEIGHT - 3,
+            uiX + HALF_WIDTH,
+            uiY + HEIGHT - 3,
             1,
             textColour
         );
@@ -161,13 +176,17 @@ function drawUiTabSocial(noMenus) {
             this.controlListSocialPlayers
         );
 
-        if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
-            if (this.mouseX > 429) {
+        if (
+            ignoreIndex >= 0 &&
+            this.mouseX < uiX + 176 &&
+            this.mouseX > uiX + 116
+        ) {
+            if (this.mouseX > uiX + 116) {
                 this.surface.drawStringCenter(
                     `${click} to remove ` +
                         Utility.hashToUsername(this.ignoreList[ignoreIndex]),
-                    UI_X + HALF_WIDTH,
-                    UI_Y + 35,
+                    uiX + HALF_WIDTH,
+                    uiY + 35,
                     1,
                     colours.white
                 );
@@ -175,8 +194,8 @@ function drawUiTabSocial(noMenus) {
         } else {
             this.surface.drawStringCenter(
                 'Blocking messages from:',
-                UI_X + HALF_WIDTH,
-                UI_Y + 35,
+                uiX + HALF_WIDTH,
+                uiY + 35,
                 1,
                 colours.white
             );
@@ -185,10 +204,10 @@ function drawUiTabSocial(noMenus) {
         let textColour = colours.black;
 
         if (
-            this.mouseX > UI_X &&
-            this.mouseX < UI_X + WIDTH &&
-            this.mouseY > UI_Y + HEIGHT - 16 &&
-            this.mouseY < UI_Y + HEIGHT
+            this.mouseX > uiX &&
+            this.mouseX < uiX + WIDTH &&
+            this.mouseY > uiY + HEIGHT - 16 &&
+            this.mouseY < uiY + HEIGHT
         ) {
             textColour = colours.yellow;
         } else {
@@ -197,8 +216,8 @@ function drawUiTabSocial(noMenus) {
 
         this.surface.drawStringCenter(
             `${click} here to add a name`,
-            UI_X + HALF_WIDTH,
-            UI_Y + HEIGHT - 3,
+            uiX + HALF_WIDTH,
+            uiY + HEIGHT - 3,
             1,
             textColour
         );
@@ -208,13 +227,13 @@ function drawUiTabSocial(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < 182) {
         this.panelSocialList.handleMouse(
-            mouseX + UI_X,
-            mouseY + UI_Y,
+            mouseX + uiX,
+            mouseY + uiY,
             this.lastMouseButtonDown,
             this.mouseButtonDown,
             this.mouseScrollDelta
@@ -228,6 +247,7 @@ function drawUiTabSocial(noMenus) {
                 );
             } else if (mouseX > HALF_WIDTH && this.uiTabSocialSubTab === 0) {
                 this.uiTabSocialSubTab = 1;
+
                 this.panelSocialList.resetListProps(
                     this.controlListSocialPlayers
                 );
@@ -239,14 +259,16 @@ function drawUiTabSocial(noMenus) {
                 this.controlListSocialPlayers
             );
 
-            if (friendIndex >= 0 && this.mouseX < 489) {
-                if (this.mouseX > 429) {
+            if (friendIndex >= 0 && mouseX < 176) {
+                if (mouseX > 116) {
                     this.friendRemove(this.friendListHashes[friendIndex]);
                 } else if (this.friendListOnline[friendIndex] !== 0) {
                     this.showDialogSocialInput = 2;
+
                     this.privateMessageTarget = this.friendListHashes[
                         friendIndex
                     ];
+
                     this.inputPMCurrent = '';
                     this.inputPMFinal = '';
                 }
@@ -258,7 +280,7 @@ function drawUiTabSocial(noMenus) {
                 this.controlListSocialPlayers
             );
 
-            if (ignoreIndex >= 0 && this.mouseX < 489 && this.mouseX > 429) {
+            if (ignoreIndex >= 0 && mouseX < 176 && mouseX > 116) {
                 this.ignoreRemove(this.ignoreList[ignoreIndex]);
             }
         }

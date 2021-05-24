@@ -1,24 +1,56 @@
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
-const DARK_GREY = 0xb5b5b5;
-const LIGHT_GREY = 0xc9c9c9;
+const MENU_WIDTH = 245;
 
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 196;
+const HEIGHT = 265;
 const LINE_BREAK = 15;
 
 function drawUiTabOptions(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 6);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
 
-    this.surface.drawBoxAlpha(UI_X, 36, WIDTH, 65, DARK_GREY, 160);
-    this.surface.drawBoxAlpha(UI_X, 101, WIDTH, 65, LIGHT_GREY, 160);
-    this.surface.drawBoxAlpha(UI_X, 166, WIDTH, 95, DARK_GREY, 160);
-    this.surface.drawBoxAlpha(UI_X, 261, WIDTH, 40, LIGHT_GREY, 160);
+    if (this.options.mobile) {
+        uiX = 35;
+        uiY = (this.gameHeight / 2 - HEIGHT / 2) | 0;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 6
+        );
+    }
 
-    const x = UI_X + 3;
-    let y = UI_Y + LINE_BREAK;
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
+
+    this.surface.drawBoxAlpha(uiX, uiY, WIDTH, 65, colours.darkGrey, 160);
+
+    this.surface.drawBoxAlpha(
+        uiX,
+        uiY + 65,
+        WIDTH,
+        65,
+        colours.lightGrey3,
+        160
+    );
+
+    this.surface.drawBoxAlpha(uiX, uiY + 130, WIDTH, 95, colours.darkGrey, 160);
+
+    this.surface.drawBoxAlpha(
+        uiX,
+        uiY + 225,
+        WIDTH,
+        40,
+        colours.lightGrey3,
+        160
+    );
+
+    const x = uiX + 3;
+    let y = uiY + LINE_BREAK;
 
     this.surface.drawString(
         `Game options - ${this.options.mobile ? 'tap' : 'click'} to toggle`,
@@ -89,6 +121,7 @@ function drawUiTabOptions(noMenus) {
         this.surface.drawString('Change password', x, y, 1, textColour);
 
         y += LINE_BREAK;
+
         textColour = colours.white;
 
         if (
@@ -171,7 +204,7 @@ function drawUiTabOptions(noMenus) {
 
     this.surface.drawString(
         'Privacy settings. Will be applied to',
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.black
@@ -181,7 +214,7 @@ function drawUiTabOptions(noMenus) {
 
     this.surface.drawString(
         'all people not on your friends list',
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.black
@@ -192,7 +225,7 @@ function drawUiTabOptions(noMenus) {
     this.surface.drawString(
         'Block chat messages: ' +
             (!this.settingsBlockChat ? '@red@<off>' : '@gre@<on>'),
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.white
@@ -203,7 +236,7 @@ function drawUiTabOptions(noMenus) {
     this.surface.drawString(
         'Block private messages: ' +
             (!this.settingsBlockPrivate ? '@red@<off>' : '@gre@<on>'),
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.white
@@ -214,7 +247,7 @@ function drawUiTabOptions(noMenus) {
     this.surface.drawString(
         'Block trade requests: ' +
             (!this.settingsBlockTrade ? '@red@<off>' : '@gre@<on>'),
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         colours.white
@@ -226,7 +259,7 @@ function drawUiTabOptions(noMenus) {
         this.surface.drawString(
             'Block duel requests: ' +
                 (!this.settingsBlockDuel ? '@red@<off>' : '@gre@<on>'),
-            UI_X + 3,
+            uiX + 3,
             y,
             1,
             colours.white
@@ -258,7 +291,7 @@ function drawUiTabOptions(noMenus) {
 
     this.surface.drawString(
         `${this.options.mobile ? 'Tap' : 'Click'} here to logout`,
-        UI_X + 3,
+        uiX + 3,
         y,
         1,
         textColour
@@ -268,12 +301,12 @@ function drawUiTabOptions(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - (this.surface.width2 - 199);
-    const mouseY = this.mouseY - 36;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 265) {
-        const x = UI_X + 3;
-        let y = UI_Y + 30;
+        const x = uiX + 3;
+        let y = uiY + 30;
 
         if (
             this.mouseX > x &&

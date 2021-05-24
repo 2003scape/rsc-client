@@ -687,22 +687,29 @@ class Panel {
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         }
 
-        const entryListStartY =
+        const listStartY =
             height - displayedEntryCount * this.surface.textHeight(textSize);
 
-        let y2 =
+        let listY =
             (y +
                 ((this.surface.textHeight(textSize) * 5) / 6 +
-                    entryListStartY / 2)) |
+                    listStartY / 2)) |
             0;
 
         for (let entry = listEntryPosition; entry < listEntryCount; entry++) {
-            this.drawString(control, x + 2, y2, listEntries[entry], textSize);
-            y2 +=
+            this.drawString(
+                control,
+                x + 2,
+                listY,
+                listEntries[entry],
+                textSize
+            );
+
+            listY +=
                 this.surface.textHeight(textSize) -
                 Panel.textListEntryHeightMod;
 
-            if (y2 >= y + height) {
+            if (listY >= y + height) {
                 return;
             }
         }
@@ -776,12 +783,12 @@ class Panel {
         const bottom = y + ((this.surface.textHeight(textSize) / 3) | 0);
 
         for (let idx = 0; idx < listEntryCount; idx++) {
-            let colour;
+            let textColour;
 
             if (this.controlUseAlternativeColour[control]) {
-                colour = 0xffffff;
+                textColour = 0xffffff;
             } else {
-                colour = 0;
+                textColour = 0;
             }
 
             if (
@@ -792,9 +799,9 @@ class Panel {
                 this.mouseY > bottom - this.surface.textHeight(textSize)
             ) {
                 if (this.controlUseAlternativeColour[control]) {
-                    colour = 0x808080;
+                    textColour = 0x808080;
                 } else {
-                    colour = 0xffffff;
+                    textColour = 0xffffff;
                 }
 
                 if (this.mouseLastButtonDown === 1) {
@@ -805,9 +812,9 @@ class Panel {
 
             if (this.controlListEntryMouseButtonDown[control] === idx) {
                 if (this.controlUseAlternativeColour[control]) {
-                    colour = 0xff0000;
+                    textColour = 0xff0000;
                 } else {
-                    colour = 0xc00000;
+                    textColour = 0xc00000;
                 }
             }
 
@@ -816,7 +823,7 @@ class Panel {
                 left,
                 bottom,
                 textSize,
-                colour
+                textColour
             );
 
             left += this.surface.textWidth(listEntries[idx] + '  ', textSize);
@@ -902,6 +909,7 @@ class Panel {
 
         if (displayedEntryCount < listEntryCount) {
             const cornerTopRight = x + width - 12;
+
             let cornerBottomLeft =
                 (((height - 27) * displayedEntryCount) / listEntryCount) | 0;
 
@@ -971,6 +979,7 @@ class Panel {
 
                     const l3 =
                         this.mouseY - y - 12 - ((cornerBottomLeft / 2) | 0);
+
                     listEntryPosition =
                         ((l3 * listEntryCount) / (height - 24)) | 0;
 
@@ -992,6 +1001,7 @@ class Panel {
                 (((height - 27 - cornerBottomLeft) * listEntryPosition) /
                     maxEntries) |
                 0;
+
             this.drawListContainer(x, y, width, height, j3, cornerBottomLeft);
         } else {
             listEntryPosition = 0;
@@ -1000,34 +1010,36 @@ class Panel {
 
         this.controlListEntryMouseOver[control] = -1;
 
-        const k2 =
+        const listStartY =
             height - displayedEntryCount * this.surface.textHeight(textSize);
 
-        let i3 =
+        let listY =
             y +
-            (((((this.surface.textHeight(textSize) * 5) / 6) | 0) + k2 / 2) |
+            (((((this.surface.textHeight(textSize) * 5) / 6) | 0) +
+                listStartY / 2) |
                 0);
 
         for (let k3 = listEntryPosition; k3 < listEntryCount; k3++) {
-            let i4;
+            let textColour;
 
             if (this.controlUseAlternativeColour[control]) {
-                i4 = 0xffffff;
+                textColour = 0xffffff;
             } else {
-                i4 = 0;
+                textColour = 0;
             }
 
             if (
                 this.mouseX >= x + 2 &&
                 this.mouseX <=
-                    x + 2 + this.surface.textWidth(listEntries[k3], textSize) &&
-                this.mouseY - 2 <= i3 &&
-                this.mouseY - 2 > i3 - this.surface.textHeight(textSize)
+                    //x + 2 + this.surface.textWidth(listEntries[k3], textSize) &&
+                    x + width - 12 &&
+                this.mouseY - 2 <= listY &&
+                this.mouseY - 2 > listY - this.surface.textHeight(textSize)
             ) {
                 if (this.controlUseAlternativeColour[control]) {
-                    i4 = 0x808080;
+                    textColour = 0x808080;
                 } else {
-                    i4 = 0xffffff;
+                    textColour = 0xffffff;
                 }
 
                 this.controlListEntryMouseOver[control] = k3;
@@ -1042,13 +1054,20 @@ class Panel {
                 this.controlListEntryMouseButtonDown[control] === k3 &&
                 this.aBoolean219
             ) {
-                i4 = 0xff0000;
+                textColour = 0xff0000;
             }
 
-            this.surface.drawString(listEntries[k3], x + 2, i3, textSize, i4);
-            i3 += this.surface.textHeight(textSize);
+            this.surface.drawString(
+                listEntries[k3],
+                x + 2,
+                listY,
+                textSize,
+                textColour
+            );
 
-            if (i3 >= y + height) {
+            listY += this.surface.textHeight(textSize);
+
+            if (listY >= y + height) {
                 return;
             }
         }
@@ -1104,16 +1123,16 @@ class Panel {
     }
 
     addSprite(x, y, spriteId) {
-        const imgWidth = this.surface.spriteWidth[spriteId];
-        const imgHeight = this.surface.spriteHeight[spriteId];
+        const width = this.surface.spriteWidth[spriteId];
+        const height = this.surface.spriteHeight[spriteId];
 
         this.controlType[this.controlCount] = controlTypes.IMAGE;
         this.controlShown[this.controlCount] = true;
         this.controlClicked[this.controlCount] = false;
-        this.controlX[this.controlCount] = x - ((imgWidth / 2) | 0);
-        this.controlY[this.controlCount] = y - ((imgHeight / 2) | 0);
-        this.controlWidth[this.controlCount] = imgWidth;
-        this.controlHeight[this.controlCount] = imgHeight;
+        this.controlX[this.controlCount] = x - ((width / 2) | 0);
+        this.controlY[this.controlCount] = y - ((height / 2) | 0);
+        this.controlWidth[this.controlCount] = width;
+        this.controlHeight[this.controlCount] = height;
         this.controlTextSize[this.controlCount] = spriteId;
 
         return this.controlCount++;

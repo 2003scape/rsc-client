@@ -14798,7 +14798,7 @@ class GameShell {
             messageScrollBack: true,
             retroFPSCounter: true,
             retryLoginOnDisconnect: true,
-            mobile: false
+            mobile: true
         };
 
         this.middleButtonDown = false;
@@ -16040,7 +16040,6 @@ class Socket {
 module.exports = Socket;
 
 },{}],53:[function(require,module,exports){
-const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameBuffer = require('./game-buffer');
@@ -16317,7 +16316,7 @@ class mudclient extends GameConnection {
         this.magicLoc = 128;
         this.errorLoadingMemory = false;
         this.fogOfWar = false;
-        this.gameWidth = 612;
+        this.gameWidth = 512;
         this.gameHeight = 334;
         this.const_9 = 9;
         this.tradeConfirmItems = new Int32Array(14);
@@ -16982,27 +16981,6 @@ class mudclient extends GameConnection {
         return player;
     }
 
-    drawAppearancePanelCharacterSprites() {
-        this.surface.interlace = false;
-        this.surface.blackScreen();
-        this.panelAppearance.drawPanel();
-        let x = 140;
-        let y = 50;
-        x += 116;
-        y -= 25;
-        this.surface._spriteClipping_from6(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearance2Colour], this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender], this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearanceHeadType], this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from6(x - 32, y, 64, 102, GameData.animationNumber[this.appearance2Colour] + 6, this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9(x - 32, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 6, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9(x - 32, y, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 6, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from6((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearance2Colour] + 12, this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 12, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 12, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._drawSprite_from3(0, this.gameHeight, this.spriteMedia + 22);
-        this.surface.draw(this.graphics, 0, 0);
-    }
-
     drawItem(x, y, w, h, id) {
         const picture = GameData.itemPicture[id] + this.spriteItem;
         const mask = GameData.itemMask[id];
@@ -17323,82 +17301,7 @@ class mudclient extends GameConnection {
             return;
         }
 
-        if (this.mouseY > this.gameHeight - 4) {
-            if (this.mouseX > 15 && this.mouseX < 96 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 0;
-            }
-
-            if (this.mouseX > 110 && this.mouseX < 194 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 1;
-                this.panelMessageTabs.controlFlashText[this.controlTextListChat] = 999999;
-            }
-
-            if (this.mouseX > 215 && this.mouseX < 295 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 2;
-                this.panelMessageTabs.controlFlashText[this.controlTextListQuest] = 999999;
-            }
-
-            if (this.mouseX > 315 && this.mouseX < 395 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 3;
-                this.panelMessageTabs.controlFlashText[this.controlTextListPrivate] = 999999;
-            }
-
-            if (this.mouseX > 417 && this.mouseX < 497 && this.lastMouseButtonDown === 1) {
-                this.showDialogReportAbuseStep = 1;
-                this.reportAbuseOffence = 0;
-                this.inputTextCurrent = '';
-                this.inputTextFinal = '';
-            }
-
-            this.lastMouseButtonDown = 0;
-            this.mouseButtonDown = 0;
-        }
-
-        this.panelMessageTabs.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
-
-        if (this.messageTabSelected > 0 && this.mouseX >= 494 && this.mouseY >= this.gameHeight - 66) {
-            this.lastMouseButtonDown = 0;
-        }
-
-        if (this.panelMessageTabs.isClicked(this.controlTextListAll)) {
-            let message = this.panelMessageTabs.getText(this.controlTextListAll);
-            this.panelMessageTabs.updateText(this.controlTextListAll, '');
-
-            if (/^::/.test(message)) {
-                if (/^::closecon$/i.test(message)) {
-                    this.packetStream.closeStream();
-                } else if (/^::logout/i.test(message)) {
-                    this.closeConnection();
-                } else if (/^::lostcon$/i.test(message)) {
-                    await this.lostConnection();
-                } else {
-                    this.sendCommandString(message.substring(2));
-                }
-            } else {
-                const encodedMessage = ChatMessage.scramble(message);
-
-                this.sendChatMessage(ChatMessage.scrambledBytes, encodedMessage);
-
-                message = ChatMessage.descramble(ChatMessage.scrambledBytes, 0, encodedMessage);
-
-                if (this.options.wordFilter) {
-                    message = WordFilter.filter(message);
-                }
-
-                this.localPlayer.messageTimeout = 150;
-                this.localPlayer.message = message;
-
-                this.showMessage(`${this.localPlayer.name}: ${message}`, 2);
-            }
-        }
-
-        if (this.messageTabSelected === 0) {
-            for (let l1 = 0; l1 < 5; l1++) {
-                if (this.messageHistoryTimeout[l1] > 0) {
-                    this.messageHistoryTimeout[l1]--;
-                }
-            }
-        }
+        await this.handleMesssageTabsInput();
 
         if (this.deathScreenTimeout !== 0) {
             this.lastMouseButtonDown = 0;
@@ -18577,6 +18480,7 @@ class mudclient extends GameConnection {
     async startGame() {
         this.port = this.port || 43595;
         this.maxReadTries = 1000;
+
         GameConnection.clientVersion = version.CLIENT;
 
         await this.loadGameConfig();
@@ -18599,39 +18503,40 @@ class mudclient extends GameConnection {
 
         this.surface = new Surface(
             this.gameWidth,
-            this.gameHeight + 12,
+            this.gameHeight + 34,
             4000,
             this
         );
 
         this.surface.mudclientref = this;
-        this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
+        this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 34);
 
         Panel.drawBackgroundArrow = false;
         Panel.baseSpriteStart = this.spriteUtil;
 
-        this.panelMagic = new Panel(this.surface, 5);
-
         let x = this.surface.width2 - 199;
         let y = 36;
-
-        this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
-
-        this.panelQuestList = new Panel(this.surface, 5);
 
         if (this.options.mobile) {
             x -= 32;
             y = (this.gameHeight / 2 - 275 / 2) | 0;
         }
 
-        this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
+        this.panelQuestList = new Panel(this.surface, 5);
 
-        this.panelSocialList = new Panel(this.surface, 5);
+        this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
 
         if (this.options.mobile) {
             x = 35;
             y = (this.gameHeight / 2 - 182 / 2) | 0;
         }
+
+        this.panelMagic = new Panel(this.surface, 5);
+
+        this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
+
+        this.panelSocialList = new Panel(this.surface, 5);
+
 
         this.controlListSocialPlayers =
             this.panelSocialList.addTextListInteractive(
@@ -19781,7 +19686,7 @@ class mudclient extends GameConnection {
                 s = s + '@whi@ / ' + (this.menuItemsCount - 1) + ' more options';
             }
 
-            if (s !== null) {
+            if (!this.options.mobile && s) {
                 this.surface.drawString(s, 6, 14, 1, 0xffff00);
             }
 
@@ -20845,7 +20750,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./chat-message":40,"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":96,"./utility":119,"./version":120,"./word-filter":121,"./world":122,"long":33}],54:[function(require,module,exports){
+},{"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":96,"./utility":119,"./version":120,"./word-filter":121,"./world":122,"long":33}],54:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -26146,6 +26051,7 @@ class Scene {
 
     render() {
         this.interlace = this.surface.interlace;
+
         let i3 = (this.clipX * this.clipFar3d) >> this.viewDistance;
         let j3 = (this.clipY * this.clipFar3d) >> this.viewDistance;
 
@@ -26324,6 +26230,7 @@ class Scene {
                     let vw =
                         ((this.spriteWidth[face] << this.viewDistance) / vz) |
                         0;
+
                     let vh =
                         ((this.spriteHeight[face] << this.viewDistance) / vz) |
                         0;
@@ -26490,6 +26397,7 @@ class Scene {
                             let k7 =
                                 gameModel_2.projectVertexZ[k2] -
                                 gameModel_2.projectVertexZ[k9];
+
                             let i5 =
                                 gameModel_2.projectVertexX[k2] -
                                 ((((gameModel_2.projectVertexX[k2] -
@@ -26498,6 +26406,7 @@ class Scene {
                                         this.clipNear)) /
                                     k7) |
                                     0);
+
                             let j6 =
                                 gameModel_2.projectVertexY[k2] -
                                 ((((gameModel_2.projectVertexY[k2] -
@@ -26506,10 +26415,13 @@ class Scene {
                                         this.clipNear)) /
                                     k7) |
                                     0);
+
                             this.planeX[k8] =
                                 ((i5 << this.viewDistance) / this.clipNear) | 0;
+
                             this.planeY[k8] =
                                 ((j6 << this.viewDistance) / this.clipNear) | 0;
+
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -26524,6 +26436,7 @@ class Scene {
                             let l7 =
                                 gameModel_2.projectVertexZ[k2] -
                                 gameModel_2.projectVertexZ[k9];
+
                             let j5 =
                                 gameModel_2.projectVertexX[k2] -
                                 ((((gameModel_2.projectVertexX[k2] -
@@ -26532,6 +26445,7 @@ class Scene {
                                         this.clipNear)) /
                                     l7) |
                                     0);
+
                             let k6 =
                                 gameModel_2.projectVertexY[k2] -
                                 ((((gameModel_2.projectVertexY[k2] -
@@ -26540,10 +26454,13 @@ class Scene {
                                         this.clipNear)) /
                                     l7) |
                                     0);
+
                             this.planeX[k8] =
                                 ((j5 << this.viewDistance) / this.clipNear) | 0;
+
                             this.planeY[k8] =
                                 ((k6 << this.viewDistance) / this.clipNear) | 0;
+
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -27452,6 +27369,7 @@ class Scene {
             let l16 = this.width;
             let j17 = this.baseX + this.minY * l16;
             let byte2 = 1;
+
             i10 += j11 * j16;
             l11 += l12 * j16;
             j13 += j14 * j16;
@@ -32560,8 +32478,7 @@ function handleAppearancePanelInput() {
 
         for (
             ;
-            (GameData.animationGender[this.appearanceBodyGender] & 3) !==
-                2 ||
+            (GameData.animationGender[this.appearanceBodyGender] & 3) !== 2 ||
             (GameData.animationGender[this.appearanceBodyGender] &
                 (4 * this.appearanceHeadGender)) ===
                 0;
@@ -32630,9 +32547,121 @@ function handleAppearancePanelInput() {
     }
 }
 
+function drawAppearancePanelCharacterSprites() {
+    this.surface.interlace = false;
+    this.surface.blackScreen();
+    this.panelAppearance.drawPanel();
+
+    const x = 256;
+    const y = 25;
+
+    this.surface._spriteClipping_from6(
+        x - 32 - 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearance2Colour],
+        this.characterTopBottomColours[this.appearanceBottomColour]
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 - 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceBodyGender],
+        this.characterTopBottomColours[this.appearanceTopColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 - 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceHeadType],
+        this.characterHairColours[this.appearanceHairColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from6(
+        x - 32,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearance2Colour] + 6,
+        this.characterTopBottomColours[this.appearanceBottomColour]
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceBodyGender] + 6,
+        this.characterTopBottomColours[this.appearanceTopColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceHeadType] + 6,
+        this.characterHairColours[this.appearanceHairColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from6(
+        x - 32 + 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearance2Colour] + 12,
+        this.characterTopBottomColours[this.appearanceBottomColour]
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 + 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceBodyGender] + 12,
+        this.characterTopBottomColours[this.appearanceTopColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 + 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceHeadType] + 12,
+        this.characterHairColours[this.appearanceHairColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._drawSprite_from3(0, this.gameHeight, this.spriteMedia + 22);
+    this.surface.draw(this.graphics, 0, 0);
+}
+
 module.exports = {
     createAppearancePanel,
-    handleAppearancePanelInput
+    handleAppearancePanelInput,
+    drawAppearancePanelCharacterSprites
 };
 
 },{"../game-data":44,"../opcodes/client":54,"../panel":85}],93:[function(require,module,exports){
@@ -33371,21 +33400,15 @@ function drawDialogBank() {
 module.exports = { drawDialogBank };
 
 },{"../game-data":44,"../opcodes/client":54,"./_colours":91}],94:[function(require,module,exports){
+const ChatMessage = require('../chat-message');
 const Panel = require('../panel');
+const WordFilter = require('../word-filter');
 const colours = require('./_colours');
+
+const HBAR_WIDTH = 512;
 
 function createMessageTabPanel() {
     this.panelMessageTabs = new Panel(this.surface, 10);
-
-    this.controlTextListChat = this.panelMessageTabs.addTextList(
-        5,
-        269,
-        502,
-        56,
-        1,
-        20,
-        true
-    );
 
     this.controlTextListAll = this.panelMessageTabs.addTextListInput(
         7,
@@ -33395,6 +33418,16 @@ function createMessageTabPanel() {
         1,
         80,
         false,
+        true
+    );
+
+    this.controlTextListChat = this.panelMessageTabs.addTextList(
+        5,
+        269,
+        502,
+        56,
+        1,
+        20,
         true
     );
 
@@ -33424,11 +33457,34 @@ function createMessageTabPanel() {
 }
 
 function drawChatMessageTabs() {
-    this.surface._drawSprite_from3(
-        0,
-        this.gameHeight - 4,
-        this.spriteMedia + 23
-    );
+    let x = (this.gameWidth / 2 - HBAR_WIDTH / 2) | 0;
+    let y = this.gameHeight - 4;
+
+    if (this.options.mobile) {
+        y = 8;
+
+        this.surface.drawMinimapSprite(
+            x + HBAR_WIDTH / 2 - 103,
+            y,
+            this.spriteMedia + 23,
+            128,
+            128
+        );
+
+        this.surface.drawMinimapSprite(
+            x + HBAR_WIDTH / 2 + (404 | 0),
+            y,
+            this.spriteMedia + 23,
+            128,
+            128
+        );
+
+        y = 10;
+    } else {
+        this.surface._drawSprite_from3(x, y, this.spriteMedia + 23);
+
+        y = this.gameHeight + 6;
+    }
 
     let textColour = colours.chatPurple;
 
@@ -33440,13 +33496,7 @@ function drawChatMessageTabs() {
         textColour = colours.chatRed;
     }
 
-    this.surface.drawStringCenter(
-        'All messages',
-        54,
-        this.gameHeight + 6,
-        0,
-        textColour
-    );
+    this.surface.drawStringCenter('All messages', x + 54, y, 0, textColour);
 
     textColour = colours.chatPurple;
 
@@ -33458,13 +33508,7 @@ function drawChatMessageTabs() {
         textColour = colours.chatRed;
     }
 
-    this.surface.drawStringCenter(
-        'Chat history',
-        155,
-        this.gameHeight + 6,
-        0,
-        textColour
-    );
+    this.surface.drawStringCenter('Chat history', x + 155, y, 0, textColour);
 
     textColour = colours.chatPurple;
 
@@ -33476,13 +33520,7 @@ function drawChatMessageTabs() {
         textColour = colours.chatRed;
     }
 
-    this.surface.drawStringCenter(
-        'Quest history',
-        255,
-        this.gameHeight + 6,
-        0,
-        textColour
-    );
+    this.surface.drawStringCenter('Quest history', x + 255, y, 0, textColour);
 
     textColour = colours.chatPurple;
 
@@ -33494,26 +33532,138 @@ function drawChatMessageTabs() {
         textColour = colours.chatRed;
     }
 
-    this.surface.drawStringCenter(
-        'Private history',
-        355,
-        this.gameHeight + 6,
-        0,
-        textColour
-    );
+    this.surface.drawStringCenter('Private history', x + 355, y, 0, textColour);
 
-    this.surface.drawStringCenter(
-        'Report abuse',
-        457,
-        this.gameHeight + 6,
-        0,
-        colours.white
-    );
+    this.surface.drawStringCenter('Report abuse', x + 457, y, 0, colours.white);
 }
 
-module.exports = { createMessageTabPanel, drawChatMessageTabs };
+async function handleMesssageTabsInput() {
+    if (this.mouseY > this.gameHeight - 4) {
+        if (
+            this.mouseX > 15 &&
+            this.mouseX < 96 &&
+            this.lastMouseButtonDown === 1
+        ) {
+            this.messageTabSelected = 0;
+        }
 
-},{"../panel":85,"./_colours":91}],95:[function(require,module,exports){
+        if (
+            this.mouseX > 110 &&
+            this.mouseX < 194 &&
+            this.lastMouseButtonDown === 1
+        ) {
+            this.messageTabSelected = 1;
+            this.panelMessageTabs.controlFlashText[
+                this.controlTextListChat
+            ] = 999999;
+        }
+
+        if (
+            this.mouseX > 215 &&
+            this.mouseX < 295 &&
+            this.lastMouseButtonDown === 1
+        ) {
+            this.messageTabSelected = 2;
+            this.panelMessageTabs.controlFlashText[
+                this.controlTextListQuest
+            ] = 999999;
+        }
+
+        if (
+            this.mouseX > 315 &&
+            this.mouseX < 395 &&
+            this.lastMouseButtonDown === 1
+        ) {
+            this.messageTabSelected = 3;
+            this.panelMessageTabs.controlFlashText[
+                this.controlTextListPrivate
+            ] = 999999;
+        }
+
+        if (
+            this.mouseX > 417 &&
+            this.mouseX < 497 &&
+            this.lastMouseButtonDown === 1
+        ) {
+            this.showDialogReportAbuseStep = 1;
+            this.reportAbuseOffence = 0;
+            this.inputTextCurrent = '';
+            this.inputTextFinal = '';
+        }
+
+        this.lastMouseButtonDown = 0;
+        this.mouseButtonDown = 0;
+    }
+
+    this.panelMessageTabs.handleMouse(
+        this.mouseX,
+        this.mouseY,
+        this.lastMouseButtonDown,
+        this.mouseButtonDown,
+        this.mouseScrollDelta
+    );
+
+    if (
+        this.messageTabSelected > 0 &&
+        this.mouseX >= 494 &&
+        this.mouseY >= this.gameHeight - 66
+    ) {
+        this.lastMouseButtonDown = 0;
+    }
+
+    if (this.panelMessageTabs.isClicked(this.controlTextListAll)) {
+        let message = this.panelMessageTabs.getText(this.controlTextListAll);
+
+        this.panelMessageTabs.updateText(this.controlTextListAll, '');
+
+        if (/^::/.test(message)) {
+            if (/^::closecon$/i.test(message)) {
+                this.packetStream.closeStream();
+            } else if (/^::logout/i.test(message)) {
+                this.closeConnection();
+            } else if (/^::lostcon$/i.test(message)) {
+                await this.lostConnection();
+            } else {
+                this.sendCommandString(message.substring(2));
+            }
+        } else {
+            const encodedMessage = ChatMessage.scramble(message);
+
+            this.sendChatMessage(ChatMessage.scrambledBytes, encodedMessage);
+
+            message = ChatMessage.descramble(
+                ChatMessage.scrambledBytes,
+                0,
+                encodedMessage
+            );
+
+            if (this.options.wordFilter) {
+                message = WordFilter.filter(message);
+            }
+
+            this.localPlayer.messageTimeout = 150;
+            this.localPlayer.message = message;
+
+            this.showMessage(`${this.localPlayer.name}: ${message}`, 2);
+        }
+    }
+
+    if (this.messageTabSelected === 0) {
+        for (let l1 = 0; l1 < 5; l1++) {
+            if (this.messageHistoryTimeout[l1] > 0) {
+                this.messageHistoryTimeout[l1]--;
+            }
+        }
+    }
+}
+
+module.exports = {
+    createMessageTabPanel,
+    drawChatMessageTabs,
+    handleMesssageTabsInput
+};
+
+},{"../chat-message":40,"../panel":85,"../word-filter":121,"./_colours":91}],95:[function(require,module,exports){
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
@@ -34801,9 +34951,9 @@ const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
 const HEIGHT = 182;
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 196;
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
@@ -34811,22 +34961,39 @@ const TABS = ['Magic', 'Prayers'];
 const TAB_HEIGHT = 24;
 
 function drawUiTabMagic(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 4);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX = 35;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 4
+        );
+    }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     this.surface.drawBoxAlpha(
-        UI_X,
-        UI_Y + TAB_HEIGHT,
+        uiX,
+        uiY + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
         colours.lightGrey,
         128
     );
 
-    this.surface.drawLineHoriz(UI_X, UI_Y + 113, WIDTH, colours.black);
+    this.surface.drawLineHoriz(uiX, uiY + 113, WIDTH, colours.black);
 
     this.surface.drawTabs(
-        UI_X,
-        UI_Y,
+        uiX,
+        uiY,
         WIDTH,
         TAB_HEIGHT,
         TABS,
@@ -34875,15 +35042,16 @@ function drawUiTabMagic(noMenus) {
             this.surface.drawString(
                 `Level ${GameData.spellLevel[spellIndex]}` +
                     `: ${GameData.spellName[spellIndex]}`,
-                UI_X + 2,
-                UI_Y + 124,
+                uiX + 2,
+                uiY + 124,
                 1,
                 colours.yellow
             );
+
             this.surface.drawString(
                 GameData.spellDescription[spellIndex],
-                UI_X + 2,
-                UI_Y + 136,
+                uiX + 2,
+                uiY + 136,
                 0,
                 colours.white
             );
@@ -34899,14 +35067,14 @@ function drawUiTabMagic(noMenus) {
                 }
 
                 this.surface._drawSprite_from3(
-                    UI_X + 2 + i * 44,
-                    UI_Y + 150,
+                    uiX + 2 + i * 44,
+                    uiY + 150,
                     this.spriteItem + GameData.itemPicture[runeId]
                 );
                 this.surface.drawString(
                     `${colourPrefix}${inventoryRuneCount}/${runeCount}`,
-                    UI_X + 2 + i * 44,
-                    UI_Y + 150,
+                    uiX + 2 + i * 44,
+                    uiY + 150,
                     1,
                     colours.white
                 );
@@ -34914,8 +35082,8 @@ function drawUiTabMagic(noMenus) {
         } else {
             this.surface.drawString(
                 'Point at a spell for a description',
-                UI_X + 2,
-                UI_Y + 124,
+                uiX + 2,
+                uiY + 124,
                 1,
                 colours.black
             );
@@ -34952,30 +35120,30 @@ function drawUiTabMagic(noMenus) {
             this.surface.drawStringCenter(
                 `Level ${GameData.prayerLevel[prayerIndex]}: ` +
                     GameData.prayerName[prayerIndex],
-                UI_X + HALF_WIDTH,
-                UI_Y + 130,
+                uiX + HALF_WIDTH,
+                uiY + 130,
                 1,
                 colours.yellow
             );
             this.surface.drawStringCenter(
                 GameData.prayerDescription[prayerIndex],
-                UI_X + HALF_WIDTH,
-                UI_Y + 145,
+                uiX + HALF_WIDTH,
+                uiY + 145,
                 0,
                 colours.white
             );
             this.surface.drawStringCenter(
                 'Drain rate: ' + GameData.prayerDrain[prayerIndex],
-                UI_X + HALF_WIDTH,
-                UI_Y + 160,
+                uiX + HALF_WIDTH,
+                uiY + 160,
                 1,
                 colours.black
             );
         } else {
             this.surface.drawString(
                 'Point at a prayer for a description',
-                UI_X + 2,
-                UI_Y + 124,
+                uiX + 2,
+                uiY + 124,
                 1,
                 colours.black
             );
@@ -34986,13 +35154,13 @@ function drawUiTabMagic(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 182) {
         this.panelMagic.handleMouse(
-            mouseX + UI_X,
-            mouseY + UI_Y,
+            mouseX + uiX,
+            mouseY + uiY,
             this.lastMouseButtonDown,
             this.mouseButtonDown,
             this.mouseScrollDelta

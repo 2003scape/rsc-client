@@ -198,8 +198,7 @@ function handleAppearancePanelInput() {
 
         for (
             ;
-            (GameData.animationGender[this.appearanceBodyGender] & 3) !==
-                2 ||
+            (GameData.animationGender[this.appearanceBodyGender] & 3) !== 2 ||
             (GameData.animationGender[this.appearanceBodyGender] &
                 (4 * this.appearanceHeadGender)) ===
                 0;
@@ -268,7 +267,119 @@ function handleAppearancePanelInput() {
     }
 }
 
+function drawAppearancePanelCharacterSprites() {
+    this.surface.interlace = false;
+    this.surface.blackScreen();
+    this.panelAppearance.drawPanel();
+
+    const x = 256;
+    const y = 25;
+
+    this.surface._spriteClipping_from6(
+        x - 32 - 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearance2Colour],
+        this.characterTopBottomColours[this.appearanceBottomColour]
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 - 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceBodyGender],
+        this.characterTopBottomColours[this.appearanceTopColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 - 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceHeadType],
+        this.characterHairColours[this.appearanceHairColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from6(
+        x - 32,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearance2Colour] + 6,
+        this.characterTopBottomColours[this.appearanceBottomColour]
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceBodyGender] + 6,
+        this.characterTopBottomColours[this.appearanceTopColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceHeadType] + 6,
+        this.characterHairColours[this.appearanceHairColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from6(
+        x - 32 + 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearance2Colour] + 12,
+        this.characterTopBottomColours[this.appearanceBottomColour]
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 + 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceBodyGender] + 12,
+        this.characterTopBottomColours[this.appearanceTopColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._spriteClipping_from9(
+        x - 32 + 55,
+        y,
+        64,
+        102,
+        GameData.animationNumber[this.appearanceHeadType] + 12,
+        this.characterHairColours[this.appearanceHairColour],
+        this.characterSkinColours[this.appearanceSkinColour],
+        0,
+        false
+    );
+
+    this.surface._drawSprite_from3(0, this.gameHeight, this.spriteMedia + 22);
+    this.surface.draw(this.graphics, 0, 0);
+}
+
 module.exports = {
     createAppearancePanel,
-    handleAppearancePanelInput
+    handleAppearancePanelInput,
+    drawAppearancePanelCharacterSprites
 };

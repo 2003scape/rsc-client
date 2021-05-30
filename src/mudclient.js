@@ -1,4 +1,3 @@
-const ChatMessage = require('./chat-message');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameBuffer = require('./game-buffer');
@@ -940,27 +939,6 @@ class mudclient extends GameConnection {
         return player;
     }
 
-    drawAppearancePanelCharacterSprites() {
-        this.surface.interlace = false;
-        this.surface.blackScreen();
-        this.panelAppearance.drawPanel();
-        let x = 140;
-        let y = 50;
-        x += 116;
-        y -= 25;
-        this.surface._spriteClipping_from6(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearance2Colour], this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender], this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9(x - 32 - 55, y, 64, 102, GameData.animationNumber[this.appearanceHeadType], this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from6(x - 32, y, 64, 102, GameData.animationNumber[this.appearance2Colour] + 6, this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9(x - 32, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 6, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9(x - 32, y, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 6, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from6((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearance2Colour] + 12, this.characterTopBottomColours[this.appearanceBottomColour]);
-        this.surface._spriteClipping_from9((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearanceBodyGender] + 12, this.characterTopBottomColours[this.appearanceTopColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._spriteClipping_from9((x - 32) + 55, y, 64, 102, GameData.animationNumber[this.appearanceHeadType] + 12, this.characterHairColours[this.appearanceHairColour], this.characterSkinColours[this.appearanceSkinColour], 0, false);
-        this.surface._drawSprite_from3(0, this.gameHeight, this.spriteMedia + 22);
-        this.surface.draw(this.graphics, 0, 0);
-    }
-
     drawItem(x, y, w, h, id) {
         const picture = GameData.itemPicture[id] + this.spriteItem;
         const mask = GameData.itemMask[id];
@@ -1281,82 +1259,7 @@ class mudclient extends GameConnection {
             return;
         }
 
-        if (this.mouseY > this.gameHeight - 4) {
-            if (this.mouseX > 15 && this.mouseX < 96 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 0;
-            }
-
-            if (this.mouseX > 110 && this.mouseX < 194 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 1;
-                this.panelMessageTabs.controlFlashText[this.controlTextListChat] = 999999;
-            }
-
-            if (this.mouseX > 215 && this.mouseX < 295 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 2;
-                this.panelMessageTabs.controlFlashText[this.controlTextListQuest] = 999999;
-            }
-
-            if (this.mouseX > 315 && this.mouseX < 395 && this.lastMouseButtonDown === 1) {
-                this.messageTabSelected = 3;
-                this.panelMessageTabs.controlFlashText[this.controlTextListPrivate] = 999999;
-            }
-
-            if (this.mouseX > 417 && this.mouseX < 497 && this.lastMouseButtonDown === 1) {
-                this.showDialogReportAbuseStep = 1;
-                this.reportAbuseOffence = 0;
-                this.inputTextCurrent = '';
-                this.inputTextFinal = '';
-            }
-
-            this.lastMouseButtonDown = 0;
-            this.mouseButtonDown = 0;
-        }
-
-        this.panelMessageTabs.handleMouse(this.mouseX, this.mouseY, this.lastMouseButtonDown, this.mouseButtonDown, this.mouseScrollDelta);
-
-        if (this.messageTabSelected > 0 && this.mouseX >= 494 && this.mouseY >= this.gameHeight - 66) {
-            this.lastMouseButtonDown = 0;
-        }
-
-        if (this.panelMessageTabs.isClicked(this.controlTextListAll)) {
-            let message = this.panelMessageTabs.getText(this.controlTextListAll);
-            this.panelMessageTabs.updateText(this.controlTextListAll, '');
-
-            if (/^::/.test(message)) {
-                if (/^::closecon$/i.test(message)) {
-                    this.packetStream.closeStream();
-                } else if (/^::logout/i.test(message)) {
-                    this.closeConnection();
-                } else if (/^::lostcon$/i.test(message)) {
-                    await this.lostConnection();
-                } else {
-                    this.sendCommandString(message.substring(2));
-                }
-            } else {
-                const encodedMessage = ChatMessage.scramble(message);
-
-                this.sendChatMessage(ChatMessage.scrambledBytes, encodedMessage);
-
-                message = ChatMessage.descramble(ChatMessage.scrambledBytes, 0, encodedMessage);
-
-                if (this.options.wordFilter) {
-                    message = WordFilter.filter(message);
-                }
-
-                this.localPlayer.messageTimeout = 150;
-                this.localPlayer.message = message;
-
-                this.showMessage(`${this.localPlayer.name}: ${message}`, 2);
-            }
-        }
-
-        if (this.messageTabSelected === 0) {
-            for (let l1 = 0; l1 < 5; l1++) {
-                if (this.messageHistoryTimeout[l1] > 0) {
-                    this.messageHistoryTimeout[l1]--;
-                }
-            }
-        }
+        await this.handleMesssageTabsInput();
 
         if (this.deathScreenTimeout !== 0) {
             this.lastMouseButtonDown = 0;
@@ -2535,6 +2438,7 @@ class mudclient extends GameConnection {
     async startGame() {
         this.port = this.port || 43595;
         this.maxReadTries = 1000;
+
         GameConnection.clientVersion = version.CLIENT;
 
         await this.loadGameConfig();
@@ -2568,28 +2472,29 @@ class mudclient extends GameConnection {
         Panel.drawBackgroundArrow = false;
         Panel.baseSpriteStart = this.spriteUtil;
 
-        this.panelMagic = new Panel(this.surface, 5);
-
         let x = this.surface.width2 - 199;
         let y = 36;
-
-        this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
-
-        this.panelQuestList = new Panel(this.surface, 5);
 
         if (this.options.mobile) {
             x -= 32;
             y = (this.gameHeight / 2 - 275 / 2) | 0;
         }
 
-        this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
+        this.panelQuestList = new Panel(this.surface, 5);
 
-        this.panelSocialList = new Panel(this.surface, 5);
+        this.controlListQuest = this.panelQuestList.addTextListInteractive(x, y + 24, 196, 251, 1, 500, true);
 
         if (this.options.mobile) {
             x = 35;
             y = (this.gameHeight / 2 - 182 / 2) | 0;
         }
+
+        this.panelMagic = new Panel(this.surface, 5);
+
+        this.controlListMagic = this.panelMagic.addTextListInteractive(x, y + 24, 196, 90, 1, 500, true);
+
+        this.panelSocialList = new Panel(this.surface, 5);
+
 
         this.controlListSocialPlayers =
             this.panelSocialList.addTextListInteractive(
@@ -3739,7 +3644,7 @@ class mudclient extends GameConnection {
                 s = s + '@whi@ / ' + (this.menuItemsCount - 1) + ' more options';
             }
 
-            if (s !== null) {
+            if (!this.options.mobile && s) {
                 this.surface.drawString(s, 6, 14, 1, 0xffff00);
             }
 

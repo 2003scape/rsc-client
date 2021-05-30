@@ -2,9 +2,9 @@ const GameData = require('../game-data');
 const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
+const MENU_WIDTH = 245;
+
 const HEIGHT = 182;
-const UI_X = 313;
-const UI_Y = 36;
 const WIDTH = 196;
 const HALF_WIDTH = (WIDTH / 2) | 0;
 
@@ -12,22 +12,39 @@ const TABS = ['Magic', 'Prayers'];
 const TAB_HEIGHT = 24;
 
 function drawUiTabMagic(noMenus) {
-    this.surface._drawSprite_from3(UI_X - 49, 3, this.spriteMedia + 4);
+    let uiX = this.gameWidth - WIDTH - 3;
+    let uiY = 36;
+
+    if (this.options.mobile) {
+        uiX = 35;
+        uiY = this.gameHeight / 2 - HEIGHT / 2;
+    } else {
+        this.surface._drawSprite_from3(
+            this.gameWidth - MENU_WIDTH - 3,
+            3,
+            this.spriteMedia + 4
+        );
+    }
+
+    this.uiOpenX = uiX;
+    this.uiOpenY = uiY;
+    this.uiOpenWidth = WIDTH;
+    this.uiOpenHeight = HEIGHT;
 
     this.surface.drawBoxAlpha(
-        UI_X,
-        UI_Y + TAB_HEIGHT,
+        uiX,
+        uiY + TAB_HEIGHT,
         WIDTH,
         HEIGHT - TAB_HEIGHT,
         colours.lightGrey,
         128
     );
 
-    this.surface.drawLineHoriz(UI_X, UI_Y + 113, WIDTH, colours.black);
+    this.surface.drawLineHoriz(uiX, uiY + 113, WIDTH, colours.black);
 
     this.surface.drawTabs(
-        UI_X,
-        UI_Y,
+        uiX,
+        uiY,
         WIDTH,
         TAB_HEIGHT,
         TABS,
@@ -76,15 +93,16 @@ function drawUiTabMagic(noMenus) {
             this.surface.drawString(
                 `Level ${GameData.spellLevel[spellIndex]}` +
                     `: ${GameData.spellName[spellIndex]}`,
-                UI_X + 2,
-                UI_Y + 124,
+                uiX + 2,
+                uiY + 124,
                 1,
                 colours.yellow
             );
+
             this.surface.drawString(
                 GameData.spellDescription[spellIndex],
-                UI_X + 2,
-                UI_Y + 136,
+                uiX + 2,
+                uiY + 136,
                 0,
                 colours.white
             );
@@ -100,14 +118,14 @@ function drawUiTabMagic(noMenus) {
                 }
 
                 this.surface._drawSprite_from3(
-                    UI_X + 2 + i * 44,
-                    UI_Y + 150,
+                    uiX + 2 + i * 44,
+                    uiY + 150,
                     this.spriteItem + GameData.itemPicture[runeId]
                 );
                 this.surface.drawString(
                     `${colourPrefix}${inventoryRuneCount}/${runeCount}`,
-                    UI_X + 2 + i * 44,
-                    UI_Y + 150,
+                    uiX + 2 + i * 44,
+                    uiY + 150,
                     1,
                     colours.white
                 );
@@ -115,8 +133,8 @@ function drawUiTabMagic(noMenus) {
         } else {
             this.surface.drawString(
                 'Point at a spell for a description',
-                UI_X + 2,
-                UI_Y + 124,
+                uiX + 2,
+                uiY + 124,
                 1,
                 colours.black
             );
@@ -153,30 +171,30 @@ function drawUiTabMagic(noMenus) {
             this.surface.drawStringCenter(
                 `Level ${GameData.prayerLevel[prayerIndex]}: ` +
                     GameData.prayerName[prayerIndex],
-                UI_X + HALF_WIDTH,
-                UI_Y + 130,
+                uiX + HALF_WIDTH,
+                uiY + 130,
                 1,
                 colours.yellow
             );
             this.surface.drawStringCenter(
                 GameData.prayerDescription[prayerIndex],
-                UI_X + HALF_WIDTH,
-                UI_Y + 145,
+                uiX + HALF_WIDTH,
+                uiY + 145,
                 0,
                 colours.white
             );
             this.surface.drawStringCenter(
                 'Drain rate: ' + GameData.prayerDrain[prayerIndex],
-                UI_X + HALF_WIDTH,
-                UI_Y + 160,
+                uiX + HALF_WIDTH,
+                uiY + 160,
                 1,
                 colours.black
             );
         } else {
             this.surface.drawString(
                 'Point at a prayer for a description',
-                UI_X + 2,
-                UI_Y + 124,
+                uiX + 2,
+                uiY + 124,
                 1,
                 colours.black
             );
@@ -187,13 +205,13 @@ function drawUiTabMagic(noMenus) {
         return;
     }
 
-    const mouseX = this.mouseX - UI_X;
-    const mouseY = this.mouseY - UI_Y;
+    const mouseX = this.mouseX - uiX;
+    const mouseY = this.mouseY - uiY;
 
     if (mouseX >= 0 && mouseY >= 0 && mouseX < 196 && mouseY < 182) {
         this.panelMagic.handleMouse(
-            mouseX + UI_X,
-            mouseY + UI_Y,
+            mouseX + uiX,
+            mouseY + uiY,
             this.lastMouseButtonDown,
             this.mouseButtonDown,
             this.mouseScrollDelta

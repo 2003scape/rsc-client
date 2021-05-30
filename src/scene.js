@@ -1635,6 +1635,7 @@ class Scene {
 
     render() {
         this.interlace = this.surface.interlace;
+
         let i3 = (this.clipX * this.clipFar3d) >> this.viewDistance;
         let j3 = (this.clipY * this.clipFar3d) >> this.viewDistance;
 
@@ -1813,6 +1814,7 @@ class Scene {
                     let vw =
                         ((this.spriteWidth[face] << this.viewDistance) / vz) |
                         0;
+
                     let vh =
                         ((this.spriteHeight[face] << this.viewDistance) / vz) |
                         0;
@@ -1979,6 +1981,7 @@ class Scene {
                             let k7 =
                                 gameModel_2.projectVertexZ[k2] -
                                 gameModel_2.projectVertexZ[k9];
+
                             let i5 =
                                 gameModel_2.projectVertexX[k2] -
                                 ((((gameModel_2.projectVertexX[k2] -
@@ -1987,6 +1990,7 @@ class Scene {
                                         this.clipNear)) /
                                     k7) |
                                     0);
+
                             let j6 =
                                 gameModel_2.projectVertexY[k2] -
                                 ((((gameModel_2.projectVertexY[k2] -
@@ -1995,10 +1999,13 @@ class Scene {
                                         this.clipNear)) /
                                     k7) |
                                     0);
+
                             this.planeX[k8] =
                                 ((i5 << this.viewDistance) / this.clipNear) | 0;
+
                             this.planeY[k8] =
                                 ((j6 << this.viewDistance) / this.clipNear) | 0;
+
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -2013,6 +2020,7 @@ class Scene {
                             let l7 =
                                 gameModel_2.projectVertexZ[k2] -
                                 gameModel_2.projectVertexZ[k9];
+
                             let j5 =
                                 gameModel_2.projectVertexX[k2] -
                                 ((((gameModel_2.projectVertexX[k2] -
@@ -2021,6 +2029,7 @@ class Scene {
                                         this.clipNear)) /
                                     l7) |
                                     0);
+
                             let k6 =
                                 gameModel_2.projectVertexY[k2] -
                                 ((((gameModel_2.projectVertexY[k2] -
@@ -2029,10 +2038,13 @@ class Scene {
                                         this.clipNear)) /
                                     l7) |
                                     0);
+
                             this.planeX[k8] =
                                 ((j5 << this.viewDistance) / this.clipNear) | 0;
+
                             this.planeY[k8] =
                                 ((k6 << this.viewDistance) / this.clipNear) | 0;
+
                             this.vertexShade[k8] = j10;
                             k8++;
                         }
@@ -2941,6 +2953,7 @@ class Scene {
             let l16 = this.width;
             let j17 = this.baseX + this.minY * l16;
             let byte2 = 1;
+
             i10 += j11 * j16;
             l11 += l12 * j16;
             j13 += j14 * j16;

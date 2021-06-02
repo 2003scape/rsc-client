@@ -382,6 +382,7 @@ class Panel {
                 this.mouseY <= y + ((height / 2) | 0)
             ) {
                 this.focusControlIndex = control;
+                this.setMobileFocus(control, text);
             }
         } else if (this.controlType[control] === controlTypes.TEXT_INPUT) {
             if (
@@ -1349,7 +1350,7 @@ class Panel {
 
     setFocus(control) {
         this.focusControlIndex = control;
-        this.setMobileFocus(control, '');
+        this.setMobileFocus(control, this.controlText[control]);
     }
 
     getListEntryIndex(control) {
@@ -1365,14 +1366,28 @@ class Panel {
 
         const isPassword = this.controlMaskText[control];
 
-        this.surface.mudclient.openKeyboard(
+        const isListInput =
+            this.controlType[control] === controlTypes.LIST_INPUT;
+
+        const width = this.controlWidth[control];
+        const height = this.controlHeight[control];
+
+        const left = isListInput
+            ? this.controlX[control]
+            : this.controlX[control] - Math.floor(width / 2);
+
+        mudclient.openKeyboard(
             isPassword ? 'password' : 'text',
             text,
             this.controlInputMaxLen[control],
-            this.controlX[control],
-            this.controlY[control],
-            this.controlWidth[control],
-            this.controlHeight[control]
+            {
+                width: `${width}px`,
+                height: `${height}px`,
+                top: `${this.controlY[control] - Math.floor(height / 2)}px`,
+                left: `${left}px`,
+                fontSize: isListInput ? '12px' : '14px',
+                textAlign: isListInput ? 'left' : 'center'
+            }
         );
     }
 }

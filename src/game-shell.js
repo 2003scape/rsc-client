@@ -33,9 +33,7 @@ const INPUT_STYLES = {
     border: 0,
     outline: 0,
     opacity: 0,
-    textAlign: 'center',
-    fontFamily: 'sans',
-    fontSize: '14px'
+    fontFamily: 'sans'
 };
 
 class GameShell {
@@ -185,15 +183,7 @@ class GameShell {
         this._canvas.focus();
     }
 
-    openKeyboard(
-        type = 'text',
-        text,
-        maxLength,
-        x = 0,
-        y = 0,
-        width = 100,
-        height = 20
-    ) {
+    openKeyboard(type = 'text', text, maxLength, style) {
         this.mobileInputCaret = -1;
         this.lastMobileInput = text;
         this.toggleKeyboard = true;
@@ -206,10 +196,9 @@ class GameShell {
 
         this.mobileInputEl.style.display = 'block';
 
-        this.mobileInputEl.style.top = `${y - Math.floor(height / 2)}px`;
-        this.mobileInputEl.style.left = `${x - Math.floor(width / 2)}px`;
-        this.mobileInputEl.style.width = `${width}px`;
-        this.mobileInputEl.style.height = `${height}px`;
+        for (const [name, value] of Object.entries(style)) {
+            this.mobileInputEl.style[name] = value;
+        }
 
         this.keyboardUpdateInterval = setInterval(() => {
             this.mobileKeyboardUpdate();

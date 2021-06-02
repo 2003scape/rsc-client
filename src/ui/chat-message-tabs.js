@@ -5,47 +5,56 @@ const colours = require('./_colours');
 
 const HBAR_WIDTH = 512;
 
+const ALL_MAX_LENGTH = 80;
+const HISTORY_MAX_ENTRIES = 20;
+
 function createMessageTabPanel() {
     this.panelMessageTabs = new Panel(this.surface, 10);
 
+    let y = 269;
+
+    if (this.options.mobile) {
+        y = 15;
+    }
+
     this.controlTextListAll = this.panelMessageTabs.addTextListInput(
         7,
-        324,
+        y + 55 + (this.options.mobile ? 12 : 0),
         498,
         14,
         1,
-        80,
+        ALL_MAX_LENGTH,
         false,
         true
     );
 
     this.controlTextListChat = this.panelMessageTabs.addTextList(
         5,
-        269,
+        y,
         502,
         56,
         1,
-        20,
+        HISTORY_MAX_ENTRIES,
         true
     );
 
     this.controlTextListQuest = this.panelMessageTabs.addTextList(
         5,
-        269,
+        y,
         502,
         56,
         1,
-        20,
+        HISTORY_MAX_ENTRIES,
         true
     );
 
     this.controlTextListPrivate = this.panelMessageTabs.addTextList(
         5,
-        269,
+        y,
         502,
         56,
         1,
-        20,
+        HISTORY_MAX_ENTRIES,
         true
     );
 
@@ -55,7 +64,7 @@ function createMessageTabPanel() {
 }
 
 function drawChatMessageTabs() {
-    let x = (this.gameWidth / 2 - HBAR_WIDTH / 2) | 0;
+    const x = (this.gameWidth / 2 - HBAR_WIDTH / 2) | 0;
     let y = this.gameHeight - 4;
 
     if (this.options.mobile) {
@@ -131,58 +140,46 @@ function drawChatMessageTabs() {
     }
 
     this.surface.drawStringCenter('Private history', x + 355, y, 0, textColour);
-
     this.surface.drawStringCenter('Report abuse', x + 457, y, 0, colours.white);
 }
 
 async function handleMesssageTabsInput() {
-    if (this.mouseY > this.gameHeight - 4) {
-        if (
-            this.mouseX > 15 &&
-            this.mouseX < 96 &&
-            this.lastMouseButtonDown === 1
-        ) {
+    const x = (this.gameWidth / 2 - HBAR_WIDTH / 2) | 0;
+    const mouseX = this.mouseX - x;
+
+    if (
+        (this.options.mobile && this.mouseY < 15) ||
+        (!this.options.mobile && this.mouseY > this.gameHeight - 4)
+    ) {
+        if (mouseX > 15 && mouseX < 96 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 0;
         }
 
-        if (
-            this.mouseX > 110 &&
-            this.mouseX < 194 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 110 && mouseX < 194 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 1;
+
             this.panelMessageTabs.controlFlashText[
                 this.controlTextListChat
             ] = 999999;
         }
 
-        if (
-            this.mouseX > 215 &&
-            this.mouseX < 295 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 215 && mouseX < 295 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 2;
+
             this.panelMessageTabs.controlFlashText[
                 this.controlTextListQuest
             ] = 999999;
         }
 
-        if (
-            this.mouseX > 315 &&
-            this.mouseX < 395 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 315 && mouseX < 395 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 3;
+
             this.panelMessageTabs.controlFlashText[
                 this.controlTextListPrivate
             ] = 999999;
         }
 
-        if (
-            this.mouseX > 417 &&
-            this.mouseX < 497 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 417 && mouseX < 497 && this.lastMouseButtonDown === 1) {
             this.showDialogReportAbuseStep = 1;
             this.reportAbuseOffence = 0;
             this.inputTextCurrent = '';
@@ -213,6 +210,10 @@ async function handleMesssageTabsInput() {
         let message = this.panelMessageTabs.getText(this.controlTextListAll);
 
         this.panelMessageTabs.updateText(this.controlTextListAll, '');
+
+        if (this.options.mobile) {
+            this.panelMessageTabs.focusControlIndex = -1;
+        }
 
         if (/^::/.test(message)) {
             if (/^::closecon$/i.test(message)) {
@@ -247,16 +248,68 @@ async function handleMesssageTabsInput() {
     }
 
     if (this.messageTabSelected === 0) {
-        for (let l1 = 0; l1 < 5; l1++) {
-            if (this.messageHistoryTimeout[l1] > 0) {
-                this.messageHistoryTimeout[l1]--;
+        for (let i = 0; i < 5; i++) {
+            if (this.messageHistoryTimeout[i] > 0) {
+                this.messageHistoryTimeout[i]--;
             }
         }
     }
 }
 
+function drawChatMessageTabsPanel() {
+    if (this.messageTabSelected === 0) {
+        let y = this.gameHeight - 18;
+
+        if (this.options.mobile) {
+            y = 74;
+        }
+
+        for (let i = 0; i < 5; i++) {
+            if (this.messageHistoryTimeout[i] <= 0) {
+                continue;
+            }
+
+            this.surface.drawString(
+                this.messageHistory[i],
+                7,
+                y - i * 12,
+                1,
+                colours.yellow
+            );
+        }
+    }
+
+    if (this.options.mobile && this.panelMessageTabs.focusControlIndex === -1) {
+        this.surface.drawString(
+            '[Tap here to chat]',
+            6,
+            88,
+            2,
+            colours.white
+        );
+    }
+
+
+    this.panelMessageTabs.hide(this.controlTextListChat);
+    this.panelMessageTabs.hide(this.controlTextListQuest);
+    this.panelMessageTabs.hide(this.controlTextListPrivate);
+
+    if (this.messageTabSelected === 1) {
+        this.panelMessageTabs.show(this.controlTextListChat);
+    } else if (this.messageTabSelected === 2) {
+        this.panelMessageTabs.show(this.controlTextListQuest);
+    } else if (this.messageTabSelected === 3) {
+        this.panelMessageTabs.show(this.controlTextListPrivate);
+    }
+
+    Panel.textListEntryHeightMod = 2;
+    this.panelMessageTabs.drawPanel();
+    Panel.textListEntryHeightMod = 0;
+}
+
 module.exports = {
     createMessageTabPanel,
     drawChatMessageTabs,
-    handleMesssageTabsInput
+    handleMesssageTabsInput,
+    drawChatMessageTabsPanel
 };

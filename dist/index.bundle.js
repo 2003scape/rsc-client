@@ -14775,9 +14775,7 @@ const INPUT_STYLES = {
     border: 0,
     outline: 0,
     opacity: 0,
-    textAlign: 'center',
-    fontFamily: 'sans',
-    fontSize: '14px'
+    fontFamily: 'sans'
 };
 
 class GameShell {
@@ -14927,15 +14925,7 @@ class GameShell {
         this._canvas.focus();
     }
 
-    openKeyboard(
-        type = 'text',
-        text,
-        maxLength,
-        x = 0,
-        y = 0,
-        width = 100,
-        height = 20
-    ) {
+    openKeyboard(type = 'text', text, maxLength, style) {
         this.mobileInputCaret = -1;
         this.lastMobileInput = text;
         this.toggleKeyboard = true;
@@ -14948,10 +14938,9 @@ class GameShell {
 
         this.mobileInputEl.style.display = 'block';
 
-        this.mobileInputEl.style.top = `${y - Math.floor(height / 2)}px`;
-        this.mobileInputEl.style.left = `${x - Math.floor(width / 2)}px`;
-        this.mobileInputEl.style.width = `${width}px`;
-        this.mobileInputEl.style.height = `${height}px`;
+        for (const [name, value] of Object.entries(style)) {
+            this.mobileInputEl.style[name] = value;
+        }
 
         this.keyboardUpdateInterval = setInterval(() => {
             this.mobileKeyboardUpdate();
@@ -16070,6 +16059,7 @@ const MENU_MAX = 250;
 const PATH_STEPS_MAX = 8000;
 const PLAYERS_MAX = 500;
 const NPCS_MAX = 500;
+const GAME_OBJECTS_MAX = 1000;
 const WALL_OBJECTS_MAX = 500;
 const PLAYERS_SERVER_MAX = 4000;
 const GROUND_ITEMS_MAX = 5000;
@@ -16098,10 +16088,6 @@ class mudclient extends GameConnection {
 
         this.localRegionX = 0;
         this.localRegionY = 0;
-        this.controlTextListChat = 0;
-        this.controlTextListAll = 0;
-        this.controlTextListQuest = 0;
-        this.controlTextListPrivate = 0;
         this.messageTabSelected = 0;
         this.mouseClickXX = 0;
         this.mouseClickXY = 0;
@@ -16334,7 +16320,7 @@ class mudclient extends GameConnection {
         this.duelOfferOpponentAccepted = false;
         this.duelOfferAccepted = false;
         this.gameModels = [];
-        this.gameModels.length = 1000;
+        this.gameModels.length = GAME_OBJECTS_MAX;
         this.gameModels.fill(null);
         this.showDialogDuel = false;
         this.serverMessage = '';
@@ -16648,13 +16634,13 @@ class mudclient extends GameConnection {
     }
 
     disposeAndCollect() {
-        if (this.surface !== null) {
+        if (this.surface) {
             this.surface.clear();
             this.surface.pixels = null;
             this.surface = null;
         }
 
-        if (this.scene !== null) {
+        if (this.scene) {
             this.scene.dispose();
             this.scene = null;
         }
@@ -16668,7 +16654,7 @@ class mudclient extends GameConnection {
         this.npcs = null;
         this.localPlayer = null;
 
-        if (this.world !== null) {
+        if (this.world) {
             this.world.terrainModels = null;
             this.world.wallModels = null;
             this.world.roofModels = null;
@@ -16709,6 +16695,10 @@ class mudclient extends GameConnection {
         } else {
             if (this.showOptionMenu) {
                 this.drawOptionMenu();
+
+                if (this.options.mobile) {
+                    this.showUITab = 0;
+                }
             }
 
             if (this.localPlayer.animationCurrent === 8 ||
@@ -16716,7 +16706,7 @@ class mudclient extends GameConnection {
                 this.drawDialogCombatStyle();
             }
 
-            if (this.options.mobile) {
+            if (this.options.mobile && !this.showOptionMenu) {
                 this.setActiveMobileUITab();
             } else {
                 this.setActiveUITab();
@@ -16835,7 +16825,7 @@ class mudclient extends GameConnection {
         }
 
         if (this.loggedIn === 1) {
-            if (this.showAppearanceChange && this.panelAppearance !== null) {
+            if (this.showAppearanceChange && this.panelAppearance) {
                 this.panelAppearance.keyPress(keyCode);
                 return;
             }
@@ -16984,6 +16974,7 @@ class mudclient extends GameConnection {
     drawItem(x, y, w, h, id) {
         const picture = GameData.itemPicture[id] + this.spriteItem;
         const mask = GameData.itemMask[id];
+
         this.surface._spriteClipping_from9(x, y, w, h, picture, mask, 0, 0,
             false);
     }
@@ -17455,10 +17446,16 @@ class mudclient extends GameConnection {
             this.cameraZoom = ZOOM_MAX;
         }
 
+        // TODO fix for mobile
         if (this.mouseScrollDelta !== 0 && (this.showUITab === 2 || this.showUITab === 0)) {
-            if (this.messageTabSelected !== 0 && this.mouseY > (this.gameHeight - 64)) {
+            if (
+                this.messageTabSelected !== 0 &&
+                ((this.options.mobile && this.mouseY < 70) ||
+                    (!this.options.mobile && this.mouseY > this.gameHeight - 64))
+            ) {
                 return;
             }
+
 
             this.cameraZoom += this.mouseScrollDelta * 24;
         }
@@ -18503,13 +18500,13 @@ class mudclient extends GameConnection {
 
         this.surface = new Surface(
             this.gameWidth,
-            this.gameHeight + 34,
+            this.gameHeight + 12,
             4000,
             this
         );
 
         this.surface.mudclientref = this;
-        this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 34);
+        this.surface.setBounds(0, 0, this.gameWidth, this.gameHeight + 12);
 
         Panel.drawBackgroundArrow = false;
         Panel.baseSpriteStart = this.spriteUtil;
@@ -18777,7 +18774,7 @@ class mudclient extends GameConnection {
                     character = this.playerServer[player.attackingPlayerServerIndex];
                 }
 
-                if (character !== null) {
+                if (character) {
                     const sx = player.currentX;
                     const sy = player.currentY;
                     const selev = -this.world.getElevation(sx, sy) - 110;
@@ -18950,12 +18947,14 @@ class mudclient extends GameConnection {
             this.isInWild = j6 > 0;
 
             if (this.isInWild) {
-                let wildlvl = 1 + ((j6 / 6) | 0);
 
                 // wilderness skull placement made independent of gameWidth
                 this.surface._drawSprite_from3(this.gameWidth - 59, this.gameHeight - 56, this.spriteMedia + 13);
                 this.surface.drawStringCenter('Wilderness', this.gameWidth - 47, this.gameHeight - 20, 1, 0xffff00);
-                this.surface.drawStringCenter('Level: ' + wildlvl, this.gameWidth - 47, this.gameHeight - 7, 1, 0xffff00);
+
+                const wildernessLevel = 1 + ((j6 / 6) | 0);
+
+                this.surface.drawStringCenter('Level: ' + wildernessLevel, this.gameWidth - 47, this.gameHeight - 7, 1, 0xffff00);
 
                 if (this.showUiWildWarn === 0) {
                     this.showUiWildWarn = 2;
@@ -18967,30 +18966,7 @@ class mudclient extends GameConnection {
             }
         }
 
-        if (this.messageTabSelected === 0) {
-            for (let k6 = 0; k6 < 5; k6++) {
-                if (this.messageHistoryTimeout[k6] > 0) {
-                    let s = this.messageHistory[k6];
-                    this.surface.drawString(s, 7, this.gameHeight - 18 - k6 * 12, 1, 0xffff00);
-                }
-            }
-        }
-
-        this.panelMessageTabs.hide(this.controlTextListChat);
-        this.panelMessageTabs.hide(this.controlTextListQuest);
-        this.panelMessageTabs.hide(this.controlTextListPrivate);
-
-        if (this.messageTabSelected === 1) {
-            this.panelMessageTabs.show(this.controlTextListChat);
-        } else if (this.messageTabSelected === 2) {
-            this.panelMessageTabs.show(this.controlTextListQuest);
-        } else if (this.messageTabSelected === 3) {
-            this.panelMessageTabs.show(this.controlTextListPrivate);
-        }
-
-        Panel.textListEntryHeightMod = 2;
-        this.panelMessageTabs.drawPanel();
-        Panel.textListEntryHeightMod = 0;
+        this.drawChatMessageTabsPanel();
 
         if (!this.options.mobile) {
             this.surface._drawSpriteAlpha_from4(
@@ -19089,7 +19065,7 @@ class mudclient extends GameConnection {
                 animationIndex = indexDatMem;
             }
 
-            if (animationDat !== null) {
+            if (animationDat) {
                 this.surface.parseSprite(this.animationIndex, animationDat, animationIndex, 15);
 
                 frameCount += 15;
@@ -19104,6 +19080,7 @@ class mudclient extends GameConnection {
                     }
 
                     this.surface.parseSprite(this.animationIndex + 15, aDat, aIndex, 3);
+
                     frameCount += 3;
                 }
 
@@ -19117,6 +19094,7 @@ class mudclient extends GameConnection {
                     }
 
                     this.surface.parseSprite(this.animationIndex + 18, fDat, fIndex, 9);
+
                     frameCount += 9;
                 }
 
@@ -19520,7 +19498,7 @@ class mudclient extends GameConnection {
             let wh = this.surface.spriteWidthFull[this.spriteTexture];
             let nameSub = GameData.textureSubtypeName[i];
 
-            if (nameSub !== null && nameSub.length > 0) {
+            if (nameSub && nameSub.length > 0) {
                 let buff2 = Utility.loadData(`${nameSub}.dat`, 0, texturesJag);
 
                 this.surface.parseSprite(this.spriteTexture, buff2, indexDat, 1);
@@ -19529,9 +19507,7 @@ class mudclient extends GameConnection {
 
             this.surface._drawSprite_from5(this.spriteTextureWorld + i, 0, 0, wh, wh);
 
-            let area = wh * wh;
-
-            for (let j = 0; j < area; j++) {
+            for (let j = 0; j < wh * wh; j++) {
                 if (this.surface.surfacePixels[this.spriteTextureWorld + i][j] === 65280) {
                     this.surface.surfacePixels[this.spriteTextureWorld + i][j] = 0xff00ff;
                 }
@@ -19678,14 +19654,15 @@ class mudclient extends GameConnection {
                 s = this.menuItemText2[this.menuIndices[k]] + ': @whi@' + this.menuItemText1[this.menuIndices[0]];
             }
 
-            if (this.menuItemsCount === 2 && s !== null) {
+            if (this.menuItemsCount === 2 && s) {
                 s = s + '@whi@ / 1 more option';
             }
 
-            if (this.menuItemsCount > 2 && s !== null) {
+            if (this.menuItemsCount > 2 && s) {
                 s = s + '@whi@ / ' + (this.menuItemsCount - 1) + ' more options';
             }
 
+            // TODO put this text mouse position on mobile
             if (!this.options.mobile && s) {
                 this.surface.drawString(s, 6, 14, 1, 0xffff00);
             }
@@ -20443,7 +20420,7 @@ class mudclient extends GameConnection {
                             this.menuItemsCount++;
                         }
                     }
-                } else if (gameModel !== null && gameModel.key >= 10000) {
+                } else if (gameModel && gameModel.key >= 10000) {
                     const index = gameModel.key - 10000;
                     const id = this.wallObjectId[index];
 
@@ -20498,7 +20475,7 @@ class mudclient extends GameConnection {
 
                         this.wallObjectAlreadyInMenu[index] = true;
                     }
-                } else if (gameModel !== null && gameModel.key >= 0) {
+                } else if (gameModel && gameModel.key >= 0) {
                     const index = gameModel.key;
                     const id = this.objectId[index];
 
@@ -23374,6 +23351,7 @@ class Panel {
                 this.mouseY <= y + ((height / 2) | 0)
             ) {
                 this.focusControlIndex = control;
+                this.setMobileFocus(control, text);
             }
         } else if (this.controlType[control] === controlTypes.TEXT_INPUT) {
             if (
@@ -24341,7 +24319,7 @@ class Panel {
 
     setFocus(control) {
         this.focusControlIndex = control;
-        this.setMobileFocus(control, '');
+        this.setMobileFocus(control, this.controlText[control]);
     }
 
     getListEntryIndex(control) {
@@ -24357,14 +24335,28 @@ class Panel {
 
         const isPassword = this.controlMaskText[control];
 
-        this.surface.mudclient.openKeyboard(
+        const isListInput =
+            this.controlType[control] === controlTypes.LIST_INPUT;
+
+        const width = this.controlWidth[control];
+        const height = this.controlHeight[control];
+
+        const left = isListInput
+            ? this.controlX[control]
+            : this.controlX[control] - Math.floor(width / 2);
+
+        mudclient.openKeyboard(
             isPassword ? 'password' : 'text',
             text,
             this.controlInputMaxLen[control],
-            this.controlX[control],
-            this.controlY[control],
-            this.controlWidth[control],
-            this.controlHeight[control]
+            {
+                width: `${width}px`,
+                height: `${height}px`,
+                top: `${this.controlY[control] - Math.floor(height / 2)}px`,
+                left: `${left}px`,
+                fontSize: isListInput ? '12px' : '14px',
+                textAlign: isListInput ? 'left' : 'center'
+            }
         );
     }
 }
@@ -33407,47 +33399,56 @@ const colours = require('./_colours');
 
 const HBAR_WIDTH = 512;
 
+const ALL_MAX_LENGTH = 80;
+const HISTORY_MAX_ENTRIES = 20;
+
 function createMessageTabPanel() {
     this.panelMessageTabs = new Panel(this.surface, 10);
 
+    let y = 269;
+
+    if (this.options.mobile) {
+        y = 15;
+    }
+
     this.controlTextListAll = this.panelMessageTabs.addTextListInput(
         7,
-        324,
+        y + 55 + (this.options.mobile ? 12 : 0),
         498,
         14,
         1,
-        80,
+        ALL_MAX_LENGTH,
         false,
         true
     );
 
     this.controlTextListChat = this.panelMessageTabs.addTextList(
         5,
-        269,
+        y,
         502,
         56,
         1,
-        20,
+        HISTORY_MAX_ENTRIES,
         true
     );
 
     this.controlTextListQuest = this.panelMessageTabs.addTextList(
         5,
-        269,
+        y,
         502,
         56,
         1,
-        20,
+        HISTORY_MAX_ENTRIES,
         true
     );
 
     this.controlTextListPrivate = this.panelMessageTabs.addTextList(
         5,
-        269,
+        y,
         502,
         56,
         1,
-        20,
+        HISTORY_MAX_ENTRIES,
         true
     );
 
@@ -33457,7 +33458,7 @@ function createMessageTabPanel() {
 }
 
 function drawChatMessageTabs() {
-    let x = (this.gameWidth / 2 - HBAR_WIDTH / 2) | 0;
+    const x = (this.gameWidth / 2 - HBAR_WIDTH / 2) | 0;
     let y = this.gameHeight - 4;
 
     if (this.options.mobile) {
@@ -33533,58 +33534,46 @@ function drawChatMessageTabs() {
     }
 
     this.surface.drawStringCenter('Private history', x + 355, y, 0, textColour);
-
     this.surface.drawStringCenter('Report abuse', x + 457, y, 0, colours.white);
 }
 
 async function handleMesssageTabsInput() {
-    if (this.mouseY > this.gameHeight - 4) {
-        if (
-            this.mouseX > 15 &&
-            this.mouseX < 96 &&
-            this.lastMouseButtonDown === 1
-        ) {
+    const x = (this.gameWidth / 2 - HBAR_WIDTH / 2) | 0;
+    const mouseX = this.mouseX - x;
+
+    if (
+        (this.options.mobile && this.mouseY < 15) ||
+        (!this.options.mobile && this.mouseY > this.gameHeight - 4)
+    ) {
+        if (mouseX > 15 && mouseX < 96 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 0;
         }
 
-        if (
-            this.mouseX > 110 &&
-            this.mouseX < 194 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 110 && mouseX < 194 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 1;
+
             this.panelMessageTabs.controlFlashText[
                 this.controlTextListChat
             ] = 999999;
         }
 
-        if (
-            this.mouseX > 215 &&
-            this.mouseX < 295 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 215 && mouseX < 295 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 2;
+
             this.panelMessageTabs.controlFlashText[
                 this.controlTextListQuest
             ] = 999999;
         }
 
-        if (
-            this.mouseX > 315 &&
-            this.mouseX < 395 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 315 && mouseX < 395 && this.lastMouseButtonDown === 1) {
             this.messageTabSelected = 3;
+
             this.panelMessageTabs.controlFlashText[
                 this.controlTextListPrivate
             ] = 999999;
         }
 
-        if (
-            this.mouseX > 417 &&
-            this.mouseX < 497 &&
-            this.lastMouseButtonDown === 1
-        ) {
+        if (mouseX > 417 && mouseX < 497 && this.lastMouseButtonDown === 1) {
             this.showDialogReportAbuseStep = 1;
             this.reportAbuseOffence = 0;
             this.inputTextCurrent = '';
@@ -33615,6 +33604,10 @@ async function handleMesssageTabsInput() {
         let message = this.panelMessageTabs.getText(this.controlTextListAll);
 
         this.panelMessageTabs.updateText(this.controlTextListAll, '');
+
+        if (this.options.mobile) {
+            this.panelMessageTabs.focusControlIndex = -1;
+        }
 
         if (/^::/.test(message)) {
             if (/^::closecon$/i.test(message)) {
@@ -33649,18 +33642,70 @@ async function handleMesssageTabsInput() {
     }
 
     if (this.messageTabSelected === 0) {
-        for (let l1 = 0; l1 < 5; l1++) {
-            if (this.messageHistoryTimeout[l1] > 0) {
-                this.messageHistoryTimeout[l1]--;
+        for (let i = 0; i < 5; i++) {
+            if (this.messageHistoryTimeout[i] > 0) {
+                this.messageHistoryTimeout[i]--;
             }
         }
     }
 }
 
+function drawChatMessageTabsPanel() {
+    if (this.messageTabSelected === 0) {
+        let y = this.gameHeight - 18;
+
+        if (this.options.mobile) {
+            y = 74;
+        }
+
+        for (let i = 0; i < 5; i++) {
+            if (this.messageHistoryTimeout[i] <= 0) {
+                continue;
+            }
+
+            this.surface.drawString(
+                this.messageHistory[i],
+                7,
+                y - i * 12,
+                1,
+                colours.yellow
+            );
+        }
+    }
+
+    if (this.options.mobile && this.panelMessageTabs.focusControlIndex === -1) {
+        this.surface.drawString(
+            '[Tap here to chat]',
+            6,
+            88,
+            2,
+            colours.white
+        );
+    }
+
+
+    this.panelMessageTabs.hide(this.controlTextListChat);
+    this.panelMessageTabs.hide(this.controlTextListQuest);
+    this.panelMessageTabs.hide(this.controlTextListPrivate);
+
+    if (this.messageTabSelected === 1) {
+        this.panelMessageTabs.show(this.controlTextListChat);
+    } else if (this.messageTabSelected === 2) {
+        this.panelMessageTabs.show(this.controlTextListQuest);
+    } else if (this.messageTabSelected === 3) {
+        this.panelMessageTabs.show(this.controlTextListPrivate);
+    }
+
+    Panel.textListEntryHeightMod = 2;
+    this.panelMessageTabs.drawPanel();
+    Panel.textListEntryHeightMod = 0;
+}
+
 module.exports = {
     createMessageTabPanel,
     drawChatMessageTabs,
-    handleMesssageTabsInput
+    handleMesssageTabsInput,
+    drawChatMessageTabsPanel
 };
 
 },{"../chat-message":40,"../panel":85,"../word-filter":121,"./_colours":91}],95:[function(require,module,exports){
@@ -35600,13 +35645,27 @@ const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
 function drawOptionMenu() {
+    const fontSize = this.options.mobile ? 5 : 5;
+    const fontHeight = this.options.mobile ? 14 : 18;
+    const maxHeight = fontHeight * 5;
+    const offsetX = this.options.mobile ? 48 : 6;
+    const offsetY = this.options.mobile
+        ? (this.gameHeight / 2 - maxHeight / 2) | 0
+        : 0;
+
     if (this.mouseButtonClick !== 0) {
         for (let i = 0; i < this.optionMenuCount; i++) {
             if (
+                this.mouseX < offsetX - 6 ||
                 this.mouseX >=
-                    this.surface.textWidth(this.optionMenuEntry[i], 1) ||
-                this.mouseY <= i * 12 ||
-                this.mouseY >= 12 + i * 12
+                    offsetX -
+                        6 +
+                        this.surface.textWidth(
+                            this.optionMenuEntry[i],
+                            fontSize
+                        ) ||
+                this.mouseY <= offsetY + i * fontHeight ||
+                this.mouseY >= offsetY + (fontHeight + i * fontHeight)
             ) {
                 continue;
             }
@@ -35626,18 +35685,22 @@ function drawOptionMenu() {
         let textColour = colours.cyan;
 
         if (
-            this.mouseX < this.surface.textWidth(this.optionMenuEntry[i], 1) &&
-            this.mouseY > i * 12 &&
-            this.mouseY < 12 + i * 12
+            this.mouseX > offsetX - 6 &&
+            this.mouseX <
+                offsetX -
+                    6 +
+                    this.surface.textWidth(this.optionMenuEntry[i], fontSize) &&
+            this.mouseY > offsetY + i * fontHeight &&
+            this.mouseY < offsetY + (i * fontHeight + fontHeight)
         ) {
             textColour = colours.red;
         }
 
         this.surface.drawString(
             this.optionMenuEntry[i],
-            6,
-            12 + i * 12,
-            1,
+            offsetX,
+            offsetY + (fontHeight + i * fontHeight),
+            fontSize,
             textColour
         );
     }

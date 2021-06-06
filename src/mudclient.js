@@ -273,7 +273,6 @@ class mudclient extends GameConnection {
         this.fogOfWar = false;
         this.gameWidth = 512;
         this.gameHeight = 334;
-        this.const_9 = 9;
         this.tradeConfirmItems = new Int32Array(14);
         this.tradeConfirmItemCount = new Int32Array(14);
         this.tradeRecipientName = '';
@@ -675,8 +674,10 @@ class mudclient extends GameConnection {
                 this.drawDialogCombatStyle();
             }
 
-            if (this.options.mobile && !this.showOptionMenu) {
-                this.setActiveMobileUITab();
+            if (this.options.mobile) {
+                if (!this.showOptionMenu) {
+                    this.setActiveMobileUITab();
+                }
             } else {
                 this.setActiveUITab();
             }
@@ -711,6 +712,31 @@ class mudclient extends GameConnection {
                 } else {
                     this.drawRightClickMenu();
                 }
+            }
+
+            // draw menu action box on mobile
+            if (this.menuActionTimeout) {
+                const offsetX =
+                    this.menuX <= this.gameWidth / 2 ? 8 : -this.menuTextWidth - 8;
+
+                this.surface.drawBoxAlpha(
+                    offsetX + this.menuX - 4,
+                    this.menuY - 4,
+                    this.menuTextWidth + 4,
+                    18,
+                    0xbebebe,
+                    192
+                );
+
+                this.surface.drawString(
+                    this.menuText,
+                    offsetX + this.menuX - 2,
+                    this.menuY + 10,
+                    1,
+                    0xffffff
+                );
+
+                this.menuActionTimeout -= 1;
             }
         }
 
@@ -1415,7 +1441,6 @@ class mudclient extends GameConnection {
             this.cameraZoom = ZOOM_MAX;
         }
 
-        // TODO fix for mobile
         if (this.mouseScrollDelta !== 0 && (this.showUITab === 2 || this.showUITab === 0)) {
             if (
                 this.messageTabSelected !== 0 &&
@@ -2530,12 +2555,14 @@ class mudclient extends GameConnection {
         this.scene = new Scene(this.surface, 15000, 15000, 1000);
         this.scene.view = GameModel._from2(1000 * 1000, 1000);
 
-        this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, this.const_9);
+        this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, 9);
+
         this.scene.clipFar3d = 2400;
         this.scene.clipFar2d = 2400;
         this.scene.fogZFalloff = 1;
         this.scene.fogZDistance = 2300;
         this.scene._setLight_from3(-50, -10, -50);
+
         this.world = new World(this.scene, this.surface);
         this.world.baseMediaSprite = this.spriteMedia;
 
@@ -2571,7 +2598,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    hasInventoryItems(id, mincount) {
+    hasInventoryItems(id, minimum) {
         if (id === 31 && (this.isItemEquipped(197) || this.isItemEquipped(615) || this.isItemEquipped(682))) {
             return true;
         }
@@ -2588,7 +2615,7 @@ class mudclient extends GameConnection {
             return true;
         }
 
-        return this.getInventoryCount(id) >= mincount;
+        return this.getInventoryCount(id) >= minimum;
     }
 
     getHostnameIP(i) {
@@ -3631,7 +3658,6 @@ class mudclient extends GameConnection {
                 s = s + '@whi@ / ' + (this.menuItemsCount - 1) + ' more options';
             }
 
-            // TODO put this text mouse position on mobile
             if (!this.options.mobile && s) {
                 this.surface.drawString(s, 6, 14, 1, 0xffff00);
             }
@@ -3686,6 +3712,15 @@ class mudclient extends GameConnection {
         const menuSourceIndex = this.menuSourceIndex[i];
         const menuTargetIndex = this.menuTargetIndex[i];
         const menuType = this.menuType[i];
+
+        if (this.options.mobile && this.menuItemText2[i]) {
+            this.menuText = `${this.menuItemText1[i]} ${this.menuItemText2[i]}`;
+            this.menuTextWidth = this.surface.textWidth(this.menuText, 1);
+            this.menuX = this.mouseX;
+            this.menuY = this.mouseY;
+            this.menuActionTimeout = 60;
+            // TODO Math.max() the menuX
+        }
 
         switch (menuType) {
             case 200:

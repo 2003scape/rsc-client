@@ -4,8 +4,6 @@ const colours = require('./_colours');
 const GREY = 0xbebebe;
 
 const BUTTON_HEIGHT = 20;
-const UI_X = 7;
-const UI_Y = 15;
 const WIDTH = 175;
 
 const COMBAT_STYLES = [
@@ -15,15 +13,25 @@ const COMBAT_STYLES = [
     'Defensive (+3 defense)'
 ];
 
+const HEIGHT = BUTTON_HEIGHT * (COMBAT_STYLES.length + 1);
+
 function drawDialogCombatStyle() {
+    let uiX = 7;
+    let uiY = 15;
+
+    if (this.options.mobile) {
+        uiX = 48;
+        uiY = (this.gameHeight / 2 - HEIGHT / 2) | 0;
+    }
+
     if (this.mouseButtonClick !== 0) {
         for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
             if (
                 i <= 0 ||
-                this.mouseX <= UI_X ||
-                this.mouseX >= UI_X + WIDTH ||
-                this.mouseY <= UI_Y + i * BUTTON_HEIGHT ||
-                this.mouseY >= UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT
+                this.mouseX <= uiX ||
+                this.mouseX >= uiX + WIDTH ||
+                this.mouseY <= uiY + i * BUTTON_HEIGHT ||
+                this.mouseY >= uiY + i * BUTTON_HEIGHT + BUTTON_HEIGHT
             ) {
                 continue;
             }
@@ -42,22 +50,24 @@ function drawDialogCombatStyle() {
         const boxColour = i === this.combatStyle + 1 ? colours.red : GREY;
 
         this.surface.drawBoxAlpha(
-            UI_X,
-            UI_Y + i * BUTTON_HEIGHT,
+            uiX,
+            uiY + i * BUTTON_HEIGHT,
             WIDTH,
             BUTTON_HEIGHT,
             boxColour,
             128
         );
+
         this.surface.drawLineHoriz(
-            UI_X,
-            UI_Y + i * BUTTON_HEIGHT,
+            uiX,
+            uiY + i * BUTTON_HEIGHT,
             WIDTH,
             colours.black
         );
+
         this.surface.drawLineHoriz(
-            UI_X,
-            UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
+            uiX,
+            uiY + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
             WIDTH,
             colours.black
         );
@@ -67,8 +77,8 @@ function drawDialogCombatStyle() {
 
     this.surface.drawStringCenter(
         'Select combat style',
-        UI_X + ((WIDTH / 2) | 0),
-        UI_Y + y,
+        uiX + ((WIDTH / 2) | 0),
+        uiY + y,
         3,
         colours.white
     );
@@ -78,8 +88,8 @@ function drawDialogCombatStyle() {
     for (const combatStyle of COMBAT_STYLES) {
         this.surface.drawStringCenter(
             combatStyle,
-            UI_X + ((WIDTH / 2) | 0),
-            UI_Y + y,
+            uiX + ((WIDTH / 2) | 0),
+            uiY + y,
             3,
             colours.black
         );

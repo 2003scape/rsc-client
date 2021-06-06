@@ -190,14 +190,40 @@ async function handleMesssageTabsInput() {
         this.mouseButtonDown = 0;
     }
 
-    this.panelMessageTabs.handleMouse(
-        this.mouseX,
-        this.mouseY,
-        this.lastMouseButtonDown,
-        this.mouseButtonDown,
-        this.mouseScrollDelta
-    );
+    if (!(this.options.mobile && this.mouseY >= 72)) {
+        this.panelMessageTabs.handleMouse(
+            this.mouseX,
+            this.mouseY,
+            this.lastMouseButtonDown,
+            this.mouseButtonDown,
+            this.mouseScrollDelta
+        );
+    }
 
+    if (
+        this.options.mobile &&
+        this.lastMouseButtonDown
+    ) {
+        if (
+            !this.panelMessageTabs.controlText[this.controlTextListAll].length
+        ) {
+            this.panelMessageTabs.focusControlIndex = -1;
+        }
+    }
+
+    if (
+        this.options.mobile &&
+        this.lastMouseButtonDown &&
+        this.showUITab < 3 &&
+        this.mouseX <= 108 &&
+        this.mouseY >= 72 &&
+        this.mouseY <= 98
+    ) {
+        this.panelMessageTabs.setFocus(this.controlTextListAll);
+        this.lastMouseButtonDown = 0;
+    }
+
+    // prevent scrollbar clicking from affecting game
     if (
         this.messageTabSelected > 0 &&
         this.mouseX >= 494 &&
@@ -280,15 +306,8 @@ function drawChatMessageTabsPanel() {
     }
 
     if (this.options.mobile && this.panelMessageTabs.focusControlIndex === -1) {
-        this.surface.drawString(
-            '[Tap here to chat]',
-            6,
-            88,
-            2,
-            colours.white
-        );
+        this.surface.drawString('[Tap here to chat]', 6, 88, 2, colours.white);
     }
-
 
     this.panelMessageTabs.hide(this.controlTextListChat);
     this.panelMessageTabs.hide(this.controlTextListQuest);

@@ -668,7 +668,7 @@ class GameConnection extends GameShell {
                 this.incomingPacket[0] & 0xff
             );
 
-            console.log('opcode:' + opcode + ' psize:' + length);
+            //console.log('opcode:' + opcode + ' psize:' + length);
             this.handleIncomingPacket(opcode, length, this.incomingPacket);
         }
     }

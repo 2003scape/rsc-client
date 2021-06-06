@@ -8,19 +8,19 @@ function drawSleep() {
         this.surface.drawStringCenter(
             'ZZZ',
             (Math.random() * 80) | 0,
-            (Math.random() * 334) | 0,
+            (Math.random() * this.gameHeight) | 0,
             5,
-            (Math.random() * 16777215) | 0
+            (Math.random() * colours.white) | 0
         );
     }
 
     if (Math.random() <= 0.15) {
         this.surface.drawStringCenter(
             'ZZZ',
-            512 - ((Math.random() * 80) | 0),
-            (Math.random() * 334) | 0,
+            this.gameWidth - ((Math.random() * 80) | 0),
+            (Math.random() * this.gameHeight) | 0,
             5,
-            (Math.random() * 16777215) | 0
+            (Math.random() * colours.white) | 0
         );
     }
 

@@ -36,9 +36,28 @@ const INPUT_STYLES = {
     fontFamily: 'sans'
 };
 
+function getMousePosition(canvas, e) {
+    const boundingRect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / boundingRect.width;
+    const scaleY = canvas.height / boundingRect.height;
+
+    return {
+        x: ((e.clientX - boundingRect.left) * scaleX) | 0,
+        y: ((e.clientY - boundingRect.top) * scaleY) | 0
+    };
+}
+
 class GameShell {
-    constructor(canvas) {
-        this._canvas = canvas;
+    constructor(container) {
+        this._container = container;
+        this._container.style.position = 'relative';
+
+        this._canvas = document.createElement('canvas');
+        this._canvas.style.width = '100%';
+        this._canvas.style.height = '100%';
+
+        this._container.appendChild(this._canvas);
+
         this._graphics = new Graphics(this._canvas);
 
         this.options = {
@@ -110,18 +129,106 @@ class GameShell {
         this._canvas.width = width;
         this._canvas.height = height;
 
+        this._container.style.width = `${width}px`;
+        this._container.style.height = `${height}px`;
+
         console.log('Started application');
 
         this.appletWidth = width;
         this.appletHeight = height;
 
-        this._canvas.addEventListener(
-            'mousedown',
-            this.mousePressed.bind(this)
-        );
+        if (this.options.mobile) {
+            this._canvas.addEventListener('touchstart', (e) => {
+                //e.preventDefault();
 
-        this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
-        this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
+                console.log('touchstart');
+
+                if (e.touches.length === 1) {
+                    clearTimeout(this.rightClickTimeout);
+
+                    this.rightClickTimeout = setTimeout(() => {
+                        this.disableEndClick = true;
+
+                        e = {
+                            button: 2,
+                            clientX: e.touches[0].clientX,
+                            clientY: e.touches[0].clientY
+                        };
+
+                        this.mousePressed(e);
+                        this.mouseReleased(e);
+                    }, 500);
+                } else {
+                    // scroll
+                }
+            });
+
+            this._canvas.addEventListener('touchmove', (e) => {
+                //e.preventDefault();
+
+                console.log('touchmoving');
+
+                if (!this.touchMoving) {
+                    clearTimeout(this.rightClickTimeout);
+
+                    this.mousePressed({
+                        button: 1,
+                        clientX: e.touches[0].clientX,
+                        clientY: e.touches[0].clientY
+                    });
+
+                    this.touchMoving = true;
+                } else {
+                    this.mouseMoved({
+                        clientX: e.touches[0].clientX,
+                        clientY: e.touches[0].clientY
+                    });
+                }
+            });
+
+            this._canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+
+                console.log('touchend');
+
+                if (this.disableEndClick) {
+                    this.disableEndClick = false;
+                    return;
+                }
+
+                clearTimeout(this.rightClickTimeout);
+
+                e = {
+                    button: this.touchMoving ? 1 : 0,
+                    clientX: e.changedTouches[0].clientX,
+                    clientY: e.changedTouches[0].clientY
+                };
+
+                if (this.touchMoving) {
+                    this.touchMoving = false;
+                } else {
+                    this.mousePressed(e);
+                }
+
+                this.mouseReleased(e);
+            });
+        } else {
+            this._canvas.addEventListener(
+                'mousedown',
+                this.mousePressed.bind(this)
+            );
+
+            this._canvas.addEventListener(
+                'mousemove',
+                this.mouseMoved.bind(this)
+            );
+
+            this._canvas.addEventListener(
+                'mouseup',
+                this.mouseReleased.bind(this)
+            );
+        }
+
         this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
         this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
@@ -168,8 +275,8 @@ class GameShell {
                 this.closeKeyboard.bind(this)
             );
 
-            document.body.appendChild(this.mobileInput);
-            document.body.appendChild(this.mobilePassword);
+            this._container.appendChild(this.mobileInput);
+            this._container.appendChild(this.mobilePassword);
         }
 
         this.loadingStep = 1;
@@ -354,14 +461,22 @@ class GameShell {
     }
 
     mouseMoved(e) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
+
+        this.mouseX = x;
+        this.mouseY = y;
+
+        console.log('mousemoved', x, y);
+
         this.mouseActionTimeout = 0;
     }
 
     mouseReleased(e) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
+
+        this.mouseX = x;
+        this.mouseY = y;
+
         this.mouseButtonDown = 0;
 
         if (e.button === 1) {
@@ -370,13 +485,20 @@ class GameShell {
     }
 
     mouseOut(e) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
+
+        this.mouseX = x;
+        this.mouseY = y;
+
         this.mouseButtonDown = 0;
         this.middleButtonDown = false;
     }
 
     mousePressed(e) {
+        if (e.button === 1 && e.preventDefault) {
+            e.preventDefault();
+        }
+
         if (this.options.mobile) {
             // inputs can only be focused when a user performs an action,
             // and we set toggleKeyboard to true after an event has occured
@@ -390,8 +512,7 @@ class GameShell {
             }, 125);
         }
 
-        const x = e.offsetX;
-        const y = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
 
         this.mouseX = x;
         this.mouseY = y;

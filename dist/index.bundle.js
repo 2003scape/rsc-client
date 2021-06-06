@@ -6,17 +6,19 @@ if (typeof window === 'undefined') {
 }
 
 (async () => {
-    const mcCanvas = document.createElement('canvas');
+    const mcContainer = document.createElement('div');
     const args = window.location.hash.slice(1).split(',');
-    const mc = new mudclient(mcCanvas);
+    const mc = new mudclient(mcContainer);
 
     window.mcOptions = mc.options;
 
-    mc.options.middleClickCamera = true;
-    mc.options.mouseWheel = true;
-    mc.options.resetCompass = true;
-    mc.options.zoomCamera = true;
-    mc.options.accountManagement = true;
+    Object.assign(mc.options, {
+        middleClickCamera: true,
+        mouseWheel: true,
+        resetCompass: true,
+        zoomCamera: true,
+        accountManagement: true
+    });
 
     mc.members = args[0] === 'members';
     mc.server = args[1] ? args[1] : '127.0.0.1';
@@ -24,7 +26,17 @@ if (typeof window === 'undefined') {
 
     mc.threadSleep = 10;
 
-    document.body.appendChild(mcCanvas);
+    document.body.appendChild(mcContainer);
+
+    const fullscreen = document.createElement('button');
+
+    fullscreen.innerText = 'Fullscreen';
+
+    fullscreen.onclick = () => {
+        mcContainer.requestFullscreen();
+    };
+
+    document.body.appendChild(fullscreen);
 
     await mc.startApplication(512, 346, 'Runescape by Andrew Gower', false);
 })();
@@ -12726,7 +12738,7 @@ class GameConnection extends GameShell {
                 this.incomingPacket[0] & 0xff
             );
 
-            console.log('opcode:' + opcode + ' psize:' + length);
+            //console.log('opcode:' + opcode + ' psize:' + length);
             this.handleIncomingPacket(opcode, length, this.incomingPacket);
         }
     }
@@ -14778,9 +14790,28 @@ const INPUT_STYLES = {
     fontFamily: 'sans'
 };
 
+function getMousePosition(canvas, e) {
+    const boundingRect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / boundingRect.width;
+    const scaleY = canvas.height / boundingRect.height;
+
+    return {
+        x: ((e.clientX - boundingRect.left) * scaleX) | 0,
+        y: ((e.clientY - boundingRect.top) * scaleY) | 0
+    };
+}
+
 class GameShell {
-    constructor(canvas) {
-        this._canvas = canvas;
+    constructor(container) {
+        this._container = container;
+        this._container.style.position = 'relative';
+
+        this._canvas = document.createElement('canvas');
+        this._canvas.style.width = '100%';
+        this._canvas.style.height = '100%';
+
+        this._container.appendChild(this._canvas);
+
         this._graphics = new Graphics(this._canvas);
 
         this.options = {
@@ -14852,18 +14883,106 @@ class GameShell {
         this._canvas.width = width;
         this._canvas.height = height;
 
+        this._container.style.width = `${width}px`;
+        this._container.style.height = `${height}px`;
+
         console.log('Started application');
 
         this.appletWidth = width;
         this.appletHeight = height;
 
-        this._canvas.addEventListener(
-            'mousedown',
-            this.mousePressed.bind(this)
-        );
+        if (this.options.mobile) {
+            this._canvas.addEventListener('touchstart', (e) => {
+                //e.preventDefault();
 
-        this._canvas.addEventListener('mousemove', this.mouseMoved.bind(this));
-        this._canvas.addEventListener('mouseup', this.mouseReleased.bind(this));
+                console.log('touchstart');
+
+                if (e.touches.length === 1) {
+                    clearTimeout(this.rightClickTimeout);
+
+                    this.rightClickTimeout = setTimeout(() => {
+                        this.disableEndClick = true;
+
+                        e = {
+                            button: 2,
+                            clientX: e.touches[0].clientX,
+                            clientY: e.touches[0].clientY
+                        };
+
+                        this.mousePressed(e);
+                        this.mouseReleased(e);
+                    }, 500);
+                } else {
+                    // scroll
+                }
+            });
+
+            this._canvas.addEventListener('touchmove', (e) => {
+                //e.preventDefault();
+
+                console.log('touchmoving');
+
+                if (!this.touchMoving) {
+                    clearTimeout(this.rightClickTimeout);
+
+                    this.mousePressed({
+                        button: 1,
+                        clientX: e.touches[0].clientX,
+                        clientY: e.touches[0].clientY
+                    });
+
+                    this.touchMoving = true;
+                } else {
+                    this.mouseMoved({
+                        clientX: e.touches[0].clientX,
+                        clientY: e.touches[0].clientY
+                    });
+                }
+            });
+
+            this._canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+
+                console.log('touchend');
+
+                if (this.disableEndClick) {
+                    this.disableEndClick = false;
+                    return;
+                }
+
+                clearTimeout(this.rightClickTimeout);
+
+                e = {
+                    button: this.touchMoving ? 1 : 0,
+                    clientX: e.changedTouches[0].clientX,
+                    clientY: e.changedTouches[0].clientY
+                };
+
+                if (this.touchMoving) {
+                    this.touchMoving = false;
+                } else {
+                    this.mousePressed(e);
+                }
+
+                this.mouseReleased(e);
+            });
+        } else {
+            this._canvas.addEventListener(
+                'mousedown',
+                this.mousePressed.bind(this)
+            );
+
+            this._canvas.addEventListener(
+                'mousemove',
+                this.mouseMoved.bind(this)
+            );
+
+            this._canvas.addEventListener(
+                'mouseup',
+                this.mouseReleased.bind(this)
+            );
+        }
+
         this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
         this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
@@ -14910,8 +15029,8 @@ class GameShell {
                 this.closeKeyboard.bind(this)
             );
 
-            document.body.appendChild(this.mobileInput);
-            document.body.appendChild(this.mobilePassword);
+            this._container.appendChild(this.mobileInput);
+            this._container.appendChild(this.mobilePassword);
         }
 
         this.loadingStep = 1;
@@ -15096,14 +15215,22 @@ class GameShell {
     }
 
     mouseMoved(e) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
+
+        this.mouseX = x;
+        this.mouseY = y;
+
+        console.log('mousemoved', x, y);
+
         this.mouseActionTimeout = 0;
     }
 
     mouseReleased(e) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
+
+        this.mouseX = x;
+        this.mouseY = y;
+
         this.mouseButtonDown = 0;
 
         if (e.button === 1) {
@@ -15112,13 +15239,20 @@ class GameShell {
     }
 
     mouseOut(e) {
-        this.mouseX = e.offsetX;
-        this.mouseY = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
+
+        this.mouseX = x;
+        this.mouseY = y;
+
         this.mouseButtonDown = 0;
         this.middleButtonDown = false;
     }
 
     mousePressed(e) {
+        if (e.button === 1 && e.preventDefault) {
+            e.preventDefault();
+        }
+
         if (this.options.mobile) {
             // inputs can only be focused when a user performs an action,
             // and we set toggleKeyboard to true after an event has occured
@@ -15132,8 +15266,7 @@ class GameShell {
             }, 125);
         }
 
-        const x = e.offsetX;
-        const y = e.offsetY;
+        const { x, y } = getMousePosition(this._canvas, e);
 
         this.mouseX = x;
         this.mouseY = y;
@@ -16304,7 +16437,6 @@ class mudclient extends GameConnection {
         this.fogOfWar = false;
         this.gameWidth = 512;
         this.gameHeight = 334;
-        this.const_9 = 9;
         this.tradeConfirmItems = new Int32Array(14);
         this.tradeConfirmItemCount = new Int32Array(14);
         this.tradeRecipientName = '';
@@ -16706,8 +16838,10 @@ class mudclient extends GameConnection {
                 this.drawDialogCombatStyle();
             }
 
-            if (this.options.mobile && !this.showOptionMenu) {
-                this.setActiveMobileUITab();
+            if (this.options.mobile) {
+                if (!this.showOptionMenu) {
+                    this.setActiveMobileUITab();
+                }
             } else {
                 this.setActiveUITab();
             }
@@ -16742,6 +16876,31 @@ class mudclient extends GameConnection {
                 } else {
                     this.drawRightClickMenu();
                 }
+            }
+
+            // draw menu action box on mobile
+            if (this.menuActionTimeout) {
+                const offsetX =
+                    this.menuX <= this.gameWidth / 2 ? 8 : -this.menuTextWidth - 8;
+
+                this.surface.drawBoxAlpha(
+                    offsetX + this.menuX - 4,
+                    this.menuY - 4,
+                    this.menuTextWidth + 4,
+                    18,
+                    0xbebebe,
+                    192
+                );
+
+                this.surface.drawString(
+                    this.menuText,
+                    offsetX + this.menuX - 2,
+                    this.menuY + 10,
+                    1,
+                    0xffffff
+                );
+
+                this.menuActionTimeout -= 1;
             }
         }
 
@@ -17446,7 +17605,6 @@ class mudclient extends GameConnection {
             this.cameraZoom = ZOOM_MAX;
         }
 
-        // TODO fix for mobile
         if (this.mouseScrollDelta !== 0 && (this.showUITab === 2 || this.showUITab === 0)) {
             if (
                 this.messageTabSelected !== 0 &&
@@ -18561,12 +18719,14 @@ class mudclient extends GameConnection {
         this.scene = new Scene(this.surface, 15000, 15000, 1000);
         this.scene.view = GameModel._from2(1000 * 1000, 1000);
 
-        this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, this.const_9);
+        this.scene.setBounds((this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, (this.gameWidth / 2) | 0, (this.gameHeight / 2) | 0, this.gameWidth, 9);
+
         this.scene.clipFar3d = 2400;
         this.scene.clipFar2d = 2400;
         this.scene.fogZFalloff = 1;
         this.scene.fogZDistance = 2300;
         this.scene._setLight_from3(-50, -10, -50);
+
         this.world = new World(this.scene, this.surface);
         this.world.baseMediaSprite = this.spriteMedia;
 
@@ -18602,7 +18762,7 @@ class mudclient extends GameConnection {
         }
     }
 
-    hasInventoryItems(id, mincount) {
+    hasInventoryItems(id, minimum) {
         if (id === 31 && (this.isItemEquipped(197) || this.isItemEquipped(615) || this.isItemEquipped(682))) {
             return true;
         }
@@ -18619,7 +18779,7 @@ class mudclient extends GameConnection {
             return true;
         }
 
-        return this.getInventoryCount(id) >= mincount;
+        return this.getInventoryCount(id) >= minimum;
     }
 
     getHostnameIP(i) {
@@ -19662,7 +19822,6 @@ class mudclient extends GameConnection {
                 s = s + '@whi@ / ' + (this.menuItemsCount - 1) + ' more options';
             }
 
-            // TODO put this text mouse position on mobile
             if (!this.options.mobile && s) {
                 this.surface.drawString(s, 6, 14, 1, 0xffff00);
             }
@@ -19717,6 +19876,15 @@ class mudclient extends GameConnection {
         const menuSourceIndex = this.menuSourceIndex[i];
         const menuTargetIndex = this.menuTargetIndex[i];
         const menuType = this.menuType[i];
+
+        if (this.options.mobile && this.menuItemText2[i]) {
+            this.menuText = `${this.menuItemText1[i]} ${this.menuItemText2[i]}`;
+            this.menuTextWidth = this.surface.textWidth(this.menuText, 1);
+            this.menuX = this.mouseX;
+            this.menuY = this.mouseY;
+            this.menuActionTimeout = 60;
+            // TODO Math.max() the menuX
+        }
 
         switch (menuType) {
             case 200:
@@ -33584,14 +33752,40 @@ async function handleMesssageTabsInput() {
         this.mouseButtonDown = 0;
     }
 
-    this.panelMessageTabs.handleMouse(
-        this.mouseX,
-        this.mouseY,
-        this.lastMouseButtonDown,
-        this.mouseButtonDown,
-        this.mouseScrollDelta
-    );
+    if (!(this.options.mobile && this.mouseY >= 72)) {
+        this.panelMessageTabs.handleMouse(
+            this.mouseX,
+            this.mouseY,
+            this.lastMouseButtonDown,
+            this.mouseButtonDown,
+            this.mouseScrollDelta
+        );
+    }
 
+    if (
+        this.options.mobile &&
+        this.lastMouseButtonDown
+    ) {
+        if (
+            !this.panelMessageTabs.controlText[this.controlTextListAll].length
+        ) {
+            this.panelMessageTabs.focusControlIndex = -1;
+        }
+    }
+
+    if (
+        this.options.mobile &&
+        this.lastMouseButtonDown &&
+        this.showUITab < 3 &&
+        this.mouseX <= 108 &&
+        this.mouseY >= 72 &&
+        this.mouseY <= 98
+    ) {
+        this.panelMessageTabs.setFocus(this.controlTextListAll);
+        this.lastMouseButtonDown = 0;
+    }
+
+    // prevent scrollbar clicking from affecting game
     if (
         this.messageTabSelected > 0 &&
         this.mouseX >= 494 &&
@@ -33674,15 +33868,8 @@ function drawChatMessageTabsPanel() {
     }
 
     if (this.options.mobile && this.panelMessageTabs.focusControlIndex === -1) {
-        this.surface.drawString(
-            '[Tap here to chat]',
-            6,
-            88,
-            2,
-            colours.white
-        );
+        this.surface.drawString('[Tap here to chat]', 6, 88, 2, colours.white);
     }
-
 
     this.panelMessageTabs.hide(this.controlTextListChat);
     this.panelMessageTabs.hide(this.controlTextListQuest);
@@ -33715,8 +33902,6 @@ const colours = require('./_colours');
 const GREY = 0xbebebe;
 
 const BUTTON_HEIGHT = 20;
-const UI_X = 7;
-const UI_Y = 15;
 const WIDTH = 175;
 
 const COMBAT_STYLES = [
@@ -33726,15 +33911,25 @@ const COMBAT_STYLES = [
     'Defensive (+3 defense)'
 ];
 
+const HEIGHT = BUTTON_HEIGHT * (COMBAT_STYLES.length + 1);
+
 function drawDialogCombatStyle() {
+    let uiX = 7;
+    let uiY = 15;
+
+    if (this.options.mobile) {
+        uiX = 48;
+        uiY = (this.gameHeight / 2 - HEIGHT / 2) | 0;
+    }
+
     if (this.mouseButtonClick !== 0) {
         for (let i = 0; i < COMBAT_STYLES.length + 1; i++) {
             if (
                 i <= 0 ||
-                this.mouseX <= UI_X ||
-                this.mouseX >= UI_X + WIDTH ||
-                this.mouseY <= UI_Y + i * BUTTON_HEIGHT ||
-                this.mouseY >= UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT
+                this.mouseX <= uiX ||
+                this.mouseX >= uiX + WIDTH ||
+                this.mouseY <= uiY + i * BUTTON_HEIGHT ||
+                this.mouseY >= uiY + i * BUTTON_HEIGHT + BUTTON_HEIGHT
             ) {
                 continue;
             }
@@ -33753,22 +33948,24 @@ function drawDialogCombatStyle() {
         const boxColour = i === this.combatStyle + 1 ? colours.red : GREY;
 
         this.surface.drawBoxAlpha(
-            UI_X,
-            UI_Y + i * BUTTON_HEIGHT,
+            uiX,
+            uiY + i * BUTTON_HEIGHT,
             WIDTH,
             BUTTON_HEIGHT,
             boxColour,
             128
         );
+
         this.surface.drawLineHoriz(
-            UI_X,
-            UI_Y + i * BUTTON_HEIGHT,
+            uiX,
+            uiY + i * BUTTON_HEIGHT,
             WIDTH,
             colours.black
         );
+
         this.surface.drawLineHoriz(
-            UI_X,
-            UI_Y + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
+            uiX,
+            uiY + i * BUTTON_HEIGHT + BUTTON_HEIGHT,
             WIDTH,
             colours.black
         );
@@ -33778,8 +33975,8 @@ function drawDialogCombatStyle() {
 
     this.surface.drawStringCenter(
         'Select combat style',
-        UI_X + ((WIDTH / 2) | 0),
-        UI_Y + y,
+        uiX + ((WIDTH / 2) | 0),
+        uiY + y,
         3,
         colours.white
     );
@@ -33789,8 +33986,8 @@ function drawDialogCombatStyle() {
     for (const combatStyle of COMBAT_STYLES) {
         this.surface.drawStringCenter(
             combatStyle,
-            UI_X + ((WIDTH / 2) | 0),
-            UI_Y + y,
+            uiX + ((WIDTH / 2) | 0),
+            uiY + y,
             3,
             colours.black
         );
@@ -35648,24 +35845,25 @@ function drawOptionMenu() {
     const fontSize = this.options.mobile ? 5 : 5;
     const fontHeight = this.options.mobile ? 14 : 18;
     const maxHeight = fontHeight * 5;
-    const offsetX = this.options.mobile ? 48 : 6;
-    const offsetY = this.options.mobile
+
+    const uiX = this.options.mobile ? 48 : 6;
+    const uiY = this.options.mobile
         ? (this.gameHeight / 2 - maxHeight / 2) | 0
         : 0;
 
     if (this.mouseButtonClick !== 0) {
         for (let i = 0; i < this.optionMenuCount; i++) {
             if (
-                this.mouseX < offsetX - 6 ||
+                this.mouseX < uiX - 6 ||
                 this.mouseX >=
-                    offsetX -
+                    uiX -
                         6 +
                         this.surface.textWidth(
                             this.optionMenuEntry[i],
                             fontSize
                         ) ||
-                this.mouseY <= offsetY + i * fontHeight ||
-                this.mouseY >= offsetY + (fontHeight + i * fontHeight)
+                this.mouseY <= uiY + i * fontHeight ||
+                this.mouseY >= uiY + (fontHeight + i * fontHeight)
             ) {
                 continue;
             }
@@ -35685,21 +35883,22 @@ function drawOptionMenu() {
         let textColour = colours.cyan;
 
         if (
-            this.mouseX > offsetX - 6 &&
+            !this.options.mobile &&
+            this.mouseX > uiX - 6 &&
             this.mouseX <
-                offsetX -
+                uiX -
                     6 +
                     this.surface.textWidth(this.optionMenuEntry[i], fontSize) &&
-            this.mouseY > offsetY + i * fontHeight &&
-            this.mouseY < offsetY + (i * fontHeight + fontHeight)
+            this.mouseY > uiY + i * fontHeight &&
+            this.mouseY < uiY + (i * fontHeight + fontHeight)
         ) {
             textColour = colours.red;
         }
 
         this.surface.drawString(
             this.optionMenuEntry[i],
-            offsetX,
-            offsetY + (fontHeight + i * fontHeight),
+            uiX,
+            uiY + (fontHeight + i * fontHeight),
             fontSize,
             textColour
         );
@@ -37799,19 +37998,19 @@ function drawSleep() {
         this.surface.drawStringCenter(
             'ZZZ',
             (Math.random() * 80) | 0,
-            (Math.random() * 334) | 0,
+            (Math.random() * this.gameHeight) | 0,
             5,
-            (Math.random() * 16777215) | 0
+            (Math.random() * colours.white) | 0
         );
     }
 
     if (Math.random() <= 0.15) {
         this.surface.drawStringCenter(
             'ZZZ',
-            512 - ((Math.random() * 80) | 0),
-            (Math.random() * 334) | 0,
+            this.gameWidth - ((Math.random() * 80) | 0),
+            (Math.random() * this.gameHeight) | 0,
             5,
-            (Math.random() * 16777215) | 0
+            (Math.random() * colours.white) | 0
         );
     }
 

@@ -73,7 +73,7 @@ class GameShell {
             messageScrollBack: true,
             retroFPSCounter: true,
             retryLoginOnDisconnect: true,
-            mobile: true
+            mobile: false
         };
 
         this.middleButtonDown = false;
@@ -465,8 +465,6 @@ class GameShell {
 
         this.mouseX = x;
         this.mouseY = y;
-
-        console.log('mousemoved', x, y);
 
         this.mouseActionTimeout = 0;
     }

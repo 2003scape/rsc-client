@@ -14827,7 +14827,7 @@ class GameShell {
             messageScrollBack: true,
             retroFPSCounter: true,
             retryLoginOnDisconnect: true,
-            mobile: true
+            mobile: false
         };
 
         this.middleButtonDown = false;
@@ -15219,8 +15219,6 @@ class GameShell {
 
         this.mouseX = x;
         this.mouseY = y;
-
-        console.log('mousemoved', x, y);
 
         this.mouseActionTimeout = 0;
     }
@@ -26431,13 +26429,11 @@ class Scene {
             this.visiblePolygonsCount - 1
         );
 
-        // TODO see what this does. it's taking up a lot of time in performance,
-        // but commenting out doesn't seem to change the game at all?
-        /*this.polygonsIntersectSort(
+        this.polygonsIntersectSort(
             100,
             this.visiblePolygons,
             this.visiblePolygonsCount
-        );*/
+        );
 
         for (let i = 0; i < this.visiblePolygonsCount; i++) {
             let polygon = this.visiblePolygons[i];
@@ -29342,16 +29338,6 @@ const LIGHT_GREY = 0xdcdcdc;
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 
-// canvas imagedata needs an alpha channel, but the client only uses rgb
-function fixPixel(pixel) {
-    const r = (pixel >> 16) & 255;
-    const g = (pixel >> 8) & 255;
-    const b = pixel & 255;
-    const a = 255; // alpha always 255
-
-    return (a << 24) + (b << 16) + (g << 8) + r;
-}
-
 class Surface {
     constructor(width, height, limit, mudclient) {
         this.mudclient = mudclient;
@@ -29395,15 +29381,7 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
-        this.imageData = mudclient._graphics.ctx.getImageData(
-            0,
-            0,
-            width,
-            height
-        );
-
-        this.bufferedPixels = new Int32Array(width * height);
-        this.pixelBytes = new Uint8ClampedArray(this.bufferedPixels.buffer);
+        this.imageData = mudclient._graphics.ctx.createImageData(width, height);
 
         this.setComplete();
     }
@@ -29417,11 +29395,14 @@ class Surface {
     }
 
     setComplete() {
-        for (let i = 0; i < this.area; i += 1) {
-            this.bufferedPixels[i] = fixPixel(this.pixels[i]);
-        }
+        for (let i = 0; i < this.area * 4; i += 4) {
+            const pixel = this.pixels[i / 4];
 
-        this.imageData.data.set(this.pixelBytes, 0, 0);
+            this.imageData.data[i] = (pixel >> 16) & 255;
+            this.imageData.data[i + 1] = (pixel >> 8) & 255;
+            this.imageData.data[i + 2] = pixel & 255;
+            this.imageData.data[i + 3] = 255;
+        }
     }
 
     setBounds(x1, y1, x2, y2) {
@@ -31013,8 +30994,7 @@ class Surface {
             this.sinCosCache = new Int32Array(512);
 
             for (let i = 0; i < 256; i++) {
-                this.sinCosCache[i] =
-                    (Math.sin(i * 0.02454369) * 32768) | 0;
+                this.sinCosCache[i] = (Math.sin(i * 0.02454369) * 32768) | 0;
 
                 this.sinCosCache[i + 256] =
                     (Math.cos(i * 0.02454369) * 32768) | 0;

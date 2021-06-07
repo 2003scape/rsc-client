@@ -1855,13 +1855,11 @@ class Scene {
             this.visiblePolygonsCount - 1
         );
 
-        // TODO see what this does. it's taking up a lot of time in performance,
-        // but commenting out doesn't seem to change the game at all?
-        /*this.polygonsIntersectSort(
+        this.polygonsIntersectSort(
             100,
             this.visiblePolygons,
             this.visiblePolygonsCount
-        );*/
+        );
 
         for (let i = 0; i < this.visiblePolygonsCount; i++) {
             let polygon = this.visiblePolygons[i];

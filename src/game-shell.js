@@ -6,9 +6,9 @@ const Socket = require('./lib/net/socket');
 const Surface = require('./surface');
 const TGA = require('tga-js');
 const Utility = require('./utility');
-const keycodes = require('./lib/keycodes');
-const version = require('./version');
-const sleep = require('sleep-promise');
+const keycodes = require('./lib/keycodes.json');
+const sleep = require('sleep-promise').default;
+const version = require('./version.json');
 
 const CHAR_MAP =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
@@ -48,12 +48,12 @@ function getMousePosition(canvas, e) {
 }
 
 class GameShell {
-    constructor(container) {
+    constructor(container, width, height) {
         this._container = container;
         this._container.style.position = 'relative';
 
         this._canvas = document.createElement('canvas');
-        this._canvas.style.width = '100%';
+        //this._canvas.style.width = '100%';
         this._canvas.style.height = '100%';
 
         this._container.appendChild(this._canvas);
@@ -94,8 +94,8 @@ class GameShell {
         this.imageLogo = null;
         this.graphics = null;
 
-        this.appletWidth = 512;
-        this.appletHeight = 346;
+        this.appletWidth = width;
+        this.appletHeight = height;
         this.targetFPS = 20;
         this.maxDrawTime = 1000;
         this.timings = [];
@@ -122,25 +122,20 @@ class GameShell {
         this.inputPMFinal = '';
     }
 
-    async startApplication(width, height, title) {
+    async startApplication(title) {
         window.document.title = title;
 
         this._canvas.tabIndex = 0;
-        this._canvas.width = width;
-        this._canvas.height = height;
+        this._canvas.width = this.appletWidth;
+        this._canvas.height = this.appletHeight;
 
-        this._container.style.width = `${width}px`;
-        this._container.style.height = `${height}px`;
+        this._container.style.width = `${this.appletWidth}px`;
+        this._container.style.height = `${this.appletHeight}px`;
 
         console.log('Started application');
 
-        this.appletWidth = width;
-        this.appletHeight = height;
-
         if (this.options.mobile) {
             this._canvas.addEventListener('touchstart', (e) => {
-                //e.preventDefault();
-
                 console.log('touchstart');
 
                 if (e.touches.length === 1) {
@@ -164,8 +159,6 @@ class GameShell {
             });
 
             this._canvas.addEventListener('touchmove', (e) => {
-                //e.preventDefault();
-
                 console.log('touchmoving');
 
                 if (!this.touchMoving) {
@@ -187,8 +180,6 @@ class GameShell {
             });
 
             this._canvas.addEventListener('touchend', (e) => {
-                e.preventDefault();
-
                 console.log('touchend');
 
                 if (this.disableEndClick) {

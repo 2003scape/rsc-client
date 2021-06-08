@@ -1,7 +1,7 @@
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_PLAYER_UPDATE]: function (data) {

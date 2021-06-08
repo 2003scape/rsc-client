@@ -4,8 +4,8 @@ const GameShell = require('./game-shell');
 const Long = require('long');
 const PacketStream = require('./packet-stream');
 const Utility = require('./utility');
-const clientOpcodes = require('./opcodes/client');
-const sleep = require('sleep-promise');
+const clientOpcodes = require('./opcodes/client.json');
+const sleep = require('sleep-promise').default;
 
 function fromCharArray(a) {
     return Array.from(a)
@@ -14,8 +14,8 @@ function fromCharArray(a) {
 }
 
 class GameConnection extends GameShell {
-    constructor(canvas) {
-        super(canvas);
+    constructor(constructor, width, height) {
+        super(constructor, width, height);
 
         this.friendListCount = 0;
         this.ignoreListCount = 0;

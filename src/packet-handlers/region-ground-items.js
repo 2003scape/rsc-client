@@ -1,6 +1,6 @@
 const GameData = require('../game-data');
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_GROUND_ITEMS]: function (data, size) {

@@ -1,5 +1,5 @@
 const GameData = require('../game-data');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const MENU_WIDTH = 245;

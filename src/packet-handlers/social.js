@@ -2,7 +2,7 @@ const ChatMessage = require('../chat-message');
 const GameConnection = require('../game-connection');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.FRIEND_LIST]: function (data) {

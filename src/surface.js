@@ -10,8 +10,20 @@ const LIGHT_GREY = 0xdcdcdc;
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 
+const DEBUG_TIMES = [];
+
 class Surface {
     constructor(width, height, limit, mudclient) {
+        const {
+            __pin,
+            __newArray,
+            __getArrayView,
+            __getInt32ArrayView,
+            __getUint8ArrayView,
+            Int32Array_ID,
+            Uint8Array_ID
+        } = window.rscWASM;
+
         this.mudclient = mudclient;
 
         this.image = null;
@@ -31,7 +43,13 @@ class Surface {
         this.width1 = this.width2 = width;
         this.height1 = this.height2 = height;
         this.area = width * height;
-        this.pixels = new Int32Array(width * height);
+        //this.pixels = new Int32Array(width * height);
+
+        this.pixelsPtr = __pin(
+            __newArray(Int32Array_ID, { length: width * height })
+        );
+
+        this.pixels = __getInt32ArrayView(this.pixelsPtr);
 
         this.surfacePixels = [];
         this.surfacePixels.length = limit;
@@ -53,6 +71,12 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
+        this.canvasPixelsPtr = __pin(
+            __newArray(Uint8Array_ID, { length: width * height * 4 })
+        );
+
+        this.canvasPixels = __getUint8ArrayView(this.canvasPixelsPtr);
+
         this.imageData = mudclient._graphics.ctx.createImageData(width, height);
 
         this.setComplete();
@@ -67,13 +91,31 @@ class Surface {
     }
 
     setComplete() {
-        for (let i = 0; i < this.area * 4; i += 4) {
+        const start = Date.now();
+
+        /*for (let i = 0; i < this.area * 4; i += 4) {
             const pixel = this.pixels[i / 4];
 
             this.imageData.data[i] = (pixel >> 16) & 255;
             this.imageData.data[i + 1] = (pixel >> 8) & 255;
             this.imageData.data[i + 2] = pixel & 255;
             this.imageData.data[i + 3] = 255;
+        }*/
+
+        window.rscWASM.fixPixels(800 * 600 * 4, this.pixelsPtr, this.canvasPixelsPtr);
+
+        DEBUG_TIMES.push(Date.now() - start);
+
+        this.imageData.data.set(this.canvasPixels, 0);
+
+        if (DEBUG_TIMES.length >= 100) {
+            console.log(
+                DEBUG_TIMES.reduce((total, current) => {
+                    return total + current;
+                }, 0) / 100
+            );
+
+            DEBUG_TIMES.length = 0;
         }
     }
 

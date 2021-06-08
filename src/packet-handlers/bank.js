@@ -1,5 +1,5 @@
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.BANK_OPEN]: function (data) {

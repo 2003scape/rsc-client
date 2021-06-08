@@ -15,9 +15,9 @@ const WordFilter = require('./word-filter');
 const World = require('./world');
 const applyUIComponents = require('./ui');
 const getPacketHandlers = require('./packet-handlers');
-const keycodes = require('./lib/keycodes');
-const clientOpcodes = require('./opcodes/client');
-const version = require('./version');
+const keycodes = require('./lib/keycodes.json');
+const clientOpcodes = require('./opcodes/client.json');
+const version = require('./version.json');
 
 const ZOOM_MIN = 450;
 const ZOOM_MAX = 1250;
@@ -46,8 +46,8 @@ const ANIMATED_MODELS = [
 ];
 
 class mudclient extends GameConnection {
-    constructor(canvas) {
-        super(canvas);
+    constructor(container, width, height) {
+        super(container, width, height);
 
         // attach methods and properties from files in ./ui/
         applyUIComponents(this);
@@ -271,8 +271,8 @@ class mudclient extends GameConnection {
         this.magicLoc = 128;
         this.errorLoadingMemory = false;
         this.fogOfWar = false;
-        this.gameWidth = 512;
-        this.gameHeight = 334;
+        this.gameWidth = this.appletWidth;
+        this.gameHeight = this.appletHeight - 12;
         this.tradeConfirmItems = new Int32Array(14);
         this.tradeConfirmItemCount = new Int32Array(14);
         this.tradeRecipientName = '';

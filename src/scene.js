@@ -16,6 +16,8 @@ const COLOUR_TRANSPARENT = 12345678;
     return a.depth < b.depth ? 1 : -1;
 }*/
 
+const DEBUG_TIME = [];
+
 class Scene {
     constructor(surface, maxModelCount, polygonCount, spriteCount) {
         this.lastVisiblePolygonsCount = 0;
@@ -98,7 +100,6 @@ class Scene {
         }
 
         this.spriteCount = 0;
-        //this.view = new GameModel(k * 2, k);
         this.spriteId = new Int32Array(spriteCount);
         this.spriteWidth = new Int32Array(spriteCount);
         this.spriteHeight = new Int32Array(spriteCount);
@@ -1275,7 +1276,7 @@ class Scene {
         }
     }
 
-    static gradientScanline2(ai, i, j, k, ai1, l, i1) {
+    static gradientScanline2(raster, i, j, k, ai1, l, i1) {
         if (i >= 0) {
             return;
         }
@@ -1286,28 +1287,28 @@ class Scene {
         let j1 = (i / 16) | 0;
 
         for (let k1 = j1; k1 < 0; k1++) {
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
@@ -1315,7 +1316,7 @@ class Scene {
         j1 = -(i % 16);
 
         for (let l1 = 0; l1 < j1; l1++) {
-            ai[j++] = k;
+            raster[j++] = k;
 
             if ((l1 & 3) === 3) {
                 k = ai1[(l >> 8) & 0xff];
@@ -3286,6 +3287,7 @@ class Scene {
                     j8,
                     k9
                 );
+
                 l2 += i2;
             }
         }

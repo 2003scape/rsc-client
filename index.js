@@ -1,13 +1,21 @@
+const fs = require('fs');
+const loader = require('@assemblyscript/loader');
 const mudclient = require('./src/mudclient');
+
+const WASM = fs.readFileSync('./dist/index.bundle.wasm');
 
 if (typeof window === 'undefined') {
     throw new Error('rsc-client needs to run in a browser');
 }
 
 (async () => {
+    // lazy way to load it for now but it works
+    window.rscWASM = (await loader.instantiate(WASM)).exports;
+
     const mcContainer = document.createElement('div');
     const args = window.location.hash.slice(1).split(',');
-    const mc = new mudclient(mcContainer);
+    //const mc = new mudclient(mcContainer, 512, 346);
+    const mc = new mudclient(mcContainer, 800, 600);
 
     window.mcOptions = mc.options;
 
@@ -37,5 +45,5 @@ if (typeof window === 'undefined') {
 
     document.body.appendChild(fullscreen);
 
-    await mc.startApplication(512, 346, 'Runescape by Andrew Gower', false);
+    await mc.startApplication('Runescape by Andrew Gower');
 })();

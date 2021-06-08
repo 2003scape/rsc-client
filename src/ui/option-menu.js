@@ -1,4 +1,4 @@
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 function drawOptionMenu() {

@@ -84,19 +84,6 @@ class GameModel {
         this.faceBoundTop = null;
         this.faceBoundNear = null;
         this.faceBoundFar = null;
-
-        /*switch (args.length) {
-        case 2:
-            if (Array.isArray(args[0])) {
-                return this._from2A(...args);
-            }
-
-            return this._from2(...args);
-        case 3:
-            return this._from3(...args);
-        case 7:
-            return this._from7(...args);
-        }*/
     }
 
     static _from2(numVertices, numFaces) {

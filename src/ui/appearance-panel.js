@@ -1,6 +1,6 @@
 const GameData = require('../game-data');
 const Panel = require('../panel');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 
 // size of the -> sprite
 const ARROW_SIZE = 20;

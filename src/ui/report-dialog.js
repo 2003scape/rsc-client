@@ -1,5 +1,5 @@
 const Utility = require('../utility');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const DIALOG_X = 56;

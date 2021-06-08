@@ -1,4 +1,4 @@
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.APPEARANCE]: function () {

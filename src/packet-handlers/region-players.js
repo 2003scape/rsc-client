@@ -1,6 +1,6 @@
 const Utility = require('../utility');
-const clientOpcodes = require('../opcodes/client');
-const serverOpcodes = require('../opcodes/server');
+const clientOpcodes = require('../opcodes/client.json');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_PLAYERS]: function (data, size) {

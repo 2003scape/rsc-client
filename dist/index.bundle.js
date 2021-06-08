@@ -1,14 +1,23 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+(function (Buffer){(function (){
+
+const loader = require('@assemblyscript/loader');
 const mudclient = require('./src/mudclient');
+
+const WASM = Buffer("AGFzbQEAAAABKQhgAABgAX8AYAJ/fwF/YAJ/fwBgA39/fwBgBH9/f38AYAABf2ABfwF/Ag0BA2VudgVhYm9ydAAFAxIRAgABAQMDBAAGAgIHAQABAAQFBAEA7gUGSg5/AEEDC38AQQQLfwFBAAt/AUEAC38BQQALfwFBAAt/AUEAC38BQQALfwFBAAt/AUEAC38BQQALfwFBAAt/AEGgDAt/AUHMjAELB3AKA2FkZAABDUludDMyQXJyYXlfSUQDAA1VaW50OEFycmF5X0lEAwEFX19uZXcACwVfX3BpbgAMB19fdW5waW4ADQlfX2NvbGxlY3QADgtfX3J0dGlfYmFzZQMMBm1lbW9yeQIACWZpeFBpeGVscwARCAEQCv0ZEQcAIAAgAWoLSAECf0HgCRAEQaAIEARBsAsQBEHwCxAEIwYiASgCBEF8cSEAA0AgACABRwRAIAAoAgQaIABBFGoQDyAAKAIEQXxxIQAMAQsLC74BAQN/IAAjB0YEQCAAKAIIJAcLAkAgACgCBEF8cSICRQRAIAAoAggaDAELIAIgACgCCCIBNgIIIAEgAiABKAIEQQNxcjYCBAsjCCECIAAoAgwiAUEBTQR/QQEFIAFBoAwoAgBLBEBB4AlBoApBFkEcEAAACyABQQN0QaQMaigCAEEgcQsEfyMJRQVBAgshAyACKAIIIQEgACACIANyNgIEIAAgATYCCCABIAAgASgCBEEDcXI2AgQgAiAANgIICycAIABFBEAPCyMJIABBFGsiACgCBEEDcUYEQCAAEAMjBUEBaiQFCwvNAQEEfyABKAIAQXxxIgJBgAJJBH8gAkEEdgVBHyACQfz///8DIAJB/P///wNJGyIDZ2siAkEHayEEIAMgAkEEa3ZBEHMLIQMgASgCCCECIAEoAgQiBQRAIAUgAjYCCAsgAgRAIAIgBTYCBAsgASAAIAMgBEEEdGpBAnRqKAJgRgRAIAAgAyAEQQR0akECdGogAjYCYCACRQRAIAAgBEECdGoiAigCBEF+IAN3cSEBIAIgATYCBCABRQRAIAAgACgCAEF+IAR3cTYCAAsLCwu/AgEFfyABKAIAIQMgAUEEaiABKAIAQXxxaiIEKAIAIgJBAXEEQAJ/IAAgBBAFIAEgA0EEaiACQXxxaiIDNgIAIAFBBGogASgCAEF8cWoiBCgCAAshAgsgA0ECcQRAIAFBBGsoAgAiASgCACEGIAAgARAFIAEgBkEEaiADQXxxaiIDNgIACyAEIAJBAnI2AgAgBEEEayABNgIAIAAgA0F8cSIDQYACSQR/IANBBHYFQR8gA0H8////AyADQfz///8DSRsiA2drIgRBB2shBSADIARBBGt2QRBzCyIDIAVBBHRqQQJ0aigCYCEEIAFBADYCBCABIAQ2AgggBARAIAQgATYCBAsgACADIAVBBHRqQQJ0aiABNgJgIAAgACgCAEEBIAV0cjYCACAAIAVBAnRqIgAgACgCBEEBIAN0cjYCBAuMAQEBfyABQRNqQXBxQQRrIQEgAkFwcQJ/IAAoAqAMIgIEQCACIAFBEGtGBEACfyACKAIAIQMgAUEQawshAQsLIAELayICQRRJBEAPCyABIANBAnEgAkEIayICQQFycjYCACABQQA2AgQgAUEANgIIIAIgAUEEamoiAkECNgIAIAAgAjYCoAwgACABEAYLlgEBAn8/ACIAQQFIBH9BASAAa0AAQQBIBUEACwRAAAtB0IwBQQA2AgBB8JgBQQA2AgADQCABQRdJBEAgAUECdEHQjAFqQQA2AgRBACEAA0AgAEEQSQRAIAAgAUEEdGpBAnRB0IwBakEANgJgIABBAWohAAwBCwsgAUEBaiEBDAELC0HQjAFB9JgBPwBBEHQQB0HQjAEkCwvHAwECfwJAAkACQAJAAkAjBA4DAAECAwtBASQEQQAkBRACIwgkBwwDCyMJRSEBIwcoAgRBfHEhAANAIAAjCEcEQCAAJAcgASAAKAIEQQNxRwRAIAAgASAAKAIEQXxxcjYCBEEAJAUgAEEUahAPDAULIAAoAgRBfHEhAAwBCwtBACQFEAIjCCMHKAIEQXxxRgRAIw0hAANAIABBzIwBSQRAIAAoAgAQBCAAQQRqIQAMAQsLIwcoAgRBfHEhAANAIAAjCEcEQCABIAAoAgRBA3FHBEAgACABIAAoAgRBfHFyNgIEIABBFGoQDwsgACgCBEF8cSEADAELCyMKIQAjCCQKIAAkCCABJAkgACgCBEF8cSQHQQIkBAsMAgsjByIAIwhHBEAgACgCBEF8cSQHIAAoAgQaIABBzIwBSQRAIABBADYCBCAAQQA2AggFIwIgACgCAEF8cUEEamskAiAAQQRqIgBBzIwBTwRAIwtFBEAQCAsgAEEEayEBIABBD3FBASAAG0UEQCABKAIAGgsgASIAKAIAQQFyIQEgACABNgIAIwsgABAGCwtBCg8LIwgiACAANgIEIwgiACAANgIIQQAkBAtBAA8LIwULrAEBAX8gAUGAAkkEQCABQQR2IQEFAn8gAUH+////AUkEQCABQQFBGyABZ2t0akEBayEBCyABC0EfIAFnayICQQRrdkEQcyEBIAJBB2shAgsgACACQQJ0aigCBEF/IAF0cSIBBH8gACABaCACQQR0akECdGooAmAFIAAoAgBBfyACQQFqdHEiAQR/IAAgAWgiAUEEdCAAIAFBAnRqKAIEaGpBAnRqKAJgBUEACwsL2gYBBX8gAEHs////A08EQEGgCEHgCEGEAkEfEAAACyMCIwNPBEACQEGAECEDA0AgAxAJayEDIwRFBEAjAq1CyAF+QuQAgKdBgAhqJAMMAgsgA0EASg0ACyMCIgMgAyMDa0GACElBCnRqJAMLCyAAQRBqIQMjC0UEQBAICyMLIQQgA0H8////A0sEQEGgCEHwCkHKA0EdEAAACwJ/IAQgA0EMTQR/QQwFIANBE2pBcHFBBGsLIgMQCiICRQRAAn8gA0H+////AUkEfyADQQFBGyADZ2t0QQFragUgAwtBBD8AIgZBEHRBBGsgBCgCoAxHdGpB//8DakGAgHxxQRB2IQUgBiAFIAUgBkgbQABBAEgEQCAFQABBAEgEQAALCyAEIAZBEHQ/AEEQdBAHIAQgAxAKCyECCyACCygCABogBCACEAUgAigCACIGQXxxIANrIgVBEE8EQCACIAMgBkECcXI2AgAgAyACQQRqaiIDIAVBBGtBAXI2AgAgBCADEAYFIAIgBkF+cTYCACACQQRqIgMgAigCAEF8cWogAyACKAIAQXxxaigCAEF9cTYCAAsgAiABNgIMIAIgADYCECMKIgEoAgghAyACIAEjCXI2AgQgAiADNgIIIAMgAiADKAIEQQNxcjYCBCABIAI2AggjAiACKAIAQXxxQQRqaiQCIAJBFGoiAyEEAkAgAEUNACAEQQA6AAAgACAEaiIBQQFrQQA6AAAgAEECTQ0AIARBADoAASAEQQA6AAIgAUECa0EAOgAAIAFBA2tBADoAACAAQQZNDQAgBEEAOgADIAFBBGtBADoAACAAQQhNDQAgBEEAIARrQQNxIgFqIgVBADYCACAFIAAgAWtBfHEiBGoiAEEEa0EANgIAIARBCE0NACAFQQA2AgQgBUEANgIIIABBDGtBADYCACAAQQhrQQA2AgAgBEEYTQ0AIAVBADYCDCAFQQA2AhAgBUEANgIUIAVBADYCGCAAQRxrQQA2AgAgAEEYa0EANgIAIABBFGtBADYCACAAQRBrQQA2AgAgBSAFQQRxQRhqIgFqIQAgBCABayEBA0AgAUEgTwRAIABCADcDACAAQgA3AwggAEIANwMQIABCADcDGCABQSBrIQEgAEEgaiEADAELCwsgAwuSAQEDfyAABEAgAEEUayIBKAIEQQNxQQNGBEBBsAtB4AhB0QJBBxAAAAsCQCABKAIEQXxxIgJFBEAgASgCCBoMAQsgAiABKAIIIgM2AgggAyACIAMoAgRBA3FyNgIECyMGIgMoAgghAiABIANBA3I2AgQgASACNgIIIAIgASACKAIEQQNxcjYCBCADIAE2AggLIAALnwEBAn8gAEUEQA8LIABBFGsiACgCBEEDcUEDRwRAQfALQeAIQd8CQQUQAAALIwRBAUYEQCAAEAMFAkAgACgCBEF8cSIBRQRAIAAoAggaDAELIAEgACgCCCICNgIIIAIgASACKAIEQQNxcjYCBAsjCiICKAIIIQEgACACIwlyNgIEIAAgATYCCCABIAAgASgCBEEDcXI2AgQgAiAANgIICws5ACMEQQBKBEADQCMEBEAQCRoMAQsLCxAJGgNAIwQEQBAJGgwBCwsjAq1CyAF+QuQAgKdBgAhqJAMLQQACQAJAAkACQAJAIABBCGsoAgAOBQABAgQEAwsPCw8LIAAoAgAiAARAIAAQBAsPCwALIAAoAgAiAARAIAAQBAsLXwA/AEEQdEHMjAFrQQF2JAMCf0GUCUGQCTYCAEGYCUGQCTYCAEGQCQskBgJ/QbQJQbAJNgIAQbgJQbAJNgIAQbAJCyQIAn9BxApBwAo2AgBByApBwAo2AgBBwAoLJAoLpwEBAn8jDUEIayQNIw1BzAxIBEBB4IwBQZCNAUEBQQEQAAALIw0iAyABNgIAIAMgAjYCBEEAIQMDQCAAIANLBEAgAyACKAIEaiABKAIEIANBAnZBAnRqKAIAIgRBEHU6AAAgAigCBCADQQFqaiAEQQh1OgAAIAIoAgQgA0ECamogBDoAACACKAIEIANBA2pqQf8BOgAAIANBBGohAwwBCwsjDUEIaiQNCwujAxAAQYwICwE8AEGYCAsvAQAAACgAAABBAGwAbABvAGMAYQB0AGkAbwBuACAAdABvAG8AIABsAGEAcgBnAGUAQcwICwE8AEHYCAsnAQAAACAAAAB+AGwAaQBiAC8AcgB0AC8AaQB0AGMAbQBzAC4AdABzAEHMCQsBPABB2AkLKwEAAAAkAAAASQBuAGQAZQB4ACAAbwB1AHQAIABvAGYAIAByAGEAbgBnAGUAQYwKCwEsAEGYCgsbAQAAABQAAAB+AGwAaQBiAC8AcgB0AC4AdABzAEHcCgsBPABB6AoLJQEAAAAeAAAAfgBsAGkAYgAvAHIAdAAvAHQAbABzAGYALgB0AHMAQZwLCwE8AEGoCwsxAQAAACoAAABPAGIAagBlAGMAdAAgAGEAbAByAGUAYQBkAHkAIABwAGkAbgBuAGUAZABB3AsLATwAQegLCy8BAAAAKAAAAE8AYgBqAGUAYwB0ACAAaQBzACAAbgBvAHQAIABwAGkAbgBuAGUAZABBoAwLDQUAAAAgAAAAAAAAACAAQbwMCw0BCQAAAgAAAEEAAAAC","base64");
 
 if (typeof window === 'undefined') {
     throw new Error('rsc-client needs to run in a browser');
 }
 
 (async () => {
+    // lazy way to load it for now but it works
+    window.rscWASM = (await loader.instantiate(WASM)).exports;
+
     const mcContainer = document.createElement('div');
     const args = window.location.hash.slice(1).split(',');
-    const mc = new mudclient(mcContainer);
+    //const mc = new mudclient(mcContainer, 512, 346);
+    const mc = new mudclient(mcContainer, 800, 600);
 
     window.mcOptions = mc.options;
 
@@ -21,7 +30,7 @@ if (typeof window === 'undefined') {
     });
 
     mc.members = args[0] === 'members';
-    mc.server = args[1] ? args[1] : '127.0.0.1';
+    mc.server = args[1] ? args[1] : 'cellar';
     mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
 
     mc.threadSleep = 10;
@@ -38,10 +47,531 @@ if (typeof window === 'undefined') {
 
     document.body.appendChild(fullscreen);
 
-    await mc.startApplication(512, 346, 'Runescape by Andrew Gower', false);
+    await mc.startApplication('Runescape by Andrew Gower');
 })();
 
-},{"./src/mudclient":53}],2:[function(require,module,exports){
+}).call(this)}).call(this,require("buffer").Buffer)
+},{"./src/mudclient":56,"@assemblyscript/loader":2,"buffer":31}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.instantiate = instantiate;
+exports.instantiateSync = instantiateSync;
+exports.instantiateStreaming = instantiateStreaming;
+exports.demangle = demangle;
+exports.default = void 0;
+// Runtime header offsets
+const ID_OFFSET = -8;
+const SIZE_OFFSET = -4; // Runtime ids
+
+const ARRAYBUFFER_ID = 0;
+const STRING_ID = 1; // const ARRAYBUFFERVIEW_ID = 2;
+// Runtime type information
+
+const ARRAYBUFFERVIEW = 1 << 0;
+const ARRAY = 1 << 1;
+const STATICARRAY = 1 << 2; // const SET = 1 << 3;
+// const MAP = 1 << 4;
+
+const VAL_ALIGN_OFFSET = 6; // const VAL_ALIGN = 1 << VAL_ALIGN_OFFSET;
+
+const VAL_SIGNED = 1 << 11;
+const VAL_FLOAT = 1 << 12; // const VAL_NULLABLE = 1 << 13;
+
+const VAL_MANAGED = 1 << 14; // const KEY_ALIGN_OFFSET = 15;
+// const KEY_ALIGN = 1 << KEY_ALIGN_OFFSET;
+// const KEY_SIGNED = 1 << 20;
+// const KEY_FLOAT = 1 << 21;
+// const KEY_NULLABLE = 1 << 22;
+// const KEY_MANAGED = 1 << 23;
+// Array(BufferView) layout
+
+const ARRAYBUFFERVIEW_BUFFER_OFFSET = 0;
+const ARRAYBUFFERVIEW_DATASTART_OFFSET = 4;
+const ARRAYBUFFERVIEW_DATALENGTH_OFFSET = 8;
+const ARRAYBUFFERVIEW_SIZE = 12;
+const ARRAY_LENGTH_OFFSET = 12;
+const ARRAY_SIZE = 16;
+const BIGINT = typeof BigUint64Array !== "undefined";
+const THIS = Symbol();
+const STRING_DECODE_THRESHOLD = 32;
+const decoder = new TextDecoder("utf-16le");
+/** Gets a string from an U32 and an U16 view on a memory. */
+
+function getStringImpl(buffer, ptr) {
+  const len = new Uint32Array(buffer)[ptr + SIZE_OFFSET >>> 2] >>> 1;
+  const arr = new Uint16Array(buffer, ptr, len);
+
+  if (len <= STRING_DECODE_THRESHOLD) {
+    return String.fromCharCode.apply(String, arr);
+  }
+
+  return decoder.decode(arr);
+}
+/** Prepares the base module prior to instantiation. */
+
+
+function preInstantiate(imports) {
+  const extendedExports = {};
+
+  function getString(memory, ptr) {
+    if (!memory) return "<yet unknown>";
+    return getStringImpl(memory.buffer, ptr);
+  } // add common imports used by stdlib for convenience
+
+
+  const env = imports.env = imports.env || {};
+
+  env.abort = env.abort || function abort(msg, file, line, colm) {
+    const memory = extendedExports.memory || env.memory; // prefer exported, otherwise try imported
+
+    throw Error(`abort: ${getString(memory, msg)} at ${getString(memory, file)}:${line}:${colm}`);
+  };
+
+  env.trace = env.trace || function trace(msg, n, ...args) {
+    const memory = extendedExports.memory || env.memory;
+    console.log(`trace: ${getString(memory, msg)}${n ? " " : ""}${args.slice(0, n).join(", ")}`);
+  };
+
+  env.seed = env.seed || Date.now;
+  imports.Math = imports.Math || Math;
+  imports.Date = imports.Date || Date;
+  return extendedExports;
+}
+
+const E_NOEXPORTRUNTIME = "Operation requires compiling with --exportRuntime";
+
+const F_NOEXPORTRUNTIME = function () {
+  throw Error(E_NOEXPORTRUNTIME);
+};
+/** Prepares the final module once instantiation is complete. */
+
+
+function postInstantiate(extendedExports, instance) {
+  const exports = instance.exports;
+  const memory = exports.memory;
+  const table = exports.table;
+
+  const __new = exports.__new || F_NOEXPORTRUNTIME;
+
+  const __pin = exports.__pin || F_NOEXPORTRUNTIME;
+
+  const __unpin = exports.__unpin || F_NOEXPORTRUNTIME;
+
+  const __collect = exports.__collect || F_NOEXPORTRUNTIME;
+
+  const __rtti_base = exports.__rtti_base;
+  const getRttiCount = __rtti_base ? function (arr) {
+    return arr[__rtti_base >>> 2];
+  } : F_NOEXPORTRUNTIME;
+  extendedExports.__new = __new;
+  extendedExports.__pin = __pin;
+  extendedExports.__unpin = __unpin;
+  extendedExports.__collect = __collect;
+  /** Gets the runtime type info for the given id. */
+
+  function getInfo(id) {
+    const U32 = new Uint32Array(memory.buffer);
+    const count = getRttiCount(U32);
+    if ((id >>>= 0) >= count) throw Error(`invalid id: ${id}`);
+    return U32[(__rtti_base + 4 >>> 2) + id * 2];
+  }
+  /** Gets and validate runtime type info for the given id for array like objects */
+
+
+  function getArrayInfo(id) {
+    const info = getInfo(id);
+    if (!(info & (ARRAYBUFFERVIEW | ARRAY | STATICARRAY))) throw Error(`not an array: ${id}, flags=${info}`);
+    return info;
+  }
+  /** Gets the runtime base id for the given id. */
+
+
+  function getBase(id) {
+    const U32 = new Uint32Array(memory.buffer);
+    const count = getRttiCount(U32);
+    if ((id >>>= 0) >= count) throw Error(`invalid id: ${id}`);
+    return U32[(__rtti_base + 4 >>> 2) + id * 2 + 1];
+  }
+  /** Gets the runtime alignment of a collection's values. */
+
+
+  function getValueAlign(info) {
+    return 31 - Math.clz32(info >>> VAL_ALIGN_OFFSET & 31); // -1 if none
+  }
+  /** Gets the runtime alignment of a collection's keys. */
+  // function getKeyAlign(info) {
+  //   return 31 - Math.clz32((info >>> KEY_ALIGN_OFFSET) & 31); // -1 if none
+  // }
+
+  /** Allocates a new string in the module's memory and returns its pointer. */
+
+
+  function __newString(str) {
+    if (str == null) return 0;
+    const length = str.length;
+
+    const ptr = __new(length << 1, STRING_ID);
+
+    const U16 = new Uint16Array(memory.buffer);
+
+    for (var i = 0, p = ptr >>> 1; i < length; ++i) U16[p + i] = str.charCodeAt(i);
+
+    return ptr;
+  }
+
+  extendedExports.__newString = __newString;
+  /** Reads a string from the module's memory by its pointer. */
+
+  function __getString(ptr) {
+    if (!ptr) return null;
+    const buffer = memory.buffer;
+    const id = new Uint32Array(buffer)[ptr + ID_OFFSET >>> 2];
+    if (id !== STRING_ID) throw Error(`not a string: ${ptr}`);
+    return getStringImpl(buffer, ptr);
+  }
+
+  extendedExports.__getString = __getString;
+  /** Gets the view matching the specified alignment, signedness and floatness. */
+
+  function getView(alignLog2, signed, float) {
+    const buffer = memory.buffer;
+
+    if (float) {
+      switch (alignLog2) {
+        case 2:
+          return new Float32Array(buffer);
+
+        case 3:
+          return new Float64Array(buffer);
+      }
+    } else {
+      switch (alignLog2) {
+        case 0:
+          return new (signed ? Int8Array : Uint8Array)(buffer);
+
+        case 1:
+          return new (signed ? Int16Array : Uint16Array)(buffer);
+
+        case 2:
+          return new (signed ? Int32Array : Uint32Array)(buffer);
+
+        case 3:
+          return new (signed ? BigInt64Array : BigUint64Array)(buffer);
+      }
+    }
+
+    throw Error(`unsupported align: ${alignLog2}`);
+  }
+  /** Allocates a new array in the module's memory and returns its pointer. */
+
+
+  function __newArray(id, values) {
+    const info = getArrayInfo(id);
+    const align = getValueAlign(info);
+    const length = values.length;
+
+    const buf = __new(length << align, info & STATICARRAY ? id : ARRAYBUFFER_ID);
+
+    let result;
+
+    if (info & STATICARRAY) {
+      result = buf;
+    } else {
+      __pin(buf);
+
+      const arr = __new(info & ARRAY ? ARRAY_SIZE : ARRAYBUFFERVIEW_SIZE, id);
+
+      __unpin(buf);
+
+      const U32 = new Uint32Array(memory.buffer);
+      U32[arr + ARRAYBUFFERVIEW_BUFFER_OFFSET >>> 2] = buf;
+      U32[arr + ARRAYBUFFERVIEW_DATASTART_OFFSET >>> 2] = buf;
+      U32[arr + ARRAYBUFFERVIEW_DATALENGTH_OFFSET >>> 2] = length << align;
+      if (info & ARRAY) U32[arr + ARRAY_LENGTH_OFFSET >>> 2] = length;
+      result = arr;
+    }
+
+    const view = getView(align, info & VAL_SIGNED, info & VAL_FLOAT);
+
+    if (info & VAL_MANAGED) {
+      for (let i = 0; i < length; ++i) {
+        const value = values[i];
+        view[(buf >>> align) + i] = value;
+      }
+    } else {
+      view.set(values, buf >>> align);
+    }
+
+    return result;
+  }
+
+  extendedExports.__newArray = __newArray;
+  /** Gets a live view on an array's values in the module's memory. Infers the array type from RTTI. */
+
+  function __getArrayView(arr) {
+    const U32 = new Uint32Array(memory.buffer);
+    const id = U32[arr + ID_OFFSET >>> 2];
+    const info = getArrayInfo(id);
+    const align = getValueAlign(info);
+    let buf = info & STATICARRAY ? arr : U32[arr + ARRAYBUFFERVIEW_DATASTART_OFFSET >>> 2];
+    const length = info & ARRAY ? U32[arr + ARRAY_LENGTH_OFFSET >>> 2] : U32[buf + SIZE_OFFSET >>> 2] >>> align;
+    return getView(align, info & VAL_SIGNED, info & VAL_FLOAT).subarray(buf >>>= align, buf + length);
+  }
+
+  extendedExports.__getArrayView = __getArrayView;
+  /** Copies an array's values from the module's memory. Infers the array type from RTTI. */
+
+  function __getArray(arr) {
+    const input = __getArrayView(arr);
+
+    const len = input.length;
+    const out = new Array(len);
+
+    for (let i = 0; i < len; i++) out[i] = input[i];
+
+    return out;
+  }
+
+  extendedExports.__getArray = __getArray;
+  /** Copies an ArrayBuffer's value from the module's memory. */
+
+  function __getArrayBuffer(ptr) {
+    const buffer = memory.buffer;
+    const length = new Uint32Array(buffer)[ptr + SIZE_OFFSET >>> 2];
+    return buffer.slice(ptr, ptr + length);
+  }
+
+  extendedExports.__getArrayBuffer = __getArrayBuffer;
+  /** Copies a typed array's values from the module's memory. */
+
+  function getTypedArray(Type, alignLog2, ptr) {
+    return new Type(getTypedArrayView(Type, alignLog2, ptr));
+  }
+  /** Gets a live view on a typed array's values in the module's memory. */
+
+
+  function getTypedArrayView(Type, alignLog2, ptr) {
+    const buffer = memory.buffer;
+    const U32 = new Uint32Array(buffer);
+    const bufPtr = U32[ptr + ARRAYBUFFERVIEW_DATASTART_OFFSET >>> 2];
+    return new Type(buffer, bufPtr, U32[bufPtr + SIZE_OFFSET >>> 2] >>> alignLog2);
+  }
+  /** Attach a set of get TypedArray and View functions to the exports. */
+
+
+  function attachTypedArrayFunctions(ctor, name, align) {
+    extendedExports[`__get${name}`] = getTypedArray.bind(null, ctor, align);
+    extendedExports[`__get${name}View`] = getTypedArrayView.bind(null, ctor, align);
+  }
+
+  [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array].forEach(ctor => {
+    attachTypedArrayFunctions(ctor, ctor.name, 31 - Math.clz32(ctor.BYTES_PER_ELEMENT));
+  });
+
+  if (BIGINT) {
+    [BigUint64Array, BigInt64Array].forEach(ctor => {
+      attachTypedArrayFunctions(ctor, ctor.name.slice(3), 3);
+    });
+  }
+  /** Tests whether an object is an instance of the class represented by the specified base id. */
+
+
+  function __instanceof(ptr, baseId) {
+    const U32 = new Uint32Array(memory.buffer);
+    let id = U32[ptr + ID_OFFSET >>> 2];
+
+    if (id <= getRttiCount(U32)) {
+      do {
+        if (id == baseId) return true;
+        id = getBase(id);
+      } while (id);
+    }
+
+    return false;
+  }
+
+  extendedExports.__instanceof = __instanceof; // Pull basic exports to extendedExports so code in preInstantiate can use them
+
+  extendedExports.memory = extendedExports.memory || memory;
+  extendedExports.table = extendedExports.table || table; // Demangle exports and provide the usual utility on the prototype
+
+  return demangle(exports, extendedExports);
+}
+
+function isResponse(src) {
+  return typeof Response !== "undefined" && src instanceof Response;
+}
+
+function isModule(src) {
+  return src instanceof WebAssembly.Module;
+}
+/** Asynchronously instantiates an AssemblyScript module from anything that can be instantiated. */
+
+
+async function instantiate(source, imports = {}) {
+  if (isResponse(source = await source)) return instantiateStreaming(source, imports);
+  const module = isModule(source) ? source : await WebAssembly.compile(source);
+  const extended = preInstantiate(imports);
+  const instance = await WebAssembly.instantiate(module, imports);
+  const exports = postInstantiate(extended, instance);
+  return {
+    module,
+    instance,
+    exports
+  };
+}
+/** Synchronously instantiates an AssemblyScript module from a WebAssembly.Module or binary buffer. */
+
+
+function instantiateSync(source, imports = {}) {
+  const module = isModule(source) ? source : new WebAssembly.Module(source);
+  const extended = preInstantiate(imports);
+  const instance = new WebAssembly.Instance(module, imports);
+  const exports = postInstantiate(extended, instance);
+  return {
+    module,
+    instance,
+    exports
+  };
+}
+/** Asynchronously instantiates an AssemblyScript module from a response, i.e. as obtained by `fetch`. */
+
+
+async function instantiateStreaming(source, imports = {}) {
+  if (!WebAssembly.instantiateStreaming) {
+    return instantiate(isResponse(source = await source) ? source.arrayBuffer() : source, imports);
+  }
+
+  const extended = preInstantiate(imports);
+  const result = await WebAssembly.instantiateStreaming(source, imports);
+  const exports = postInstantiate(extended, result.instance);
+  return { ...result,
+    exports
+  };
+}
+/** Demangles an AssemblyScript module's exports to a friendly object structure. */
+
+
+function demangle(exports, extendedExports = {}) {
+  const setArgumentsLength = exports["__argumentsLength"] ? length => {
+    exports["__argumentsLength"].value = length;
+  } : exports["__setArgumentsLength"] || exports["__setargc"] || (() => {
+    /* nop */
+  });
+
+  for (let internalName in exports) {
+    if (!Object.prototype.hasOwnProperty.call(exports, internalName)) continue;
+    const elem = exports[internalName];
+    let parts = internalName.split(".");
+    let curr = extendedExports;
+
+    while (parts.length > 1) {
+      let part = parts.shift();
+      if (!Object.prototype.hasOwnProperty.call(curr, part)) curr[part] = {};
+      curr = curr[part];
+    }
+
+    let name = parts[0];
+    let hash = name.indexOf("#");
+
+    if (hash >= 0) {
+      const className = name.substring(0, hash);
+      const classElem = curr[className];
+
+      if (typeof classElem === "undefined" || !classElem.prototype) {
+        const ctor = function (...args) {
+          return ctor.wrap(ctor.prototype.constructor(0, ...args));
+        };
+
+        ctor.prototype = {
+          valueOf() {
+            return this[THIS];
+          }
+
+        };
+
+        ctor.wrap = function (thisValue) {
+          return Object.create(ctor.prototype, {
+            [THIS]: {
+              value: thisValue,
+              writable: false
+            }
+          });
+        };
+
+        if (classElem) Object.getOwnPropertyNames(classElem).forEach(name => Object.defineProperty(ctor, name, Object.getOwnPropertyDescriptor(classElem, name)));
+        curr[className] = ctor;
+      }
+
+      name = name.substring(hash + 1);
+      curr = curr[className].prototype;
+
+      if (/^(get|set):/.test(name)) {
+        if (!Object.prototype.hasOwnProperty.call(curr, name = name.substring(4))) {
+          let getter = exports[internalName.replace("set:", "get:")];
+          let setter = exports[internalName.replace("get:", "set:")];
+          Object.defineProperty(curr, name, {
+            get() {
+              return getter(this[THIS]);
+            },
+
+            set(value) {
+              setter(this[THIS], value);
+            },
+
+            enumerable: true
+          });
+        }
+      } else {
+        if (name === 'constructor') {
+          (curr[name] = (...args) => {
+            setArgumentsLength(args.length);
+            return elem(...args);
+          }).original = elem;
+        } else {
+          // instance method
+          (curr[name] = function (...args) {
+            // !
+            setArgumentsLength(args.length);
+            return elem(this[THIS], ...args);
+          }).original = elem;
+        }
+      }
+    } else {
+      if (/^(get|set):/.test(name)) {
+        if (!Object.prototype.hasOwnProperty.call(curr, name = name.substring(4))) {
+          Object.defineProperty(curr, name, {
+            get: exports[internalName.replace("set:", "get:")],
+            set: exports[internalName.replace("get:", "set:")],
+            enumerable: true
+          });
+        }
+      } else if (typeof elem === "function" && elem !== setArgumentsLength) {
+        (curr[name] = (...args) => {
+          setArgumentsLength(args.length);
+          return elem(...args);
+        }).original = elem;
+      } else {
+        curr[name] = elem;
+      }
+    }
+  }
+
+  return extendedExports;
+}
+
+var _default = {
+  instantiate,
+  instantiateSync,
+  instantiateStreaming,
+  demangle
+};
+exports.default = _default;
+
+},{}],3:[function(require,module,exports){
 /** Burrows-Wheeler transform, computed with the Induced Sorting Suffix Array
  *  construction mechanism (sais).  Code is a port of:
  *    https://sites.google.com/site/yuta256/sais
@@ -463,7 +993,7 @@ BWT.bwtransform2 = function(T, U, n, alphabetSize) {
 
 module.exports = freeze(BWT);
 
-},{"./Util":23,"./freeze":24}],3:[function(require,module,exports){
+},{"./Util":24,"./freeze":25}],4:[function(require,module,exports){
 const freeze = require('./freeze');
 const Stream = require('./Stream');
 const BWT = require('./BWT');
@@ -706,7 +1236,7 @@ BWTC.decompressFile = Util.decompressFileHelper(BWTC.MAGIC, function(input, outp
 
 module.exports = BWTC;
 
-},{"./BWT":2,"./DefSumModel":8,"./FenwickModel":10,"./LogDistanceModel":13,"./NoModel":18,"./RangeCoder":20,"./Stream":22,"./Util":23,"./freeze":24}],4:[function(require,module,exports){
+},{"./BWT":3,"./DefSumModel":9,"./FenwickModel":11,"./LogDistanceModel":14,"./NoModel":19,"./RangeCoder":21,"./Stream":23,"./Util":24,"./freeze":25}],5:[function(require,module,exports){
 /** Big-Endian Bit Stream, implemented on top of a (normal byte) stream. */
 const Stream = require('./Stream');
 
@@ -814,7 +1344,7 @@ BitStream.prototype.writeBits = function(n, value) {
 
 module.exports = BitStream;
 
-},{"./Stream":22}],5:[function(require,module,exports){
+},{"./Stream":23}],6:[function(require,module,exports){
 /*
 An implementation of Bzip2 de/compression, including the ability to
 seek within bzip2 data.
@@ -1756,7 +2286,7 @@ Bzip2.table = Bunzip.table;
 
 module.exports = Bzip2;
 
-},{"./BWT":2,"./BitStream":4,"./CRC32":6,"./HuffmanAllocator":12,"./Stream":22,"./Util":23,"./freeze":24}],6:[function(require,module,exports){
+},{"./BWT":3,"./BitStream":5,"./CRC32":7,"./HuffmanAllocator":13,"./Stream":23,"./Util":24,"./freeze":25}],7:[function(require,module,exports){
 /* CRC32, used in Bzip2 implementation.
  * This is a port of CRC32.java from the jbzip2 implementation at
  *   https://code.google.com/p/jbzip2
@@ -1861,7 +2391,7 @@ var CRC32 = function() {
 };
 module.exports = CRC32;
 
-},{"./Util":23}],7:[function(require,module,exports){
+},{"./Util":24}],8:[function(require,module,exports){
 /** A simple context-1 model. */
 const BitStream = require('./BitStream');
 const Huffman = require('./Huffman');
@@ -1919,7 +2449,7 @@ Context1Model.decompressFile = Util.decompressFileHelper(Context1Model.MAGIC, fu
 
 module.exports = Context1Model;
 
-},{"./BitStream":4,"./Huffman":11,"./Util":23}],8:[function(require,module,exports){
+},{"./BitStream":5,"./Huffman":12,"./Util":24}],9:[function(require,module,exports){
 /** Deferred-sum model, suitable for small ( ~ 256 ) ranges. */
 // See http://cbloom.com/src/defsum.zip
 //     http://cbloom.com/papers/context.pdf
@@ -2073,7 +2603,7 @@ DefSumModel.decompressFile = Util.decompressFileHelper(DefSumModel.MAGIC, functi
 
 module.exports = DefSumModel;
 
-},{"./RangeCoder":20,"./Stream":22,"./Util":23}],9:[function(require,module,exports){
+},{"./RangeCoder":21,"./Stream":23,"./Util":24}],10:[function(require,module,exports){
 /**
  * Implementation of Dynamic Markov Compression, using byte-oriented
  * nodes/transitions.
@@ -2273,7 +2803,7 @@ Dmc.decompressFile = Util.decompressFileHelper(Dmc.MAGIC, function(inStream, out
 
 module.exports = Dmc;
 
-},{"./MTFModel":17,"./RangeCoder":20,"./Stream":22,"./Util":23}],10:[function(require,module,exports){
+},{"./MTFModel":18,"./RangeCoder":21,"./Stream":23,"./Util":24}],11:[function(require,module,exports){
 /** Range coding model based on Fenwick trees for O(ln N) query/update. */
 const RangeCoder = require('./RangeCoder');
 const Stream = require('./Stream');
@@ -2469,7 +2999,7 @@ FenwickModel.decompressFile = Util.decompressFileHelper(FenwickModel.MAGIC, func
 
 module.exports = FenwickModel;
 
-},{"./RangeCoder":20,"./Stream":22,"./Util":23}],11:[function(require,module,exports){
+},{"./RangeCoder":21,"./Stream":23,"./Util":24}],12:[function(require,module,exports){
 /* Adaptive Huffman code, using Vitter's algorithm ported from
  * vitter.c at http://code.google.com/p/compression-code/downloads/list
  * The original code was placed in the public domain, and so I
@@ -2985,7 +3515,7 @@ Huffman.decompressFile = Util.decompressFileHelper(Huffman.MAGIC, function(input
 
 module.exports = Huffman;
 
-},{"./BitStream":4,"./Util":23}],12:[function(require,module,exports){
+},{"./BitStream":5,"./Util":24}],13:[function(require,module,exports){
 /**
  * An in-place, length restricted Canonical Huffman code length allocator
  *
@@ -3213,7 +3743,7 @@ module.exports = freeze({
     allocateHuffmanCodeLengths: allocateHuffmanCodeLengths
 });
 
-},{"./Util":23,"./freeze":24}],13:[function(require,module,exports){
+},{"./Util":24,"./freeze":25}],14:[function(require,module,exports){
 /** Simple (log n)(n) distance model. */
 const Util = require('./Util');
 
@@ -3259,7 +3789,7 @@ LogDistanceModel.prototype.decode = function() {
 };
 module.exports = LogDistanceModel;
 
-},{"./Util":23}],14:[function(require,module,exports){
+},{"./Util":24}],15:[function(require,module,exports){
 /* LZJB compression: http://en.wikipedia.org/wiki/LZJB */
 const Stream = require('./Stream');
 const Util = require('./Util');
@@ -3560,7 +4090,7 @@ Lzjb.decompressFile = Util.decompressFileHelper(Lzjb.MAGIC, function(inStream, o
 
 module.exports = Lzjb;
 
-},{"./Stream":22,"./Util":23}],15:[function(require,module,exports){
+},{"./Stream":23,"./Util":24}],16:[function(require,module,exports){
 /* Tweaked version of LZJB, using range coder. */
 const Context1Model = require('./Context1Model');
 const FenwickModel = require('./FenwickModel');
@@ -3806,7 +4336,7 @@ LzjbR.decompressFile = Util.decompressFileHelper(LzjbR.MAGIC, function(inStream,
 
 module.exports = LzjbR;
 
-},{"./Context1Model":7,"./FenwickModel":10,"./LogDistanceModel":13,"./NoModel":18,"./RangeCoder":20,"./Stream":22,"./Util":23}],16:[function(require,module,exports){
+},{"./Context1Model":8,"./FenwickModel":11,"./LogDistanceModel":14,"./NoModel":19,"./RangeCoder":21,"./Stream":23,"./Util":24}],17:[function(require,module,exports){
 /* Implementation of LZP3(ish), with an adaptive Huffman code or a range
  * coder (instead of LZP3's original static Huffman code).
  * See: http://www.cbloom.com/papers/lzp.pdf
@@ -4088,7 +4618,7 @@ Lzp3.decompressFile = Util.decompressFileHelper(Lzp3.MAGIC, function(inStream, o
 
 module.exports = Lzp3;
 
-},{"./BitStream":4,"./Context1Model":7,"./DefSumModel":8,"./FenwickModel":10,"./Huffman":11,"./LogDistanceModel":13,"./NoModel":18,"./RangeCoder":20,"./Stream":22,"./Util":23}],17:[function(require,module,exports){
+},{"./BitStream":5,"./Context1Model":8,"./DefSumModel":9,"./FenwickModel":11,"./Huffman":12,"./LogDistanceModel":14,"./NoModel":19,"./RangeCoder":21,"./Stream":23,"./Util":24}],18:[function(require,module,exports){
 /** Simple range coding model w/ escape, suitable for sparse symbol sets.
  *  Uses a move-to-front list, which is simple and relatively performant,
  *  but slows down a lot if you want to try to model escapes more precisely
@@ -4298,7 +4828,7 @@ MTFModel.decompressFile = Util.decompressFileHelper(MTFModel.MAGIC, function(inS
 
 module.exports = MTFModel;
 
-},{"./RangeCoder":20,"./Stream":22,"./Util":23}],18:[function(require,module,exports){
+},{"./RangeCoder":21,"./Stream":23,"./Util":24}],19:[function(require,module,exports){
 /** Simple "lack of model" -- just encode the bits directly.
  *  Useful especially with sparse spaces or Huffman coders where there's
  *  no obvious prediction to be made that will pay for itself.
@@ -4345,7 +4875,7 @@ NoModel.decompressFile = Util.decompressFileHelper(NoModel.MAGIC, function(inStr
 
 module.exports = NoModel;
 
-},{"./BitStream":4,"./Util":23}],19:[function(require,module,exports){
+},{"./BitStream":5,"./Util":24}],20:[function(require,module,exports){
 /** Particularly simple-minded implementation of PPM compression. */
 const RangeCoder = require('./RangeCoder');
 const Util = require('./Util');
@@ -4689,7 +5219,7 @@ PPM.decompressFile = Util.decompressFileHelper(PPM.MAGIC, function(inStream, out
 
 module.exports = PPM;
 
-},{"./RangeCoder":20,"./Util":23}],20:[function(require,module,exports){
+},{"./RangeCoder":21,"./Util":24}],21:[function(require,module,exports){
 /* Range Coder.  Inspired by rangecod.c from rngcod13.zip from
  *    http://www.compressconsult.com/rangecoder/
  * This JavaScript version is:
@@ -4926,7 +5456,7 @@ RangeCoder.prototype.readByte = RangeCoder.prototype.decodeByte;
 
 module.exports = RangeCoder;
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 /* *Very* simple de/compression utility, based on simple_c and simple_d from
  * rngcod13.zip at http://www.compressconsult.com/rangecoder/
  * Really just a demonstration/test of the rangecoder.
@@ -5040,61 +5570,87 @@ Simple.decompressFile = Util.decompressFileHelper(Simple.MAGIC, function(input, 
 });
 module.exports = Simple;
 
-},{"./RangeCoder":20,"./Stream":22,"./Util":23}],22:[function(require,module,exports){
+},{"./RangeCoder":21,"./Stream":23,"./Util":24}],23:[function(require,module,exports){
+"use strict";
+
 /** Abstract Stream interface, for byte-oriented i/o. */
 const freeze = require('./freeze');
 
 var EOF = -1;
 
-var Stream = function() {
-    /* ABSTRACT */
-};
-// you must define one of read / readByte for a readable stream
-Stream.prototype.readByte = function() {
-    var buf = [ 0 ];
-    var len = this.read(buf, 0, 1);
-    if (len===0) { this._eof = true; return EOF; }
-    return buf[0];
-};
-Stream.prototype.read = function(buf, bufOffset, length) {
-    var ch, bytesRead = 0;
-    while (bytesRead < length) {
-        ch = this.readByte();
-        if (ch === EOF) { this._eof = true; break; }
-        buf[bufOffset+(bytesRead++)] = ch;
-    }
-    return bytesRead;
-};
-// reasonable default implementation of 'eof'
-Stream.prototype.eof = function() { return !!this._eof; };
-// not all readable streams are seekable
-Stream.prototype.seek = function(pos) {
-    throw new Error('Stream is not seekable.');
-};
-Stream.prototype.tell = function() {
-    throw new Error('Stream is not seekable.');
-};
-// you must define one of write / writeByte for a writable stream
-Stream.prototype.writeByte = function(_byte) {
-    var buf = [ _byte ];
-    this.write(buf, 0, 1);
-};
-Stream.prototype.write = function(buf, bufOffset, length) {
-    var i;
-    for (i=0; i<length; i++) {
-        this.writeByte(buf[bufOffset + i]);
-    }
-    return length;
-};
-// flush will happily do nothing if you don't override it.
-Stream.prototype.flush = function() { };
+var Stream = function () {
+  /* ABSTRACT */
+}; // you must define one of read / readByte for a readable stream
 
-// export EOF as a constant.
+
+Stream.prototype.readByte = function () {
+  var buf = [0];
+  var len = this.read(buf, 0, 1);
+
+  if (len === 0) {
+    this._eof = true;
+    return EOF;
+  }
+
+  return buf[0];
+};
+
+Stream.prototype.read = function (buf, bufOffset, length) {
+  var ch,
+      bytesRead = 0;
+
+  while (bytesRead < length) {
+    ch = this.readByte();
+
+    if (ch === EOF) {
+      this._eof = true;
+      break;
+    }
+
+    buf[bufOffset + bytesRead++] = ch;
+  }
+
+  return bytesRead;
+}; // reasonable default implementation of 'eof'
+
+
+Stream.prototype.eof = function () {
+  return !!this._eof;
+}; // not all readable streams are seekable
+
+
+Stream.prototype.seek = function (pos) {
+  throw new Error('Stream is not seekable.');
+};
+
+Stream.prototype.tell = function () {
+  throw new Error('Stream is not seekable.');
+}; // you must define one of write / writeByte for a writable stream
+
+
+Stream.prototype.writeByte = function (_byte) {
+  var buf = [_byte];
+  this.write(buf, 0, 1);
+};
+
+Stream.prototype.write = function (buf, bufOffset, length) {
+  var i;
+
+  for (i = 0; i < length; i++) {
+    this.writeByte(buf[bufOffset + i]);
+  }
+
+  return length;
+}; // flush will happily do nothing if you don't override it.
+
+
+Stream.prototype.flush = function () {}; // export EOF as a constant.
+
+
 Stream.EOF = EOF;
-
 module.exports = freeze(Stream);
 
-},{"./freeze":24}],23:[function(require,module,exports){
+},{"./freeze":25}],24:[function(require,module,exports){
 (function (process,Buffer){(function (){
 /* Some basic utilities, used in a number of places. */
 
@@ -5422,7 +5978,7 @@ Util.log2c = function(v) {
 module.exports = freeze(Util); // ensure constants are recognized as such.
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"./Stream":22,"./freeze":24,"_process":36,"buffer":28}],24:[function(require,module,exports){
+},{"./Stream":23,"./freeze":25,"_process":39,"buffer":31}],25:[function(require,module,exports){
 'use strict';
 
 // Object.freeze(), or a thunk if that method is not present in this
@@ -5434,7 +5990,7 @@ if (Object.freeze) {
     module.exports = function(o) { return o; };
 }
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 const freeze = require('./lib/freeze');
 const BitStream = require('./lib/BitStream');
 const Stream = require('./lib/Stream');
@@ -5481,14 +6037,338 @@ module.exports = freeze({
     Simple: Simple
 });
 
-},{"./lib/BWT":2,"./lib/BWTC":3,"./lib/BitStream":4,"./lib/Bzip2":5,"./lib/Context1Model":7,"./lib/DefSumModel":8,"./lib/Dmc":9,"./lib/FenwickModel":10,"./lib/Huffman":11,"./lib/Lzjb":14,"./lib/LzjbR":15,"./lib/Lzp3":16,"./lib/MTFModel":17,"./lib/NoModel":18,"./lib/PPM":19,"./lib/RangeCoder":20,"./lib/Simple":21,"./lib/Stream":22,"./lib/freeze":24}],26:[function(require,module,exports){
-(function(d,e){"object"===typeof exports&&"undefined"!==typeof module?e(exports):"function"===typeof define&&define.amd?define(["exports"],e):(d=d||self,e(d.alawmulaw={}))})(this,function(d){function e(a){a=-32768==a?-32767:a;var c=~a>>8&128;c||(a*=-1);32635<a&&(a=32635);if(256<=a){var b=k[a>>8&127];a=b<<4|a>>b+3&15}else a>>=4;return a^c^85}function f(a){var c=0;a^=85;a&128&&(a&=-129,c=-1);var b=((a&240)>>4)+4;a=4!=b?1<<b|(a&15)<<b-4|1<<b-5:a<<1|1;return-8*(0===c?a:-a)}function g(a){var c=a>>8&128;
-0!=c&&(a=-a);a+=132;32635<a&&(a=32635);var b=l[a>>7&255];return~(c|b<<4|a>>b+3&15)}function h(a){a=~a;var c=a>>4&7;c=m[c]+((a&15)<<c+3);0!=(a&128)&&(c=-c);return c}var k=[1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],n=Object.freeze({__proto__:null,encodeSample:e,decodeSample:f,encode:function(a){for(var c=
-new Uint8Array(a.length),b=0;b<a.length;b++)c[b]=e(a[b]);return c},decode:function(a){for(var c=new Int16Array(a.length),b=0;b<a.length;b++)c[b]=f(a[b]);return c}}),l=[0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],m=[0,132,396,924,1980,4092,8316,16764],p=Object.freeze({__proto__:null,encodeSample:g,decodeSample:h,encode:function(a){for(var c=new Uint8Array(a.length),b=0;b<a.length;b++)c[b]=g(a[b]);return c},decode:function(a){for(var c=new Int16Array(a.length),b=0;b<a.length;b++)c[b]=h(a[b]);return c}});d.alaw=n;d.mulaw=p;Object.defineProperty(d,
-"__esModule",{value:!0})});
+},{"./lib/BWT":3,"./lib/BWTC":4,"./lib/BitStream":5,"./lib/Bzip2":6,"./lib/Context1Model":8,"./lib/DefSumModel":9,"./lib/Dmc":10,"./lib/FenwickModel":11,"./lib/Huffman":12,"./lib/Lzjb":15,"./lib/LzjbR":16,"./lib/Lzp3":17,"./lib/MTFModel":18,"./lib/NoModel":19,"./lib/PPM":20,"./lib/RangeCoder":21,"./lib/Simple":22,"./lib/Stream":23,"./lib/freeze":25}],27:[function(require,module,exports){
+"use strict";
 
-},{}],27:[function(require,module,exports){
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.mulaw = exports.alaw = void 0;
+
+var alaw = _interopRequireWildcard(require("./lib/alaw"));
+
+exports.alaw = alaw;
+
+var mulaw = _interopRequireWildcard(require("./lib/mulaw"));
+
+exports.mulaw = mulaw;
+
+function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+
+function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+},{"./lib/alaw":28,"./lib/mulaw":29}],28:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.encodeSample = encodeSample;
+exports.decodeSample = decodeSample;
+exports.encode = encode;
+exports.decode = decode;
+
+/*
+ * alawmulaw: A-Law and mu-Law codecs in JavaScript.
+ * https://github.com/rochars/alawmulaw
+ *
+ * Copyright (c) 2018 Rafael da Silva Rocha.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+/**
+ * @fileoverview A-Law codec.
+ */
+
+/** @module alawmulaw/alaw */
+
+/** @type {!Array<number>} */
+const LOG_TABLE = [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
+/**
+ * Encode a 16-bit linear PCM sample as 8-bit A-Law.
+ * @param {number} sample A 16-bit PCM sample
+ * @return {number}
+ */
+
+function encodeSample(sample) {
+  /** @type {number} */
+  let compandedValue;
+  sample = sample == -32768 ? -32767 : sample;
+  /** @type {number} */
+
+  let sign = ~sample >> 8 & 0x80;
+
+  if (!sign) {
+    sample = sample * -1;
+  }
+
+  if (sample > 32635) {
+    sample = 32635;
+  }
+
+  if (sample >= 256) {
+    /** @type {number} */
+    let exponent = LOG_TABLE[sample >> 8 & 0x7F];
+    /** @type {number} */
+
+    let mantissa = sample >> exponent + 3 & 0x0F;
+    compandedValue = exponent << 4 | mantissa;
+  } else {
+    compandedValue = sample >> 4;
+  }
+
+  return compandedValue ^ (sign ^ 0x55);
+}
+/**
+ * Decode a 8-bit A-Law sample as 16-bit PCM.
+ * @param {number} aLawSample The 8-bit A-Law sample
+ * @return {number}
+ */
+
+
+function decodeSample(aLawSample) {
+  /** @type {number} */
+  let sign = 0;
+  aLawSample ^= 0x55;
+
+  if (aLawSample & 0x80) {
+    aLawSample &= ~(1 << 7);
+    sign = -1;
+  }
+  /** @type {number} */
+
+
+  let position = ((aLawSample & 0xF0) >> 4) + 4;
+  /** @type {number} */
+
+  let decoded = 0;
+
+  if (position != 4) {
+    decoded = 1 << position | (aLawSample & 0x0F) << position - 4 | 1 << position - 5;
+  } else {
+    decoded = aLawSample << 1 | 1;
+  }
+
+  decoded = sign === 0 ? decoded : -decoded;
+  return decoded * 8 * -1;
+}
+/**
+ * Encode 16-bit linear PCM samples as 8-bit A-Law samples.
+ * @param {!Int16Array} samples A array of 16-bit PCM samples.
+ * @return {!Uint8Array}
+ */
+
+
+function encode(samples) {
+  /** @type {!Uint8Array} */
+  let aLawSamples = new Uint8Array(samples.length);
+
+  for (let i = 0; i < samples.length; i++) {
+    aLawSamples[i] = encodeSample(samples[i]);
+  }
+
+  return aLawSamples;
+}
+/**
+ * Decode 8-bit A-Law samples into 16-bit linear PCM samples.
+ * @param {!Uint8Array} samples A array of 8-bit A-Law samples.
+ * @return {!Int16Array}
+ */
+
+
+function decode(samples) {
+  /** @type {!Int16Array} */
+  let pcmSamples = new Int16Array(samples.length);
+
+  for (let i = 0; i < samples.length; i++) {
+    pcmSamples[i] = decodeSample(samples[i]);
+  }
+
+  return pcmSamples;
+}
+
+},{}],29:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.encodeSample = encodeSample;
+exports.decodeSample = decodeSample;
+exports.encode = encode;
+exports.decode = decode;
+
+/*
+ * alawmulaw: A-Law and mu-Law codecs in JavaScript.
+ * https://github.com/rochars/alawmulaw
+ *
+ * Copyright (c) 2018-2019 Rafael da Silva Rocha.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+/**
+ * @fileoverview mu-Law codec.
+ */
+
+/** @module alawmulaw/mulaw */
+
+/**
+ * @type {number}
+ * @private
+ */
+const BIAS = 0x84;
+/**
+ * @type {number}
+ * @private
+ */
+
+const CLIP = 32635;
+/**
+ * @type {Array<number>}
+ * @private
+ */
+
+const encodeTable = [0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7];
+/**
+ * @type {Array<number>}
+ * @private
+ */
+
+const decodeTable = [0, 132, 396, 924, 1980, 4092, 8316, 16764];
+/**
+ * Encode a 16-bit linear PCM sample as 8-bit mu-Law.
+ * @param {number} sample A 16-bit PCM sample
+ * @return {number}
+ */
+
+function encodeSample(sample) {
+  /** @type {number} */
+  let sign;
+  /** @type {number} */
+
+  let exponent;
+  /** @type {number} */
+
+  let mantissa;
+  /** @type {number} */
+
+  let muLawSample;
+  /** get the sample into sign-magnitude **/
+
+  sign = sample >> 8 & 0x80;
+  if (sign != 0) sample = -sample;
+  /** convert from 16 bit linear to ulaw **/
+
+  sample = sample + BIAS;
+  if (sample > CLIP) sample = CLIP;
+  exponent = encodeTable[sample >> 7 & 0xFF];
+  mantissa = sample >> exponent + 3 & 0x0F;
+  muLawSample = ~(sign | exponent << 4 | mantissa);
+  /** return the result **/
+
+  return muLawSample;
+}
+/**
+ * Decode a 8-bit mu-Law sample as 16-bit PCM.
+ * @param {number} muLawSample The 8-bit mu-Law sample
+ * @return {number}
+ */
+
+
+function decodeSample(muLawSample) {
+  /** @type {number} */
+  let sign;
+  /** @type {number} */
+
+  let exponent;
+  /** @type {number} */
+
+  let mantissa;
+  /** @type {number} */
+
+  let sample;
+  muLawSample = ~muLawSample;
+  sign = muLawSample & 0x80;
+  exponent = muLawSample >> 4 & 0x07;
+  mantissa = muLawSample & 0x0F;
+  sample = decodeTable[exponent] + (mantissa << exponent + 3);
+  if (sign != 0) sample = -sample;
+  return sample;
+}
+/**
+ * Encode 16-bit linear PCM samples into 8-bit mu-Law samples.
+ * @param {!Int16Array} samples A array of 16-bit PCM samples.
+ * @return {!Uint8Array}
+ */
+
+
+function encode(samples) {
+  /** @type {!Uint8Array} */
+  let muLawSamples = new Uint8Array(samples.length);
+
+  for (let i = 0; i < samples.length; i++) {
+    muLawSamples[i] = encodeSample(samples[i]);
+  }
+
+  return muLawSamples;
+}
+/**
+ * Decode 8-bit mu-Law samples into 16-bit PCM samples.
+ * @param {!Uint8Array} samples A array of 8-bit mu-Law samples.
+ * @return {!Int16Array}
+ */
+
+
+function decode(samples) {
+  /** @type {!Int16Array} */
+  let pcmSamples = new Int16Array(samples.length);
+
+  for (let i = 0; i < samples.length; i++) {
+    pcmSamples[i] = decodeSample(samples[i]);
+  }
+
+  return pcmSamples;
+}
+
+},{}],30:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -5642,7 +6522,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],28:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -7423,7 +8303,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":27,"buffer":28,"ieee754":30}],29:[function(require,module,exports){
+},{"base64-js":30,"buffer":31,"ieee754":33}],32:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -9533,7 +10413,7 @@ function BufferBigIntNotDefined () {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":27,"buffer":28,"ieee754":30}],30:[function(require,module,exports){
+},{"base64-js":30,"buffer":31,"ieee754":33}],33:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -9620,7 +10500,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],31:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 "use strict"
 
 function iota(n) {
@@ -9632,7 +10512,7 @@ function iota(n) {
 }
 
 module.exports = iota
-},{}],32:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 /*!
  * Determine if an object is a Buffer
  *
@@ -9655,7 +10535,7 @@ function isSlowBuffer (obj) {
   return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
 }
 
-},{}],33:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 module.exports = Long;
 
 /**
@@ -10980,7 +11860,7 @@ Long.fromBytesBE = function fromBytesBE(bytes, unsigned) {
     );
 };
 
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 var iota = require("iota-array")
 var isBuffer = require("is-buffer")
 
@@ -11331,7 +12211,7 @@ function wrappedNDArrayCtor(data, shape, stride, offset) {
 
 module.exports = wrappedNDArrayCtor
 
-},{"iota-array":31,"is-buffer":32}],35:[function(require,module,exports){
+},{"iota-array":34,"is-buffer":35}],38:[function(require,module,exports){
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -11517,7 +12397,7 @@ module.exports = wrappedNDArrayCtor
 
 })));
 
-},{}],36:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -11703,10 +12583,44 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],37:[function(require,module,exports){
-"use strict";var e=setTimeout;function t(t,n){var u=n.useCachedSetTimeout?e:setTimeout;return new Promise((function(e){u(e,t)}))}module.exports=function(e){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{},u=n.useCachedSetTimeout,r=t(e,{useCachedSetTimeout:u});function o(e){return r.then((function(){return e}))}return o.then=function(){return r.then.apply(r,arguments)},o.catch=Promise.resolve().catch,o};
+},{}],40:[function(require,module,exports){
+"use strict";
 
-},{}],38:[function(require,module,exports){
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var e = setTimeout;
+
+function t(t, n) {
+  var u = n.useCachedSetTimeout ? e : setTimeout;
+  return new Promise(function (e) {
+    u(e, t);
+  });
+}
+
+function n(e) {
+  var n = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {},
+      u = n.useCachedSetTimeout,
+      r = t(e, {
+    useCachedSetTimeout: u
+  });
+
+  function o(e) {
+    return r.then(function () {
+      return e;
+    });
+  }
+
+  return o.then = function () {
+    return r.then.apply(r, arguments);
+  }, o.catch = Promise.resolve().catch, o;
+}
+
+var _default = n;
+exports.default = _default;
+
+},{}],41:[function(require,module,exports){
 /**
  * @license tga-js 1.1.1
  * Copyright (c) 2013-2020 Vincent Thibault, Inc.
@@ -11714,7 +12628,7 @@ process.umask = function() { return 0; };
  */
 var e,a;e=this,a=function(){"use strict";function e(e,a){for(var t=0;t<a.length;t++){var r=a[t];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(e,r.key,r)}}return function(){function a(){!function(e,a){if(!(e instanceof a))throw new TypeError("Cannot call a class as a function")}(this,a)}var t,r,i;return t=a,(r=[{key:"_checkHeader",value:function(){var e=this.header;if(0===e.imageType)throw Error("No data");if(e.hasColorMap){if(e.colorMapLength>256||24!==e.colorMapDepth||1!==e.colorMapType)throw Error("Invalid colormap for indexed type")}else if(e.colorMapType)throw Error("Why does the image contain a palette ?");if(!e.width||!e.height)throw Error("Invalid image size");if(8!==e.pixelDepth&&16!==e.pixelDepth&&24!==e.pixelDepth&&32!==e.pixelDepth)throw Error('Invalid pixel size "'+e.pixelDepth+'"')}},{key:"_decodeRLE",value:function(e,a,t,r){for(var i=new Uint8Array(r),o=new Uint8Array(t),n=0;n<r;){var h=e[a++],s=1+(127&h);if(128&h){for(var g=0;g<t;++g)o[g]=e[a+g];a+=t;for(var l=0;l<s;++l)i.set(o,n),n+=t}else{s*=t;for(var f=0;f<s;++f)i[n+f]=e[a+f];n+=s,a+=s}}return i}},{key:"_getImageData8bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l++){var u=a[l];e[4*(p+r*f)+3]=255,e[4*(p+r*f)+2]=t[3*u+0],e[4*(p+r*f)+1]=t[3*u+1],e[4*(p+r*f)+0]=t[3*u+2]}return e}},{key:"_getImageData16bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=2){var u=a[l+0]|a[l+1]<<8;e[4*(p+r*f)+0]=(31744&u)>>7,e[4*(p+r*f)+1]=(992&u)>>2,e[4*(p+r*f)+2]=(31&u)>>3,e[4*(p+r*f)+3]=32768&u?0:255}return e}},{key:"_getImageData24bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=3)e[4*(p+r*f)+3]=255,e[4*(p+r*f)+2]=a[l+0],e[4*(p+r*f)+1]=a[l+1],e[4*(p+r*f)+0]=a[l+2];return e}},{key:"_getImageData32bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=4)e[4*(p+r*f)+2]=a[l+0],e[4*(p+r*f)+1]=a[l+1],e[4*(p+r*f)+0]=a[l+2],e[4*(p+r*f)+3]=a[l+3];return e}},{key:"_getImageDataGrey8bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l++){var u=a[l];e[4*(p+r*f)+0]=u,e[4*(p+r*f)+1]=u,e[4*(p+r*f)+2]=u,e[4*(p+r*f)+3]=255}return e}},{key:"_getImageDataGrey16bits",value:function(e,a,t,r,i,o,n,h,s,g){for(var l=0,f=i;f!==n;f+=o)for(var p=h;p!==g;p+=s,l+=2)e[4*(p+r*f)+0]=a[l+0],e[4*(p+r*f)+1]=a[l+0],e[4*(p+r*f)+2]=a[l+0],e[4*(p+r*f)+3]=a[l+1];return e}},{key:"open",value:function(e,a){var t=this,r=new XMLHttpRequest;r.responseType="arraybuffer",r.open("GET",e,!0),r.onload=function(){200===r.status&&(t.load(new Uint8Array(r.response)),a&&a())},r.send(null)}},{key:"load",value:function(e){var a=0;if(e.length<18)throw Error("Not enough data to contain header");var t={idLength:e[a++],colorMapType:e[a++],imageType:e[a++],colorMapIndex:e[a++]|e[a++]<<8,colorMapLength:e[a++]|e[a++]<<8,colorMapDepth:e[a++],offsetX:e[a++]|e[a++]<<8,offsetY:e[a++]|e[a++]<<8,width:e[a++]|e[a++]<<8,height:e[a++]|e[a++]<<8,pixelDepth:e[a++],flags:e[a++]};if(t.hasEncoding=9===t.imageType||10===t.imageType||11===t.imageType,t.hasColorMap=9===t.imageType||1===t.imageType,t.isGreyColor=11===t.imageType||3===t.imageType,this.header=t,this._checkHeader(),(a+=t.idLength)>=e.length)throw Error("No data");if(t.hasColorMap){var r=t.colorMapLength*(t.colorMapDepth>>3);this.palette=e.subarray(a,a+r),a+=r}var i=t.pixelDepth>>3,o=t.width*t.height,n=o*i;t.hasEncoding?this.imageData=this._decodeRLE(e,a,i,n):this.imageData=e.subarray(a,a+(t.hasColorMap?o:n))}},{key:"getImageData",value:function(e){var a,t,r,i,o,n,h,s=this.header,g=s.width,l=s.height,f=s.flags,p=s.pixelDepth,u=s.isGreyColor,c=(48&f)>>4;switch(e||(e=document?document.createElement("canvas").getContext("2d").createImageData(g,l):{width:g,height:l,data:new Uint8ClampedArray(g*l*4)}),2===c||3===c?(i=0,o=1,n=l):(i=l-1,o=-1,n=-1),2===c||0===c?(a=0,t=1,r=g):(a=g-1,t=-1,r=-1),p){case 8:h=u?this._getImageDataGrey8bits:this._getImageData8bits;break;case 16:h=u?this._getImageDataGrey16bits:this._getImageData16bits;break;case 24:h=this._getImageData24bits;break;case 32:h=this._getImageData32bits}return h.call(this,e.data,this.imageData,this.palette,g,i,o,n,a,t,r),e}},{key:"getCanvas",value:function(){var e=this.header,a=e.width,t=e.height,r=document.createElement("canvas"),i=r.getContext("2d"),o=i.createImageData(a,t);return r.width=a,r.height=t,i.putImageData(this.getImageData(o),0,0),r}},{key:"getDataURL",value:function(e){return this.getCanvas().toDataURL(e||"image/png")}}])&&e(t.prototype,r),i&&e(t,i),a}()},"object"==typeof exports&&"undefined"!=typeof module?module.exports=a():"function"==typeof define&&define.amd?define(a):(e=e||self).TgaLoader=a();
 
-},{}],39:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 const Buffer = require('buffer/').Buffer;
 const { Bzip2 } = require('@ledgerhq/compressjs');
 
@@ -11742,7 +12656,7 @@ function decompress(
 
 module.exports.decompress = decompress;
 
-},{"@ledgerhq/compressjs":25,"buffer/":29}],40:[function(require,module,exports){
+},{"@ledgerhq/compressjs":26,"buffer/":32}],43:[function(require,module,exports){
 const C_A = 'a'.charCodeAt(0);
 const C_AT = '@'.charCodeAt(0);
 const C_DOT = '.'.charCodeAt(0);
@@ -11955,7 +12869,7 @@ ChatMessage.charMap = new Uint16Array(
 
 module.exports = ChatMessage;
 
-},{}],41:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 class GameBuffer {
     // buffer is an Int8Array
     constructor(buffer) {
@@ -12022,7 +12936,7 @@ class GameBuffer {
 
 module.exports = GameBuffer;
 
-},{}],42:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 const Long = require('long');
 
 class GameCharacter {
@@ -12067,15 +12981,15 @@ class GameCharacter {
 module.exports = GameCharacter;
 
 
-},{"long":33}],43:[function(require,module,exports){
+},{"long":36}],46:[function(require,module,exports){
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameShell = require('./game-shell');
 const Long = require('long');
 const PacketStream = require('./packet-stream');
 const Utility = require('./utility');
-const clientOpcodes = require('./opcodes/client');
-const sleep = require('sleep-promise');
+const clientOpcodes = require('./opcodes/client.json');
+const sleep = require('sleep-promise').default;
 
 function fromCharArray(a) {
     return Array.from(a)
@@ -12084,8 +12998,8 @@ function fromCharArray(a) {
 }
 
 class GameConnection extends GameShell {
-    constructor(canvas) {
-        super(canvas);
+    constructor(constructor, width, height) {
+        super(constructor, width, height);
 
         this.friendListCount = 0;
         this.ignoreListCount = 0;
@@ -12893,7 +13807,7 @@ GameConnection.maxSocialListSize = 100;
 
 module.exports = GameConnection;
 
-},{"./game-shell":46,"./lib/graphics/color":47,"./lib/graphics/font":48,"./opcodes/client":54,"./packet-stream":84,"./utility":119,"long":33,"sleep-promise":37}],44:[function(require,module,exports){
+},{"./game-shell":49,"./lib/graphics/color":50,"./lib/graphics/font":51,"./opcodes/client.json":57,"./packet-stream":87,"./utility":122,"long":36,"sleep-promise":40}],47:[function(require,module,exports){
 const Utility = require('./utility');
 const ndarray = require('ndarray');
 
@@ -13423,7 +14337,7 @@ GameData.offset = 0;
 
 module.exports = GameData;
 
-},{"./utility":119,"ndarray":34}],45:[function(require,module,exports){
+},{"./utility":122,"ndarray":37}],48:[function(require,module,exports){
 const Utility = require('./utility');
 const Scene = require('./scene');
 
@@ -13510,19 +14424,6 @@ class GameModel {
         this.faceBoundTop = null;
         this.faceBoundNear = null;
         this.faceBoundFar = null;
-
-        /*switch (args.length) {
-        case 2:
-            if (Array.isArray(args[0])) {
-                return this._from2A(...args);
-            }
-
-            return this._from2(...args);
-        case 3:
-            return this._from3(...args);
-        case 7:
-            return this._from7(...args);
-        }*/
     }
 
     static _from2(numVertices, numFaces) {
@@ -14751,7 +15652,7 @@ GameModel.base64Alphabet[36] = 63;
 
 module.exports = GameModel;
 
-},{"./scene":88,"./utility":119}],46:[function(require,module,exports){
+},{"./scene":91,"./utility":122}],49:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
@@ -14760,9 +15661,9 @@ const Socket = require('./lib/net/socket');
 const Surface = require('./surface');
 const TGA = require('tga-js');
 const Utility = require('./utility');
-const keycodes = require('./lib/keycodes');
-const version = require('./version');
-const sleep = require('sleep-promise');
+const keycodes = require('./lib/keycodes.json');
+const sleep = require('sleep-promise').default;
+const version = require('./version.json');
 
 const CHAR_MAP =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
@@ -14802,12 +15703,12 @@ function getMousePosition(canvas, e) {
 }
 
 class GameShell {
-    constructor(container) {
+    constructor(container, width, height) {
         this._container = container;
         this._container.style.position = 'relative';
 
         this._canvas = document.createElement('canvas');
-        this._canvas.style.width = '100%';
+        //this._canvas.style.width = '100%';
         this._canvas.style.height = '100%';
 
         this._container.appendChild(this._canvas);
@@ -14848,8 +15749,8 @@ class GameShell {
         this.imageLogo = null;
         this.graphics = null;
 
-        this.appletWidth = 512;
-        this.appletHeight = 346;
+        this.appletWidth = width;
+        this.appletHeight = height;
         this.targetFPS = 20;
         this.maxDrawTime = 1000;
         this.timings = [];
@@ -14876,25 +15777,20 @@ class GameShell {
         this.inputPMFinal = '';
     }
 
-    async startApplication(width, height, title) {
+    async startApplication(title) {
         window.document.title = title;
 
         this._canvas.tabIndex = 0;
-        this._canvas.width = width;
-        this._canvas.height = height;
+        this._canvas.width = this.appletWidth;
+        this._canvas.height = this.appletHeight;
 
-        this._container.style.width = `${width}px`;
-        this._container.style.height = `${height}px`;
+        this._container.style.width = `${this.appletWidth}px`;
+        this._container.style.height = `${this.appletHeight}px`;
 
         console.log('Started application');
 
-        this.appletWidth = width;
-        this.appletHeight = height;
-
         if (this.options.mobile) {
             this._canvas.addEventListener('touchstart', (e) => {
-                //e.preventDefault();
-
                 console.log('touchstart');
 
                 if (e.touches.length === 1) {
@@ -14918,8 +15814,6 @@ class GameShell {
             });
 
             this._canvas.addEventListener('touchmove', (e) => {
-                //e.preventDefault();
-
                 console.log('touchmoving');
 
                 if (!this.touchMoving) {
@@ -14941,8 +15835,6 @@ class GameShell {
             });
 
             this._canvas.addEventListener('touchend', (e) => {
-                e.preventDefault();
-
                 console.log('touchend');
 
                 if (this.disableEndClick) {
@@ -15686,7 +16578,7 @@ class GameShell {
 
 module.exports = GameShell;
 
-},{"./bzlib":39,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/graphics/graphics":49,"./lib/keycodes":50,"./lib/net/socket":52,"./surface":90,"./utility":119,"./version":120,"sleep-promise":37,"tga-js":38}],47:[function(require,module,exports){
+},{"./bzlib":42,"./lib/graphics/color":50,"./lib/graphics/font":51,"./lib/graphics/graphics":52,"./lib/keycodes.json":53,"./lib/net/socket":55,"./surface":93,"./utility":122,"./version.json":123,"sleep-promise":40,"tga-js":41}],50:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
         this.r = r;
@@ -15741,7 +16633,7 @@ Color.BLUE = Color.blue;
 
 module.exports = Color;
 
-},{}],48:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 class Font {
     constructor(name, type, size) {
         this.name = name;
@@ -15765,7 +16657,7 @@ class Font {
 }
 
 module.exports = Font;
-},{}],49:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 // shims https://docs.oracle.com/javase/7/docs/api/java/awt/Graphics.html
 
 class Graphics {
@@ -15810,7 +16702,7 @@ class Graphics {
 
 module.exports = Graphics;
 
-},{}],50:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 module.exports={
    "0": 48,
    "1": 49,
@@ -15912,7 +16804,7 @@ module.exports={
    "CLOSE_BRAKET": 221,
    "SINGLE_QUOTE": 222
 }
-},{}],51:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 // a quick shim for downloading files
 
 class FileDownloadStream {
@@ -15960,7 +16852,7 @@ class FileDownloadStream {
 
 module.exports = FileDownloadStream;
 
-},{}],52:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 // a shim for java.net.Socket
 // https://docs.oracle.com/javase/7/docs/api/java/net/Socket.html
 
@@ -16159,7 +17051,7 @@ class Socket {
 
 module.exports = Socket;
 
-},{}],53:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 const Color = require('./lib/graphics/color');
 const Font = require('./lib/graphics/font');
 const GameBuffer = require('./game-buffer');
@@ -16177,9 +17069,9 @@ const WordFilter = require('./word-filter');
 const World = require('./world');
 const applyUIComponents = require('./ui');
 const getPacketHandlers = require('./packet-handlers');
-const keycodes = require('./lib/keycodes');
-const clientOpcodes = require('./opcodes/client');
-const version = require('./version');
+const keycodes = require('./lib/keycodes.json');
+const clientOpcodes = require('./opcodes/client.json');
+const version = require('./version.json');
 
 const ZOOM_MIN = 450;
 const ZOOM_MAX = 1250;
@@ -16208,8 +17100,8 @@ const ANIMATED_MODELS = [
 ];
 
 class mudclient extends GameConnection {
-    constructor(canvas) {
-        super(canvas);
+    constructor(container, width, height) {
+        super(container, width, height);
 
         // attach methods and properties from files in ./ui/
         applyUIComponents(this);
@@ -16433,8 +17325,8 @@ class mudclient extends GameConnection {
         this.magicLoc = 128;
         this.errorLoadingMemory = false;
         this.fogOfWar = false;
-        this.gameWidth = 512;
-        this.gameHeight = 334;
+        this.gameWidth = this.appletWidth;
+        this.gameHeight = this.appletHeight - 12;
         this.tradeConfirmItems = new Int32Array(14);
         this.tradeConfirmItemCount = new Int32Array(14);
         this.tradeRecipientName = '';
@@ -20893,7 +21785,7 @@ class mudclient extends GameConnection {
 
 module.exports = mudclient;
 
-},{"./game-buffer":41,"./game-character":42,"./game-connection":43,"./game-data":44,"./game-model":45,"./lib/graphics/color":47,"./lib/graphics/font":48,"./lib/keycodes":50,"./opcodes/client":54,"./packet-handlers":61,"./panel":85,"./scene":88,"./stream-audio-player":89,"./surface":90,"./ui":96,"./utility":119,"./version":120,"./word-filter":121,"./world":122,"long":33}],54:[function(require,module,exports){
+},{"./game-buffer":44,"./game-character":45,"./game-connection":46,"./game-data":47,"./game-model":48,"./lib/graphics/color":50,"./lib/graphics/font":51,"./lib/keycodes.json":53,"./opcodes/client.json":57,"./packet-handlers":64,"./panel":88,"./scene":91,"./stream-audio-player":92,"./surface":93,"./ui":99,"./utility":122,"./version.json":123,"./word-filter":124,"./world":125,"long":36}],57:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
     "BANK_CLOSE": 212,
@@ -20975,7 +21867,7 @@ module.exports={
 }
 
 
-},{}],55:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 59,
     "BANK_CLOSE": 203,
@@ -21038,8 +21930,8 @@ module.exports={
     "WELCOME": 182,
     "WORLD_INFO": 25
 }
-},{}],56:[function(require,module,exports){
-const serverOpcodes = require('../opcodes/server');
+},{}],59:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.APPEARANCE]: function () {
@@ -21047,9 +21939,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55}],57:[function(require,module,exports){
+},{"../opcodes/server.json":58}],60:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.BANK_OPEN]: function (data) {
@@ -21114,8 +22006,8 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],58:[function(require,module,exports){
-const serverOpcodes = require('../opcodes/server');
+},{"../opcodes/server.json":58,"../utility":122}],61:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.CLOSE_CONNECTION]: function () {
@@ -21123,8 +22015,8 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55}],59:[function(require,module,exports){
-const serverOpcodes = require('../opcodes/server');
+},{"../opcodes/server.json":58}],62:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.PLAYER_DIED]: function () {
@@ -21132,9 +22024,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55}],60:[function(require,module,exports){
+},{"../opcodes/server.json":58}],63:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.DUEL_OPEN]: function (data) {
@@ -21237,7 +22129,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],61:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],64:[function(require,module,exports){
 
 
 function getPacketHandlers(mudclient) {
@@ -21259,10 +22151,10 @@ function getPacketHandlers(mudclient) {
 
 module.exports = getPacketHandlers;
 
-},{"./appearance.js":56,"./bank.js":57,"./close-connection.js":58,"./death.js":59,"./duel.js":60,"./index.js":61,"./inventory.js":62,"./logout-deny.js":63,"./messages.js":64,"./option-list.js":65,"./player-stats.js":66,"./prayer.js":67,"./region-entity-update.js":68,"./region-ground-items.js":69,"./region-npc-update.js":70,"./region-npcs.js":71,"./region-objects.js":72,"./region-player-update.js":73,"./region-players.js":74,"./region-wall-objects.js":75,"./settings.js":76,"./shop.js":77,"./sleep.js":78,"./social.js":79,"./sound.js":80,"./teleport-bubble.js":81,"./trade.js":82,"./world-info.js":83}],62:[function(require,module,exports){
+},{"./appearance.js":59,"./bank.js":60,"./close-connection.js":61,"./death.js":62,"./duel.js":63,"./index.js":64,"./inventory.js":65,"./logout-deny.js":66,"./messages.js":67,"./option-list.js":68,"./player-stats.js":69,"./prayer.js":70,"./region-entity-update.js":71,"./region-ground-items.js":72,"./region-npc-update.js":73,"./region-npcs.js":74,"./region-objects.js":75,"./region-player-update.js":76,"./region-players.js":77,"./region-wall-objects.js":78,"./settings.js":79,"./shop.js":80,"./sleep.js":81,"./social.js":82,"./sound.js":83,"./teleport-bubble.js":84,"./trade.js":85,"./world-info.js":86}],65:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.INVENTORY_ITEMS]: function (data) {
@@ -21337,8 +22229,8 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":119}],63:[function(require,module,exports){
-const serverOpcodes = require('../opcodes/server');
+},{"../game-data":47,"../opcodes/server.json":58,"../utility":122}],66:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.LOGOUT_DENY]: function () {
@@ -21346,9 +22238,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55}],64:[function(require,module,exports){
+},{"../opcodes/server.json":58}],67:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 function fromCharArray(a) {
     return Array.from(a)
@@ -21389,9 +22281,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],65:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],68:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 function fromCharArray(a) {
     return Array.from(a).map(c => String.fromCharCode(c)).join('');
@@ -21421,9 +22313,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],66:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],69:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.PLAYER_STAT_LIST]: function (data) {
@@ -21484,8 +22376,8 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],67:[function(require,module,exports){
-const serverOpcodes = require('../opcodes/server');
+},{"../opcodes/server.json":58,"../utility":122}],70:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.PRAYER_STATUS]: function (data, size) {
@@ -21505,9 +22397,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55}],68:[function(require,module,exports){
+},{"../opcodes/server.json":58}],71:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_ENTITY_UPDATE]: function (data, size) {
@@ -21618,10 +22510,10 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],69:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],72:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_GROUND_ITEMS]: function (data, size) {
@@ -21720,11 +22612,11 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":119}],70:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/server.json":58,"../utility":122}],73:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameData = require('../game-data');
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_NPC_UPDATE]: function (data) {
@@ -21783,10 +22675,10 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-data":44,"../opcodes/server":55,"../utility":119}],71:[function(require,module,exports){
+},{"../chat-message":43,"../game-data":47,"../opcodes/server.json":58,"../utility":122}],74:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_NPCS]: function (data, size) {
@@ -21894,10 +22786,10 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":119}],72:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/server.json":58,"../utility":122}],75:[function(require,module,exports){
 const Utility = require('../utility');
 const GameData = require('../game-data');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_OBJECTS]: function (data, size) {
@@ -22029,11 +22921,11 @@ module.exports = {
     }
 };
 
-},{"../game-data":44,"../opcodes/server":55,"../utility":119}],73:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/server.json":58,"../utility":122}],76:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_PLAYER_UPDATE]: function (data) {
@@ -22204,10 +23096,10 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../opcodes/server":55,"../utility":119,"../word-filter":121}],74:[function(require,module,exports){
+},{"../chat-message":43,"../opcodes/server.json":58,"../utility":122,"../word-filter":124}],77:[function(require,module,exports){
 const Utility = require('../utility');
-const clientOpcodes = require('../opcodes/client');
-const serverOpcodes = require('../opcodes/server');
+const clientOpcodes = require('../opcodes/client.json');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_PLAYERS]: function (data, size) {
@@ -22368,9 +23260,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/client":54,"../opcodes/server":55,"../utility":119}],75:[function(require,module,exports){
+},{"../opcodes/client.json":57,"../opcodes/server.json":58,"../utility":122}],78:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.REGION_WALL_OBJECTS]: function (data, size) {
@@ -22484,9 +23376,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],76:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],79:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.PRIVACY_SETTINGS]: function (data) {
@@ -22502,9 +23394,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],77:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],80:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.SHOP_OPEN]: function (data) {
@@ -22583,9 +23475,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],78:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],81:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.SLEEP_OPEN]: function (data) {
@@ -22610,12 +23502,12 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],79:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],82:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const GameConnection = require('../game-connection');
 const Utility = require('../utility');
 const WordFilter = require('../word-filter');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.FRIEND_LIST]: function (data) {
@@ -22699,8 +23591,8 @@ module.exports = {
     }
 };
 
-},{"../chat-message":40,"../game-connection":43,"../opcodes/server":55,"../utility":119,"../word-filter":121}],80:[function(require,module,exports){
-const serverOpcodes = require('../opcodes/server');
+},{"../chat-message":43,"../game-connection":46,"../opcodes/server.json":58,"../utility":122,"../word-filter":124}],83:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server.json');
 
 function fromCharArray(a) {
     return Array.from(a)
@@ -22715,8 +23607,8 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55}],81:[function(require,module,exports){
-const serverOpcodes = require('../opcodes/server');
+},{"../opcodes/server.json":58}],84:[function(require,module,exports){
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.TELEPORT_BUBBLE]: function (data) {
@@ -22735,9 +23627,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55}],82:[function(require,module,exports){
+},{"../opcodes/server.json":58}],85:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.TRADE_OPEN]: function (data) {
@@ -22830,9 +23722,9 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],83:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],86:[function(require,module,exports){
 const Utility = require('../utility');
-const serverOpcodes = require('../opcodes/server');
+const serverOpcodes = require('../opcodes/server.json');
 
 module.exports = {
     [serverOpcodes.WORLD_INFO]: function (data) {
@@ -22846,7 +23738,7 @@ module.exports = {
     }
 };
 
-},{"../opcodes/server":55,"../utility":119}],84:[function(require,module,exports){
+},{"../opcodes/server.json":58,"../utility":122}],87:[function(require,module,exports){
 const Long = require('long');
 
 function toCharArray(s) {
@@ -23132,7 +24024,7 @@ PacketStream.anIntArray541 = new Int32Array(256);
 
 module.exports = PacketStream;
 
-},{"long":33}],85:[function(require,module,exports){
+},{"long":36}],88:[function(require,module,exports){
 const Surface = require('./surface');
 
 const controlTypes = {
@@ -24536,7 +25428,7 @@ Panel.textListEntryHeightMod = 0;
 
 module.exports = Panel;
 
-},{"./surface":90}],86:[function(require,module,exports){
+},{"./surface":93}],89:[function(require,module,exports){
 class Polygon {
     constructor() {
         this.minPlaneX = 0;
@@ -24560,7 +25452,7 @@ class Polygon {
 }
 
 module.exports = Polygon;
-},{}],87:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 class Scanline {
     constructor() {
         this.startX = 0;
@@ -24571,7 +25463,7 @@ class Scanline {
 }
 
 module.exports = Scanline;
-},{}],88:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 const Long = require('long');
 const Polygon = require('./polygon');
 const Scanline = require('./scanline');
@@ -24589,6 +25481,8 @@ const COLOUR_TRANSPARENT = 12345678;
 
     return a.depth < b.depth ? 1 : -1;
 }*/
+
+const DEBUG_TIME = [];
 
 class Scene {
     constructor(surface, maxModelCount, polygonCount, spriteCount) {
@@ -24672,7 +25566,6 @@ class Scene {
         }
 
         this.spriteCount = 0;
-        //this.view = new GameModel(k * 2, k);
         this.spriteId = new Int32Array(spriteCount);
         this.spriteWidth = new Int32Array(spriteCount);
         this.spriteHeight = new Int32Array(spriteCount);
@@ -25849,7 +26742,7 @@ class Scene {
         }
     }
 
-    static gradientScanline2(ai, i, j, k, ai1, l, i1) {
+    static gradientScanline2(raster, i, j, k, ai1, l, i1) {
         if (i >= 0) {
             return;
         }
@@ -25860,28 +26753,28 @@ class Scene {
         let j1 = (i / 16) | 0;
 
         for (let k1 = j1; k1 < 0; k1++) {
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
-            ai[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
+            raster[j++] = k;
             k = ai1[(l >> 8) & 0xff];
             l += i1;
         }
@@ -25889,7 +26782,7 @@ class Scene {
         j1 = -(i % 16);
 
         for (let l1 = 0; l1 < j1; l1++) {
-            ai[j++] = k;
+            raster[j++] = k;
 
             if ((l1 & 3) === 3) {
                 k = ai1[(l >> 8) & 0xff];
@@ -27860,6 +28753,7 @@ class Scene {
                     j8,
                     k9
                 );
+
                 l2 += i2;
             }
         }
@@ -29297,7 +30191,7 @@ Scene.textureCountLoaded = new Long(0);
 
 module.exports = Scene;
 
-},{"./polygon":86,"./scanline":87,"long":33}],89:[function(require,module,exports){
+},{"./polygon":89,"./scanline":90,"long":36}],92:[function(require,module,exports){
 const PCMPlayer = require('pcm-player');
 const { mulaw } = require('alawmulaw');
 
@@ -29325,7 +30219,7 @@ class StreamAudioPlayer {
 
 module.exports = StreamAudioPlayer;
 
-},{"alawmulaw":26,"pcm-player":35}],90:[function(require,module,exports){
+},{"alawmulaw":27,"pcm-player":38}],93:[function(require,module,exports){
 const Utility = require('./utility');
 
 const SLEEP_WIDTH = 255;
@@ -29338,8 +30232,20 @@ const LIGHT_GREY = 0xdcdcdc;
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 
+const DEBUG_TIMES = [];
+
 class Surface {
     constructor(width, height, limit, mudclient) {
+        const {
+            __pin,
+            __newArray,
+            __getArrayView,
+            __getInt32ArrayView,
+            __getUint8ArrayView,
+            Int32Array_ID,
+            Uint8Array_ID
+        } = window.rscWASM;
+
         this.mudclient = mudclient;
 
         this.image = null;
@@ -29359,7 +30265,13 @@ class Surface {
         this.width1 = this.width2 = width;
         this.height1 = this.height2 = height;
         this.area = width * height;
-        this.pixels = new Int32Array(width * height);
+        //this.pixels = new Int32Array(width * height);
+
+        this.pixelsPtr = __pin(
+            __newArray(Int32Array_ID, { length: width * height })
+        );
+
+        this.pixels = __getInt32ArrayView(this.pixelsPtr);
 
         this.surfacePixels = [];
         this.surfacePixels.length = limit;
@@ -29381,6 +30293,12 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
+        this.canvasPixelsPtr = __pin(
+            __newArray(Uint8Array_ID, { length: width * height * 4 })
+        );
+
+        this.canvasPixels = __getUint8ArrayView(this.canvasPixelsPtr);
+
         this.imageData = mudclient._graphics.ctx.createImageData(width, height);
 
         this.setComplete();
@@ -29395,13 +30313,31 @@ class Surface {
     }
 
     setComplete() {
-        for (let i = 0; i < this.area * 4; i += 4) {
+        const start = Date.now();
+
+        /*for (let i = 0; i < this.area * 4; i += 4) {
             const pixel = this.pixels[i / 4];
 
             this.imageData.data[i] = (pixel >> 16) & 255;
             this.imageData.data[i + 1] = (pixel >> 8) & 255;
             this.imageData.data[i + 2] = pixel & 255;
             this.imageData.data[i + 3] = 255;
+        }*/
+
+        window.rscWASM.fixPixels(800 * 600 * 4, this.pixelsPtr, this.canvasPixelsPtr);
+
+        DEBUG_TIMES.push(Date.now() - start);
+
+        this.imageData.data.set(this.canvasPixels, 0);
+
+        if (DEBUG_TIMES.length >= 100) {
+            console.log(
+                DEBUG_TIMES.reduce((total, current) => {
+                    return total + current;
+                }, 0) / 100
+            );
+
+            DEBUG_TIMES.length = 0;
         }
     }
 
@@ -32398,7 +33334,7 @@ for (let i = 0; i < 256; i++) {
 
 module.exports = Surface;
 
-},{"./utility":119}],91:[function(require,module,exports){
+},{"./utility":122}],94:[function(require,module,exports){
 module.exports = {
     black : 0,
     white: 0xffffff,
@@ -32417,10 +33353,10 @@ module.exports = {
     chatRed: 0xff3232
 };
 
-},{}],92:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 const GameData = require('../game-data');
 const Panel = require('../panel');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 
 // size of the -> sprite
 const ARROW_SIZE = 20;
@@ -32804,9 +33740,9 @@ module.exports = {
     drawAppearancePanelCharacterSprites
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../panel":85}],93:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/client.json":57,"../panel":88}],96:[function(require,module,exports){
 const GameData = require('../game-data');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const WIDTH = 408;
@@ -33539,7 +34475,7 @@ function drawDialogBank() {
 
 module.exports = { drawDialogBank };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],94:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/client.json":57,"./_colours":94}],97:[function(require,module,exports){
 const ChatMessage = require('../chat-message');
 const Panel = require('../panel');
 const WordFilter = require('../word-filter');
@@ -33875,8 +34811,8 @@ module.exports = {
     drawChatMessageTabsPanel
 };
 
-},{"../chat-message":40,"../panel":85,"../word-filter":121,"./_colours":91}],95:[function(require,module,exports){
-const clientOpcodes = require('../opcodes/client');
+},{"../chat-message":43,"../panel":88,"../word-filter":124,"./_colours":94}],98:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const GREY = 0xbebebe;
@@ -33981,7 +34917,7 @@ module.exports = {
     drawDialogCombatStyle
 };
 
-},{"../opcodes/client":54,"./_colours":91}],96:[function(require,module,exports){
+},{"../opcodes/client.json":57,"./_colours":94}],99:[function(require,module,exports){
 
 
 function applyUIComponents(mudclient) {
@@ -34004,7 +34940,7 @@ function applyUIComponents(mudclient) {
 
 module.exports = applyUIComponents;
 
-},{"./_colours.js":91,"./appearance-panel.js":92,"./bank-dialog.js":93,"./chat-message-tabs.js":94,"./combat-style.js":95,"./index.js":96,"./inventory-tab.js":97,"./login-panels.js":98,"./logout-dialog.js":99,"./magic-tab.js":100,"./minimap-tab.js":101,"./mobile-ui.js":102,"./option-menu.js":103,"./options-tab.js":104,"./password-dialog.js":105,"./player-info-tab.js":106,"./recovery-panel.js":107,"./report-dialog.js":108,"./server-message-dialog.js":109,"./set-active-ui-tab.js":110,"./shop-dialog.js":111,"./sleep.js":112,"./social-dialog.js":113,"./social-tab.js":114,"./trade-confirm-dialog.js":115,"./trade-dialog.js":116,"./welcome-dialog.js":117,"./wilderness-dialog.js":118}],97:[function(require,module,exports){
+},{"./_colours.js":94,"./appearance-panel.js":95,"./bank-dialog.js":96,"./chat-message-tabs.js":97,"./combat-style.js":98,"./index.js":99,"./inventory-tab.js":100,"./login-panels.js":101,"./logout-dialog.js":102,"./magic-tab.js":103,"./minimap-tab.js":104,"./mobile-ui.js":105,"./option-menu.js":106,"./options-tab.js":107,"./password-dialog.js":108,"./player-info-tab.js":109,"./recovery-panel.js":110,"./report-dialog.js":111,"./server-message-dialog.js":112,"./set-active-ui-tab.js":113,"./shop-dialog.js":114,"./sleep.js":115,"./social-dialog.js":116,"./social-tab.js":117,"./trade-confirm-dialog.js":118,"./trade-dialog.js":119,"./welcome-dialog.js":120,"./wilderness-dialog.js":121}],100:[function(require,module,exports){
 const GameData = require('../game-data');
 const colours = require('./_colours');
 
@@ -34217,7 +35153,7 @@ function drawUiTabInventory(noMenus) {
 
 module.exports = { drawUiTabInventory };
 
-},{"../game-data":44,"./_colours":91}],98:[function(require,module,exports){
+},{"../game-data":47,"./_colours":94}],101:[function(require,module,exports){
 const Panel = require('../panel');
 
 function createLoginPanels() {
@@ -35157,7 +36093,7 @@ module.exports = {
     renderLoginScreenViewports
 };
 
-},{"../panel":85}],99:[function(require,module,exports){
+},{"../panel":88}],102:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogLogout() {
@@ -35168,9 +36104,9 @@ function drawDialogLogout() {
 
 module.exports = { drawDialogLogout };
 
-},{"./_colours":91}],100:[function(require,module,exports){
+},{"./_colours":94}],103:[function(require,module,exports){
 const GameData = require('../game-data');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const MENU_WIDTH = 245;
@@ -35492,7 +36428,7 @@ module.exports = {
     uiTabMagicSubTab: 0
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],101:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/client.json":57,"./_colours":94}],104:[function(require,module,exports){
 const Scene = require('../scene');
 const colours = require('./_colours');
 
@@ -35752,7 +36688,7 @@ module.exports = {
     drawUiTabMinimap
 };
 
-},{"../scene":88,"./_colours":91}],102:[function(require,module,exports){
+},{"../scene":91,"./_colours":94}],105:[function(require,module,exports){
 const BUTTON_SIZE = 32;
 
 const mobileSprites = {
@@ -35817,8 +36753,8 @@ function drawMobileUI() {
 
 module.exports = { drawMobileUI };
 
-},{}],103:[function(require,module,exports){
-const clientOpcodes = require('../opcodes/client');
+},{}],106:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 function drawOptionMenu() {
@@ -35887,8 +36823,8 @@ function drawOptionMenu() {
 
 module.exports = { drawOptionMenu };
 
-},{"../opcodes/client":54,"./_colours":91}],104:[function(require,module,exports){
-const clientOpcodes = require('../opcodes/client');
+},{"../opcodes/client.json":57,"./_colours":94}],107:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const MENU_WIDTH = 245;
@@ -36362,7 +37298,7 @@ function drawUiTabOptions(noMenus) {
 
 module.exports = { drawUiTabOptions };
 
-},{"../opcodes/client":54,"./_colours":91}],105:[function(require,module,exports){
+},{"../opcodes/client.json":57,"./_colours":94}],108:[function(require,module,exports){
 const colours = require('./_colours');
 
 const DIALOG_X = 106;
@@ -36557,7 +37493,7 @@ module.exports = {
     showChangePasswordStep: 0
 };
 
-},{"./_colours":91}],106:[function(require,module,exports){
+},{"./_colours":94}],109:[function(require,module,exports){
 const colours = require('./_colours');
 
 const MENU_WIDTH = 245;
@@ -36978,7 +37914,7 @@ module.exports = {
     uiTabPlayerInfoSubTab: 0
 };
 
-},{"./_colours":91}],107:[function(require,module,exports){
+},{"./_colours":94}],110:[function(require,module,exports){
 const selectedRecoverQuestions = [];
 selectedRecoverQuestions.length = 5;
 selectedRecoverQuestions.fill(null);
@@ -36993,9 +37929,9 @@ module.exports = {
     controlRecoverCreateButton: 0
 };
 
-},{}],108:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 const Utility = require('../utility');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const DIALOG_X = 56;
@@ -37301,7 +38237,7 @@ module.exports = {
     showDialogReportAbuseStep: 0
 };
 
-},{"../opcodes/client":54,"../utility":119,"./_colours":91}],109:[function(require,module,exports){
+},{"../opcodes/client.json":57,"../utility":122,"./_colours":94}],112:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -37382,7 +38318,7 @@ module.exports = {
     drawDialogServerMessage
 };
 
-},{"./_colours":91}],110:[function(require,module,exports){
+},{"./_colours":94}],113:[function(require,module,exports){
 const BUTTON_SIZE = 32;
 
 function setActiveUITab() {
@@ -37587,9 +38523,9 @@ function setActiveMobileUITab() {
 
 module.exports = { setActiveUITab, setActiveMobileUITab };
 
-},{}],111:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 const GameData = require('../game-data');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const COINS_ID = 10;
@@ -37967,8 +38903,8 @@ function drawDialogShop() {
 
 module.exports = { drawDialogShop };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],112:[function(require,module,exports){
-const clientOpcodes = require('../opcodes/client');
+},{"../game-data":47,"../opcodes/client.json":57,"./_colours":94}],115:[function(require,module,exports){
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 function drawSleep() {
@@ -38143,7 +39079,7 @@ module.exports = {
     isSleeping: false
 };
 
-},{"../opcodes/client":54,"./_colours":91}],113:[function(require,module,exports){
+},{"../opcodes/client.json":57,"./_colours":94}],116:[function(require,module,exports){
 // dialog boxes for private messaging and ignore lists
 
 const ChatMessage = require('../chat-message');
@@ -38357,7 +39293,7 @@ module.exports = {
     showDialogSocialInput: 0
 };
 
-},{"../chat-message":40,"../utility":119,"../word-filter":121,"./_colours":91}],114:[function(require,module,exports){
+},{"../chat-message":43,"../utility":122,"../word-filter":124,"./_colours":94}],117:[function(require,module,exports){
 const Utility = require('../utility');
 const colours = require('./_colours');
 
@@ -38665,10 +39601,10 @@ module.exports = {
     uiTabSocialSubTab: 0
 };
 
-},{"../utility":119,"./_colours":91}],115:[function(require,module,exports){
+},{"../utility":122,"./_colours":94}],118:[function(require,module,exports){
 const GameData = require('../game-data');
 const Utility = require('../utility');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const DIALOG_X = 22;
@@ -38858,9 +39794,9 @@ module.exports = {
     showDialogTradeConfirm: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"../utility":119,"./_colours":91}],116:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/client.json":57,"../utility":122,"./_colours":94}],119:[function(require,module,exports){
 const GameData = require('../game-data');
-const clientOpcodes = require('../opcodes/client');
+const clientOpcodes = require('../opcodes/client.json');
 const colours = require('./_colours');
 
 const DIALOG_X = 22;
@@ -39376,7 +40312,7 @@ module.exports = {
     showDialogTrade: false
 };
 
-},{"../game-data":44,"../opcodes/client":54,"./_colours":91}],117:[function(require,module,exports){
+},{"../game-data":47,"../opcodes/client.json":57,"./_colours":94}],120:[function(require,module,exports){
 const colours = require('./_colours');
 
 const WIDTH = 400;
@@ -39625,7 +40561,7 @@ module.exports = {
     showDialogWelcome: false
 };
 
-},{"./_colours":91}],118:[function(require,module,exports){
+},{"./_colours":94}],121:[function(require,module,exports){
 const colours = require('./_colours');
 
 function drawDialogWildWarn() {
@@ -39761,7 +40697,7 @@ module.exports = {
     drawDialogWildWarn
 };
 
-},{"./_colours":91}],119:[function(require,module,exports){
+},{"./_colours":94}],122:[function(require,module,exports){
 const BZLib = require('./bzlib');
 const FileDownloadStream = require('./lib/net/file-download-stream');
 const Long = require('long');
@@ -40150,7 +41086,7 @@ Utility.bitmask = new Int32Array([
 
 module.exports = Utility;
 
-},{"./bzlib":39,"./lib/net/file-download-stream":51,"long":33}],120:[function(require,module,exports){
+},{"./bzlib":42,"./lib/net/file-download-stream":54,"long":36}],123:[function(require,module,exports){
 module.exports={
     "CLIENT": 204,
     "CONFIG": 85,
@@ -40164,7 +41100,7 @@ module.exports={
     "TEXTURES": 17
 }
 
-},{}],121:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 const C_0 = '0'.charCodeAt(0);
 const C_9 = '9'.charCodeAt(0);
 const C_A = 'a'.charCodeAt(0);
@@ -41330,7 +42266,7 @@ WordFilter.ignoreList = ['cook', "cook's", 'cooks', 'seeks', 'sheet'];
 
 module.exports = WordFilter;
 
-},{}],122:[function(require,module,exports){
+},{}],125:[function(require,module,exports){
 const GameData = require('./game-data');
 const Scene = require('./scene');
 const GameModel = require('./game-model');
@@ -43856,4 +44792,4 @@ World.colourTransparent = 12345678;
 
 module.exports = World;
 
-},{"./game-data":44,"./game-model":45,"./scene":88,"./utility":119,"ndarray":34}]},{},[1]);
+},{"./game-data":47,"./game-model":48,"./scene":91,"./utility":122,"ndarray":37}]},{},[1]);

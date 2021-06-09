@@ -29381,6 +29381,11 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
+        this.rgbPixels = new Uint8Array(
+            this.pixels.buffer,
+            this.pixels.byteOffset
+        );
+
         this.imageData = mudclient._graphics.ctx.createImageData(width, height);
 
         this.setComplete();
@@ -29396,13 +29401,14 @@ class Surface {
 
     setComplete() {
         for (let i = 0; i < this.area * 4; i += 4) {
-            const pixel = this.pixels[i / 4];
+            const blue = this.rgbPixels[i];
 
-            this.imageData.data[i] = (pixel >> 16) & 255;
-            this.imageData.data[i + 1] = (pixel >> 8) & 255;
-            this.imageData.data[i + 2] = pixel & 255;
-            this.imageData.data[i + 3] = 255;
+            this.rgbPixels[i] = this.rgbPixels[i + 2];
+            this.rgbPixels[i + 2] = blue;
+            this.rgbPixels[i + 3] = 255;
         }
+
+        this.imageData.data.set(this.rgbPixels);
     }
 
     setBounds(x1, y1, x2, y2) {

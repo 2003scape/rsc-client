@@ -10,7 +10,8 @@ if (typeof window === 'undefined') {
 
 (async () => {
     // lazy way to load it for now but it works
-    window.rscWASM = (await loader.instantiate(WASM)).exports;
+    //window.rscWASM = (await loader.instantiate(WASM)).exports;
+    window.rscWASM = (await WebAssembly.instantiate(WASM)).instance.exports;
 
     const mcContainer = document.createElement('div');
     const args = window.location.hash.slice(1).split(',');
@@ -24,7 +25,8 @@ if (typeof window === 'undefined') {
         mouseWheel: true,
         resetCompass: true,
         zoomCamera: true,
-        accountManagement: true
+        accountManagement: true,
+        mobile: false
     });
 
     mc.members = args[0] === 'members';

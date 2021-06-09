@@ -14,15 +14,16 @@ const DEBUG_TIMES = [];
 
 class Surface {
     constructor(width, height, limit, mudclient) {
-        const {
+        /*const {
             __pin,
             __newArray,
-            __getArrayView,
             __getInt32ArrayView,
             __getUint8ArrayView,
             Int32Array_ID,
             Uint8Array_ID
-        } = window.rscWASM;
+        } = window.rscWASM;*/
+
+        const { memory } = window.rscWASM;
 
         this.mudclient = mudclient;
 
@@ -45,11 +46,8 @@ class Surface {
         this.area = width * height;
         //this.pixels = new Int32Array(width * height);
 
-        this.pixelsPtr = __pin(
-            __newArray(Int32Array_ID, { length: width * height })
-        );
-
-        this.pixels = __getInt32ArrayView(this.pixelsPtr);
+        this.pixels = new Int32Array(memory.buffer, 0, width * height);
+        console.log(this.pixels.length);
 
         this.surfacePixels = [];
         this.surfacePixels.length = limit;
@@ -71,13 +69,9 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
-        this.canvasPixelsPtr = __pin(
-            __newArray(Uint8Array_ID, { length: width * height * 4 })
-        );
-
-        this.canvasPixels = __getUint8ArrayView(this.canvasPixelsPtr);
-
         this.imageData = mudclient._graphics.ctx.createImageData(width, height);
+
+        this.rgbPixels = new Uint8Array(memory.buffer, 0, width * height * 4);
 
         this.setComplete();
     }
@@ -94,19 +88,17 @@ class Surface {
         const start = Date.now();
 
         /*for (let i = 0; i < this.area * 4; i += 4) {
-            const pixel = this.pixels[i / 4];
-
-            this.imageData.data[i] = (pixel >> 16) & 255;
-            this.imageData.data[i + 1] = (pixel >> 8) & 255;
-            this.imageData.data[i + 2] = pixel & 255;
-            this.imageData.data[i + 3] = 255;
+            const blue = this.rgbPixels[i];
+            this.rgbPixels[i] = this.rgbPixels[i + 2];
+            this.rgbPixels[i + 2] = blue;
+            this.rgbPixels[i + 3] = 255;
         }*/
 
-        window.rscWASM.fixPixels(800 * 600 * 4, this.pixelsPtr, this.canvasPixelsPtr);
+        window.rscWASM.rgbToRGBA(800 * 600 * 4, this.pixels.byteOffset);
 
         DEBUG_TIMES.push(Date.now() - start);
 
-        this.imageData.data.set(this.canvasPixels, 0);
+        this.imageData.data.set(this.rgbPixels);
 
         if (DEBUG_TIMES.length >= 100) {
             console.log(

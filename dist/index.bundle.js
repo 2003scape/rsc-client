@@ -4,7 +4,7 @@
 const loader = require('@assemblyscript/loader');
 const mudclient = require('./src/mudclient');
 
-const WASM = Buffer("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","base64");
+const WASM = Buffer("AGFzbQEAAAABCQJgAABgAn9/AAMDAgABBQQBAIEGBiUGfwBBgAgLfwBBgAgLfwBBgAgLfwBBgIiAGAt/AEEAC38AQQELB4MBCQZtZW1vcnkCABFfX3dhc21fY2FsbF9jdG9ycwAACXJnYlRvUkdCQQABDF9fZHNvX2hhbmRsZQMACl9fZGF0YV9lbmQDAQ1fX2dsb2JhbF9iYXNlAwILX19oZWFwX2Jhc2UDAw1fX21lbW9yeV9iYXNlAwQMX190YWJsZV9iYXNlAwUKTgIDAAELSAEEfyAAQQFOBEADQCABIAJqIgNBA2pB/wE6AAAgA0ECaiIELQAAIQUgBCADLQAAOgAAIAMgBToAACACQQRqIgIgAEgNAAsLCwAvCXByb2R1Y2VycwEMcHJvY2Vzc2VkLWJ5AQxEZWJpYW4gY2xhbmcIMTEuMC4xLTI=","base64");
 
 if (typeof window === 'undefined') {
     throw new Error('rsc-client needs to run in a browser');
@@ -12,7 +12,8 @@ if (typeof window === 'undefined') {
 
 (async () => {
     // lazy way to load it for now but it works
-    window.rscWASM = (await loader.instantiate(WASM)).exports;
+    //window.rscWASM = (await loader.instantiate(WASM)).exports;
+    window.rscWASM = (await WebAssembly.instantiate(WASM)).instance.exports;
 
     const mcContainer = document.createElement('div');
     const args = window.location.hash.slice(1).split(',');
@@ -26,11 +27,12 @@ if (typeof window === 'undefined') {
         mouseWheel: true,
         resetCompass: true,
         zoomCamera: true,
-        accountManagement: true
+        accountManagement: true,
+        mobile: false
     });
 
     mc.members = args[0] === 'members';
-    mc.server = args[1] ? args[1] : 'cellar';
+    mc.server = args[1] ? args[1] : '127.0.0.1';
     mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
 
     mc.threadSleep = 10;
@@ -15708,7 +15710,7 @@ class GameShell {
         this._container.style.position = 'relative';
 
         this._canvas = document.createElement('canvas');
-        //this._canvas.style.width = '100%';
+        this._canvas.style.width = '100%';
         this._canvas.style.height = '100%';
 
         this._container.appendChild(this._canvas);
@@ -30236,15 +30238,16 @@ const DEBUG_TIMES = [];
 
 class Surface {
     constructor(width, height, limit, mudclient) {
-        const {
+        /*const {
             __pin,
             __newArray,
-            __getArrayView,
             __getInt32ArrayView,
             __getUint8ArrayView,
             Int32Array_ID,
             Uint8Array_ID
-        } = window.rscWASM;
+        } = window.rscWASM;*/
+
+        const { memory } = window.rscWASM;
 
         this.mudclient = mudclient;
 
@@ -30267,11 +30270,8 @@ class Surface {
         this.area = width * height;
         //this.pixels = new Int32Array(width * height);
 
-        this.pixelsPtr = __pin(
-            __newArray(Int32Array_ID, { length: width * height })
-        );
-
-        this.pixels = __getInt32ArrayView(this.pixelsPtr);
+        this.pixels = new Int32Array(memory.buffer, 0, width * height);
+        console.log(this.pixels.length);
 
         this.surfacePixels = [];
         this.surfacePixels.length = limit;
@@ -30293,13 +30293,9 @@ class Surface {
         this.spriteTranslateX = new Int32Array(limit);
         this.spriteTranslateY = new Int32Array(limit);
 
-        this.canvasPixelsPtr = __pin(
-            __newArray(Uint8Array_ID, { length: width * height * 4 })
-        );
-
-        this.canvasPixels = __getUint8ArrayView(this.canvasPixelsPtr);
-
         this.imageData = mudclient._graphics.ctx.createImageData(width, height);
+
+        this.rgbPixels = new Uint8Array(memory.buffer, 0, width * height * 4);
 
         this.setComplete();
     }
@@ -30316,19 +30312,17 @@ class Surface {
         const start = Date.now();
 
         /*for (let i = 0; i < this.area * 4; i += 4) {
-            const pixel = this.pixels[i / 4];
-
-            this.imageData.data[i] = (pixel >> 16) & 255;
-            this.imageData.data[i + 1] = (pixel >> 8) & 255;
-            this.imageData.data[i + 2] = pixel & 255;
-            this.imageData.data[i + 3] = 255;
+            const blue = this.rgbPixels[i];
+            this.rgbPixels[i] = this.rgbPixels[i + 2];
+            this.rgbPixels[i + 2] = blue;
+            this.rgbPixels[i + 3] = 255;
         }*/
 
-        window.rscWASM.fixPixels(800 * 600 * 4, this.pixelsPtr, this.canvasPixelsPtr);
+        window.rscWASM.rgbToRGBA(800 * 600 * 4, this.pixels.byteOffset);
 
         DEBUG_TIMES.push(Date.now() - start);
 
-        this.imageData.data.set(this.canvasPixels, 0);
+        this.imageData.data.set(this.rgbPixels);
 
         if (DEBUG_TIMES.length >= 100) {
             console.log(

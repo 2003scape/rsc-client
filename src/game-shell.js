@@ -53,7 +53,7 @@ class GameShell {
         this._container.style.position = 'relative';
 
         this._canvas = document.createElement('canvas');
-        //this._canvas.style.width = '100%';
+        this._canvas.style.width = '100%';
         this._canvas.style.height = '100%';
 
         this._container.appendChild(this._canvas);

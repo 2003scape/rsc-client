@@ -678,19 +678,6 @@ class GameShell {
         }
     }
 
-    update(graphics) {
-        this.paint(graphics);
-    }
-
-    paint() {
-        if (this.loadingStep === 2 && this.imageLogo) {
-            this.drawLoadingScreen(
-                this.loadingProgressPercent,
-                this.loadingProgessText
-            );
-        }
-    }
-
     async loadJagex() {
         this.graphics.setColor(Color.black);
         this.graphics.fillRect(0, 0, this.appletWidth, this.appletHeight);

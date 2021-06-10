@@ -2,11 +2,12 @@ const clientOpcodes = require('../opcodes/client');
 const colours = require('./_colours');
 
 function drawOptionMenu() {
-    const fontSize = this.options.mobile ? 5 : 5;
-    const fontHeight = this.options.mobile ? 14 : 18;
+    const fontSize = this.options.mobile ? 5 : 1;
+    const fontHeight = this.options.mobile ? 18 : 12;
     const maxHeight = fontHeight * 5;
 
     const uiX = this.options.mobile ? 48 : 6;
+
     const uiY = this.options.mobile
         ? (this.gameHeight / 2 - maxHeight / 2) | 0
         : 0;

@@ -18,16 +18,16 @@ class Utility {
         return i & 0xff;
     }
 
-    static getUnsignedShort(buffer, i) {
-        return ((buffer[i] & 0xff) << 8) + (buffer[i + 1] & 0xff);
+    static getUnsignedShort(buffer, offset) {
+        return ((buffer[offset] & 0xff) << 8) + (buffer[offset + 1] & 0xff);
     }
 
-    static getUnsignedInt(buffer, i) {
+    static getUnsignedInt(buffer, offset) {
         return (
-            ((buffer[i] & 0xff) << 24) +
-            ((buffer[i + 1] & 0xff) << 16) +
-            ((buffer[i + 2] & 0xff) << 8) +
-            (buffer[i + 3] & 0xff)
+            ((buffer[offset] & 0xff) << 24) +
+            ((buffer[offset + 1] & 0xff) << 16) +
+            ((buffer[offset + 2] & 0xff) << 8) +
+            (buffer[offset + 3] & 0xff)
         );
     }
 
@@ -41,28 +41,28 @@ class Utility {
             );
     }
 
-    static getSignedShort(buffer, i) {
-        let j =
-            (Utility.getUnsignedByte(buffer[i]) * 256 +
-                Utility.getUnsignedByte(buffer[i + 1])) |
+    static getSignedShort(buffer, offset) {
+        let i =
+            (Utility.getUnsignedByte(buffer[offset]) * 256 +
+                Utility.getUnsignedByte(buffer[offset + 1])) |
             0;
 
-        if (j > 32767) {
-            j -= 0x10000;
+        if (i > 32767) {
+            i -= 0x10000;
         }
 
-        return j;
+        return i;
     }
 
-    static getStackInt(buffer, i) {
-        if ((buffer[i] & 0xff) < 128) {
-            return buffer[i];
+    static getStackInt(buffer, offset) {
+        if ((buffer[offset] & 0xff) < 128) {
+            return buffer[offset];
         } else {
             return (
-                (((buffer[i] & 0xff) - 128) << 24) +
-                ((buffer[i + 1] & 0xff) << 16) +
-                ((buffer[i + 2] & 0xff) << 8) +
-                (buffer[i + 3] & 0xff)
+                (((buffer[offset] & 0xff) - 128) << 24) +
+                ((buffer[offset + 1] & 0xff) << 16) +
+                ((buffer[offset + 2] & 0xff) << 8) +
+                (buffer[offset + 3] & 0xff)
             );
         }
     }
@@ -76,6 +76,7 @@ class Utility {
             bits +=
                 (buffer[byteOffset++] & Utility.bitmask[bitOffset]) <<
                 (length - bitOffset);
+
             length -= bitOffset;
         }
 
@@ -151,8 +152,8 @@ class Utility {
 
         let hash = new Long(0);
 
-        for (let j = 0; j < cleaned.length; j++) {
-            let charCode = cleaned.charCodeAt(j);
+        for (let i = 0; i < cleaned.length; i++) {
+            let charCode = cleaned.charCodeAt(i);
 
             hash = hash.multiply(37);
 
@@ -195,8 +196,8 @@ class Utility {
         return username;
     }
 
-    static getDataFileOffset(fileName, data) {
-        let numEntries = Utility.getUnsignedShort(data, 0);
+    static getDataFileOffset(fileName, buffer) {
+        let numEntries = Utility.getUnsignedShort(buffer, 0);
         let wantedHash = 0;
 
         fileName = fileName.toUpperCase();
@@ -209,16 +210,16 @@ class Utility {
 
         for (let entry = 0; entry < numEntries; entry++) {
             let fileHash =
-                ((data[entry * 10 + 2] & 0xff) * 0x1000000 +
-                    (data[entry * 10 + 3] & 0xff) * 0x10000 +
-                    (data[entry * 10 + 4] & 0xff) * 256 +
-                    (data[entry * 10 + 5] & 0xff)) |
+                ((buffer[entry * 10 + 2] & 0xff) * 0x1000000 +
+                    (buffer[entry * 10 + 3] & 0xff) * 0x10000 +
+                    (buffer[entry * 10 + 4] & 0xff) * 256 +
+                    (buffer[entry * 10 + 5] & 0xff)) |
                 0;
 
             let fileSize =
-                ((data[entry * 10 + 9] & 0xff) * 0x10000 +
-                    (data[entry * 10 + 10] & 0xff) * 256 +
-                    (data[entry * 10 + 11] & 0xff)) |
+                ((buffer[entry * 10 + 9] & 0xff) * 0x10000 +
+                    (buffer[entry * 10 + 10] & 0xff) * 256 +
+                    (buffer[entry * 10 + 11] & 0xff)) |
                 0;
 
             if (fileHash === wantedHash) {
@@ -270,12 +271,13 @@ class Utility {
     static unpackData(fileName, extraSize, archiveData, fileData) {
         const numEntries =
             ((archiveData[0] & 0xff) * 256 + (archiveData[1] & 0xff)) | 0;
+
         let wantedHash = 0;
 
         fileName = fileName.toUpperCase();
 
-        for (let l = 0; l < fileName.length; l++) {
-            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(l) - 32;
+        for (let i = 0; i < fileName.length; i++) {
+            wantedHash = ((wantedHash * 61) | 0) + fileName.charCodeAt(i) - 32;
         }
 
         let offset = 2 + numEntries * 10;
@@ -287,11 +289,13 @@ class Utility {
                     (archiveData[entry * 10 + 4] & 0xff) * 256 +
                     (archiveData[entry * 10 + 5] & 0xff)) |
                 0;
+
             const fileSize =
                 ((archiveData[entry * 10 + 6] & 0xff) * 0x10000 +
                     (archiveData[entry * 10 + 7] & 0xff) * 256 +
                     (archiveData[entry * 10 + 8] & 0xff)) |
                 0;
+
             const fileSizeCompressed =
                 ((archiveData[entry * 10 + 9] & 0xff) * 0x10000 +
                     (archiveData[entry * 10 + 10] & 0xff) * 256 +

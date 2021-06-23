@@ -156,7 +156,6 @@ class mudclient extends GameConnection {
         ]);
 
         this.itemsAboveHeadCount = 0;
-        this.selectedItemInventoryIndex = 0;
         this.statFatigue = 0;
         this.fatigueSleeping = 0;
         this.tradeRecipientConfirmItemsCount = 0;
@@ -173,14 +172,11 @@ class mudclient extends GameConnection {
         this.planeHeight = 0;
         this.planeMultiplier = 0;
         this.playerQuestPoints = 0;
-        this.bankActivePage = 0;
         this.welcomeLastLoggedInDays = 0;
         this.inventoryItemsCount = 0;
         this.duelOpponentNameHash = new Long(0);
         this.minimapRandom1 = 0;
         this.minimapRandom2 = 0;
-        this.objectCount = 0;
-        this.duelOfferItemCount = 0;
         this.objectCount = 0;
         this.duelOfferItemCount = 0;
         this.cameraAutoRotatePlayerX = 0;
@@ -211,7 +207,6 @@ class mudclient extends GameConnection {
         this.newBankItems = new Int32Array(256);
         this.newBankItemsCount = new Int32Array(256);
         this.teleportBubbleTime = new Int32Array(50);
-        this.tradeConfirmAccepted = false;
         this.receivedMessageX = new Int32Array(50);
         this.receivedMessageY = new Int32Array(50);
         this.receivedMessageMidPoint = new Int32Array(50);
@@ -244,7 +239,6 @@ class mudclient extends GameConnection {
         this.lastObjectAnimationNumberTorch = -1;
         this.lastObjectAnimationNumberClaw = -1;
         this.planeIndex = -1;
-        this.welcomScreenAlreadyShown = false;
         this.cameraRotation = 128;
         this.teleportBubbleX = new Int32Array(50);
         this.errorLoadingData = false;
@@ -280,7 +274,6 @@ class mudclient extends GameConnection {
         this.showOptionMenu = false;
         this.playerStatCurrent = new Int32Array(PLAYER_STAT_COUNT);
         this.teleportBubbleType = new Int32Array(50);
-        this.errorLoadingCodebase = false;
         this.showDialogShop = false;
         this.shopItem = new Int32Array(256);
         this.shopItemCount = new Int32Array(256);

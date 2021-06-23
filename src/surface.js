@@ -419,10 +419,11 @@ class Surface {
     }
 
     fadeToBlack() {
-        let k = this.width2 * this.height2;
+        const area = this.width2 * this.height2;
 
-        for (let j = 0; j < k; j++) {
+        for (let j = 0; j < area; j++) {
             let i = this.pixels[j] & 0xffffff;
+
             this.pixels[j] =
                 ((i >>> 1) & 0x7f7f7f) +
                 ((i >>> 2) & 0x3f3f3f) +

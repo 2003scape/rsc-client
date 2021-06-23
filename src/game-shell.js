@@ -80,7 +80,6 @@ class GameShell {
         this.mouseScrollDelta = 0;
 
         this.mouseActionTimeout = 0;
-        this.loadingStep = 0;
         this.logoHeaderText = null;
         this.mouseX = 0;
         this.mouseY = 0;
@@ -98,11 +97,10 @@ class GameShell {
         this.appletHeight = 346;
         this.targetFPS = 20;
         this.maxDrawTime = 1000;
-        this.timings = [];
         this.loadingStep = 1;
         this.hasRefererLogoNotUsed = false;
         this.loadingProgessText = 'Loading';
-        this.fontTimesRoman15 = new Font('TimesRoman', 0, 15);
+        this.fontTimesRoman15 = new Font('Times New Roman', 0, 15);
         this.fontHelvetica13b = new Font('Helvetica', Font.BOLD, 13);
         this.fontHelvetica12 = new Font('Helvetica', 0, 12);
         this.keyLeft = false;
@@ -776,7 +774,7 @@ class GameShell {
 
         // not sure where this would have been used. maybe to indicate a
         // special client?
-        if (this.logoHeaderText !== null) {
+        if (this.logoHeaderText) {
             this.graphics.setColor(Color.white);
             this.drawString(
                 this.graphics,

@@ -22,7 +22,6 @@ class GameCharacter {
         this.healthCurrent = 0;
         this.healthMax = 0;
         this.combatTimer = 0;
-        this.level = 0;
         this.colourHair = 0;
         this.colourTop = 0;
         this.colourBottom = 0;

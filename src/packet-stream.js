@@ -94,11 +94,11 @@ class PacketStream {
 
     writePacket(i) {
         if (this.socketException) {
-            this.packetetStart = 0;
-            this.packetetEnd = 3;
+            this.packetStart = 0;
+            this.packetEnd = 3;
             this.socketException = false;
 
-            throw Error(this.socketExceptionMessage);
+            throw new Error(this.socketExceptionMessage);
         }
 
         this.delay++;
@@ -119,6 +119,7 @@ class PacketStream {
     sendPacket() {
         if (this.isaacOutgoing !== null) {
             let i = this.packetData[this.packetStart + 2] & 0xff;
+
             this.packetData[this.packetStart + 2] =
                 (i + this.isaacOutgoing.getNextValue()) & 0xff;
         }

@@ -875,7 +875,7 @@ async function handleLoginScreenInput() {
                 await this.register(this.registerUser, this.registerPassword);
             }
         } else {
-            if (this.panelLoginNewUser.isClicked(this.controlLoginNewOk)) {
+            if (this.panelLoginNewUser.isClicked(this.controlLoginNewOK)) {
                 this.loginScreen = 0;
             }
         }

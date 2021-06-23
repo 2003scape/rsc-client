@@ -107,9 +107,9 @@ class Scene {
         this.spriteY = new Int32Array(spriteCount);
         this.spriteTranslateX = new Int32Array(spriteCount);
 
-        if (this.aByteArray434 === null) {
+        /*if (this.aByteArray434 === null) {
             this.aByteArray434 = new Int8Array(17691);
-        }
+        }*/
 
         this.cameraX = 0;
         this.cameraY = 0;
@@ -1409,6 +1409,7 @@ class Scene {
         this.mousePickingActive = true;
     }
 
+    // TODO remove these getters
     getMousePickedCount() {
         return this.mousePickedCount;
     }
@@ -1761,6 +1762,7 @@ class Scene {
 
                                 polygon_1.model = gameModel;
                                 polygon_1.face = face;
+
                                 this.initialisePolygon3D(
                                     this.visiblePolygonsCount
                                 );
@@ -4710,7 +4712,7 @@ class Scene {
     }
 }
 
-Scene.aByteArray434 = null;
+//Scene.aByteArray434 = null;
 Scene.frustumFarZ = 0;
 Scene.frustumMaxX = 0;
 Scene.frustumMaxY = 0;

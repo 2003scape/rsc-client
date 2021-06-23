@@ -18,10 +18,12 @@ class World {
         this.memberMapPack = null;
 
         this.worldInitialised = true;
+
         this.objectAdjacency = ndarray(
             new Int32Array(this.regionWidth * this.regionHeight),
             [this.regionWidth, this.regionHeight]
         );
+
         this.tileDirection = ndarray(new Int8Array(4 * 2304), [4, 2304]);
 
         this.wallModels = [];
@@ -44,10 +46,12 @@ class World {
         this.terrainColour = ndarray(new Int8Array(4 * 2304), [4, 2304]);
         this.localY = new Int32Array(18432);
         this.tileDecoration = ndarray(new Int8Array(4 * 2304), [4, 2304]);
+
         this.routeVia = ndarray(
             new Int32Array(this.regionWidth * this.regionHeight),
             [this.regionWidth, this.regionHeight]
         );
+
         this.wallsDiagonal = ndarray(new Int32Array(4 * 2304), [4, 2304]);
         this.wallsEastWest = ndarray(new Int8Array(4 * 2304), [4, 2304]);
         this.aBoolean592 = false;
@@ -324,232 +328,202 @@ class World {
     }
 
     _loadSection_from4I(x, y, plane, chunk) {
-        let mapName =
+        const mapName =
             'm' + plane + ((x / 10) | 0) + (x % 10) + ((y / 10) | 0) + (y % 10);
 
-        try {
-            if (this.landscapePack !== null) {
-                let mapData = Utility.loadData(
-                    mapName + '.hei',
-                    0,
-                    this.landscapePack
-                );
-
-                if (mapData === null && this.memberLandscapePack !== null) {
-                    mapData = Utility.loadData(
-                        mapName + '.hei',
-                        0,
-                        this.memberLandscapePack
-                    );
-                }
-
-                if (mapData !== null && mapData.length > 0) {
-                    let off = 0;
-                    let lastVal = 0;
-
-                    for (let tile = 0; tile < 2304; ) {
-                        let val = mapData[off++] & 0xff;
-
-                        if (val < 128) {
-                            this.terrainHeight.set(chunk, tile++, val & 0xff);
-                            lastVal = val;
-                        }
-
-                        if (val >= 128) {
-                            for (let i = 0; i < val - 128; i++) {
-                                this.terrainHeight.set(
-                                    chunk,
-                                    tile++,
-                                    lastVal & 0xff
-                                );
-                            }
-                        }
-                    }
-
-                    lastVal = 64;
-
-                    for (let tileY = 0; tileY < 48; tileY++) {
-                        for (let tileX = 0; tileX < 48; tileX++) {
-                            lastVal =
-                                (this.terrainHeight.get(
-                                    chunk,
-                                    tileX * 48 + tileY
-                                ) +
-                                    lastVal) &
-                                0x7f;
-                            this.terrainHeight.set(
-                                chunk,
-                                tileX * 48 + tileY,
-                                (lastVal * 2) & 0xff
-                            );
-                        }
-                    }
-
-                    lastVal = 0;
-
-                    for (let tile = 0; tile < 2304; ) {
-                        let val = mapData[off++] & 0xff;
-
-                        if (val < 128) {
-                            this.terrainColour.set(chunk, tile++, val & 0xff);
-                            lastVal = val;
-                        }
-
-                        if (val >= 128) {
-                            for (let i = 0; i < val - 128; i++) {
-                                this.terrainColour.set(
-                                    chunk,
-                                    tile++,
-                                    lastVal & 0xff
-                                );
-                            }
-                        }
-                    }
-
-                    lastVal = 35;
-
-                    for (let tileY = 0; tileY < 48; tileY++) {
-                        for (let tileX = 0; tileX < 48; tileX++) {
-                            lastVal =
-                                (this.terrainColour.get(
-                                    chunk,
-                                    tileX * 48 + tileY
-                                ) +
-                                    lastVal) &
-                                0x7f; // ??? wat
-                            this.terrainColour.set(
-                                chunk,
-                                tileX * 48 + tileY,
-                                (lastVal * 2) & 0xff
-                            );
-                        }
-                    }
-                } else {
-                    for (let tile = 0; tile < 2304; tile++) {
-                        this.terrainHeight.set(chunk, tile, 0);
-                        this.terrainColour.set(chunk, tile, 0);
-                    }
-                }
-
-                mapData = Utility.loadData(mapName + '.dat', 0, this.mapPack);
-
-                if (mapData === null && this.memberMapPack !== null) {
-                    mapData = Utility.loadData(
-                        mapName + '.dat',
-                        0,
-                        this.memberMapPack
-                    );
-                }
-
-                if (mapData === null || mapData.length === 0) {
-                    throw new Error();
-                }
-
-                let off = 0;
-
-                for (let tile = 0; tile < 2304; tile++) {
-                    this.wallsNorthSouth.set(chunk, tile, mapData[off++]);
-                }
-
-                for (let tile = 0; tile < 2304; tile++) {
-                    this.wallsEastWest.set(chunk, tile, mapData[off++]);
-                }
-
-                for (let tile = 0; tile < 2304; tile++) {
-                    this.wallsDiagonal.set(chunk, tile, mapData[off++] & 0xff);
-                }
-
-                for (let tile = 0; tile < 2304; tile++) {
-                    let val = mapData[off++] & 0xff;
-
-                    if (val > 0) {
-                        this.wallsDiagonal.set(chunk, tile, val + 12000);
-                    }
-                }
-
-                for (let tile = 0; tile < 2304; ) {
-                    let val = mapData[off++] & 0xff;
-
-                    if (val < 128) {
-                        this.wallsRoof.set(chunk, tile++, val & 0xff);
-                    } else {
-                        for (let i = 0; i < val - 128; i++) {
-                            this.wallsRoof.set(chunk, tile++, 0);
-                        }
-                    }
-                }
-
-                let lastVal = 0;
-
-                for (let tile = 0; tile < 2304; ) {
-                    let val = mapData[off++] & 0xff;
-
-                    if (val < 128) {
-                        this.tileDecoration.set(chunk, tile++, val & 0xff);
-                        lastVal = val;
-                    } else {
-                        for (let i = 0; i < val - 128; i++) {
-                            this.tileDecoration.set(chunk, tile++, lastVal);
-                        }
-                    }
-                }
-
-                for (let tile = 0; tile < 2304; ) {
-                    let val = mapData[off++] & 0xff;
-
-                    if (val < 128) {
-                        this.tileDirection.set(chunk, tile++, val & 0xff);
-                    } else {
-                        for (let i = 0; i < val - 128; i++) {
-                            this.tileDirection.set(chunk, tile++, 0);
-                        }
-                    }
-                }
-
-                mapData = Utility.loadData(mapName + '.loc', 0, this.mapPack);
-
-                if (mapData !== null && mapData.length > 0) {
-                    off = 0;
-
-                    for (let tile = 0; tile < 2304; ) {
-                        let val = mapData[off++] & 0xff;
-
-                        if (val < 128) {
-                            this.wallsDiagonal.set(chunk, tile++, val + 48000);
-                        } else {
-                            tile += val - 128;
-                        }
-                    }
-
-                    return;
-                }
-            } else {
-                console.log('stub. removed reading from ../gamedata/');
-            }
-
+        if (!this.landscapePack) {
             return;
-        } catch (e) {
-            console.error(e);
         }
 
-        for (let tile = 0; tile < 2304; tile++) {
-            this.terrainHeight.set(chunk, tile, 0);
-            this.terrainColour.set(chunk, tile, 0);
-            this.wallsNorthSouth.set(chunk, tile, 0);
-            this.wallsEastWest.set(chunk, tile, 0);
-            this.wallsDiagonal.set(chunk, tile, 0);
-            this.wallsRoof.set(chunk, tile, 0);
-            this.tileDecoration.set(chunk, tile, 0);
+        let mapData = Utility.loadData(mapName + '.hei', 0, this.landscapePack);
 
-            if (plane === 0) {
-                this.tileDecoration.set(chunk, tile, -6);
+        if (!mapData && this.memberLandscapePack) {
+            mapData = Utility.loadData(
+                mapName + '.hei',
+                0,
+                this.memberLandscapePack
+            );
+        }
+
+        if (mapData && mapData.length) {
+            let off = 0;
+            let lastVal = 0;
+
+            for (let tile = 0; tile < 2304; ) {
+                let val = mapData[off++] & 0xff;
+
+                if (val < 128) {
+                    this.terrainHeight.set(chunk, tile++, val & 0xff);
+                    lastVal = val;
+                }
+
+                if (val >= 128) {
+                    for (let i = 0; i < val - 128; i++) {
+                        this.terrainHeight.set(chunk, tile++, lastVal & 0xff);
+                    }
+                }
             }
 
-            if (plane === 3) {
-                this.tileDecoration.set(chunk, tile, 8);
+            lastVal = 64;
+
+            for (let tileY = 0; tileY < 48; tileY++) {
+                for (let tileX = 0; tileX < 48; tileX++) {
+                    lastVal =
+                        (this.terrainHeight.get(chunk, tileX * 48 + tileY) +
+                            lastVal) &
+                        0x7f;
+                    this.terrainHeight.set(
+                        chunk,
+                        tileX * 48 + tileY,
+                        (lastVal * 2) & 0xff
+                    );
+                }
             }
 
-            this.tileDirection.set(chunk, tile, 0);
+            lastVal = 0;
+
+            for (let tile = 0; tile < 2304; ) {
+                let val = mapData[off++] & 0xff;
+
+                if (val < 128) {
+                    this.terrainColour.set(chunk, tile++, val & 0xff);
+                    lastVal = val;
+                }
+
+                if (val >= 128) {
+                    for (let i = 0; i < val - 128; i++) {
+                        this.terrainColour.set(chunk, tile++, lastVal & 0xff);
+                    }
+                }
+            }
+
+            lastVal = 35;
+
+            for (let tileY = 0; tileY < 48; tileY++) {
+                for (let tileX = 0; tileX < 48; tileX++) {
+                    lastVal =
+                        (this.terrainColour.get(chunk, tileX * 48 + tileY) +
+                            lastVal) &
+                        0x7f; // ??? wat
+                    this.terrainColour.set(
+                        chunk,
+                        tileX * 48 + tileY,
+                        (lastVal * 2) & 0xff
+                    );
+                }
+            }
+        } else {
+            for (let tile = 0; tile < 2304; tile++) {
+                this.terrainHeight.set(chunk, tile, 0);
+                this.terrainColour.set(chunk, tile, 0);
+            }
+        }
+
+        mapData = Utility.loadData(mapName + '.dat', 0, this.mapPack);
+
+        if (!mapData && this.memberMapPack) {
+            mapData = Utility.loadData(mapName + '.dat', 0, this.memberMapPack);
+        }
+
+        if (mapData && mapData.length) {
+            let off = 0;
+
+            for (let tile = 0; tile < 2304; tile++) {
+                this.wallsNorthSouth.set(chunk, tile, mapData[off++]);
+            }
+
+            for (let tile = 0; tile < 2304; tile++) {
+                this.wallsEastWest.set(chunk, tile, mapData[off++]);
+            }
+
+            for (let tile = 0; tile < 2304; tile++) {
+                this.wallsDiagonal.set(chunk, tile, mapData[off++] & 0xff);
+            }
+
+            for (let tile = 0; tile < 2304; tile++) {
+                let val = mapData[off++] & 0xff;
+
+                if (val > 0) {
+                    this.wallsDiagonal.set(chunk, tile, val + 12000);
+                }
+            }
+
+            for (let tile = 0; tile < 2304; ) {
+                let val = mapData[off++] & 0xff;
+
+                if (val < 128) {
+                    this.wallsRoof.set(chunk, tile++, val & 0xff);
+                } else {
+                    for (let i = 0; i < val - 128; i++) {
+                        this.wallsRoof.set(chunk, tile++, 0);
+                    }
+                }
+            }
+
+            let lastVal = 0;
+
+            for (let tile = 0; tile < 2304; ) {
+                let val = mapData[off++] & 0xff;
+
+                if (val < 128) {
+                    this.tileDecoration.set(chunk, tile++, val & 0xff);
+                    lastVal = val;
+                } else {
+                    for (let i = 0; i < val - 128; i++) {
+                        this.tileDecoration.set(chunk, tile++, lastVal);
+                    }
+                }
+            }
+
+            for (let tile = 0; tile < 2304; ) {
+                let val = mapData[off++] & 0xff;
+
+                if (val < 128) {
+                    this.tileDirection.set(chunk, tile++, val & 0xff);
+                } else {
+                    for (let i = 0; i < val - 128; i++) {
+                        this.tileDirection.set(chunk, tile++, 0);
+                    }
+                }
+            }
+
+            mapData = Utility.loadData(mapName + '.loc', 0, this.mapPack);
+
+            if (mapData && mapData.length) {
+                off = 0;
+
+                for (let tile = 0; tile < 2304; ) {
+                    let val = mapData[off++] & 0xff;
+
+                    if (val < 128) {
+                        this.wallsDiagonal.set(chunk, tile++, val + 48000);
+                    } else {
+                        tile += val - 128;
+                    }
+                }
+
+                return;
+            }
+        } else {
+            for (let tile = 0; tile < 2304; tile++) {
+                this.terrainHeight.set(chunk, tile, 0);
+                this.terrainColour.set(chunk, tile, 0);
+                this.wallsNorthSouth.set(chunk, tile, 0);
+                this.wallsEastWest.set(chunk, tile, 0);
+                this.wallsDiagonal.set(chunk, tile, 0);
+                this.wallsRoof.set(chunk, tile, 0);
+                this.tileDecoration.set(chunk, tile, 0);
+
+                if (plane === 0) {
+                    this.tileDecoration.set(chunk, tile, -6);
+                }
+
+                if (plane === 3) {
+                    this.tileDecoration.set(chunk, tile, 8);
+                }
+
+                this.tileDirection.set(chunk, tile, 0);
+            }
         }
     }
 

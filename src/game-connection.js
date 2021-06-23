@@ -26,7 +26,7 @@ class GameConnection extends GameShell {
         this.sessionID = new Long(0);
         this.worldFullTimeout = 0;
         this.moderatorLevel = 0;
-        this.autoLoginTImeout = 0;
+        this.autoLoginTimeout = 0;
         this.packetLastRead = 0;
         this.messageIndex = 0;
 
@@ -479,6 +479,7 @@ class GameConnection extends GameShell {
                 await this.createSocket(this.server, this.port),
                 this
             );
+
             this.packetStream.maxReadTries = this.maxReadTries;
             this.packetStream.newPacket();
             this.packetStream.putLong(Utility.usernameToHash(username));

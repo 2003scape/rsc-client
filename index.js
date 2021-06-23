@@ -16,7 +16,8 @@ if (typeof window === 'undefined') {
         mouseWheel: true,
         resetCompass: true,
         zoomCamera: true,
-        accountManagement: true
+        accountManagement: true,
+        mobile: false
     });
 
     mc.members = args[0] === 'members';

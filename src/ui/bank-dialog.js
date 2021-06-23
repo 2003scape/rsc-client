@@ -730,4 +730,7 @@ function drawDialogBank() {
     }
 }
 
-module.exports = { drawDialogBank };
+module.exports = {
+    bankActivePage: 0,
+    drawDialogBank
+};

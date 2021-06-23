@@ -9,7 +9,7 @@ class Font {
         return `${this.getType()} ${this.size}px ${this.name}`;
     }
 
-    getType(){
+    getType() {
         if (this.type === 1) {
             return 'bold';
         } else if (this.type === 2) {
@@ -20,4 +20,7 @@ class Font {
     }
 }
 
+Font.BOLD = 1;
+
 module.exports = Font;
+

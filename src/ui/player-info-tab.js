@@ -3,7 +3,6 @@ const colours = require('./_colours');
 const MENU_WIDTH = 245;
 
 const WIDTH = 196;
-const HEIGHT = 275;
 const LINE_BREAK = 12;
 
 const HALF_WIDTH = (WIDTH / 2) | 0;
@@ -131,12 +130,21 @@ const MEMBERS_QUESTS = [
 const QUEST_NAMES = FREE_QUESTS.concat(MEMBERS_QUESTS);
 
 function drawUiTabPlayerInfo(noMenus) {
+    let height = 275;
+
+    if (
+        this.uiTabPlayerInfoSubTab === 0 &&
+        (this.options.totalExperience || this.options.remainingExperience)
+    ) {
+        height += LINE_BREAK;
+    }
+
     let uiX = this.gameWidth - WIDTH - 3;
     let uiY = 36;
 
     if (this.options.mobile) {
         uiX -= 32;
-        uiY = (this.gameHeight / 2 - HEIGHT / 2) | 0;
+        uiY = (this.gameHeight / 2 - height / 2) | 0;
     } else {
         this.surface._drawSprite_from3(
             this.gameWidth - MENU_WIDTH - 3,
@@ -148,13 +156,13 @@ function drawUiTabPlayerInfo(noMenus) {
     this.uiOpenX = uiX;
     this.uiOpenY = uiY;
     this.uiOpenWidth = WIDTH;
-    this.uiOpenHeight = HEIGHT;
+    this.uiOpenHeight = height;
 
     this.surface.drawBoxAlpha(
         uiX,
         uiY + TAB_HEIGHT,
         WIDTH,
-        HEIGHT - TAB_HEIGHT,
+        height - TAB_HEIGHT,
         colours.lightGrey,
         128
     );
@@ -174,6 +182,7 @@ function drawUiTabPlayerInfo(noMenus) {
     if (this.uiTabPlayerInfoSubTab === 0) {
         let y = uiY + 36;
         let selectedSkill = -1;
+        let totalExperience = 0;
 
         this.surface.drawString('Skills', uiX + 5, y, 3, colours.yellow);
 
@@ -181,6 +190,9 @@ function drawUiTabPlayerInfo(noMenus) {
 
         // draw two columns with each skill name and current/base levels
         for (let i = 0; i < 9; i++) {
+            totalExperience += this.playerExperience[i];
+            totalExperience += this.playerExperience[i + 9];
+
             // left column
             let textColour = colours.white;
 
@@ -308,8 +320,10 @@ function drawUiTabPlayerInfo(noMenus) {
                 }
             }
 
+            const totalXp = this.playerExperience[selectedSkill];
+
             this.surface.drawString(
-                'Total xp: ' + ((this.playerExperience[selectedSkill] / 4) | 0),
+                `Total xp: ${((totalXp / 4) | 0)}`,
                 uiX + 5,
                 y,
                 1,
@@ -319,12 +333,24 @@ function drawUiTabPlayerInfo(noMenus) {
             y += LINE_BREAK;
 
             this.surface.drawString(
-                'Next level at: ' + ((nextLevelAt / 4) | 0),
+                `Next level at: ${((nextLevelAt / 4) | 0)}`,
                 uiX + 5,
                 y,
                 1,
                 colours.white
             );
+
+            if (this.options.remainingExperience) {
+                y += LINE_BREAK;
+
+                this.surface.drawString(
+                    `Remaining xp: ${(((nextLevelAt - totalXp) / 4) | 0)}`,
+                    uiX + 5,
+                    y,
+                    1,
+                    colours.white
+                );
+            }
         } else {
             this.surface.drawString(
                 'Overall levels',
@@ -351,6 +377,18 @@ function drawUiTabPlayerInfo(noMenus) {
             );
 
             y += LINE_BREAK;
+
+            if (this.options.totalExperience) {
+                this.surface.drawString(
+                    `Total xp: ${totalExperience}`,
+                    uiX + 5,
+                    y,
+                    1,
+                    colours.white
+                );
+
+                y += LINE_BREAK;
+            }
 
             this.surface.drawString(
                 `Combat level: ${this.localPlayer.level}`,
@@ -392,7 +430,7 @@ function drawUiTabPlayerInfo(noMenus) {
 
     // handle clicking of Stats and Quest tab, and the scroll wheel for the
     // quest list
-    if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < HEIGHT) {
+    if (mouseX >= 0 && mouseY >= 0 && mouseX < WIDTH && mouseY < height) {
         if (this.uiTabPlayerInfoSubTab === 1) {
             this.panelQuestList.handleMouse(
                 mouseX + uiX,

@@ -825,56 +825,6 @@ class mudclient extends GameConnection {
                 !this.isSleeping &&
                 this.panelMessageTabs
             ) {
-                // for scrolling through messages the player previously sent
-                if (this.options.messageScrollBack) {
-                    if (
-                        this.ctrl &&
-                        [keycodes.UP_ARROW, keycodes.DOWN_ARROW].includes(keyCode)
-                    ) {
-                        if (keyCode === keycodes.UP_ARROW) {
-                            if (this.playerMsgPtr >= this.playerMsgHistory.length) {
-                                return;
-                            }
-
-                            this.playerMsgPtr += 1;
-                        } else if (keyCode === keycodes.DOWN_ARROW) {
-                            if (this.playerMsgPtr <= 1) {
-                                this.panelMessageTabs.controlText[1] = "";
-                                this.playerMsgPtr = 0;
-                                return;
-                            }
-
-                            this.playerMsgPtr -= 1;
-                        }
-
-                        const newPlayerMsg = this.playerMsgHistory[
-                            this.playerMsgHistory.length - this.playerMsgPtr
-                        ];
-
-                        if (newPlayerMsg) {
-                            this.panelMessageTabs.controlText[1] = newPlayerMsg;
-                        }
-
-                        return;
-                    }
-
-                    if (keyCode === keycodes.ENTER) {
-                        const chatMessage = this.panelMessageTabs.controlText[1];
-
-                        if (chatMessage) {
-                            const lastChatMessage = this.playerMsgHistory[
-                                this.playerMsgHistory.length - 1
-                            ];
-
-                            if (chatMessage !== lastChatMessage) {
-                                this.playerMsgHistory.push(chatMessage);
-                            }
-
-                            this.playerMsgPtr = 0;
-                        }
-                    }
-                }
-
                 this.panelMessageTabs.keyPress(keyCode);
             }
 
@@ -2900,13 +2850,13 @@ class mudclient extends GameConnection {
         }
 
         // retro fps counter
-        if (this.options.retroFPSCounter) {
+        if (this.options.fpsCounter) {
             // how much the wilderness skull needs to move for the fps counter
-            const offset = this.isInWild ? 70 : 0;
+            const offsetX = this.isInWild ? 70 : 0;
 
             this.surface.drawString(
                 'Fps: ' + (this.fps | 0),
-                this.gameWidth - 62 - offset,
+                this.gameWidth - 62 - offsetX,
                 this.gameHeight - 10,
                 1,
                 0xffff00

@@ -34,9 +34,15 @@ mc.members = false;
 mc.threadSleep = 10;
 
 (async () => {
-    await mc.startApplication(512, 346, 'Runescape by Andrew Gower', false);
+    await mc.startApplication(512, 346, 'Runescape by Andrew Gower');
 })();
 ```
+
+if you don't want to host a separate websockets server, you can
+pass a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker/Worker)
+instance of rsc-server into the `.server` property instead.
+
+see https://github.com/2003scape/rsc-server#browser-usage
 
 ## options
 features from earlier mudclients and/or inspired by modern third-party clients
@@ -73,14 +79,14 @@ mc.options.wordFilter = true;
 // client using jagex's older UIs
 mc.options.accountManagement = true;
 
-// use ctrl + up/down to scroll through messages
-mc.options.messageScrollBack = false;
-
 // display an "Fps: X" counter at the bottom right of the screen
-mc.options.retroFPSCounter = false;
+mc.options.fpsCounter = false;
 
 // retry logins when the server disconnects
 mc.options.retryLoginOnDisconnect = true;
+
+// experimental mobile support
+mc.options.mobile = false;
 ```
 
 ## assets

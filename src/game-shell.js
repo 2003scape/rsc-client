@@ -70,8 +70,7 @@ class GameShell {
             totalExperience: false,
             wordFilter: true,
             accountManagement: true,
-            messageScrollBack: true,
-            retroFPSCounter: true,
+            fpsCounter: false,
             retryLoginOnDisconnect: true,
             mobile: false
         };
@@ -216,18 +215,12 @@ class GameShell {
                 this.mousePressed.bind(this)
             );
 
-            this._canvas.addEventListener(
-                'mousemove',
-                this.mouseMoved.bind(this)
-            );
+            window.addEventListener('mousemove', this.mouseMoved.bind(this));
 
-            this._canvas.addEventListener(
-                'mouseup',
-                this.mouseReleased.bind(this)
-            );
+            window.addEventListener('mouseup', this.mouseReleased.bind(this));
         }
 
-        this._canvas.addEventListener('mouseout', this.mouseOut.bind(this));
+        //window.addEventListener('mouseout', this.mouseOut.bind(this));
         this._canvas.addEventListener('wheel', this.mouseWheel.bind(this));
 
         // prevent right clicks
@@ -239,7 +232,7 @@ class GameShell {
         this._canvas.addEventListener('keydown', this.keyPressed.bind(this));
         this._canvas.addEventListener('keyup', this.keyReleased.bind(this));
 
-        window.addEventListener('beforeunload', () => this.onClosing());
+        //window.addEventListener('beforeunload', () => this.onClosing());
 
         if (this.options.mobile) {
             this.toggleKeyboard = false;
@@ -347,12 +340,7 @@ class GameShell {
             e.preventDefault();
         }
 
-        if (
-            [8, 10, 13, 9].includes(code) ||
-            (this.options.messageScrollBack &&
-                [keycodes.UP_ARROW, keycodes.DOWN_ARROW].includes(code) &&
-                this.ctrl)
-        ) {
+        if ([8, 10, 13, 9].includes(code)) {
             charCode = code;
         }
 
@@ -534,7 +522,10 @@ class GameShell {
     }
 
     mouseWheel(e) {
-        if (!this.options.mouseWheel) {
+        if (
+            !this.options.mouseWheel ||
+            document.activeElement !== this._canvas
+        ) {
             return;
         }
 

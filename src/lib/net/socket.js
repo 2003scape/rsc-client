@@ -1,6 +1,10 @@
 // a shim for java.net.Socket
 // https://docs.oracle.com/javase/7/docs/api/java/net/Socket.html
 
+require('buffer');
+
+const WorkerSocket = require('./worker-socket');
+
 const CLOSE_TIMEOUT = 5000;
 
 class Socket {
@@ -29,10 +33,46 @@ class Socket {
 
     connect() {
         return new Promise((resolve, reject) => {
-            this.client = new WebSocket(
-                `ws://${this.host}:${this.port}`,
-                'binary'
-            );
+            if (typeof this.host === 'string') {
+                this.client = new WebSocket(
+                    `ws://${this.host}:${this.port}`,
+                    'binary'
+                );
+            } else if (this.host.constructor.name === 'Worker') {
+                this.client = new WorkerSocket(this.host);
+            } else if (this.host.constructor.name === 'Peer') {
+                const peer = this.host;
+
+                const worker = {
+                    onmessage() {},
+
+                    postMessage(data) {
+                        if (data.type === 'data') {
+                            data.data = Buffer.from(data.data).toString(
+                                'base64'
+                            );
+                        }
+
+                        peer.send(JSON.stringify(data));
+                    }
+                };
+
+                this.client = new WorkerSocket(worker);
+
+                peer.on('data', (data) => {
+                    data = JSON.parse(data);
+
+                    if (data.type === 'data') {
+                        data.data = Buffer.from(data.data, 'base64');
+                    }
+
+                    worker.onmessage({ data });
+                });
+
+                peer.on('close', () => {
+                    worker.onmessage({ data: { type: 'disconnect' } });
+                });
+            }
 
             const closeTimeout = setTimeout(() => {
                 if (!this.connected) {
@@ -83,13 +123,14 @@ class Socket {
         });
     }
 
-    write(bytes, off = 0, len = -1) {
+    write(bytes, offset = 0, length = -1) {
         if (!this.connected) {
             throw new Error('attempting to write to closed socket');
         }
 
-        len = len === -1 ? bytes.length : len;
-        this.client.send(bytes.slice(off, off + len));
+        length = length === -1 ? bytes.length : length;
+
+        this.client.send(bytes.slice(offset, offset + length));
     }
 
     refreshCurrentBuffer() {

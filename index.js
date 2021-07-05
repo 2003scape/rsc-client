@@ -38,5 +38,5 @@ if (typeof window === 'undefined') {
 
     document.body.appendChild(fullscreen);
 
-    await mc.startApplication(512, 346, 'Runescape by Andrew Gower', false);
+    await mc.startApplication(512, 346, 'Runescape by Andrew Gower');
 })();

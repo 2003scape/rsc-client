@@ -3,7 +3,7 @@
     "target": "es2017",
     "outDir": "./built",
     "module": "commonjs",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "allowJs": true,
     "resolveJsonModule": true,
@@ -12,6 +12,7 @@
     "strict": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
+    "stableTypeOrdering": true,
     "removeComments": true,
     "typeRoots": [
       "./node_modules/@types"

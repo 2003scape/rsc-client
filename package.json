@@ -50,15 +50,13 @@
     "sleep-promise": "^9.1.0",
     "st": "^3.0.0",
     "tga-js": "^1.1.1",
-    "tinyify": "^3.0.0"
+    "tinyify": "^3.0.0",
+    "typescript": "^6.0.3"
   },
   "browserify": {
     "transform": [
       "bulkify",
       "brfs"
     ]
-  },
-  "dependencies": {
-    "typescript": "^5.1.6"
   }
 }
